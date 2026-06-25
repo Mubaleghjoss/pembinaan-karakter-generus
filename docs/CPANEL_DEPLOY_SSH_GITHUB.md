@@ -261,11 +261,20 @@ Lalu refresh website. Jika masih memakai PHP lama, ulangi Apply PHP 8.2 dari Mul
 
 ## 2. Hubungkan public_html ke app Laravel
 
-Jalankan:
+Cara utama adalah menjalankan script deploy:
+
+```bash
+cd ~/pembinaan-karakter-generus
+bash deploy/cpanel/deploy_ssh.sh
+```
+
+Script deploy akan menyalin asset publik, tetapi tidak menimpa `public_html/storage`.
+
+Jika perlu copy manual, jangan copy folder `storage` dari source ke `public_html`. Jalankan:
 
 ```bash
 cp ~/pembinaan-karakter-generus/deploy/cpanel/public_html_index.pembinaan-karakter-generus.php.example ~/public_html/index.php
-cp -a ~/pembinaan-karakter-generus/public/. ~/public_html/
+rsync -a --exclude='/storage' --exclude='/hot' ~/pembinaan-karakter-generus/public/ ~/public_html/
 rm -f ~/public_html/hot
 ```
 
@@ -296,6 +305,12 @@ mkdir -p \
 ```
 
 File media lama seperti logo, avatar, PDF materi, bukti tugas, dan foto siswa harus dipindahkan/manual upload ke `public_html/storage` sesuai path database.
+
+Catatan storage:
+
+- Di lokal Windows, `public/storage` biasanya terlihat seperti shortcut/junction. Itu normal. Targetnya adalah `storage/app/public`.
+- Di server cPanel, jangan bergantung pada symlink jika hosting membatasi symlink. Project ini memakai `FILESYSTEM_PUBLIC_ROOT=/home/pkgj2934/public_html/storage`, sehingga upload server disimpan langsung ke folder fisik `public_html/storage`.
+- Folder `public_html/storage` adalah data runtime user. Jangan dihapus saat deploy, jangan diisi dari GitHub, dan jangan ditimpa dari folder lokal kecuali memang sedang restore/unggah file media lama.
 
 ## 4. Database: pilih skema saja atau isi penuh dari lokal
 
@@ -447,7 +462,8 @@ Yang tidak masuk GitHub:
 - `uploads`;
 - backup database;
 - `storage/logs`;
-- file upload runtime di `storage/app/public`;
+- file upload runtime lokal di `storage/app/public`;
+- file upload runtime server di `public_html/storage`;
 - `public/hot`.
 
 ## 7. Checklist setelah deploy

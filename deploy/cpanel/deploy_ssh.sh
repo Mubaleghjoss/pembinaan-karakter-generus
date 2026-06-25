@@ -184,8 +184,17 @@ if command -v rsync >/dev/null 2>&1; then
     --exclude='/cgi-bin' \
     "$APP_ROOT/public/" "$PUBLIC_ROOT/"
 else
-  cp -a "$APP_ROOT/public/." "$PUBLIC_ROOT/"
-  rm -f "$PUBLIC_ROOT/hot"
+  while IFS= read -r -d '' entry; do
+    entry_name="$(basename "$entry")"
+
+    case "$entry_name" in
+      .htaccess|storage|hot|.well-known|cgi-bin)
+        continue
+        ;;
+    esac
+
+    cp -a "$entry" "$PUBLIC_ROOT/"
+  done < <(find "$APP_ROOT/public" -mindepth 1 -maxdepth 1 -print0)
 fi
 
 cat > "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
