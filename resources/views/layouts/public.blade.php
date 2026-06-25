@@ -35,7 +35,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ $theme->app_name ?? 'PKG Presensi' }}">
-    <link rel="manifest" href="/manifest.json">
+    @php
+        $manifestVersion = is_file(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : null;
+    @endphp
+    <link rel="manifest" href="{{ asset('manifest.json') }}{{ $manifestVersion ? '?v=' . $manifestVersion : '' }}">
     @include('layouts.partials.favicons')
     
     <!-- Fonts -->
@@ -84,20 +87,120 @@
             transform: translateY(-5px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
+
+        .pkg-brand-logo-motion {
+            animation: pkgLogoFloat 5s ease-in-out infinite;
+            transform-origin: center;
+            will-change: transform;
+        }
+
+        .pkg-brand-title-motion {
+            animation: pkgTitleGlow 4.5s ease-in-out infinite;
+            text-shadow: 0 0 0 rgba(255, 255, 255, 0);
+        }
+
+        .pkg-pwa-launch-splash {
+            align-items: center;
+            background:
+                radial-gradient(circle at 50% 24%, rgba(217, 180, 90, 0.25), transparent 18rem),
+                linear-gradient(135deg, #0b4229, #10643a);
+            display: none;
+            inset: 0;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            position: fixed;
+            transition: opacity 280ms ease;
+            z-index: 9999;
+        }
+
+        .pkg-pwa-launch-splash.is-active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .pkg-pwa-launch-card {
+            align-items: center;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .pkg-pwa-launch-logo {
+            animation: pkgSplashLogo 1.35s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+            background: #f8f6e8;
+            border-radius: 34px;
+            box-shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
+            height: 132px;
+            object-fit: contain;
+            padding: 8px;
+            width: 132px;
+        }
+
+        .pkg-pwa-launch-title {
+            color: #fff7db;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        @keyframes pkgLogoFloat {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+            50% {
+                transform: translateY(-4px) rotate(-2deg) scale(1.04);
+            }
+        }
+
+        @keyframes pkgTitleGlow {
+            0%, 100% {
+                text-shadow: 0 0 0 rgba(255, 255, 255, 0);
+            }
+            50% {
+                text-shadow: 0 0 18px rgba(255, 255, 255, 0.32);
+            }
+        }
+
+        @keyframes pkgSplashLogo {
+            0%, 100% {
+                transform: scale(0.98);
+            }
+            50% {
+                transform: scale(1.06);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .pkg-brand-logo-motion,
+            .pkg-brand-title-motion,
+            .pkg-pwa-launch-logo {
+                animation: none;
+            }
+        }
     </style>
     @stack('styles')
 </head>
 <body class="h-full text-slate-900 dark:text-slate-100">
+    <div id="pkg-pwa-launch-splash" class="pkg-pwa-launch-splash" aria-hidden="true">
+        <div class="pkg-pwa-launch-card">
+            <img class="pkg-pwa-launch-logo" src="{{ asset('images/icons/pkg-logo-192.png') }}" alt="Logo PKG" width="132" height="132">
+            <div class="pkg-pwa-launch-title">Pembinaan Karakter Generus Panunggangan</div>
+        </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="gradient-primary shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center space-x-4">
                     @if($theme->logo_path)
-                        <img src="{{ asset('storage/' . $theme->logo_path) }}" alt="Logo" width="48" height="48" class="h-12 w-12 object-contain" style="width:3rem;height:3rem;object-fit:contain;" decoding="async" fetchpriority="high">
+                        <img src="{{ asset('storage/' . $theme->logo_path) }}" alt="Logo" width="48" height="48" class="pkg-brand-logo-motion h-12 w-12 object-contain" style="width:3rem;height:3rem;object-fit:contain;" decoding="async" fetchpriority="high">
                     @endif
                     <div>
-                        <h1 class="text-2xl font-bold text-white">{{ $theme->app_name }}</h1>
+                        <h1 class="pkg-brand-title-motion text-2xl font-bold text-white">{{ $theme->app_name }}</h1>
                         <p class="text-sm text-white/80">{{ $theme->app_description }}</p>
                     </div>
                 </div>
@@ -351,6 +454,33 @@
             const menu = document.getElementById('mobile-menu');
             menu.classList.toggle('hidden');
         }
+
+        // PWA launch splash shown after opening installed app.
+        (function () {
+            var splash = document.getElementById('pkg-pwa-launch-splash');
+            if (!splash) return;
+
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            var isHomeLaunch = window.location.pathname === '/' || window.location.pathname === '/index.php';
+            var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            if (!isStandalone || !isHomeLaunch) {
+                return;
+            }
+
+            splash.style.display = 'flex';
+
+            requestAnimationFrame(function () {
+                splash.classList.add('is-active');
+            });
+
+            window.setTimeout(function () {
+                splash.classList.remove('is-active');
+                window.setTimeout(function () {
+                    splash.style.display = 'none';
+                }, 300);
+            }, reducedMotion ? 700 : 1500);
+        })();
 
         // Login dropdown toggle
         (function() {

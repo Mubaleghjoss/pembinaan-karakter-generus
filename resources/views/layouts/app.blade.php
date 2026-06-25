@@ -27,7 +27,10 @@
     <meta property="og:image" content="{{ asset('storage/' . $siteSettings['site_logo']) }}">
     @endif
     <meta property="og:site_name" content="{{ $siteSettings['site_title'] ?? 'PKG Presensi' }}">
-    <link rel="manifest" href="/manifest.json">
+    @php
+        $manifestVersion = is_file(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : null;
+    @endphp
+    <link rel="manifest" href="{{ asset('manifest.json') }}{{ $manifestVersion ? '?v=' . $manifestVersion : '' }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
