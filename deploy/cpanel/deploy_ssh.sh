@@ -184,7 +184,7 @@ if command -v rsync >/dev/null 2>&1; then
     --exclude='/cgi-bin' \
     "$APP_ROOT/public/" "$PUBLIC_ROOT/"
 else
-  while IFS= read -r -d '' entry; do
+  find "$APP_ROOT/public" -mindepth 1 -maxdepth 1 -print0 | while IFS= read -r -d '' entry; do
     entry_name="$(basename "$entry")"
 
     case "$entry_name" in
@@ -194,7 +194,7 @@ else
     esac
 
     cp -a "$entry" "$PUBLIC_ROOT/"
-  done < <(find "$APP_ROOT/public" -mindepth 1 -maxdepth 1 -print0)
+  done
 fi
 
 cat > "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
