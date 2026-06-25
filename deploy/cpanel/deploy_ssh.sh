@@ -61,6 +61,21 @@ else
   exit 1
 fi
 
+echo "Rapikan permission vendor dan cache Laravel..."
+if [ -d "$APP_ROOT/vendor" ]; then
+  find "$APP_ROOT/vendor" -type d -exec chmod 755 {} +
+  find "$APP_ROOT/vendor" -type f -exec chmod 644 {} +
+fi
+
+mkdir -p \
+  "$APP_ROOT/storage/logs" \
+  "$APP_ROOT/storage/framework/cache/data" \
+  "$APP_ROOT/storage/framework/sessions" \
+  "$APP_ROOT/storage/framework/views" \
+  "$APP_ROOT/bootstrap/cache"
+
+chmod -R u+rwX,go+rwX "$APP_ROOT/storage" "$APP_ROOT/bootstrap/cache"
+
 echo "Salin asset public ke public_html..."
 mkdir -p "$PUBLIC_ROOT"
 
