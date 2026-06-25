@@ -18,6 +18,8 @@
 /bootstrap/cache/*.php
 /bootstrap/cache/*.json
 /.phpunit.cache/
+/.composer-cache/
+/.composer-home/
 /.env
 /.env.backup
 /.env.local
