@@ -89,6 +89,7 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [QSA,L]
 HTACCESS
 
+handler_written=0
 if [ -n "$htaccess_backup" ]; then
   cpanel_handler_block="$(awk '
     /# php -- BEGIN cPanel-generated handler/ { in_block=1 }
@@ -101,6 +102,7 @@ if [ -n "$htaccess_backup" ]; then
       echo
       printf '%s\n' "$cpanel_handler_block"
     } >> "$PUBLIC_ROOT/.htaccess"
+    handler_written=1
   elif grep -Eq 'x-httpd-(ea|alt)-php|ea-php[0-9]+|alt-php[0-9]+' "$htaccess_backup"; then
     {
       echo
@@ -108,9 +110,22 @@ if [ -n "$htaccess_backup" ]; then
       grep -E 'AddHandler .*x-httpd-(ea|alt)-php|SetHandler .*php' "$htaccess_backup" || true
       echo '</IfModule>'
     } >> "$PUBLIC_ROOT/.htaccess"
+    handler_written=1
   fi
 
   rm -f "$htaccess_backup"
+fi
+
+if [ "$handler_written" -eq 0 ] && "$php_cmd" -r 'exit(PHP_VERSION_ID >= 80200 && PHP_VERSION_ID < 80300 ? 0 : 1);'; then
+  cat >> "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the “alt-php82” package as the default “PHP” programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-alt-php82 .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
+HTACCESS
 fi
 
 cp "$APP_ROOT/deploy/cpanel/public_html_index.pembinaan-karakter-generus.php.example" "$PUBLIC_ROOT/index.php"

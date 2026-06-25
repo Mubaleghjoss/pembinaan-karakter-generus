@@ -188,6 +188,22 @@ bash deploy/cpanel/deploy_ssh.sh
 
 Script deploy terbaru akan mempertahankan block handler PHP cPanel di `public_html/.htaccess`.
 
+Jika `cat ~/public_html/.htaccess` tidak menampilkan block handler sama sekali, tambahkan fallback alt-php82:
+
+```bash
+cat >> ~/public_html/.htaccess <<'EOF'
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the “alt-php82” package as the default “PHP” programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-alt-php82 .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
+EOF
+```
+
+Lalu refresh website. Jika masih memakai PHP lama, ulangi Apply PHP 8.2 dari MultiPHP Manager.
+
 ## 2. Hubungkan public_html ke app Laravel
 
 Jalankan:
