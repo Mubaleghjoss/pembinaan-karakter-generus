@@ -215,6 +215,9 @@
                     <a href="{{ route('public.calendar.index') }}" class="text-white hover:text-white/80 font-medium transition-colors">
                         Kalender
                     </a>
+                    <a href="{{ route('materi.index') }}" class="text-white hover:text-white/80 font-medium transition-colors">
+                        Materi
+                    </a>
                     <a href="{{ route('public.scanner') }}" class="text-white hover:text-white/80 font-medium transition-colors">
                         Scan Presensi
                     </a>
@@ -301,6 +304,7 @@
                 <a href="{{ route('public.index') }}" class="block text-white hover:text-white/80 font-medium">Beranda</a>
                 <a href="{{ route('public.rpg.index') }}" class="block text-white hover:text-white/80 font-medium">Game 29 Karakter</a>
                 <a href="{{ route('public.calendar.index') }}" class="block text-white hover:text-white/80 font-medium">Kalender</a>
+                <a href="{{ route('materi.index') }}" class="block text-white hover:text-white/80 font-medium">Materi</a>
                 <a href="{{ route('public.scanner') }}" class="block text-white hover:text-white/80 font-medium">Scan Presensi</a>
                 <a href="{{ route('laporan-penyaksian.create') }}" class="block text-white hover:text-white/80 font-medium flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

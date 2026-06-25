@@ -16,6 +16,8 @@
             @endif
         </div>
 
+        @include('public.partials.calendar-materi-tabs', ['activePublicTab' => 'calendar'])
+
         <div class="pkg-panel p-4 mb-6">
             <div class="flex flex-wrap gap-4 text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex items-center gap-2">
@@ -75,6 +77,19 @@
 .fc .fc-button-primary:not(:disabled).fc-button-active {
     background-color: #134E4A;
     border-color: #134E4A;
+}
+.fc .fc-prev-button .fc-icon,
+.fc .fc-next-button .fc-icon {
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.fc .fc-icon-chevron-left::before {
+    content: "<" !important;
+}
+.fc .fc-icon-chevron-right::before {
+    content: ">" !important;
 }
 .fc .fc-daygrid-day.fc-day-today {
     background-color: #ECFDF5;

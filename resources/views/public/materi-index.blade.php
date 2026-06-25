@@ -1,0 +1,120 @@
+@extends('layouts.public')
+
+@section('title', 'Materi - ' . ($theme->app_name ?? 'PKG Presensi'))
+@section('og_title', 'Materi PKG')
+@section('og_description', 'Daftar materi PKG yang tersedia untuk pengunjung.')
+
+@section('content')
+<section class="bg-slate-50 py-10 dark:bg-slate-950">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="pkg-page-header">
+            <div>
+                <h1 class="pkg-page-heading">Materi PKG</h1>
+                <p class="pkg-page-subheading">Materi aktif yang tersedia untuk siswa, orang tua, dan pengunjung.</p>
+            </div>
+        </div>
+
+        @include('public.partials.calendar-materi-tabs', ['activePublicTab' => 'materi'])
+
+        <form method="GET" action="{{ route('materi.index') }}" class="pkg-filter-bar mb-6">
+            <div class="flex flex-wrap gap-3">
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request('search') }}"
+                    placeholder="Cari materi..."
+                    class="pkg-field min-w-[220px] flex-1 text-sm"
+                >
+                <select name="folder_id" class="pkg-field text-sm">
+                    <option value="">Semua Folder</option>
+                    @foreach($materiFolders as $folder)
+                        <option value="{{ $folder->id }}" @selected((int) request('folder_id') === $folder->id)>
+                            {{ $folder->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <input type="month" name="bulan" value="{{ request('bulan') }}" class="pkg-field text-sm">
+                <button type="submit" class="btn-primary text-sm">Filter</button>
+                <a href="{{ route('materi.index') }}" class="btn-secondary text-sm">Reset</a>
+            </div>
+        </form>
+
+        @if($materiFolders->isNotEmpty())
+            <div class="mb-6 flex gap-2 overflow-x-auto pb-1">
+                <a href="{{ route('materi.index', request()->except('folder_id', 'page')) }}" class="btn-secondary shrink-0 px-3 py-2 text-xs {{ request()->filled('folder_id') ? '' : 'ring-2 ring-emerald-500' }}">
+                    Semua Folder
+                </a>
+                @foreach($materiFolders as $folder)
+                    <a
+                        href="{{ route('materi.index', array_merge(request()->except('page'), ['folder_id' => $folder->id])) }}"
+                        class="btn-secondary shrink-0 px-3 py-2 text-xs {{ (int) request('folder_id') === $folder->id ? 'ring-2 ring-emerald-500' : '' }}"
+                    >
+                        {{ $folder->name }}
+                        <span class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{{ $folder->materi_count }}</span>
+                    </a>
+                @endforeach
+            </div>
+        @endif
+
+        @if($materi->isEmpty())
+            <div class="pkg-empty-state">
+                <svg class="pkg-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/>
+                </svg>
+                <p class="pkg-empty-title">Belum ada materi</p>
+                <p class="pkg-empty-copy">Materi publik belum tersedia sesuai filter yang dipilih.</p>
+            </div>
+        @else
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                @foreach($materi as $item)
+                    <article class="pkg-panel flex h-full flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
+                        <div class="border-b border-slate-200 bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white dark:border-slate-800">
+                            <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-white/80">
+                                <span>{{ $item->bulan?->translatedFormat('F Y') ?? 'Tanpa bulan' }}</span>
+                                @if($item->folder)
+                                    <span class="rounded-full bg-white/15 px-2 py-1">{{ $item->folder->name }}</span>
+                                @endif
+                            </div>
+                            <h2 class="mt-3 line-clamp-2 text-xl font-bold">{{ $item->judul }}</h2>
+                        </div>
+
+                        <div class="flex flex-1 flex-col p-5">
+                            <p class="line-clamp-3 text-sm text-slate-600 dark:text-slate-300">
+                                {{ Str::limit($item->deskripsi, 160) }}
+                            </p>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                @if($item->hasPdfFiles())
+                                    <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-200">
+                                        {{ $item->pdf_count }} PDF
+                                    </span>
+                                @endif
+                                @if($item->youtube_embed_url)
+                                    <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
+                                        Video
+                                    </span>
+                                @endif
+                                @if($item->isRppPublished())
+                                    <span class="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700 dark:bg-teal-900/30 dark:text-teal-200">
+                                        RPP
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="mt-auto pt-5">
+                                <a href="{{ route('public.materi.show', $item) }}" class="btn-primary w-full justify-center text-sm">
+                                    Buka Materi
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+
+            <div class="mt-8">
+                {{ $materi->links() }}
+            </div>
+        @endif
+    </div>
+</section>
+@endsection

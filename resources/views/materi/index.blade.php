@@ -30,7 +30,11 @@
     </div>
     @endif
 
-    <section id="target-analytics" class="pkg-panel mb-6 p-5 scroll-mt-6">
+    <section
+        id="target-analytics"
+        class="pkg-panel mb-6 p-5 scroll-mt-6"
+        x-data="{ analyticsOpen: @js($targetAnalytics['show_completed_details'] || request()->filled('analytics_grade') || request()->filled('analytics_semester')) }"
+    >
         <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Analitik Target Materi</h2>
@@ -38,13 +42,20 @@
                     Scope: {{ $targetAnalytics['scope_label'] }}. Progress dihitung dari target aktif pada semester yang dipilih.
                 </p>
             </div>
-            @if($canManageMateri ?? false)
-            <a href="{{ route('materi-targets.index') }}" class="btn-secondary w-fit text-sm">
-                Kelola Target
-            </a>
-            @endif
+            <div class="flex flex-wrap gap-2">
+                <button type="button" @click="analyticsOpen = !analyticsOpen" class="btn-secondary w-fit text-sm">
+                    <span x-show="!analyticsOpen">Tampilkan Analitik</span>
+                    <span x-show="analyticsOpen">Sembunyikan Analitik</span>
+                </button>
+                @if($canManageMateri ?? false)
+                <a href="{{ route('materi-targets.index') }}" class="btn-secondary w-fit text-sm">
+                    Kelola Target
+                </a>
+                @endif
+            </div>
         </div>
 
+        <div x-show="analyticsOpen" x-transition>
         <form method="GET" action="{{ route('materi.index') }}" class="pkg-filter-grid mb-5">
             @foreach(['search', 'folder_id', 'bulan', 'status'] as $preservedFilter)
                 @if(request()->filled($preservedFilter))
@@ -201,6 +212,7 @@
             @endforeach
         </div>
         @endif
+        </div>
     </section>
 
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px] mb-6">

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Berita;
 use App\Models\AttendanceSchedule;
 use App\Models\Materi;
+use App\Models\MateriFolder;
 use App\Models\ThemeSetting;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class PublicController extends Controller
 {
@@ -130,6 +132,63 @@ class PublicController extends Controller
             'currentDayId',
             'isTodayActive'
         ));
+    }
+
+    public function materiIndex(Request $request)
+    {
+        if (auth()->guard('web')->check()) {
+            $user = $request->user();
+
+            if ($user && ! $user->isAdmin() && $user->usesPamongPermissionSystem() && ! $user->hasPamongMenuAccess('materi')) {
+                return redirect()
+                    ->route('dashboard')
+                    ->with('error', 'Anda tidak memiliki akses ke menu ini.');
+            }
+
+            return app(MateriController::class)->index($request);
+        }
+
+        $theme = ThemeSetting::current();
+
+        $query = Materi::query()
+            ->with('folder')
+            ->active();
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->toString();
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                    ->orWhere('deskripsi', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('bulan') && preg_match('/^\d{4}-\d{2}$/', (string) $request->input('bulan'))) {
+            $month = Carbon::createFromFormat('Y-m', (string) $request->input('bulan'))->startOfMonth();
+            $query->whereMonth('bulan', $month->month)
+                ->whereYear('bulan', $month->year);
+        }
+
+        if ($request->filled('folder_id')) {
+            $query->where('materi_folder_id', $request->integer('folder_id'));
+        }
+
+        $materi = $query
+            ->leftJoin('materi_folders', 'materi.materi_folder_id', '=', 'materi_folders.id')
+            ->select('materi.*')
+            ->orderByRaw('COALESCE(materi_folders.sort_order, 999999)')
+            ->orderBy('materi_folders.name')
+            ->orderByDesc('materi.bulan')
+            ->paginate(12)
+            ->withQueryString();
+
+        $materiFolders = MateriFolder::query()
+            ->active()
+            ->withCount(['materi as materi_count' => fn ($query) => $query->active()])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('public.materi-index', compact('theme', 'materi', 'materiFolders'));
     }
 
     public function materiShow(Materi $materi)

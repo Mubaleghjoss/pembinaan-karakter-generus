@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [App\Http\Controllers\PublicController::class, 'index'])->name('public.index');
 Route::get('/berita-publik/{slug}', [App\Http\Controllers\PublicController::class, 'berita'])->name('public.berita');
 Route::get('/scan-presensi', [App\Http\Controllers\PublicController::class, 'scanner'])->name('public.scanner');
+Route::get('/materi', [App\Http\Controllers\PublicController::class, 'materiIndex'])->name('materi.index');
 Route::get('/materi-publik/{materi}', [App\Http\Controllers\PublicController::class, 'materiShow'])->name('public.materi.show');
 Route::get('/kalender', [App\Http\Controllers\CalendarController::class, 'publicIndex'])->name('public.calendar.index');
 Route::get('/kalender/events', [App\Http\Controllers\CalendarController::class, 'publicEvents'])->name('public.calendar.events');
@@ -407,7 +408,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/materi/folders/{folder}', [MateriController::class, 'updateFolder'])->name('materi.folders.update');
     Route::post('/materi/rpp-preview', [MateriController::class, 'rppPreview'])->name('materi.rpp-preview');
     Route::patch('/materi/{materi}/publish-rpp', [MateriController::class, 'publishRpp'])->name('materi.publish-rpp');
-    Route::resource('materi', MateriController::class);
+    Route::resource('materi', MateriController::class)->except(['index']);
     Route::patch('/materi/{materi}/toggle-status', [MateriController::class, 'toggleStatus'])->name('materi.toggle-status');
 
     // Canonical Tugas PKG routes
