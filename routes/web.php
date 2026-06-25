@@ -727,13 +727,13 @@ Route::middleware('auth')->group(function () {
             'orientation' => 'portrait',
             'icons' => [
                 [
-                    'src' => '/images/icons/pkg-logo-192.png',
+                    'src' => '/images/icons/pkg-pwa-2026-192.png',
                     'sizes' => '192x192',
                     'type' => 'image/png',
                     'purpose' => 'any maskable',
                 ],
                 [
-                    'src' => '/images/icons/pkg-logo-512.png',
+                    'src' => '/images/icons/pkg-pwa-2026-512.png',
                     'sizes' => '512x512',
                     'type' => 'image/png',
                     'purpose' => 'any maskable',

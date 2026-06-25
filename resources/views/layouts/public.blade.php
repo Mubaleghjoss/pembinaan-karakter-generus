@@ -186,7 +186,7 @@
 <body class="h-full text-slate-900 dark:text-slate-100">
     <div id="pkg-pwa-launch-splash" class="pkg-pwa-launch-splash" aria-hidden="true">
         <div class="pkg-pwa-launch-card">
-            <img class="pkg-pwa-launch-logo" src="{{ asset('images/icons/pkg-logo-192.png') }}" alt="Logo PKG" width="132" height="132">
+            <img class="pkg-pwa-launch-logo" src="{{ asset('images/icons/pkg-pwa-2026-192.png') }}" alt="Logo PKG" width="132" height="132">
             <div class="pkg-pwa-launch-title">Pembinaan Karakter Generus Panunggangan</div>
         </div>
     </div>

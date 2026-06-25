@@ -1,10 +1,10 @@
 // PKG Presensi Service Worker
-const CACHE_NAME = 'pkg-presensi-v8';
+const CACHE_NAME = 'pkg-presensi-v9';
 const urlsToCache = [
     '/',
     '/manifest.json',
-    '/images/icons/pkg-logo-192.png',
-    '/images/icons/pkg-logo-512.png'
+    '/images/icons/pkg-pwa-2026-192.png',
+    '/images/icons/pkg-pwa-2026-512.png'
 ];
 
 // Install event - cache essential files
