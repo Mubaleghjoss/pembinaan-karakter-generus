@@ -2,6 +2,7 @@
     "name": "Pembinaan Karakter Generus Panunggangan",
     "short_name": "PKG Panunggangan",
     "description": "Sistem Pembinaan Karakter Generus Panunggangan",
+    "id": "/",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#f8f6e8",
