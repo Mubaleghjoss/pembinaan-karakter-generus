@@ -1,0 +1,186 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class SiswaSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $students = [
+            // Kelas 1A (kelas_id = 1)
+            [
+                'nis' => '2024001',
+                'nama' => 'Ahmad Rizki Pratama',
+                'jenis_kelamin' => 'L',
+                'tanggal_lahir' => '2010-01-15',
+                'alamat' => 'Jl. Merdeka No. 123, Jakarta',
+                'kelas_id' => 1,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Budi Pratama',
+                'phone_wali' => '081234567890',
+                'email_wali' => 'budi.pratama@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nis' => '2024002',
+                'nama' => 'Siti Nurhaliza',
+                'jenis_kelamin' => 'P',
+                'tanggal_lahir' => '2010-03-22',
+                'alamat' => 'Jl. Sudirman No. 456, Jakarta',
+                'kelas_id' => 1,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Sari Nurhaliza',
+                'phone_wali' => '081234567891',
+                'email_wali' => 'sari.nurhaliza@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nis' => '2024003',
+                'nama' => 'Muhammad Fajar',
+                'jenis_kelamin' => 'L',
+                'tanggal_lahir' => '2010-05-10',
+                'alamat' => 'Jl. Thamrin No. 789, Jakarta',
+                'kelas_id' => 1,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Andi Fajar',
+                'phone_wali' => '081234567892',
+                'email_wali' => 'andi.fajar@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nis' => '2024004',
+                'nama' => 'Dewi Sartika',
+                'jenis_kelamin' => 'P',
+                'tanggal_lahir' => '2010-07-18',
+                'alamat' => 'Jl. Gatot Subroto No. 321, Jakarta',
+                'kelas_id' => 1,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Rina Sartika',
+                'phone_wali' => '081234567893',
+                'email_wali' => 'rina.sartika@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nis' => '2024005',
+                'nama' => 'Bayu Setiawan',
+                'jenis_kelamin' => 'L',
+                'tanggal_lahir' => '2010-09-25',
+                'alamat' => 'Jl. Kuningan No. 654, Jakarta',
+                'kelas_id' => 1,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Agus Setiawan',
+                'phone_wali' => '081234567894',
+                'email_wali' => 'agus.setiawan@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // Kelas 1B (kelas_id = 2)
+            [
+                'nis' => '2024006',
+                'nama' => 'Aisyah Putri',
+                'jenis_kelamin' => 'P',
+                'tanggal_lahir' => '2010-02-14',
+                'alamat' => 'Jl. Kemang No. 111, Jakarta',
+                'kelas_id' => 2,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Dedi Putri',
+                'phone_wali' => '081234567895',
+                'email_wali' => 'dedi.putri@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nis' => '2024007',
+                'nama' => 'Reza Firmansyah',
+                'jenis_kelamin' => 'L',
+                'tanggal_lahir' => '2010-04-30',
+                'alamat' => 'Jl. Senayan No. 222, Jakarta',
+                'kelas_id' => 2,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Hadi Firmansyah',
+                'phone_wali' => '081234567896',
+                'email_wali' => 'hadi.firmansyah@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nis' => '2024008',
+                'nama' => 'Indira Maharani',
+                'jenis_kelamin' => 'P',
+                'tanggal_lahir' => '2010-06-12',
+                'alamat' => 'Jl. Menteng No. 333, Jakarta',
+                'kelas_id' => 2,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Joko Maharani',
+                'phone_wali' => '081234567897',
+                'email_wali' => 'joko.maharani@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // Kelas 2A (kelas_id = 3)
+            [
+                'nis' => '2024009',
+                'nama' => 'Kevin Ananda',
+                'jenis_kelamin' => 'L',
+                'tanggal_lahir' => '2009-08-20',
+                'alamat' => 'Jl. Cikini No. 444, Jakarta',
+                'kelas_id' => 3,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Lina Ananda',
+                'phone_wali' => '081234567898',
+                'email_wali' => 'lina.ananda@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nis' => '2024010',
+                'nama' => 'Maya Sari',
+                'jenis_kelamin' => 'P',
+                'tanggal_lahir' => '2009-10-05',
+                'alamat' => 'Jl. Tebet No. 555, Jakarta',
+                'kelas_id' => 3,
+                'status' => 'active',
+                'qr_secret_salt' => Str::random(64),
+                'nama_wali' => 'Nana Sari',
+                'phone_wali' => '081234567899',
+                'email_wali' => 'nana.sari@email.com',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ];
+
+        DB::table('siswa')->insert($students);
+    }
+}

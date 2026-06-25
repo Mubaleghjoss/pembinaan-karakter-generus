@@ -1,0 +1,158 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
+
+class Berita extends Model
+{
+    use HasFactory;
+
+    protected $table = 'berita';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'judul',
+        'slug',
+        'isi',
+        'cover_path',
+        'pdf_path',
+        'images',
+        'tags',
+        'status',
+        'published_at',
+        'author_id',
+        'view_count',
+        'download_count',
+        'is_featured',
+        'metadata',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'published_at' => 'datetime',
+        'tags' => 'array',
+        'images' => 'array',
+        'is_featured' => 'boolean',
+        'metadata' => 'array',
+    ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($berita) {
+            if (empty($berita->slug)) {
+                $berita->slug = Str::slug($berita->judul);
+            }
+        });
+
+        static::updating(function ($berita) {
+            if ($berita->isDirty('judul') && empty($berita->slug)) {
+                $berita->slug = Str::slug($berita->judul);
+            }
+        });
+    }
+
+    /**
+     * Get the author that owns the berita.
+     */
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
+
+    /**
+     * Increment view count
+     */
+    public function incrementViews(): void
+    {
+        $this->increment('view_count');
+    }
+
+    /**
+     * Get excerpt from content (Accessor)
+     */
+    public function getExcerptAttribute(): string
+    {
+        return $this->excerpt(150);
+    }
+
+    /**
+     * Get excerpt with custom length
+     */
+    public function excerpt(int $length = 150): string
+    {
+        return Str::limit(strip_tags($this->isi), $length);
+    }
+
+    /**
+     * Get reading time estimate
+     */
+    public function getReadingTimeAttribute(): int
+    {
+        $wordCount = str_word_count(strip_tags($this->isi));
+
+        return max(1, ceil($wordCount / 200)); // Assuming 200 words per minute
+    }
+
+    /**
+     * Scope for published articles
+     */
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published')
+            ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Scope for featured articles
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scope for articles by tag
+     */
+    public function scopeByTag($query, $tag)
+    {
+        return $query->whereJsonContains('tags', $tag);
+    }
+
+    /**
+     * Scope for search
+     */
+    public function scopeSearch($query, $search)
+    {
+        return $query->where(function ($q) use ($search) {
+            $q->where('judul', 'like', "%{$search}%")
+                ->orWhere('isi', 'like', "%{$search}%");
+        });
+    }
+
+    /**
+     * Check if article is published
+     */
+    public function isPublished(): bool
+    {
+        return $this->status === 'published' &&
+               $this->published_at &&
+               $this->published_at->isPast();
+    }
+}

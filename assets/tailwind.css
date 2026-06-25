@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom prose tweaks for berita content */
+.prose img { @apply rounded-md; }
+.prose a { @apply text-blue-600 no-underline hover:underline; }
+.prose h1, .prose h2, .prose h3 { @apply font-semibold; }

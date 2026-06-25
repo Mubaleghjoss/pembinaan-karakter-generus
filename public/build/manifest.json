@@ -1,0 +1,155 @@
+{
+  "_browser-C8KFpyF2.js": {
+    "file": "assets/browser-C8KFpyF2.js",
+    "name": "browser",
+    "isDynamicEntry": true,
+    "imports": [
+      "_qr-scanner-B4zfAtOc.js"
+    ]
+  },
+  "_calendar-vendor-YihmpX6A.js": {
+    "file": "assets/calendar-vendor-YihmpX6A.js",
+    "name": "calendar-vendor",
+    "isDynamicEntry": true
+  },
+  "_icon-pack-D8t0f58e.js": {
+    "file": "assets/icon-pack-D8t0f58e.js",
+    "name": "icon-pack",
+    "imports": [
+      "_react-vendor-WxYsAmz8.js"
+    ]
+  },
+  "_news-slider-D0xxsmi7.js": {
+    "file": "assets/news-slider-D0xxsmi7.js",
+    "name": "news-slider",
+    "imports": [
+      "_react-vendor-WxYsAmz8.js"
+    ],
+    "css": [
+      "assets/news-slider-hXc9paC5.css"
+    ]
+  },
+  "_news-slider-hXc9paC5.css": {
+    "file": "assets/news-slider-hXc9paC5.css",
+    "src": "_news-slider-hXc9paC5.css"
+  },
+  "_qr-scanner-B4zfAtOc.js": {
+    "file": "assets/qr-scanner-B4zfAtOc.js",
+    "name": "qr-scanner",
+    "isDynamicEntry": true
+  },
+  "_react-vendor-WxYsAmz8.js": {
+    "file": "assets/react-vendor-WxYsAmz8.js",
+    "name": "react-vendor",
+    "isDynamicEntry": true,
+    "imports": [
+      "_qr-scanner-B4zfAtOc.js"
+    ]
+  },
+  "_three-vendor-Bi-aTaoL.js": {
+    "file": "assets/three-vendor-Bi-aTaoL.js",
+    "name": "three-vendor"
+  },
+  "node_modules/chart.js/auto/auto.js": {
+    "file": "assets/auto-CquwA8NN.js",
+    "name": "auto",
+    "src": "node_modules/chart.js/auto/auto.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-BLwLCvbM.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/rpg-3d.js",
+      "_react-vendor-WxYsAmz8.js",
+      "_react-vendor-WxYsAmz8.js",
+      "resources/js/components/NewsSlider.jsx",
+      "resources/js/components/QRScanner.jsx",
+      "resources/js/components/AttendanceSuccess.jsx",
+      "_calendar-vendor-YihmpX6A.js",
+      "_calendar-vendor-YihmpX6A.js",
+      "_calendar-vendor-YihmpX6A.js",
+      "_calendar-vendor-YihmpX6A.js",
+      "_qr-scanner-B4zfAtOc.js",
+      "node_modules/chart.js/auto/auto.js",
+      "_browser-C8KFpyF2.js"
+    ],
+    "css": [
+      "assets/app-Cl_jrpMf.css"
+    ]
+  },
+  "resources/js/components/AttendanceSuccess.jsx": {
+    "file": "assets/AttendanceSuccess-CR0s311Q.js",
+    "name": "AttendanceSuccess",
+    "src": "resources/js/components/AttendanceSuccess.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_react-vendor-WxYsAmz8.js",
+      "_icon-pack-D8t0f58e.js",
+      "_qr-scanner-B4zfAtOc.js"
+    ]
+  },
+  "resources/js/components/NewsSlider.jsx": {
+    "file": "assets/NewsSlider-CO4isV3w.js",
+    "name": "NewsSlider",
+    "src": "resources/js/components/NewsSlider.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_react-vendor-WxYsAmz8.js",
+      "_news-slider-D0xxsmi7.js",
+      "_qr-scanner-B4zfAtOc.js"
+    ]
+  },
+  "resources/js/components/QRScanner.jsx": {
+    "file": "assets/QRScanner-BfvqQXZN.js",
+    "name": "QRScanner",
+    "src": "resources/js/components/QRScanner.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_react-vendor-WxYsAmz8.js",
+      "_qr-scanner-B4zfAtOc.js",
+      "resources/js/app.js",
+      "resources/js/components/AttendanceSuccess.jsx",
+      "_icon-pack-D8t0f58e.js"
+    ]
+  },
+  "resources/js/public-scanner.js": {
+    "file": "assets/public-scanner-D69jNrF7.js",
+    "name": "public-scanner",
+    "src": "resources/js/public-scanner.js",
+    "isEntry": true,
+    "imports": [
+      "_qr-scanner-B4zfAtOc.js"
+    ]
+  },
+  "resources/js/qr-print.js": {
+    "file": "assets/qr-print-Ds8GU4fw.js",
+    "name": "qr-print",
+    "src": "resources/js/qr-print.js",
+    "isEntry": true,
+    "imports": [
+      "_browser-C8KFpyF2.js",
+      "_qr-scanner-B4zfAtOc.js"
+    ]
+  },
+  "resources/js/rpg-3d.js": {
+    "file": "assets/rpg-3d-DMYgfPu4.js",
+    "name": "rpg-3d",
+    "src": "resources/js/rpg-3d.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_three-vendor-Bi-aTaoL.js"
+    ]
+  },
+  "resources/js/rpg-beta-3d.js": {
+    "file": "assets/rpg-beta-3d-DVXsmnpM.js",
+    "name": "rpg-beta-3d",
+    "src": "resources/js/rpg-beta-3d.js",
+    "isEntry": true,
+    "imports": [
+      "_three-vendor-Bi-aTaoL.js"
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+<?php
+
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+/*
+|--------------------------------------------------------------------------
+| cPanel public_html front controller
+|--------------------------------------------------------------------------
+|
+| Pakai file ini saat source Laravel berada di:
+| /home/pkgj2934/pembinaan-karakter-generus
+|
+| dan document root domain berada di:
+| /home/pkgj2934/public_html
+|
+*/
+
+$appRoot = realpath(__DIR__ . '/../pembinaan-karakter-generus');
+
+if ($appRoot === false) {
+    http_response_code(500);
+    exit('Laravel app root tidak ditemukan.');
+}
+
+if (file_exists($maintenance = $appRoot . '/storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+require $appRoot . '/vendor/autoload.php';
+
+$app = require_once $appRoot . '/bootstrap/app.php';
+$app->usePublicPath(__DIR__);
+
+$kernel = $app->make(Kernel::class);
+
+$response = $kernel->handle(
+    $request = Request::capture()
+)->send();
+
+$kernel->terminate($request, $response);

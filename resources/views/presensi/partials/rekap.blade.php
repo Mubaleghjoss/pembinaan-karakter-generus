@@ -1,0 +1,341 @@
+{{-- Rekap Presensi Tab Content --}}
+<div class="space-y-6">
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+        <div class="pkg-card-soft rounded-2xl p-3 sm:p-4">
+            <div class="flex items-center">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gray-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <div class="ml-2 sm:ml-3">
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Total</p>
+                        <p class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white" x-text="stats.total || 0"></p>
+                    </div>
+            </div>
+        </div>
+
+        <div class="pkg-card-soft rounded-2xl p-3 sm:p-4">
+            <div class="flex items-center">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-2 sm:ml-3">
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Hadir</p>
+                        <p class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white" x-text="stats.hadir || 0"></p>
+                    </div>
+            </div>
+        </div>
+
+        <div class="pkg-card-soft rounded-2xl p-3 sm:p-4">
+            <div class="flex items-center">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-2 sm:ml-3">
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Terlambat</p>
+                        <p class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white" x-text="stats.terlambat || 0"></p>
+                    </div>
+            </div>
+        </div>
+
+        <div class="pkg-card-soft rounded-2xl p-3 sm:p-4">
+            <div class="flex items-center">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-2 sm:ml-3">
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Tidak Hadir</p>
+                        <p class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white" x-text="stats.tidak_hadir || 0"></p>
+                    </div>
+            </div>
+        </div>
+
+        <div class="pkg-card-soft col-span-2 rounded-2xl p-3 sm:col-span-1 sm:p-4">
+            <div class="flex items-center">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.25-4.5l-.02.01M6.75 6a.75.75 0 01.75-.75h10.5a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V6z" />
+                        </svg>
+                    </div>
+                    <div class="ml-2 sm:ml-3">
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Terverifikasi</p>
+                        <p class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white" x-text="stats.verified || 0"></p>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="pkg-filter-bar">
+        <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tanggal</label>
+                <input type="date" x-model="filters.tanggal" @change="loadPresensi(); loadStats()"
+                       class="w-full pkg-field text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas</label>
+                <select x-model="filters.kelas_id" @change="loadPresensi(); loadStats()"
+                        class="w-full pkg-field text-sm">
+                    <option value="">Semua Kelas</option>
+                    <template x-for="kelas in classes" :key="kelas.id">
+                        <option :value="kelas.id" x-text="kelas.nama"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                <select x-model="filters.status" @change="loadPresensi()"
+                        class="w-full pkg-field text-sm">
+                    <option value="">Semua Status</option>
+                    <option value="hadir">Hadir</option>
+                    <option value="terlambat">Terlambat</option>
+                    <option value="alpha">Tidak Hadir</option>
+                    <option value="izin">Izin</option>
+                    <option value="sakit">Sakit</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Verifikasi</label>
+                <select x-model="filters.verified" @change="loadPresensi()"
+                        class="w-full pkg-field text-sm">
+                    <option value="">Semua</option>
+                    <option value="1">Terverifikasi</option>
+                    <option value="0">Belum Verifikasi</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button @click="loadPresensi(); loadStats();" 
+                        class="pkg-btn-primary w-full py-2 px-4 font-medium">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    Filter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Ringkasan Kelompok</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Pantau siswa yang sudah hadir dan yang belum hadir per kelompok pada tanggal terpilih.</p>
+            </div>
+            <a href="{{ route('presensi.generus-recap') }}" class="btn-secondary shrink-0 px-3 py-2 text-sm">
+                Rekap Generus PKG
+            </a>
+        </div>
+
+        <div x-show="groupSummary.length === 0" class="pkg-empty-state">
+            <svg class="pkg-empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 018 0v2m-4-9a4 4 0 100-8 4 4 0 000 8zM5 21a2 2 0 01-2-2v-1a7 7 0 0114 0v1a2 2 0 01-2 2H5z" />
+            </svg>
+            <h3 class="pkg-empty-title">Belum ada pembagian kelompok</h3>
+            <p class="pkg-empty-copy">Tetapkan kelompok siswa agar rekap harian per wilayah bisa ditampilkan di sini.</p>
+        </div>
+
+        <div x-show="groupSummary.length > 0" class="grid gap-4 xl:grid-cols-3">
+            <template x-for="group in groupSummary" :key="group.key">
+                <div class="pkg-card-soft rounded-3xl border border-gray-200/80 p-5 dark:border-gray-700/80">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h4 class="text-base font-semibold text-gray-900 dark:text-white" x-text="group.label"></h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Total <span class="font-semibold" x-text="group.total_siswa"></span> siswa
+                            </p>
+                        </div>
+                        <div class="text-right text-xs text-gray-500 dark:text-gray-400">
+                            <div>Hadir: <span class="font-semibold text-green-600 dark:text-green-400" x-text="group.hadir_count"></span></div>
+                            <div>Belum hadir: <span class="font-semibold text-amber-600 dark:text-amber-400" x-text="group.belum_hadir_count"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 space-y-4">
+                        <div class="rounded-2xl border border-green-200/80 bg-green-50/80 p-4 dark:border-green-900/50 dark:bg-green-950/20">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-semibold text-green-800 dark:text-green-300">Sudah hadir</p>
+                                <span class="rounded-full bg-white/80 px-2.5 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300" x-text="group.hadir_count"></span>
+                            </div>
+                            <div x-show="group.hadir.length === 0" class="mt-3 text-sm text-green-700/80 dark:text-green-300/80">
+                                Belum ada siswa yang hadir dari kelompok ini.
+                            </div>
+                            <div x-show="group.hadir.length > 0" class="mt-3 space-y-2">
+                                <template x-for="student in group.hadir" :key="'hadir-' + group.key + '-' + student.id">
+                                    <div class="rounded-2xl bg-white/85 px-3 py-2.5 dark:bg-slate-900/60">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="student.nama"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span x-text="student.nis"></span>
+                                                    <span x-show="student.kelas"> - <span x-text="student.kelas"></span></span>
+                                                </p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-xs font-semibold text-green-700 dark:text-green-300" x-text="student.status_label"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="student.jam_masuk || '-'"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-semibold text-amber-900 dark:text-amber-300">Belum hadir</p>
+                                <span class="rounded-full bg-white/80 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" x-text="group.belum_hadir_count"></span>
+                            </div>
+                            <div x-show="group.belum_hadir.length === 0" class="mt-3 text-sm text-amber-800/80 dark:text-amber-300/80">
+                                Semua siswa pada kelompok ini sudah hadir.
+                            </div>
+                            <div x-show="group.belum_hadir.length > 0" class="mt-3 space-y-2">
+                                <template x-for="student in group.belum_hadir" :key="'belum-' + group.key + '-' + student.id">
+                                    <div class="rounded-2xl bg-white/85 px-3 py-2.5 dark:bg-slate-900/60">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="student.nama"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span x-text="student.nis"></span>
+                                                    <span x-show="student.kelas"> - <span x-text="student.kelas"></span></span>
+                                                </p>
+                                            </div>
+                                            <div class="flex flex-col items-end gap-2">
+                                                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300" x-text="student.status_label"></span>
+                                                @if($canCreateManualAttendance ?? false)
+                                                <button type="button"
+                                                        x-show="student.status === 'belum_hadir'"
+                                                        @click="selectSiswaFromRekap(student)"
+                                                        class="btn-secondary px-2.5 py-1 text-xs">
+                                                    Input
+                                                </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="pkg-panel overflow-hidden">
+        <div class="flex flex-col gap-3 border-b border-gray-200 px-6 py-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Data Presensi</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Aksi mengikuti filter tanggal, kelas, status, dan verifikasi yang aktif.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button type="button"
+                        @click="bulkVerifyAttendance()"
+                        :disabled="bulkVerifying || presensi.length === 0"
+                        class="btn-success px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50">
+                    <span x-show="!bulkVerifying">Verifikasi Semua</span>
+                    <span x-show="bulkVerifying">Memproses...</span>
+                </button>
+                <a :href="exportUrl()" class="btn-secondary px-3 py-2 text-sm">
+                    Unduh Excel
+                </a>
+                <a href="{{ route('presensi.recap') }}" class="pkg-btn-secondary px-3 py-2 text-sm">
+                    Lihat Rekap Bulanan
+                </a>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div x-show="loading" class="p-6">
+            <div class="animate-pulse space-y-4">
+                <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div x-show="!loading && presensi.length === 0" class="pkg-empty-state">
+            <svg class="pkg-empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h3 class="pkg-empty-title">Tidak ada data presensi</h3>
+            <p class="pkg-empty-copy">Coba ubah tanggal, kelas, status, atau filter verifikasi untuk melihat hasil lain.</p>
+        </div>
+
+        <!-- Table -->
+        <div x-show="!loading && presensi.length > 0" class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Siswa</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tanggal</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Jam Masuk</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Verifikasi</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="item in presensi" :key="item.id">
+                        <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-4 py-4">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <template x-if="item.siswa?.foto_url">
+                                            <img class="h-10 w-10 rounded-full object-cover" :src="item.siswa.foto_url" :alt="item.siswa?.nama" x-on:error="item.siswa.foto_url = null">
+                                        </template>
+                                        <template x-if="!item.siswa?.foto_url">
+                                            <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                                <span class="text-white font-semibold text-sm" x-text="item.siswa?.nama?.charAt(0).toUpperCase()"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white" x-text="item.siswa?.nama"></div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400" x-text="item.siswa?.nis + ' - ' + (item.siswa?.kelas?.nama || '-')"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="item.tanggal"></td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="item.jam_masuk || '-'"></td>
+                            <td class="px-4 py-4">
+                                <span class="pkg-status-badge"
+                                      :class="statusBadgeClass(item.status)"
+                                      x-text="statusLabel(item.status)"></span>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="pkg-status-badge"
+                                      :class="item.is_verified ? 'pkg-status-success' : 'pkg-status-neutral'"
+                                      x-text="item.is_verified ? 'Terverifikasi' : 'Belum'"></span>
+                            </td>
+                            <td class="px-4 py-4 text-right">
+                                <div class="flex items-center justify-end space-x-2">
+                                    <button x-show="!item.is_verified" @click="verifyAttendance(item)" 
+                                            class="rounded-lg p-1.5 text-blue-600 transition hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20" title="Verifikasi">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </button>
+                                    <button @click="editPresensi(item)" class="rounded-lg p-1.5 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
