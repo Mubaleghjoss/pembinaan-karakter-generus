@@ -77,6 +77,40 @@ mkdir -p \
 
 chmod -R u+rwX,go+rwX "$APP_ROOT/storage" "$APP_ROOT/bootstrap/cache"
 
+echo "Cek extension PHP wajib..."
+missing_extensions=()
+for extension in \
+  ctype \
+  curl \
+  dom \
+  fileinfo \
+  gd \
+  iconv \
+  mbstring \
+  openssl \
+  pdo \
+  pdo_mysql \
+  session \
+  simplexml \
+  tokenizer \
+  xml \
+  xmlreader \
+  xmlwriter \
+  zip \
+  zlib
+do
+  if ! "$php_cmd" -r "exit(extension_loaded('$extension') ? 0 : 1);" >/dev/null 2>&1; then
+    missing_extensions+=("$extension")
+  fi
+done
+
+if [ "${#missing_extensions[@]}" -gt 0 ]; then
+  echo "Extension PHP 8.2 belum lengkap: ${missing_extensions[*]}"
+  echo "Aktifkan extension tersebut di cPanel -> Select PHP Version -> Extensions untuk PHP 8.2."
+  echo "Minimal untuk error DOMDocument: aktifkan dom dan xml."
+  exit 1
+fi
+
 echo "Salin asset public ke public_html..."
 mkdir -p "$PUBLIC_ROOT"
 

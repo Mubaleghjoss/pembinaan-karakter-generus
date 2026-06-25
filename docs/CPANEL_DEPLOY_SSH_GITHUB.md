@@ -165,6 +165,45 @@ Jika path itu tidak ada, coba:
 
 Script `deploy/cpanel/deploy_ssh.sh` sudah otomatis mencari PHP CLI 8.2 pada path tersebut.
 
+### Extension PHP 8.2 wajib
+
+Pastikan extension PHP 8.2 berikut aktif di cPanel:
+
+```text
+ctype
+curl
+dom
+fileinfo
+gd
+iconv
+mbstring
+openssl
+pdo
+pdo_mysql
+session
+simplexml
+tokenizer
+xml
+xmlreader
+xmlwriter
+zip
+zlib
+```
+
+Jika deploy berhenti dengan:
+
+```text
+Class "DOMDocument" not found
+```
+
+aktifkan minimal `dom` dan `xml`. Pada cPanel biasanya ada di:
+
+```text
+cPanel -> Select PHP Version -> Extensions
+```
+
+Pilih PHP 8.2, centang extension yang kurang, lalu jalankan ulang deploy.
+
 Jika website tetap menampilkan:
 
 ```text
@@ -194,7 +233,7 @@ Jika `cat ~/public_html/.htaccess` tidak menampilkan block handler sama sekali, 
 cat >> ~/public_html/.htaccess <<'EOF'
 
 # php -- BEGIN cPanel-generated handler, do not edit
-# Set the “alt-php82” package as the default “PHP” programming language.
+# Set the alt-php82 package as the default PHP programming language.
 <IfModule mime_module>
   AddHandler application/x-httpd-alt-php82 .php .php8 .phtml
 </IfModule>
