@@ -281,6 +281,17 @@ cd ~/pembinaan-karakter-generus
 mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_25_rpp_sync_schema.sql
 ```
 
+Jika import phpMyAdmin berhenti pada foreign key `materi_rpp_journals_schedule_reminder_id_foreign`, artinya ada jurnal RPP yang menunjuk event kalender yang tidak ikut ada di tabel `schedule_reminders`.
+
+Jangan import ulang penuh dulu. Jalankan SQL pemulihan ini di phpMyAdmin tab SQL, atau lewat SSH:
+
+```bash
+cd ~/pembinaan-karakter-generus
+mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_fix_2026_06_26_rpp_journal_orphan_foreigns.sql
+```
+
+SQL tersebut mempertahankan jurnalnya, tetapi mengosongkan link parent yang sudah tidak valid, lalu menambahkan foreign key yang gagal.
+
 ## 5. Deploy update berikutnya
 
 Setiap selesai push dari lokal ke GitHub, di server cukup jalankan:
