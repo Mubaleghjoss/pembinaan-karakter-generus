@@ -1,5 +1,5 @@
 // PKG Presensi Service Worker
-const CACHE_NAME = 'pkg-presensi-v7';
+const CACHE_NAME = 'pkg-presensi-v8';
 const urlsToCache = [
     '/',
     '/manifest.json',

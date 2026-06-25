@@ -717,13 +717,13 @@ Route::middleware('auth')->group(function () {
     // PWA Manifest
     Route::get('/manifest.json', function () {
         return response()->json([
-            'name' => 'PKG Presensi',
-            'short_name' => 'PKG',
-            'description' => 'Sistem Presensi QR Code untuk PKG',
+            'name' => 'Pembinaan Karakter Generus Panunggangan',
+            'short_name' => 'PKG Panunggangan',
+            'description' => 'Sistem Pembinaan Karakter Generus Panunggangan',
             'start_url' => '/',
             'display' => 'standalone',
-            'background_color' => '#1e3a5f',
-            'theme_color' => '#1e3a5f',
+            'background_color' => '#f8f6e8',
+            'theme_color' => '#10643a',
             'orientation' => 'portrait',
             'icons' => [
                 [
