@@ -120,7 +120,7 @@ if [ "$handler_written" -eq 0 ] && "$php_cmd" -r 'exit(PHP_VERSION_ID >= 80200 &
   cat >> "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
 
 # php -- BEGIN cPanel-generated handler, do not edit
-# Set the “alt-php82” package as the default “PHP” programming language.
+# Set the alt-php82 package as the default PHP programming language.
 <IfModule mime_module>
   AddHandler application/x-httpd-alt-php82 .php .php8 .phtml
 </IfModule>
