@@ -63,6 +63,7 @@ fi
 
 echo "Rapikan permission vendor dan cache Laravel..."
 if [ -d "$APP_ROOT/vendor" ]; then
+  chmod -R u+rwX,go+rX "$APP_ROOT/vendor"
   find "$APP_ROOT/vendor" -type d -exec chmod 755 {} +
   find "$APP_ROOT/vendor" -type f -exec chmod 644 {} +
 fi
