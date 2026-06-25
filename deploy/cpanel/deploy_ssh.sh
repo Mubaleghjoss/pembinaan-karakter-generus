@@ -64,8 +64,15 @@ fi
 echo "Salin asset public ke public_html..."
 mkdir -p "$PUBLIC_ROOT"
 
+htaccess_backup=""
+if [ -f "$PUBLIC_ROOT/.htaccess" ]; then
+  htaccess_backup="$(mktemp)"
+  cp "$PUBLIC_ROOT/.htaccess" "$htaccess_backup"
+fi
+
 if command -v rsync >/dev/null 2>&1; then
   rsync -a \
+    --exclude='/.htaccess' \
     --exclude='/storage' \
     --exclude='/hot' \
     --exclude='/.well-known' \
@@ -74,6 +81,36 @@ if command -v rsync >/dev/null 2>&1; then
 else
   cp -a "$APP_ROOT/public/." "$PUBLIC_ROOT/"
   rm -f "$PUBLIC_ROOT/hot"
+fi
+
+cat > "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [QSA,L]
+HTACCESS
+
+if [ -n "$htaccess_backup" ]; then
+  cpanel_handler_block="$(awk '
+    /# php -- BEGIN cPanel-generated handler/ { in_block=1 }
+    in_block { print }
+    /# php -- END cPanel-generated handler/ { in_block=0 }
+  ' "$htaccess_backup")"
+
+  if [ -n "$cpanel_handler_block" ]; then
+    {
+      echo
+      printf '%s\n' "$cpanel_handler_block"
+    } >> "$PUBLIC_ROOT/.htaccess"
+  elif grep -Eq 'x-httpd-(ea|alt)-php|ea-php[0-9]+|alt-php[0-9]+' "$htaccess_backup"; then
+    {
+      echo
+      echo '<IfModule mime_module>'
+      grep -E 'AddHandler .*x-httpd-(ea|alt)-php|SetHandler .*php' "$htaccess_backup" || true
+      echo '</IfModule>'
+    } >> "$PUBLIC_ROOT/.htaccess"
+  fi
+
+  rm -f "$htaccess_backup"
 fi
 
 cp "$APP_ROOT/deploy/cpanel/public_html_index.pembinaan-karakter-generus.php.example" "$PUBLIC_ROOT/index.php"

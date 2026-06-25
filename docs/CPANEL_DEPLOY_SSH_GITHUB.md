@@ -165,6 +165,29 @@ Jika path itu tidak ada, coba:
 
 Script `deploy/cpanel/deploy_ssh.sh` sudah otomatis mencari PHP CLI 8.2 pada path tersebut.
 
+Jika website tetap menampilkan:
+
+```text
+Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.2.0".
+```
+
+padahal MultiPHP Manager sudah PHP 8.2, penyebab paling umum adalah `public_html/.htaccess` kehilangan handler PHP cPanel saat asset public disalin. Solusi cepat:
+
+1. buka cPanel -> MultiPHP Manager;
+2. pilih domain;
+3. pilih PHP 8.2;
+4. klik Apply lagi.
+
+Setelah itu jalankan ulang:
+
+```bash
+cd ~/pembinaan-karakter-generus
+git pull origin main
+bash deploy/cpanel/deploy_ssh.sh
+```
+
+Script deploy terbaru akan mempertahankan block handler PHP cPanel di `public_html/.htaccess`.
+
 ## 2. Hubungkan public_html ke app Laravel
 
 Jalankan:
