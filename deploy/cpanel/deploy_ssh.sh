@@ -132,7 +132,7 @@ app_key_check="$(
         }
     }
 
-    $key = trim($key, "\"'");
+    $key = trim($key, chr(34).chr(39));
 
     if ($key === "") {
         echo "missing";
