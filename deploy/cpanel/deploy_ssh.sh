@@ -111,6 +111,61 @@ if [ "${#missing_extensions[@]}" -gt 0 ]; then
   exit 1
 fi
 
+echo "Cek APP_KEY Laravel..."
+app_key_check="$(
+  APP_ROOT="$APP_ROOT" "$php_cmd" -r '
+    $envPath = getenv("APP_ROOT")."/.env";
+    $key = "";
+
+    if (is_readable($envPath)) {
+        foreach (file($envPath, FILE_IGNORE_NEW_LINES) as $line) {
+            $line = trim($line);
+
+            if ($line === "" || $line[0] === "#") {
+                continue;
+            }
+
+            if (str_starts_with($line, "APP_KEY=")) {
+                $key = trim(substr($line, 8));
+                break;
+            }
+        }
+    }
+
+    $key = trim($key, "\"'");
+
+    if ($key === "") {
+        echo "missing";
+        exit(1);
+    }
+
+    $raw = str_starts_with($key, "base64:")
+        ? base64_decode(substr($key, 7), true)
+        : $key;
+
+    if ($raw === false) {
+        echo "invalid";
+        exit(1);
+    }
+
+    $length = strlen($raw);
+
+    if ($length !== 16 && $length !== 32) {
+        echo "invalid_length";
+        exit(1);
+    }
+
+    echo "ok";
+  ' 2>/dev/null || true
+)"
+
+if [ "$app_key_check" != "ok" ]; then
+  echo "APP_KEY di .env server kosong atau tidak valid."
+  echo "Jalankan: $php_cmd artisan key:generate --force"
+  echo "Lalu jalankan ulang script deploy."
+  exit 1
+fi
+
 echo "Salin asset public ke public_html..."
 mkdir -p "$PUBLIC_ROOT"
 

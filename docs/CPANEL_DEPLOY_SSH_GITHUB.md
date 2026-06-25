@@ -140,6 +140,22 @@ Jika website sudah HTTPS, tambahkan:
 SESSION_SECURE_COOKIE=true
 ```
 
+Pastikan `APP_KEY` server tidak kosong. Jika website menampilkan 500 dan log Laravel berisi:
+
+```text
+Unsupported cipher or incorrect key length
+```
+
+jalankan:
+
+```bash
+cd ~/pembinaan-karakter-generus
+/opt/alt/php82/usr/bin/php artisan key:generate --force
+/opt/alt/php82/usr/bin/php artisan optimize:clear
+```
+
+Lalu jalankan ulang deploy. Catatan: mengganti `APP_KEY` akan membuat session login lama tidak valid. Untuk deploy pertama ini aman.
+
 Catatan PHP cPanel:
 
 MultiPHP Manager mengubah PHP untuk domain/website. Terminal cPanel bisa tetap memakai system PHP lama, misalnya PHP 7.4. Jika command `php artisan ...` menampilkan:
