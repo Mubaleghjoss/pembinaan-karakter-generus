@@ -140,6 +140,31 @@ Jika website sudah HTTPS, tambahkan:
 SESSION_SECURE_COOKIE=true
 ```
 
+Catatan PHP cPanel:
+
+MultiPHP Manager mengubah PHP untuk domain/website. Terminal cPanel bisa tetap memakai system PHP lama, misalnya PHP 7.4. Jika command `php artisan ...` menampilkan:
+
+```text
+Composer detected issues in your platform:
+Your Composer dependencies require a PHP version ">= 8.2.0"
+```
+
+pakai PHP 8.2 eksplisit:
+
+```bash
+/opt/alt/php82/usr/bin/php -v
+/opt/alt/php82/usr/bin/php artisan optimize:clear
+```
+
+Jika path itu tidak ada, coba:
+
+```bash
+/opt/cpanel/ea-php82/root/usr/bin/php -v
+/opt/cpanel/ea-php82/root/usr/bin/php artisan optimize:clear
+```
+
+Script `deploy/cpanel/deploy_ssh.sh` sudah otomatis mencari PHP CLI 8.2 pada path tersebut.
+
 ## 2. Hubungkan public_html ke app Laravel
 
 Jalankan:

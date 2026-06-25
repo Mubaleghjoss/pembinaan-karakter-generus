@@ -6,6 +6,36 @@ PUBLIC_ROOT="${PUBLIC_ROOT:-$HOME/public_html}"
 
 cd "$APP_ROOT"
 
+php_cmd=""
+for candidate in \
+  "/opt/alt/php82/usr/bin/php" \
+  "/opt/cpanel/ea-php82/root/usr/bin/php" \
+  "php82" \
+  "php"
+do
+  if [ -x "$candidate" ]; then
+    candidate_path="$candidate"
+  elif command -v "$candidate" >/dev/null 2>&1; then
+    candidate_path="$(command -v "$candidate")"
+  else
+    continue
+  fi
+
+  php_version_id="$("$candidate_path" -r 'echo PHP_VERSION_ID;' 2>/dev/null || echo 0)"
+  if [ "$php_version_id" -ge 80200 ]; then
+    php_cmd="$candidate_path"
+    break
+  fi
+done
+
+if [ -z "$php_cmd" ]; then
+  echo "PHP CLI 8.2 tidak ditemukan."
+  echo "Coba cek path PHP 8.2 di cPanel, misalnya /opt/alt/php82/usr/bin/php atau /opt/cpanel/ea-php82/root/usr/bin/php."
+  exit 1
+fi
+
+echo "Memakai PHP CLI: $php_cmd ($("$php_cmd" -r 'echo PHP_VERSION;'))"
+
 composer_cmd=""
 if command -v composer >/dev/null 2>&1; then
   composer_cmd="composer"
@@ -68,9 +98,9 @@ mkdir -p \
 rm -f "$PUBLIC_ROOT/hot"
 
 echo "Refresh cache Laravel..."
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+"$php_cmd" artisan optimize:clear
+"$php_cmd" artisan config:cache
+"$php_cmd" artisan route:cache
+"$php_cmd" artisan view:cache
 
 echo "Deploy selesai."
