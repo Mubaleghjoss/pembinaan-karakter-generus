@@ -6,7 +6,7 @@
 <div class="py-12 min-h-screen">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Back Button -->
-        <div class="mb-6">
+        <div class="mb-6" data-reveal="left">
             <a href="{{ route('public.index') }}" class="inline-flex items-center font-medium pkg-link-accent">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -16,7 +16,7 @@
         </div>
 
         <!-- Article -->
-        <article class="pkg-surface rounded-2xl overflow-hidden">
+        <article class="pkg-surface rounded-2xl overflow-hidden" data-reveal="zoom">
             <!-- Cover Image -->
             @if($berita->cover_path)
                 <div class="relative h-96 overflow-hidden">
@@ -54,7 +54,7 @@
 
                 <!-- Image Gallery -->
                 @if($berita->images && count($berita->images) > 0)
-                    <div class="mb-8">
+                    <div class="mb-8" data-reveal="up">
                         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Dokumentasi</h2>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                             @foreach($berita->images as $index => $image)
@@ -194,7 +194,7 @@
 
                 <!-- PDF Download -->
                 @if($berita->pdf_path)
-                    <div class="pkg-panel-gradient rounded-xl p-6 border-2 border-blue-200 dark:border-slate-700">
+                    <div class="pkg-panel-gradient rounded-xl p-6 border-2 border-blue-200 dark:border-slate-700" data-reveal="up">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <div class="bg-red-500 w-12 h-12 rounded-lg flex items-center justify-center mr-4">
@@ -223,11 +223,11 @@
         </article>
 
         <!-- Related News -->
-        <div class="mt-12">
+        <div class="mt-12" data-reveal="up">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Berita Lainnya</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 @foreach($relatedNews as $item)
-                    <a href="{{ route('public.berita', $item->slug) }}" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow dark:bg-slate-900 dark:shadow-black/30">
+                    <a href="{{ route('public.berita', $item->slug) }}" class="pkg-list-card block overflow-hidden dark:bg-slate-900 dark:shadow-black/30">
                         <div class="relative h-40 overflow-hidden">
                             @if($item->cover_path)
                                 <img src="{{ asset('storage/' . $item->cover_path) }}" alt="{{ $item->judul }}" class="w-full h-full object-cover">

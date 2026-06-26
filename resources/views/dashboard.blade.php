@@ -3,26 +3,65 @@
 @section('title', 'Dashboard - PKG Presensi')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900" x-data="dashboardData('{{ route('dashboard.secondary-panels') }}')" x-init="loadSecondaryPanels()">
+<div class="min-h-screen" x-data="dashboardData('{{ route('dashboard.secondary-panels') }}')" x-init="loadSecondaryPanels()">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-purple-600 to-blue-600 pb-32">
-        <div class="w-full px-4 sm:px-6 lg:px-8 py-10">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="text-white mb-4 md:mb-0">
-                    <h1 class="text-3xl font-bold">Dashboard</h1>
-                    <p class="mt-2 text-purple-100 text-lg">
-                        Selamat datang, <span class="font-semibold">{{ auth()->user()->username }}</span>!
+    <div class="w-full px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
+        <div class="pkg-hero-shell rounded-[2rem] px-6 py-7 sm:px-8 lg:px-10 lg:py-10" data-reveal="zoom">
+            <div class="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.8fr)] lg:items-center">
+                <div>
+                    <span class="pkg-glass-badge text-sm font-semibold">
+                        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.75)]"></span>
+                        Ringkasan aktivitas PKG hari ini
+                    </span>
+                    <h1 class="mt-5 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl lg:text-5xl">
+                        Dashboard operasional yang lebih rapi, fokus, dan mudah dipantau.
+                    </h1>
+                    <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
+                        Selamat datang, <span class="font-semibold text-slate-900 dark:text-white">{{ auth()->user()->username }}</span>.
+                        Semua ringkasan presensi, tugas, dan tindak lanjut penting dirangkum dalam tampilan yang lebih konsisten.
                     </p>
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <div class="pkg-inline-stat" data-reveal="left">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/12 text-emerald-600 dark:bg-emerald-500/18 dark:text-emerald-300">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Status</p>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white">{{ $hasScheduleToday ? 'Agenda aktif hari ini' : 'Mode ringkasan umum' }}</p>
+                            </div>
+                        </div>
+                        <div class="pkg-inline-stat" data-reveal="right">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/12 text-sky-600 dark:bg-sky-500/18 dark:text-sky-300">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Hari Ini</p>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white">{{ \Carbon\Carbon::now()->locale('id')->isoFormat('dddd, D MMMM Y') }}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="text-white text-right hidden md:block">
-                    <p class="text-sm text-purple-200 uppercase tracking-wider">Hari ini</p>
-                    <p class="text-2xl font-bold">{{ \Carbon\Carbon::now()->locale('id')->isoFormat('dddd, D MMMM Y') }}</p>
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                    <div class="pkg-section-surface p-5" data-reveal="left">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Presensi siswa</p>
+                        <p class="mt-3 text-3xl font-black text-slate-950 dark:text-white">{{ $totalSiswa }}</p>
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Total siswa yang sudah terdata di sistem.</p>
+                    </div>
+                    <div class="pkg-section-surface p-5" data-reveal="right">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Tindak lanjut</p>
+                        <p class="mt-3 text-3xl font-black text-slate-950 dark:text-white">{{ $laporanPending }}</p>
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Laporan penyaksian yang masih menunggu aksi.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="w-full px-4 sm:px-6 lg:px-8 -mt-24">
+    <div class="w-full px-4 pb-6 pt-6 sm:px-6 lg:px-8">
         <!-- Pamong Attendance Alert (Only for Teacher when schedule is open) -->
         @if(auth()->user()->usesPamongPermissionSystem() && $attendanceScheduleOpen)
             @if($myAttendanceToday)
@@ -98,7 +137,7 @@
         @endif
 
         @if(isset($journalTasks) && $journalTasks->isNotEmpty())
-            <section class="pkg-panel mb-6 p-5 shadow-lg">
+            <section class="pkg-panel mb-6 p-5 shadow-lg" data-reveal="up">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Jurnal RPP Perlu Ditindaklanjuti</h2>
@@ -125,9 +164,9 @@
         @endif
 
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
             <!-- Total Siswa (always visible) -->
-            <div class="pkg-panel-lg p-6 transform hover:-translate-y-1 transition-all duration-300">
+            <div class="pkg-panel-lg pkg-metric-card p-6 transform hover:-translate-y-1 transition-all duration-300">
                 <div class="flex items-center justify-between mb-4">
                     <div class="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
                         <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +181,7 @@
 
             @if($hasScheduleToday)
             <!-- Hadir -->
-            <div class="pkg-panel-lg p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+            <div class="pkg-panel-lg pkg-metric-card p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                  @click="showStudentList('hadir', 'Siswa Hadir Hari Ini', {{ json_encode($attendanceStats['siswa_hadir']) }})">
                 <div class="flex items-center justify-between mb-4">
                     <div class="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
@@ -158,7 +197,7 @@
             </div>
 
             <!-- Terlambat -->
-            <div class="pkg-panel-lg p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+            <div class="pkg-panel-lg pkg-metric-card p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                  @click="showStudentList('terlambat', 'Siswa Terlambat Hari Ini', {{ json_encode($attendanceStats['siswa_terlambat']) }})">
                 <div class="flex items-center justify-between mb-4">
                     <div class="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-lg">
@@ -174,7 +213,7 @@
             </div>
 
             <!-- Alpha -->
-            <div class="pkg-panel-lg p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+            <div class="pkg-panel-lg pkg-metric-card p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                  @click="showStudentList('alpha', 'Siswa Belum Hadir Hari Ini', {{ json_encode($attendanceStats['siswa_alpha']) }})">
                 <div class="flex items-center justify-between mb-4">
                     <div class="bg-red-100 dark:bg-red-900 p-3 rounded-lg">
@@ -190,7 +229,7 @@
             </div>
             @else
             <!-- LEADERBOARD shown when no schedule today -->
-            <div class="lg:col-span-3 pkg-panel-lg p-6">
+            <div class="lg:col-span-3 pkg-panel-lg pkg-metric-card p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <div class="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-lg">
@@ -230,11 +269,11 @@
 
         <!-- Pamong Attendance Cards (Admin Only) -->
         @if(auth()->user()->hasRole('admin') && !empty($pamongAttendanceStats))
-        <div class="mb-6">
+        <div class="mb-6" data-reveal="up">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 px-1">Presensi Pamong Hari Ini</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <!-- Total Pamong -->
-                <div class="pkg-panel-lg p-6 transform hover:-translate-y-1 transition-all duration-300">
+                <div class="pkg-panel-lg pkg-metric-card p-6 transform hover:-translate-y-1 transition-all duration-300">
                     <div class="flex items-center justify-between mb-4">
                         <div class="bg-indigo-100 dark:bg-indigo-900 p-3 rounded-lg">
                             <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,7 +287,7 @@
                 </div>
 
                 <!-- Hadir -->
-                <div class="pkg-panel-lg p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                <div class="pkg-panel-lg pkg-metric-card p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                      @click="showPamongList('hadir', 'Pamong Hadir Hari Ini', {{ json_encode($pamongAttendanceStats['pamong_hadir']) }})">
                     <div class="flex items-center justify-between mb-4">
                         <div class="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
@@ -264,7 +303,7 @@
                 </div>
 
                 <!-- Terlambat -->
-                <div class="pkg-panel-lg p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                <div class="pkg-panel-lg pkg-metric-card p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                      @click="showPamongList('terlambat', 'Pamong Terlambat Hari Ini', {{ json_encode($pamongAttendanceStats['pamong_terlambat']) }})">
                     <div class="flex items-center justify-between mb-4">
                         <div class="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-lg">
@@ -280,7 +319,7 @@
                 </div>
 
                 <!-- Alpha -->
-                <div class="pkg-panel-lg p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                <div class="pkg-panel-lg pkg-metric-card p-6 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                      @click="showPamongList('alpha', 'Pamong Belum Hadir Hari Ini', {{ json_encode($pamongAttendanceStats['pamong_alpha']) }})">
                     <div class="flex items-center justify-between mb-4">
                         <div class="bg-red-100 dark:bg-red-900 p-3 rounded-lg">
@@ -299,7 +338,7 @@
         @endif
 
         <!-- Second Row Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 gap-6 mb-8 md:grid-cols-3" data-reveal="up">
             <!-- Tugas PKG Aktif -->
             <div class="pkg-panel-lg p-6">
                 <div class="flex items-center gap-4">
@@ -356,7 +395,7 @@
             </div>
         </div>
 
-        <div class="mb-8">
+        <div class="mb-8" data-reveal="up">
             <div x-show="secondaryPanelsLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-6">
                     <div class="pkg-panel-lg p-6">
@@ -642,6 +681,7 @@ function dashboardData(secondaryPanelsUrl) {
                     throw new Error('Gagal memuat panel tambahan dashboard');
                 }
                 this.secondaryPanelsHtml = await response.text();
+                window.pkgRefreshScrollReveal?.();
             } catch (error) {
                 console.error(error);
                 this.secondaryPanelsError = 'Panel tambahan dashboard gagal dimuat. Silakan refresh halaman.';
@@ -670,4 +710,3 @@ function dashboardData(secondaryPanelsUrl) {
 </script>
 @endpush
 @endsection
-

@@ -33,13 +33,25 @@
 
         <div>
             <label for="username" class="form-label">Username</label>
-            <input type="text" name="username" id="username" value="{{ old('username') }}" class="form-input py-3" placeholder="Default: NIS anak" required autofocus>
+            <div class="relative">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <input type="text" name="username" id="username" value="{{ old('username') }}" class="form-input pkg-field-icon-left py-3" placeholder="Default: NIS anak" required autofocus>
+            </div>
         </div>
 
         <div>
             <label for="password" class="form-label">Password</label>
             <div class="relative">
-                <input type="password" name="password" id="password" class="form-input py-3 pr-12" placeholder="Masukkan password" required>
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8"/>
+                    </svg>
+                </div>
+                <input type="password" name="password" id="password" class="form-input pkg-field-icon-left pkg-field-icon-right py-3" placeholder="Masukkan password" required>
                 <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                     <svg id="eye-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>

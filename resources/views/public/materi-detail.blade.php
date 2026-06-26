@@ -6,7 +6,7 @@
 <div class="py-12 min-h-screen">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Back Button -->
-        <div class="mb-6">
+        <div class="mb-6" data-reveal="left">
             <a href="{{ route('materi.index') }}" class="inline-flex items-center font-medium pkg-link-accent">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -16,7 +16,7 @@
         </div>
 
         <!-- Materi Card -->
-        <div class="pkg-surface rounded-2xl overflow-hidden">
+        <div class="pkg-surface rounded-2xl overflow-hidden" data-reveal="zoom">
             <!-- Header -->
             <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white">
                 <div class="flex items-center gap-2 text-blue-200 text-sm mb-2">
@@ -26,6 +26,17 @@
                     {{ $materi->bulan ? $materi->bulan->format('F Y') : '-' }}
                 </div>
                 <h1 class="text-3xl font-bold">{{ $materi->judul }}</h1>
+                <div class="mt-5 flex flex-wrap gap-2">
+                    @if($materi->folder)
+                        <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">{{ $materi->folder->name }}</span>
+                    @endif
+                    @if($materi->hasPdfFiles())
+                        <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">{{ $materi->pdf_count }} PDF</span>
+                    @endif
+                    @if($materi->youtube_embed_url)
+                        <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">Video</span>
+                    @endif
+                </div>
             </div>
 
             <!-- Description -->
@@ -52,7 +63,7 @@
                 
                 <div class="space-y-3">
                     @foreach($materi->pdf_files as $index => $pdf)
-                    <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden dark:bg-slate-900/70 dark:border-slate-800">
+                    <div class="pkg-list-card overflow-hidden dark:bg-slate-900/70">
                         <div class="p-4 flex items-center justify-between flex-wrap gap-3">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">

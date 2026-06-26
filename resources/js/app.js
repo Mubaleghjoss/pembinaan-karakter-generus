@@ -126,6 +126,7 @@ let fullCalendarLoaderPromise;
 let html5QrcodeLoaderPromise;
 let chartJsLoaderPromise;
 let qrCodeLoaderPromise;
+let scrollRevealObserver;
 
 async function loadFullCalendar() {
     if (!fullCalendarLoaderPromise) {
@@ -172,6 +173,94 @@ async function loadQrCode() {
     return qrCodeLoaderPromise;
 }
 
+function shouldSkipReveal(element) {
+    if (!(element instanceof HTMLElement)) {
+        return true;
+    }
+
+    if (element.dataset.revealProcessed === 'true') {
+        return true;
+    }
+
+    if (element.closest('.modal, [x-cloak], [hidden], [aria-hidden="true"]')) {
+        return true;
+    }
+
+    if (element.offsetParent === null && !element.classList.contains('fixed')) {
+        return true;
+    }
+
+    return false;
+}
+
+function initializeScrollReveal(scope = document) {
+    const root = document.documentElement;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const candidates = Array.from(scope.querySelectorAll([
+        '[data-reveal]',
+        'main .pkg-panel',
+        'main .pkg-panel-lg',
+        'main .pkg-card',
+        'main .pkg-card-soft',
+        'main .pkg-page-header',
+        'main .pkg-empty-state',
+        'main .table-responsive',
+        'main .pkg-section-surface',
+        'main .pkg-hero-shell',
+        'main .pkg-inline-stat',
+    ].join(', ')));
+
+    if (!candidates.length) {
+        return;
+    }
+
+    root.classList.add('reveal-ready');
+
+    if (prefersReducedMotion) {
+        candidates.forEach((element) => {
+            element.dataset.revealProcessed = 'true';
+            element.classList.add('is-visible');
+        });
+        return;
+    }
+
+    if (!scrollRevealObserver) {
+        scrollRevealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) {
+                    return;
+                }
+
+                entry.target.classList.add('is-visible');
+                scrollRevealObserver.unobserve(entry.target);
+            });
+        }, {
+            threshold: 0.14,
+            rootMargin: '0px 0px -12% 0px',
+        });
+    }
+
+    let revealIndex = 0;
+
+    candidates.forEach((element) => {
+        if (shouldSkipReveal(element)) {
+            return;
+        }
+
+        if (!element.hasAttribute('data-reveal')) {
+            element.setAttribute('data-reveal', 'up');
+        }
+
+        const stagger = (revealIndex % 6) * 90;
+        element.style.setProperty('--reveal-delay', `${stagger}ms`);
+        element.dataset.revealProcessed = 'true';
+        scrollRevealObserver.observe(element);
+        revealIndex += 1;
+    });
+}
+
+window.pkgRefreshScrollReveal = initializeScrollReveal;
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize components
@@ -181,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeFormValidation();
     initializeQRScanner();
     initializeFeatureMounts();
+    initializeScrollReveal();
 
     const flashSuccessMessage = sessionStorage.getItem('pkgActionSuccess');
     if (flashSuccessMessage) {

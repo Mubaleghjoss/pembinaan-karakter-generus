@@ -7,16 +7,41 @@
 @section('content')
 <section class="bg-slate-50 py-10 dark:bg-slate-950">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="pkg-page-header">
-            <div>
-                <h1 class="pkg-page-heading">Materi PKG</h1>
-                <p class="pkg-page-subheading">Materi aktif yang tersedia untuk siswa, orang tua, dan pengunjung.</p>
+        <div class="pkg-public-hero-card p-6 sm:p-8 lg:p-10 mb-6" data-reveal="zoom">
+            <div class="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.72fr)] lg:items-center">
+                <div class="pkg-page-header !mb-0">
+                    <div>
+                        <span class="pkg-glass-badge text-sm font-semibold">Pusat materi pembelajaran</span>
+                        <h1 class="pkg-page-heading mt-5">Materi PKG</h1>
+                        <p class="pkg-page-subheading">Materi aktif yang tersedia untuk siswa, orang tua, dan pengunjung.</p>
+                    </div>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                    <div class="pkg-inline-stat">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Koleksi</p>
+                            <p class="text-lg font-black text-slate-950 dark:text-white">{{ $materi->total() }}</p>
+                        </div>
+                    </div>
+                    <div class="pkg-inline-stat">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Folder</p>
+                            <p class="text-lg font-black text-slate-950 dark:text-white">{{ $materiFolders->count() }}</p>
+                        </div>
+                    </div>
+                    <div class="pkg-inline-stat">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Akses</p>
+                            <p class="text-lg font-black text-slate-950 dark:text-white">Publik</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         @include('public.partials.calendar-materi-tabs', ['activePublicTab' => 'materi'])
 
-        <form method="GET" action="{{ route('materi.index') }}" class="pkg-filter-bar mb-6">
+        <form method="GET" action="{{ route('materi.index') }}" class="pkg-filter-bar mb-6" data-reveal="up">
             <div class="flex flex-wrap gap-3">
                 <input
                     type="text"
@@ -40,7 +65,7 @@
         </form>
 
         @if($materiFolders->isNotEmpty())
-            <div class="mb-6 flex gap-2 overflow-x-auto pb-1">
+            <div class="mb-6 flex gap-2 overflow-x-auto pb-1" data-reveal="up">
                 <a href="{{ route('materi.index', request()->except('folder_id', 'page')) }}" class="btn-secondary shrink-0 px-3 py-2 text-xs {{ request()->filled('folder_id') ? '' : 'ring-2 ring-emerald-500' }}">
                     Semua Folder
                 </a>
@@ -57,7 +82,7 @@
         @endif
 
         @if($materi->isEmpty())
-            <div class="pkg-empty-state">
+            <div class="pkg-empty-state" data-reveal="up">
                 <svg class="pkg-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/>
                 </svg>
@@ -67,7 +92,7 @@
         @else
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 @foreach($materi as $item)
-                    <article class="pkg-panel flex h-full flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
+                    <article class="pkg-list-card flex h-full flex-col overflow-hidden" data-reveal="up">
                         <div class="border-b border-slate-200 bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white dark:border-slate-800">
                             <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-white/80">
                                 <span>{{ $item->bulan?->translatedFormat('F Y') ?? 'Tanpa bulan' }}</span>

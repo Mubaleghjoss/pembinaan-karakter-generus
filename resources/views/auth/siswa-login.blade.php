@@ -33,13 +33,25 @@
 
         <div>
             <label for="nis" class="form-label">NIS</label>
-            <input type="text" name="nis" id="nis" value="{{ old('nis') }}" class="form-input py-3" placeholder="Masukkan NIS" required autofocus>
+            <div class="relative">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+                <input type="text" name="nis" id="nis" value="{{ old('nis') }}" class="form-input pkg-field-icon-left py-3" placeholder="Masukkan NIS" required autofocus>
+            </div>
         </div>
 
         <div>
             <label for="password" class="form-label">Password</label>
             <div class="relative">
-                <input type="password" name="password" id="password" class="form-input py-3 pr-12" placeholder="Masukkan password" required>
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8"/>
+                    </svg>
+                </div>
+                <input type="password" name="password" id="password" class="form-input pkg-field-icon-left pkg-field-icon-right py-3" placeholder="Masukkan password" required>
                 <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                     <svg id="eye-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -80,6 +92,10 @@
             </svg>
             <span>Login dengan Sidik Jari</span>
         </button>
+    </div>
+
+    <div class="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50 px-4 py-3 text-center text-xs text-blue-800 dark:border-blue-900/70 dark:bg-blue-950/40 dark:text-blue-200">
+        Gunakan NIS aktif yang terdaftar. Setelah masuk, kamu bisa lanjut ke materi, tugas PKG, dan game karakter.
     </div>
 @endsection
 

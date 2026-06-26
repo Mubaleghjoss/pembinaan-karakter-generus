@@ -27,20 +27,35 @@
 @section('content')
 <div class="py-12 min-h-screen">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="pkg-page-header items-center text-center mb-10">
-            <div>
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6 shadow-2xl">
-                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
-                </svg>
+        <section class="pkg-public-hero-card p-6 sm:p-8 lg:p-10 mb-8" data-reveal="zoom">
+            <div class="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.7fr)] lg:items-center">
+                <div>
+                    <span class="pkg-glass-badge text-sm font-semibold">
+                        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.72)]"></span>
+                        Presensi digital
+                    </span>
+                    <h1 class="pkg-page-heading mt-5 text-4xl">Scan presensi lebih cepat dan lebih jelas.</h1>
+                    <p class="pkg-page-subheading mt-3 text-base sm:text-lg">Arahkan kamera ke QR Code untuk mencatat kehadiran secara aman dengan tampilan yang lebih rapi dan mudah dipahami.</p>
                 </div>
-                <h1 class="pkg-page-heading text-4xl">Scan Presensi</h1>
-                <p class="pkg-page-subheading text-xl">Scan QR Code Anda untuk mencatat kehadiran secara cepat dan aman.</p>
+                <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                    <div class="pkg-hero-kpi">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Status</p>
+                        <p class="text-lg font-black text-slate-950 dark:text-white">{{ $scheduleStatusLabel }}</p>
+                    </div>
+                    <div class="pkg-hero-kpi">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Mode</p>
+                        <p class="text-lg font-black text-slate-950 dark:text-white">QR Camera</p>
+                    </div>
+                    <div class="pkg-hero-kpi">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Akses</p>
+                        <p class="text-lg font-black text-slate-950 dark:text-white">Instan</p>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
 
         <!-- Active Attendance Activities -->
-        <div class="pkg-surface rounded-2xl p-6 mb-8 border-2 {{ $isOpen ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800' }}">
+        <div class="pkg-surface rounded-2xl p-6 mb-8 border-2 {{ $isOpen ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800' }}" data-reveal="up">
             <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <p class="text-sm font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Kegiatan Presensi Aktif</p>
@@ -58,7 +73,7 @@
             </div>
 
             @forelse($scheduleCards as $scheduleCard)
-                <div class="mb-4 rounded-xl border border-slate-200 bg-white p-4 last:mb-0 dark:border-slate-800 dark:bg-slate-950/60">
+                <div class="pkg-list-card mb-4 rounded-xl p-4 last:mb-0 dark:bg-slate-950/60">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <div class="flex flex-wrap items-center gap-2">
@@ -129,7 +144,7 @@
         </div>
 
         <!-- Scanner Component -->
-        <div class="max-w-md mx-auto pkg-panel-lg overflow-hidden">
+        <div class="max-w-md mx-auto pkg-panel-lg overflow-hidden" data-reveal="up">
             <div class="p-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center">
                 <h2 class="text-2xl font-bold mb-1">Scan QR Code</h2>
                 <p class="text-blue-100 text-sm">Arahkan kamera ke QR Code Peserta</p>
@@ -219,7 +234,7 @@
         </div>
 
         <!-- Instructions -->
-        <div class="pkg-surface rounded-2xl p-8 mt-8">
+        <div class="pkg-surface rounded-2xl p-8 mt-8" data-reveal="up">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <svg class="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -252,7 +267,7 @@
         </div>
 
         <!-- Tips -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mt-6 dark:bg-amber-950/30 dark:border-amber-700">
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mt-6 dark:bg-amber-950/30 dark:border-amber-700" data-reveal="up">
             <div class="flex items-start">
                 <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>

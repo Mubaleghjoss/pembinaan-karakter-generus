@@ -6,6 +6,11 @@
     $authSubheading = trim($__env->yieldContent('auth_subheading', $siteSettings['site_name'] ?? 'Pembinaan Karakter Generus'));
     $authCardTitle = trim($__env->yieldContent('auth_card_title', 'Masuk'));
     $authCardCopy = trim($__env->yieldContent('auth_card_copy', 'Gunakan akun Anda untuk melanjutkan.'));
+    $authQuickStats = [
+        ['label' => 'Akses', 'value' => 'Cepat'],
+        ['label' => 'Tema', 'value' => 'Seragam'],
+        ['label' => 'Login', 'value' => 'Aman'],
+    ];
 @endphp
 <!DOCTYPE html>
 <html lang="id" class="h-full">
@@ -35,8 +40,38 @@
             Mode
         </button>
 
-        <div class="pkg-auth-shell">
-            <div class="mb-8 text-center">
+        <div class="pkg-auth-shell max-w-6xl">
+            <div class="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(380px,0.8fr)] lg:items-center">
+                <div class="space-y-6" data-reveal="left">
+                    <div class="text-center lg:text-left">
+                        <div class="mb-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] pkg-chip">
+                            {{ $authBadge }}
+                        </div>
+                        <h1 class="pkg-page-title text-3xl font-black sm:text-4xl lg:text-5xl">{{ $authHeading }}</h1>
+                        <p class="pkg-page-copy mx-auto mt-3 max-w-xl text-sm sm:text-base lg:mx-0">{{ $authSubheading }}</p>
+                    </div>
+
+                    <div class="pkg-auth-sidecard p-5 lg:p-6">
+                        <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            @foreach($authQuickStats as $item)
+                                <div class="pkg-auth-stat">
+                                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl text-white" style="background: linear-gradient(135deg, var(--auth-accent), var(--auth-accent-secondary)); box-shadow: 0 18px 34px color-mix(in srgb, var(--auth-accent) 24%, transparent);">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{{ $item['label'] }}</p>
+                                        <p class="mt-1 text-sm font-bold text-slate-900 dark:text-white">{{ $item['value'] }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div data-reveal="right">
+                    <div class="mb-8 text-center">
                 <div class="pkg-auth-mark">
                     @if(!empty($siteSettings['site_logo']))
                         <img src="{{ asset('storage/' . $siteSettings['site_logo']) }}" alt="Logo" width="56" height="56" class="h-14 w-14 object-contain" style="width:3.5rem;height:3.5rem;object-fit:contain;" decoding="async" fetchpriority="high">
@@ -44,13 +79,6 @@
                         @yield('auth_mark')
                     @endif
                 </div>
-
-                <div class="mb-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] pkg-chip">
-                    {{ $authBadge }}
-                </div>
-
-                <h1 class="pkg-page-title text-3xl font-black sm:text-4xl">{{ $authHeading }}</h1>
-                <p class="pkg-page-copy mx-auto mt-2 max-w-md text-sm sm:text-base">{{ $authSubheading }}</p>
             </div>
 
             <div class="pkg-auth-panel">
@@ -65,6 +93,8 @@
 
             <div class="mt-6 text-center">
                 @yield('auth_footer')
+            </div>
+                </div>
             </div>
         </div>
     </div>

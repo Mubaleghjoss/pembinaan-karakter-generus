@@ -6,19 +6,44 @@
 
 <section class="{{ $calendarSectionClass ?? 'bg-slate-50 py-10 dark:bg-slate-950' }}">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="pkg-page-header">
-            <div>
-                <h2 class="pkg-page-heading">{{ $calendarTitle }}</h2>
-                <p class="pkg-page-subheading">{{ $calendarSubtitle }}</p>
+        <div class="pkg-public-hero-card p-6 sm:p-8 lg:p-10 mb-6" data-reveal="zoom">
+            <div class="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.72fr)] lg:items-center">
+                <div class="pkg-page-header !mb-0">
+                    <div>
+                        <span class="pkg-glass-badge text-sm font-semibold">Agenda terstruktur</span>
+                        <h2 class="pkg-page-heading mt-5">{{ $calendarTitle }}</h2>
+                        <p class="pkg-page-subheading">{{ $calendarSubtitle }}</p>
+                    </div>
+                    @if($showCalendarLink ?? false)
+                        <a href="{{ route('public.calendar.index') }}" class="btn-secondary text-sm">Buka Kalender</a>
+                    @endif
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                    <div class="pkg-inline-stat">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Kategori</p>
+                            <p class="text-lg font-black text-slate-950 dark:text-white">4 Jenis</p>
+                        </div>
+                    </div>
+                    <div class="pkg-inline-stat">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Tampilan</p>
+                            <p class="text-lg font-black text-slate-950 dark:text-white">Bulan & Daftar</p>
+                        </div>
+                    </div>
+                    <div class="pkg-inline-stat">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Akses</p>
+                            <p class="text-lg font-black text-slate-950 dark:text-white">Publik</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            @if($showCalendarLink ?? false)
-                <a href="{{ route('public.calendar.index') }}" class="btn-secondary text-sm">Buka Kalender</a>
-            @endif
         </div>
 
         @include('public.partials.calendar-materi-tabs', ['activePublicTab' => 'calendar'])
 
-        <div class="pkg-panel p-4 mb-6">
+        <div class="pkg-panel p-4 mb-6" data-reveal="up">
             <div class="flex flex-wrap gap-4 text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-yellow-500"></span>
@@ -39,7 +64,7 @@
             </div>
         </div>
 
-        <div class="pkg-panel p-4">
+        <div class="pkg-panel p-4" data-reveal="up">
             <div id="{{ $calendarId }}" data-public-calendar data-events-url="{{ route('public.calendar.events') }}"></div>
         </div>
     </div>

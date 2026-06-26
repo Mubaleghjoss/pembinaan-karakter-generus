@@ -88,6 +88,56 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
 
+        .pkg-public-shell {
+            position: relative;
+            overflow-x: clip;
+            background:
+                radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary, #0f766e) 16%, transparent), transparent 26%),
+                radial-gradient(circle at top right, color-mix(in srgb, var(--color-secondary, #0369a1) 14%, transparent), transparent 22%),
+                linear-gradient(180deg, color-mix(in srgb, var(--pkg-bg-top, #f8fafc) 92%, white), var(--pkg-bg-base, #f8fafc) 42%, var(--pkg-bg-bottom, #edf5ff) 100%);
+        }
+
+        .pkg-public-shell::before,
+        .pkg-public-shell::after {
+            content: "";
+            position: fixed;
+            inset: auto;
+            width: 18rem;
+            height: 18rem;
+            border-radius: 9999px;
+            filter: blur(80px);
+            opacity: 0.22;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .pkg-public-shell::before {
+            top: 3rem;
+            left: -4rem;
+            background: var(--color-primary, #0f766e);
+        }
+
+        .pkg-public-shell::after {
+            right: -5rem;
+            bottom: 8rem;
+            background: var(--color-secondary, #0369a1);
+        }
+
+        .pkg-public-nav {
+            background: color-mix(in srgb, var(--color-primary, #0f766e) 78%, rgba(7, 13, 31, 0.92));
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .pkg-public-footer {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top left, rgba(13, 148, 136, 0.18), transparent 24%),
+                radial-gradient(circle at right center, rgba(14, 165, 233, 0.16), transparent 20%),
+                linear-gradient(180deg, rgba(2, 6, 23, 0.98), rgba(15, 23, 42, 1));
+        }
+
         .pkg-brand-logo-motion {
             animation: pkgLogoFloat 5s ease-in-out infinite;
             transform-origin: center;
@@ -183,7 +233,7 @@
     </style>
     @stack('styles')
 </head>
-<body class="h-full text-slate-900 dark:text-slate-100">
+<body class="pkg-public-shell h-full text-slate-900 dark:text-slate-100">
     <div id="pkg-pwa-launch-splash" class="pkg-pwa-launch-splash" aria-hidden="true">
         <div class="pkg-pwa-launch-card">
             <img class="pkg-pwa-launch-logo" src="{{ asset('images/icons/pkg-pwa-2026-192.png') }}" alt="Logo PKG" width="132" height="132">
@@ -192,7 +242,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="gradient-primary shadow-lg sticky top-0 z-50">
+    <nav class="pkg-public-nav shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center space-x-4">
@@ -290,7 +340,7 @@
                 </div>
                 
                 <!-- Mobile menu button -->
-                <button class="md:hidden text-white" onclick="toggleMobileMenu()">
+                <button class="md:hidden rounded-full border border-white/15 bg-white/10 p-3 text-white shadow-lg backdrop-blur-sm transition hover:bg-white/20" onclick="toggleMobileMenu()">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
@@ -299,19 +349,45 @@
         </div>
         
         <!-- Mobile menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white/10 backdrop-blur-lg">
-            <div class="px-4 py-4 space-y-3">
-                <a href="{{ route('public.index') }}" class="block text-white hover:text-white/80 font-medium">Beranda</a>
-                <a href="{{ route('public.rpg.index') }}" class="block text-white hover:text-white/80 font-medium">Game 29 Karakter</a>
-                <a href="{{ route('public.calendar.index') }}" class="block text-white hover:text-white/80 font-medium">Kalender</a>
-                <a href="{{ route('materi.index') }}" class="block text-white hover:text-white/80 font-medium">Materi</a>
-                <a href="{{ route('public.scanner') }}" class="block text-white hover:text-white/80 font-medium">Scan Presensi</a>
-                <a href="{{ route('laporan-penyaksian.create') }}" class="block text-white hover:text-white/80 font-medium flex items-center">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    Lapor PKG
-                </a>
+        <div id="mobile-menu" class="pkg-mobile-menu-shell hidden md:hidden">
+            <div class="px-4 py-4">
+                <div class="pkg-mobile-menu-card space-y-3 p-3">
+                    <a href="{{ route('public.index') }}" class="pkg-mobile-menu-link">
+                        <span class="pkg-mobile-menu-icon">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"/></svg>
+                        </span>
+                        <span>Beranda</span>
+                    </a>
+                    <a href="{{ route('public.rpg.index') }}" class="pkg-mobile-menu-link">
+                        <span class="pkg-mobile-menu-icon">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 3.75h4.5l1.5 3H18a2.25 2.25 0 012.25 2.25v6A2.25 2.25 0 0118 17.25h-1.5l-1.5 3h-6l-1.5-3H6A2.25 2.25 0 013.75 15v-6A2.25 2.25 0 016 6.75h2.25l1.5-3z"/></svg>
+                        </span>
+                        <span>Game 29 Karakter</span>
+                    </a>
+                    <a href="{{ route('public.calendar.index') }}" class="pkg-mobile-menu-link">
+                        <span class="pkg-mobile-menu-icon">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </span>
+                        <span>Kalender</span>
+                    </a>
+                    <a href="{{ route('materi.index') }}" class="pkg-mobile-menu-link">
+                        <span class="pkg-mobile-menu-icon">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/></svg>
+                        </span>
+                        <span>Materi</span>
+                    </a>
+                    <a href="{{ route('public.scanner') }}" class="pkg-mobile-menu-link">
+                        <span class="pkg-mobile-menu-icon">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        </span>
+                        <span>Scan Presensi</span>
+                    </a>
+                    <a href="{{ route('laporan-penyaksian.create') }}" class="pkg-mobile-menu-link">
+                        <span class="pkg-mobile-menu-icon">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </span>
+                        <span>Lapor PKG</span>
+                    </a>
                 @if(Auth::guard('siswa')->check())
                     <a href="{{ route('siswa.dashboard') }}" class="block bg-white text-primary px-4 py-2 rounded-lg font-bold text-center flex items-center justify-center">
                         <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -356,17 +432,18 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     Install Aplikasi
                 </button>
+                </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="min-h-screen">
+    <main class="relative z-10 min-h-screen">
         @yield('content')
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-white py-12 mt-10 md:mt-20">
+    <footer class="pkg-public-footer text-white py-12 mt-10 md:mt-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>

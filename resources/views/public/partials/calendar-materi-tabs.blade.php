@@ -1,11 +1,11 @@
 @php
     $activePublicTab = $activePublicTab ?? 'calendar';
-    $tabBaseClass = 'pkg-tab-link inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition';
-    $tabActiveClass = 'bg-emerald-600 text-white shadow-sm dark:bg-emerald-500 dark:text-slate-950';
-    $tabIdleClass = 'bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-200';
+    $tabBaseClass = 'pkg-public-tab';
+    $tabActiveClass = 'bg-emerald-600 text-white shadow-[0_16px_34px_rgba(13,148,136,0.22)] dark:bg-emerald-500 dark:text-slate-950';
+    $tabIdleClass = 'bg-white/80 text-slate-700 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-200 dark:hover:border-emerald-900/60';
 @endphp
 
-<nav class="mb-6 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-slate-100/80 p-2 dark:border-slate-800 dark:bg-slate-950/70" aria-label="Navigasi Kalender dan Materi">
+<nav class="pkg-public-tab-shell mb-6" aria-label="Navigasi Kalender dan Materi" data-reveal="up">
     <a href="{{ route('public.calendar.index') }}" class="{{ $tabBaseClass }} {{ $activePublicTab === 'calendar' ? $tabActiveClass : $tabIdleClass }}">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
