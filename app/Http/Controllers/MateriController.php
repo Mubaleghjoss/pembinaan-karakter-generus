@@ -11,6 +11,7 @@ use App\Models\Siswa;
 use App\Models\SiswaMateriTargetProgress;
 use App\Models\User;
 use App\Services\MateriRppPlanner;
+use App\Support\MateriFolderTree;
 use App\Support\TargetGrade;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -48,7 +50,7 @@ class MateriController extends Controller
         $canDeleteMateri = $this->canManageMateri('delete');
         $canManageMateri = $canCreateMateri || $canEditMateri || $canDeleteMateri;
 
-        $query = Materi::with(['creator', 'folder']);
+        $query = Materi::with(['creator', 'folder.parent']);
 
         if (! $canManageMateri) {
             $query->where('materi.is_active', true);
@@ -75,25 +77,35 @@ class MateriController extends Controller
         }
 
         if ($request->filled('folder_id')) {
-            $query->where('materi.materi_folder_id', $request->integer('folder_id'));
+            $folderIds = app(MateriFolderTree::class)->folderAndDescendantIds(
+                $request->integer('folder_id'),
+                ! $canManageMateri
+            );
+
+            $query->whereIn('materi.materi_folder_id', $folderIds);
         }
 
         $materi = $query
-            ->leftJoin('materi_folders', 'materi.materi_folder_id', '=', 'materi_folders.id')
+            ->leftJoin('materi_folders as folders', 'materi.materi_folder_id', '=', 'folders.id')
+            ->leftJoin('materi_folders as parent_folders', 'folders.parent_id', '=', 'parent_folders.id')
             ->select('materi.*')
-            ->orderByRaw('COALESCE(materi_folders.sort_order, 999999)')
-            ->orderBy('materi_folders.name')
+            ->orderByRaw('COALESCE(parent_folders.sort_order, folders.sort_order, 999999)')
+            ->orderByRaw('COALESCE(parent_folders.name, folders.name)')
+            ->orderByRaw('COALESCE(folders.sort_order, 999999)')
+            ->orderBy('folders.name')
             ->orderBy('materi.bulan', 'desc')
             ->paginate(10)
             ->withQueryString();
         $materiFolders = $this->materiFolders();
         $folderCards = $this->folderCards($canManageMateri);
+        $folderOptions = $this->folderOptions($canManageMateri);
         $targetAnalytics = $this->buildTargetProgressAnalytics($request, Auth::user());
 
         return view('materi.index', compact(
             'materi',
             'materiFolders',
             'folderCards',
+            'folderOptions',
             'targetAnalytics',
             'canCreateMateri',
             'canEditMateri',
@@ -430,13 +442,18 @@ class MateriController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:120',
+            'parent_id' => 'nullable|integer|exists:materi_folders,id',
             'description' => 'nullable|string|max:500',
         ]);
 
-        $maxOrder = MateriFolder::max('sort_order') ?? 0;
+        $parentId = $validated['parent_id'] ?? null;
+        $maxOrder = MateriFolder::query()
+            ->where('parent_id', $parentId)
+            ->max('sort_order') ?? 0;
 
         MateriFolder::create([
             'name' => $validated['name'],
+            'parent_id' => $parentId,
             'description' => $validated['description'] ?? null,
             'sort_order' => $maxOrder + 1,
             'is_active' => true,
@@ -447,8 +464,16 @@ class MateriController extends Controller
 
     public function updateFolder(Request $request, MateriFolder $folder)
     {
+        $excludedParentIds = app(MateriFolderTree::class)->folderAndDescendantIds((int) $folder->id, false);
+
         $validated = $request->validate([
             'name' => 'required|string|max:120',
+            'parent_id' => [
+                'nullable',
+                'integer',
+                'exists:materi_folders,id',
+                Rule::notIn($excludedParentIds),
+            ],
             'description' => 'nullable|string|max:500',
             'sort_order' => 'nullable|integer|min:0|max:999999',
             'is_active' => 'nullable|boolean',
@@ -456,6 +481,7 @@ class MateriController extends Controller
 
         $folder->update([
             'name' => $validated['name'],
+            'parent_id' => $validated['parent_id'] ?? null,
             'description' => $validated['description'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
             'is_active' => $request->boolean('is_active'),
@@ -549,6 +575,7 @@ class MateriController extends Controller
             abort(404);
         }
 
+        $materi->loadMissing('folder.parent');
         $rppJournals = MateriRppJournal::query()
             ->with(['creator', 'updater', 'scheduleReminder'])
             ->where('materi_id', $materi->id)
@@ -792,6 +819,7 @@ class MateriController extends Controller
             abort(404);
         }
 
+        $materi->loadMissing('folder.parent');
         return view('siswa.materi.show', compact('materi'));
     }
 
@@ -808,6 +836,7 @@ class MateriController extends Controller
             abort(404);
         }
 
+        $materi->loadMissing('folder.parent');
         return view('ortu.materi.show', compact('materi'));
     }
 
@@ -1021,53 +1050,32 @@ class MateriController extends Controller
 
     private function activeMateriListing(): Collection
     {
-        $folders = MateriFolder::active()
-            ->whereHas('materi', fn ($query) => $query->active())
-            ->with(['materi' => fn ($query) => $query->active()->orderBy('bulan', 'desc')->orderBy('created_at', 'desc')])
-            ->withCount(['materi as materi_count' => fn ($query) => $query->active()])
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-        $unfiledMateri = Materi::active()
-            ->whereNull('materi_folder_id')
-            ->orderBy('bulan', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        if ($unfiledMateri->isNotEmpty()) {
-            $folder = new MateriFolder([
-                'name' => 'Tanpa Folder',
-                'description' => 'Materi yang belum dikelompokkan.',
-                'sort_order' => 999999,
-                'is_active' => true,
-            ]);
-            $folder->setRelation('materi', $unfiledMateri);
-            $folder->materi_count = $unfiledMateri->count();
-            $folders->push($folder);
-        }
-
-        return $folders;
+        return app(MateriFolderTree::class)->folderTree(
+            includeInactiveFolders: false,
+            includeInactiveMateri: false,
+            includeEmptyRoots: true,
+            includeUnfiled: true
+        );
     }
 
     private function materiFolders(): Collection
     {
-        return MateriFolder::active()
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        return app(MateriFolderTree::class)->folderOptions();
     }
 
     private function folderCards(bool $includeInactiveMateri = false): Collection
     {
-        return MateriFolder::query()
-            ->withCount(['materi as materi_count' => function ($query) use ($includeInactiveMateri) {
-                if (! $includeInactiveMateri) {
-                    $query->active();
-                }
-            }])
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        return app(MateriFolderTree::class)->folderTree(
+            includeInactiveFolders: $includeInactiveMateri,
+            includeInactiveMateri: $includeInactiveMateri,
+            includeEmptyRoots: true,
+            includeUnfiled: true
+        );
+    }
+
+    private function folderOptions(bool $includeInactiveFolders = false): Collection
+    {
+        return app(MateriFolderTree::class)->folderOptions($includeInactiveFolders);
     }
 
     private function canManageMateri(string $operation): bool

@@ -47,7 +47,7 @@
                 <select name="materi_folder_id" id="materi_folder_id" class="w-full px-3 py-2 pkg-field">
                     <option value="">Tanpa Folder</option>
                     @foreach($materiFolders as $folder)
-                        <option value="{{ $folder->id }}" @selected((int) old('materi_folder_id') === $folder->id)>{{ $folder->name }}</option>
+                        <option value="{{ $folder->id }}" @selected((int) old('materi_folder_id') === $folder->id)>{{ $folder->display_name ?? $folder->name }}</option>
                     @endforeach
                 </select>
             </div>

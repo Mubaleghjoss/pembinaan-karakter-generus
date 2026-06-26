@@ -1,72 +1,95 @@
 @php
-    $calendarTitle = $calendarTitle ?? 'Kalender Aktivitas';
-    $calendarSubtitle = $calendarSubtitle ?? 'Agenda PKG, RPP materi, presensi, dan tenggat tugas.';
     $calendarId = $calendarId ?? 'public-calendar-' . uniqid();
+    $showInlineMateri = $showInlineMateri ?? false;
+    $homeMateri = $homeMateri ?? collect();
+    $homeMateriFolders = $homeMateriFolders ?? collect();
+    $homeMateriCount = $homeMateriCount ?? $homeMateri->count();
+    $homeMateriFolderCount = $homeMateriFolderCount ?? 0;
+    $calendarPanelId = $calendarId . '-calendar-panel';
+    $materiPanelId = $calendarId . '-materi-panel';
 @endphp
 
-<section class="{{ $calendarSectionClass ?? 'bg-slate-50 py-10 dark:bg-slate-950' }}">
+<section
+    class="{{ $calendarSectionClass ?? 'bg-slate-50 py-10 dark:bg-slate-950' }}"
+    @if($showInlineMateri) x-data="{ activePublicPanel: 'calendar' }" @endif
+>
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="pkg-public-hero-card p-6 sm:p-8 lg:p-10 mb-6" data-reveal="zoom">
-            <div class="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.72fr)] lg:items-center">
-                <div class="pkg-page-header !mb-0">
+        @include('public.partials.calendar-materi-tabs', [
+            'activePublicTab' => 'calendar',
+            'usePanelTabs' => $showInlineMateri,
+            'calendarPanelId' => $calendarPanelId,
+            'materiPanelId' => $materiPanelId,
+        ])
+
+        <div
+            @if($showInlineMateri)
+                id="{{ $calendarPanelId }}"
+                x-show="activePublicPanel === 'calendar'"
+                x-transition.opacity
+                role="tabpanel"
+            @endif
+        >
+            <div class="pkg-panel p-4 mb-6" data-reveal="up">
+                <div class="flex flex-wrap gap-4 text-sm text-gray-700 dark:text-gray-300">
+                    <div class="flex items-center gap-2">
+                        <span class="h-3 w-3 rounded-full bg-yellow-500"></span>
+                        <span>Tugas PKG</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="h-3 w-3 rounded-full" style="background-color: #F97316"></span>
+                        <span>Jadwal dari Admin</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="h-3 w-3 rounded-full" style="background-color: #14B8A6"></span>
+                        <span>RPP Materi</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="h-3 w-3 rounded-full" style="background-color: #0F766E"></span>
+                        <span>Jadwal Presensi</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pkg-panel p-4" data-reveal="up">
+                <div id="{{ $calendarId }}" data-public-calendar data-events-url="{{ route('public.calendar.events') }}"></div>
+            </div>
+        </div>
+
+        @if($showInlineMateri)
+            <div
+                id="{{ $materiPanelId }}"
+                class="space-y-5"
+                x-show="activePublicPanel === 'materi'"
+                x-cloak
+                x-transition.opacity
+                role="tabpanel"
+            >
+                <div class="pkg-page-header mb-0">
                     <div>
-                        <span class="pkg-glass-badge text-sm font-semibold">Agenda terstruktur</span>
-                        <h2 class="pkg-page-heading mt-5">{{ $calendarTitle }}</h2>
-                        <p class="pkg-page-subheading">{{ $calendarSubtitle }}</p>
+                        <h3 class="pkg-page-heading text-2xl">Folder Materi</h3>
+                        <p class="pkg-page-subheading">
+                            {{ $homeMateriCount }} materi aktif dalam {{ $homeMateriFolderCount }} folder utama. Buka folder utama untuk melihat daftar materi.
+                        </p>
                     </div>
-                    @if($showCalendarLink ?? false)
-                        <a href="{{ route('public.calendar.index') }}" class="btn-secondary text-sm">Buka Kalender</a>
-                    @endif
+                    <a href="{{ route('materi.index') }}" class="btn-secondary text-sm">Lihat Semua Materi</a>
                 </div>
-                <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                    <div class="pkg-inline-stat">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Kategori</p>
-                            <p class="text-lg font-black text-slate-950 dark:text-white">4 Jenis</p>
-                        </div>
+
+                @if($homeMateriFolders->isEmpty())
+                    <div class="pkg-empty-state">
+                        <svg class="pkg-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <p class="pkg-empty-title">Belum ada materi</p>
+                        <p class="pkg-empty-copy">Materi publik belum tersedia.</p>
                     </div>
-                    <div class="pkg-inline-stat">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Tampilan</p>
-                            <p class="text-lg font-black text-slate-950 dark:text-white">Bulan & Daftar</p>
-                        </div>
-                    </div>
-                    <div class="pkg-inline-stat">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Akses</p>
-                            <p class="text-lg font-black text-slate-950 dark:text-white">Publik</p>
-                        </div>
-                    </div>
-                </div>
+                @else
+                    @include('materi.partials.read-only-folder-tree', [
+                        'folders' => $homeMateriFolders,
+                        'detailRouteName' => 'public.materi.show',
+                    ])
+                @endif
             </div>
-        </div>
-
-        @include('public.partials.calendar-materi-tabs', ['activePublicTab' => 'calendar'])
-
-        <div class="pkg-panel p-4 mb-6" data-reveal="up">
-            <div class="flex flex-wrap gap-4 text-sm text-gray-700 dark:text-gray-300">
-                <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full bg-yellow-500"></span>
-                    <span>Tugas PKG</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full" style="background-color: #F97316"></span>
-                    <span>Jadwal dari Admin</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full" style="background-color: #14B8A6"></span>
-                    <span>RPP Materi</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full" style="background-color: #0F766E"></span>
-                    <span>Jadwal Presensi</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="pkg-panel p-4" data-reveal="up">
-            <div id="{{ $calendarId }}" data-public-calendar data-events-url="{{ route('public.calendar.events') }}"></div>
-        </div>
+        @endif
     </div>
 
     <div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" data-public-calendar-modal>

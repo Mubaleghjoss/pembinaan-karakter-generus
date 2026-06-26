@@ -7,6 +7,7 @@ use App\Models\AttendanceSchedule;
 use App\Models\Materi;
 use App\Models\MateriFolder;
 use App\Models\ThemeSetting;
+use App\Support\MateriFolderTree;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -22,7 +23,31 @@ class PublicController extends Controller
             ->latest('published_at')
             ->paginate(9);
 
-        return view('public.index', compact('berita', 'theme'));
+        $homeMateri = $this->applyPublicMateriOrdering($this->publicMateriBaseQuery())
+            ->take(6)
+            ->get();
+        $homeMateriFolders = app(MateriFolderTree::class)->folderTree(
+            includeInactiveFolders: false,
+            includeInactiveMateri: false,
+            includeEmptyRoots: true,
+            includeUnfiled: false
+        );
+        $homeMateriCount = Materi::query()
+            ->active()
+            ->count();
+        $homeMateriFolderCount = MateriFolder::query()
+            ->active()
+            ->root()
+            ->count();
+
+        return view('public.index', compact(
+            'berita',
+            'theme',
+            'homeMateri',
+            'homeMateriFolders',
+            'homeMateriCount',
+            'homeMateriFolderCount'
+        ));
     }
 
     public function berita($slug)
@@ -150,9 +175,7 @@ class PublicController extends Controller
 
         $theme = ThemeSetting::current();
 
-        $query = Materi::query()
-            ->with('folder')
-            ->active();
+        $query = $this->publicMateriBaseQuery();
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
@@ -169,26 +192,25 @@ class PublicController extends Controller
         }
 
         if ($request->filled('folder_id')) {
-            $query->where('materi_folder_id', $request->integer('folder_id'));
+            $query->whereIn(
+                'materi.materi_folder_id',
+                app(MateriFolderTree::class)->folderAndDescendantIds($request->integer('folder_id'))
+            );
         }
 
-        $materi = $query
-            ->leftJoin('materi_folders', 'materi.materi_folder_id', '=', 'materi_folders.id')
-            ->select('materi.*')
-            ->orderByRaw('COALESCE(materi_folders.sort_order, 999999)')
-            ->orderBy('materi_folders.name')
-            ->orderByDesc('materi.bulan')
+        $materi = $this->applyPublicMateriOrdering($query)
             ->paginate(12)
             ->withQueryString();
 
-        $materiFolders = MateriFolder::query()
-            ->active()
-            ->withCount(['materi as materi_count' => fn ($query) => $query->active()])
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $materiFolders = $this->publicMateriFolders();
+        $materiFolderTree = app(MateriFolderTree::class)->folderTree(
+            includeInactiveFolders: false,
+            includeInactiveMateri: false,
+            includeEmptyRoots: true,
+            includeUnfiled: true
+        );
 
-        return view('public.materi-index', compact('theme', 'materi', 'materiFolders'));
+        return view('public.materi-index', compact('theme', 'materi', 'materiFolders', 'materiFolderTree'));
     }
 
     public function materiShow(Materi $materi)
@@ -197,9 +219,35 @@ class PublicController extends Controller
             abort(404);
         }
 
+        $materi->loadMissing('folder.parent');
         $theme = ThemeSetting::current();
 
         return view('public.materi-detail', compact('materi', 'theme'));
+    }
+
+    private function publicMateriBaseQuery()
+    {
+        return Materi::query()
+            ->with('folder.parent')
+            ->active();
+    }
+
+    private function applyPublicMateriOrdering($query)
+    {
+        return $query
+            ->leftJoin('materi_folders as folders', 'materi.materi_folder_id', '=', 'folders.id')
+            ->leftJoin('materi_folders as parent_folders', 'folders.parent_id', '=', 'parent_folders.id')
+            ->select('materi.*')
+            ->orderByRaw('COALESCE(parent_folders.sort_order, folders.sort_order, 999999)')
+            ->orderByRaw('COALESCE(parent_folders.name, folders.name)')
+            ->orderByRaw('COALESCE(folders.sort_order, 999999)')
+            ->orderBy('folders.name')
+            ->orderByDesc('materi.bulan');
+    }
+
+    private function publicMateriFolders()
+    {
+        return app(MateriFolderTree::class)->folderOptions();
     }
 
     private function nextScheduleStart(AttendanceSchedule $schedule, Carbon $from): ?Carbon

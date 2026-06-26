@@ -103,13 +103,45 @@ class MateriRppFeatureTest extends TestCase
 
     public function test_public_calendar_and_homepage_render(): void
     {
+        $rootFolder = MateriFolder::firstOrCreate(
+            ['name' => 'PKG'],
+            [
+                'description' => 'Materi 29 karakter luhur.',
+                'sort_order' => 1,
+                'is_active' => true,
+            ]
+        );
+        $folder = MateriFolder::create([
+            'name' => 'Folder Publik',
+            'parent_id' => $rootFolder->id,
+            'description' => 'Folder materi yang tampil di beranda.',
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $materi = Materi::create([
+            'judul' => 'Materi Home Landing',
+            'materi_folder_id' => $folder->id,
+            'deskripsi' => 'Materi publik yang ditampilkan di panel beranda.',
+            'bulan' => '2026-06-01',
+            'is_active' => true,
+        ]);
+
         $this->get(route('public.calendar.index'))
             ->assertOk()
             ->assertSee('Kalender Aktivitas');
 
         $this->get(route('public.index'))
             ->assertOk()
-            ->assertSee('Kalender Aktivitas PKG');
+            ->assertDontSee('Kalender Aktivitas PKG')
+            ->assertDontSee('Agenda terstruktur')
+            ->assertDontSee('Akses cepat')
+            ->assertDontSee('Tampilan baru')
+            ->assertSee('home-calendar-materi-panel')
+            ->assertSee('Folder Materi')
+            ->assertSee('PKG')
+            ->assertSee('Folder Publik')
+            ->assertSee('Materi Home Landing')
+            ->assertSee(route('public.materi.show', $materi), false);
     }
 
     public function test_admin_can_copy_and_export_month_calendar(): void
@@ -159,9 +191,18 @@ class MateriRppFeatureTest extends TestCase
             'sort_order' => 10,
             'is_active' => true,
         ]);
+        $parent = MateriFolder::firstOrCreate(
+            ['name' => 'PKG'],
+            [
+                'description' => 'Materi 29 karakter luhur.',
+                'sort_order' => 1,
+                'is_active' => true,
+            ]
+        );
 
         $response = $this->actingAs($admin)->patch(route('materi.folders.update', $folder), [
             'name' => 'Jujur',
+            'parent_id' => $parent->id,
             'description' => 'Materi karakter jujur.',
             'sort_order' => 3,
             'is_active' => '1',
@@ -172,6 +213,7 @@ class MateriRppFeatureTest extends TestCase
         $folder->refresh();
 
         $this->assertSame('Jujur', $folder->name);
+        $this->assertSame($parent->id, $folder->parent_id);
         $this->assertSame('Materi karakter jujur.', $folder->description);
         $this->assertSame(3, $folder->sort_order);
         $this->assertTrue($folder->is_active);

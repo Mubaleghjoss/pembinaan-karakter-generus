@@ -28,7 +28,7 @@
                 <h1 class="text-3xl font-bold">{{ $materi->judul }}</h1>
                 <div class="mt-5 flex flex-wrap gap-2">
                     @if($materi->folder)
-                        <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">{{ $materi->folder->name }}</span>
+                        <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">{{ $materi->folder->display_name }}</span>
                     @endif
                     @if($materi->hasPdfFiles())
                         <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">{{ $materi->pdf_count }} PDF</span>

@@ -231,10 +231,14 @@
                 <div class="mb-4 flex justify-end">
                     <a href="{{ route('materi.index') }}" class="btn-secondary px-3 py-2 text-xs">Semua Folder</a>
                 </div>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div class="space-y-4">
                 @forelse($folderCards as $folder)
-                    <div class="pkg-card-soft p-4 transition hover:-translate-y-0.5 hover:shadow-md {{ (int) request('folder_id') === $folder->id ? 'ring-2 ring-emerald-500' : '' }}">
-                        <div class="flex items-start justify-between gap-3">
+                    @php
+                        $children = $folder->childrenTree ?? collect();
+                        $totalCount = (int) ($folder->total_materi_count ?? $folder->materi_count ?? 0);
+                    @endphp
+                    <details class="pkg-card-soft group overflow-hidden {{ (int) request('folder_id') === $folder->id ? 'ring-2 ring-emerald-500' : '' }}">
+                        <summary class="flex cursor-pointer list-none flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <p class="font-semibold text-gray-900 dark:text-white">{{ $folder->name }}</p>
                                 @if($folder->description)
@@ -244,45 +248,67 @@
                                 @endif
                                 <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">Urutan: {{ $folder->sort_order }} - {{ $folder->is_active ? 'Aktif' : 'Nonaktif' }}</p>
                             </div>
-                            <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{{ $folder->materi_count }}</span>
-                        </div>
+                            <div class="flex shrink-0 items-center gap-2">
+                                <span class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{{ $totalCount }}</span>
+                                <span class="btn-secondary px-3 py-2 text-xs">
+                                    <span class="group-open:hidden">Buka</span>
+                                    <span class="hidden group-open:inline">Tutup</span>
+                                </span>
+                            </div>
+                        </summary>
 
-                        <div class="mt-4 flex flex-wrap items-center gap-2">
-                            <a href="{{ route('materi.index', ['folder_id' => $folder->id]) }}" class="btn-secondary px-3 py-2 text-xs">Buka</a>
-                            @if($canEditMateri ?? false)
-                                <details class="group w-full">
-                                    <summary class="mt-2 cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-300">
-                                        Edit Folder
-                                    </summary>
-                                    <form method="POST" action="{{ route('materi.folders.update', $folder) }}" class="mt-3 space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-                                        @csrf
-                                        @method('PATCH')
-                                        <div>
-                                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Nama</label>
-                                            <input type="text" name="name" value="{{ old('name', $folder->name) }}" class="w-full pkg-field text-sm" required>
-                                        </div>
-                                        <div>
-                                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Keterangan</label>
-                                            <textarea name="description" rows="2" class="w-full pkg-field text-sm">{{ old('description', $folder->description) }}</textarea>
-                                        </div>
-                                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                            <div>
-                                                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Urutan</label>
-                                                <input type="number" name="sort_order" min="0" value="{{ old('sort_order', $folder->sort_order) }}" class="w-full pkg-field text-sm">
+                        <div class="space-y-3 border-t border-gray-200 p-4 dark:border-gray-700">
+                            <div class="flex flex-wrap items-center gap-2">
+                                @if($folder->exists)
+                                    <a href="{{ route('materi.index', ['folder_id' => $folder->id]) }}" class="btn-secondary px-3 py-2 text-xs">Buka Folder Ini</a>
+                                @endif
+                                @if(($canEditMateri ?? false) && $folder->exists)
+                                    <details class="group w-full">
+                                        <summary class="mt-2 cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-300">
+                                            Edit Folder
+                                        </summary>
+                                        @include('materi.partials.folder-edit-form', ['currentFolder' => $folder, 'folderOptions' => $folderOptions])
+                                    </details>
+                                @endif
+                            </div>
+
+                            @if($children->isNotEmpty())
+                                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                    @foreach($children as $child)
+                                        <div class="rounded-xl border border-gray-200 bg-white/70 p-3 dark:border-gray-700 dark:bg-gray-900/40 {{ (int) request('folder_id') === $child->id ? 'ring-2 ring-emerald-500' : '' }}">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div class="min-w-0">
+                                                    <p class="font-semibold text-gray-900 dark:text-white">{{ $child->name }}</p>
+                                                    @if($child->description)
+                                                        <p class="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">{{ $child->description }}</p>
+                                                    @else
+                                                        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Belum ada keterangan.</p>
+                                                    @endif
+                                                    <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">Urutan: {{ $child->sort_order }} - {{ $child->is_active ? 'Aktif' : 'Nonaktif' }}</p>
+                                                </div>
+                                                <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{{ $child->total_materi_count ?? $child->materi_count }}</span>
                                             </div>
-                                            <label class="mt-6 inline-flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                <input type="checkbox" name="is_active" value="1" class="pkg-check rounded" @checked(old('is_active', $folder->is_active))>
-                                                Aktif
-                                            </label>
+                                            <div class="mt-3 flex flex-wrap gap-2">
+                                                @if($child->exists)
+                                                    <a href="{{ route('materi.index', ['folder_id' => $child->id]) }}" class="btn-secondary px-3 py-2 text-xs">Buka</a>
+                                                @endif
+                                                @if(($canEditMateri ?? false) && $child->exists)
+                                                    <details class="group w-full">
+                                                        <summary class="mt-2 cursor-pointer text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-300">
+                                                            Edit Folder
+                                                        </summary>
+                                                        @include('materi.partials.folder-edit-form', ['currentFolder' => $child, 'folderOptions' => $folderOptions])
+                                                    </details>
+                                                @endif
+                                            </div>
                                         </div>
-                                        <button type="submit" class="btn-primary w-full justify-center text-xs">Simpan Folder</button>
-                                    </form>
-                                </details>
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
-                    </div>
+                    </details>
                 @empty
-                    <div class="pkg-empty-state sm:col-span-2 xl:col-span-3">
+                    <div class="pkg-empty-state">
                         <p class="pkg-empty-title">Belum ada folder</p>
                         <p class="pkg-empty-copy">Buat folder pertama untuk mengelompokkan materi.</p>
                     </div>
@@ -299,6 +325,17 @@
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Folder</label>
                     <input type="text" name="name" class="w-full pkg-field" placeholder="Contoh: Jujur" required>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Folder Induk</label>
+                    <select name="parent_id" class="w-full pkg-field">
+                        <option value="">Folder Utama</option>
+                        @foreach($folderOptions as $folder)
+                            <option value="{{ $folder->id }}" @selected((int) old('parent_id') === (int) $folder->id)>
+                                {{ $folder->display_name ?? $folder->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Keterangan</label>
@@ -318,7 +355,7 @@
             <select name="folder_id" class="px-3 py-2 pkg-field text-sm">
                 <option value="">Semua Folder</option>
                 @foreach($materiFolders as $folder)
-                    <option value="{{ $folder->id }}" @selected((int) request('folder_id') === $folder->id)>{{ $folder->name }}</option>
+                    <option value="{{ $folder->id }}" @selected((int) request('folder_id') === $folder->id)>{{ $folder->display_name ?? $folder->name }}</option>
                 @endforeach
             </select>
             <input type="month" name="bulan" value="{{ request('bulan') }}"
@@ -357,7 +394,7 @@
                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ Str::limit($item->deskripsi, 50) }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" data-label="Folder">
-                            {{ $item->folder?->name ?? 'Tanpa Folder' }}
+                            {{ $item->folder?->display_name ?? $item->folder?->name ?? 'Tanpa Folder' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" data-label="Bulan">
                             {{ $item->bulan ? $item->bulan->format('F Y') : '-' }}

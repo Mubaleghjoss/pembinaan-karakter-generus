@@ -54,7 +54,7 @@
                     <option value="">Semua Folder</option>
                     @foreach($materiFolders as $folder)
                         <option value="{{ $folder->id }}" @selected((int) request('folder_id') === $folder->id)>
-                            {{ $folder->name }}
+                            {{ $folder->display_name ?? $folder->name }}
                         </option>
                     @endforeach
                 </select>
@@ -74,11 +74,26 @@
                         href="{{ route('materi.index', array_merge(request()->except('page'), ['folder_id' => $folder->id])) }}"
                         class="btn-secondary shrink-0 px-3 py-2 text-xs {{ (int) request('folder_id') === $folder->id ? 'ring-2 ring-emerald-500' : '' }}"
                     >
-                        {{ $folder->name }}
-                        <span class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{{ $folder->materi_count }}</span>
+                        {{ $folder->display_name ?? $folder->name }}
+                        <span class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{{ $folder->total_materi_count ?? $folder->materi_count }}</span>
                     </a>
                 @endforeach
             </div>
+        @endif
+
+        @if(($materiFolderTree ?? collect())->isNotEmpty())
+            <section class="mb-8" data-reveal="up">
+                <div class="pkg-page-header mb-4">
+                    <div>
+                        <h2 class="pkg-page-heading text-2xl">Folder Materi</h2>
+                        <p class="pkg-page-subheading">Buka folder utama untuk melihat kategori dan materi di dalamnya.</p>
+                    </div>
+                </div>
+                @include('materi.partials.read-only-folder-tree', [
+                    'folders' => $materiFolderTree,
+                    'detailRouteName' => 'public.materi.show',
+                ])
+            </section>
         @endif
 
         @if($materi->isEmpty())
@@ -90,6 +105,12 @@
                 <p class="pkg-empty-copy">Materi publik belum tersedia sesuai filter yang dipilih.</p>
             </div>
         @else
+            <div class="pkg-page-header mb-4" data-reveal="up">
+                <div>
+                    <h2 class="pkg-page-heading text-2xl">Daftar Materi</h2>
+                    <p class="pkg-page-subheading">Daftar materi sesuai filter aktif.</p>
+                </div>
+            </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 @foreach($materi as $item)
                     <article class="pkg-list-card flex h-full flex-col overflow-hidden" data-reveal="up">
@@ -97,7 +118,7 @@
                             <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-white/80">
                                 <span>{{ $item->bulan?->translatedFormat('F Y') ?? 'Tanpa bulan' }}</span>
                                 @if($item->folder)
-                                    <span class="rounded-full bg-white/15 px-2 py-1">{{ $item->folder->name }}</span>
+                                    <span class="rounded-full bg-white/15 px-2 py-1">{{ $item->folder->display_name }}</span>
                                 @endif
                             </div>
                             <h2 class="mt-3 line-clamp-2 text-xl font-bold">{{ $item->judul }}</h2>
