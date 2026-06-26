@@ -80,12 +80,12 @@
         .bg-secondary { background-color: var(--color-secondary); }
         
         .hover-lift {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform var(--pkg-motion-fast, 160ms) var(--pkg-motion-enter, cubic-bezier(0.2, 0, 0, 1)), box-shadow var(--pkg-motion-fast, 160ms) var(--pkg-motion-enter, cubic-bezier(0.2, 0, 0, 1));
         }
         
         .hover-lift:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
         }
 
         .pkg-public-shell {
@@ -124,9 +124,9 @@
         }
 
         .pkg-public-nav {
-            background: color-mix(in srgb, var(--color-primary, #0f766e) 78%, rgba(7, 13, 31, 0.92));
+            background: var(--pkg-public-nav-bg, color-mix(in srgb, var(--color-primary, #0f766e) 78%, rgba(7, 13, 31, 0.92)));
             backdrop-filter: blur(18px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            border-bottom: 1px solid color-mix(in srgb, var(--pkg-border, rgba(148, 163, 184, 0.24)) 82%, transparent);
         }
 
         .pkg-public-footer {
@@ -138,14 +138,27 @@
                 linear-gradient(180deg, rgba(2, 6, 23, 0.98), rgba(15, 23, 42, 1));
         }
 
+        .pkg-theme-toggle {
+            border: 1px solid color-mix(in srgb, var(--pkg-border, rgba(148, 163, 184, 0.24)) 90%, transparent);
+            background: color-mix(in srgb, var(--pkg-shell, rgba(255, 255, 255, 0.84)) 92%, transparent);
+            color: var(--pkg-public-nav-text, #0f172a);
+            box-shadow: var(--pkg-shadow-soft, 0 18px 46px rgba(15, 23, 42, 0.08));
+        }
+
+        .pkg-theme-toggle:hover {
+            color: var(--pkg-brand, #0f766e);
+            border-color: color-mix(in srgb, var(--pkg-brand, #0f766e) 28%, transparent);
+            transform: translateY(-1px);
+        }
+
         .pkg-brand-logo-motion {
-            animation: pkgLogoFloat 5s ease-in-out infinite;
+            animation: pkgLogoFloat 6.8s ease-in-out infinite;
             transform-origin: center;
             will-change: transform;
         }
 
         .pkg-brand-title-motion {
-            animation: pkgTitleGlow 4.5s ease-in-out infinite;
+            animation: pkgTitleGlow 6s ease-in-out infinite;
             text-shadow: 0 0 0 rgba(255, 255, 255, 0);
         }
 
@@ -201,7 +214,7 @@
                 transform: translateY(0) rotate(0deg) scale(1);
             }
             50% {
-                transform: translateY(-4px) rotate(-2deg) scale(1.04);
+                transform: translateY(-2px) rotate(-0.8deg) scale(1.01);
             }
         }
 
@@ -210,7 +223,7 @@
                 text-shadow: 0 0 0 rgba(255, 255, 255, 0);
             }
             50% {
-                text-shadow: 0 0 18px rgba(255, 255, 255, 0.32);
+                text-shadow: 0 0 8px rgba(255, 255, 255, 0.14);
             }
         }
 
@@ -244,39 +257,45 @@
     <!-- Navigation -->
     <nav class="pkg-public-nav shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <div class="flex items-center space-x-4">
+            <div class="flex min-h-[4.5rem] items-center justify-between gap-3 py-3 sm:h-20 sm:py-0">
+                <div class="pkg-nav-brand flex min-w-0 items-center gap-3 sm:gap-4">
                     @if($theme->logo_path)
-                        <img src="{{ asset('storage/' . $theme->logo_path) }}" alt="Logo" width="48" height="48" class="pkg-brand-logo-motion h-12 w-12 object-contain" style="width:3rem;height:3rem;object-fit:contain;" decoding="async" fetchpriority="high">
+                        <img src="{{ asset('storage/' . $theme->logo_path) }}" alt="Logo" width="48" height="48" class="pkg-brand-logo-motion h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12" style="width:3rem;height:3rem;object-fit:contain;" decoding="async" fetchpriority="high">
                     @endif
-                    <div>
-                        <h1 class="pkg-brand-title-motion text-2xl font-bold text-white">{{ $theme->app_name }}</h1>
-                        <p class="text-sm text-white/80">{{ $theme->app_description }}</p>
+                    <div class="min-w-0">
+                        <h1 class="pkg-brand-title-motion pkg-nav-brand-title truncate text-base font-bold leading-tight sm:text-lg lg:text-2xl" style="color: var(--pkg-public-nav-text, #0f172a);">{{ $theme->app_name }}</h1>
+                        <p class="pkg-nav-brand-copy pkg-public-nav-copy mt-1 max-w-[14rem] text-[11px] leading-tight sm:max-w-[20rem] sm:text-xs lg:max-w-[28rem] lg:text-sm">{{ $theme->app_description }}</p>
                     </div>
                 </div>
                 
-                <div class="hidden md:flex items-center space-x-6">
-                    <a href="{{ route('public.index') }}" class="text-white hover:text-white/80 font-medium transition-colors">
+                <div class="hidden md:flex items-center space-x-4 lg:space-x-6">
+                    <a href="{{ route('public.index') }}" class="pkg-public-nav-link font-medium transition-colors">
                         Beranda
                     </a>
-                    <a href="{{ route('public.rpg.index') }}" class="text-white hover:text-white/80 font-medium transition-colors">
+                    <a href="{{ route('public.rpg.index') }}" class="pkg-public-nav-link font-medium transition-colors">
                         Game 29 Karakter
                     </a>
-                    <a href="{{ route('public.calendar.index') }}" class="text-white hover:text-white/80 font-medium transition-colors">
+                    <a href="{{ route('public.calendar.index') }}" class="pkg-public-nav-link font-medium transition-colors">
                         Kalender
                     </a>
-                    <a href="{{ route('materi.index') }}" class="text-white hover:text-white/80 font-medium transition-colors">
+                    <a href="{{ route('materi.index') }}" class="pkg-public-nav-link font-medium transition-colors">
                         Materi
                     </a>
-                    <a href="{{ route('public.scanner') }}" class="text-white hover:text-white/80 font-medium transition-colors">
+                    <a href="{{ route('public.scanner') }}" class="pkg-public-nav-link font-medium transition-colors">
                         Scan Presensi
                     </a>
-                    <a href="{{ route('laporan-penyaksian.create') }}" class="text-white hover:text-white/80 font-medium transition-colors flex items-center">
+                    <a href="{{ route('laporan-penyaksian.create') }}" class="pkg-public-nav-link flex items-center font-medium transition-colors">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                         Lapor PKG
                     </a>
+                    <button id="public-theme-toggle" type="button" class="pkg-theme-toggle inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition" aria-pressed="false">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>
+                        </svg>
+                        <span class="pkg-theme-toggle-label">Mode Gelap</span>
+                    </button>
                     
                     {{-- PWA Install Button (Desktop) --}}
                     <button id="pwa-install-btn" style="display: none;" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full font-bold transition-all shadow-lg flex items-center gap-2 text-sm">
@@ -340,7 +359,7 @@
                 </div>
                 
                 <!-- Mobile menu button -->
-                <button class="md:hidden rounded-full border border-white/15 bg-white/10 p-3 text-white shadow-lg backdrop-blur-sm transition hover:bg-white/20" onclick="toggleMobileMenu()">
+                <button id="mobile-menu-toggle" class="md:hidden rounded-full border border-slate-200/70 bg-white/80 p-2.5 text-slate-700 shadow-lg backdrop-blur-sm transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100" onclick="toggleMobileMenu()" aria-expanded="false" aria-controls="mobile-menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
@@ -349,45 +368,51 @@
         </div>
         
         <!-- Mobile menu -->
-        <div id="mobile-menu" class="pkg-mobile-menu-shell hidden md:hidden">
+        <div id="mobile-menu" class="pkg-mobile-menu-shell hidden md:hidden" aria-hidden="true">
             <div class="px-4 py-4">
                 <div class="pkg-mobile-menu-card space-y-3 p-3">
                     <a href="{{ route('public.index') }}" class="pkg-mobile-menu-link">
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"/></svg>
                         </span>
-                        <span>Beranda</span>
+                        <span class="pkg-mobile-menu-text">Beranda</span>
                     </a>
                     <a href="{{ route('public.rpg.index') }}" class="pkg-mobile-menu-link">
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 3.75h4.5l1.5 3H18a2.25 2.25 0 012.25 2.25v6A2.25 2.25 0 0118 17.25h-1.5l-1.5 3h-6l-1.5-3H6A2.25 2.25 0 013.75 15v-6A2.25 2.25 0 016 6.75h2.25l1.5-3z"/></svg>
                         </span>
-                        <span>Game 29 Karakter</span>
+                        <span class="pkg-mobile-menu-text">Game 29 Karakter</span>
                     </a>
                     <a href="{{ route('public.calendar.index') }}" class="pkg-mobile-menu-link">
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </span>
-                        <span>Kalender</span>
+                        <span class="pkg-mobile-menu-text">Kalender</span>
                     </a>
                     <a href="{{ route('materi.index') }}" class="pkg-mobile-menu-link">
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/></svg>
                         </span>
-                        <span>Materi</span>
+                        <span class="pkg-mobile-menu-text">Materi</span>
                     </a>
                     <a href="{{ route('public.scanner') }}" class="pkg-mobile-menu-link">
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
                         </span>
-                        <span>Scan Presensi</span>
+                        <span class="pkg-mobile-menu-text">Scan Presensi</span>
                     </a>
                     <a href="{{ route('laporan-penyaksian.create') }}" class="pkg-mobile-menu-link">
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         </span>
-                        <span>Lapor PKG</span>
+                        <span class="pkg-mobile-menu-text">Lapor PKG</span>
                     </a>
+                    <button id="public-theme-toggle-mobile" type="button" class="pkg-theme-toggle flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition" aria-pressed="false">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>
+                        </svg>
+                        <span class="pkg-theme-toggle-label">Mode Gelap</span>
+                    </button>
                 @if(Auth::guard('siswa')->check())
                     <a href="{{ route('siswa.dashboard') }}" class="block bg-white text-primary px-4 py-2 rounded-lg font-bold text-center flex items-center justify-center">
                         <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -533,8 +558,37 @@
     <script>
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
+            const toggle = document.getElementById('mobile-menu-toggle');
+            const isHidden = menu.classList.toggle('hidden');
+
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', String(!isHidden));
+            }
+
+            menu.setAttribute('aria-hidden', String(isHidden));
         }
+
+        function syncPublicThemeToggles() {
+            const isDark = window.pkgTheme && window.pkgTheme.get ? window.pkgTheme.get() : document.documentElement.classList.contains('dark');
+            document.querySelectorAll('#public-theme-toggle, #public-theme-toggle-mobile').forEach((button) => {
+                const label = button.querySelector('.pkg-theme-toggle-label');
+                if (label) {
+                    label.textContent = isDark ? 'Mode Terang' : 'Mode Gelap';
+                }
+                button.setAttribute('aria-pressed', String(isDark));
+            });
+        }
+
+        document.querySelectorAll('#public-theme-toggle, #public-theme-toggle-mobile').forEach((button) => {
+            button.addEventListener('click', function () {
+                if (window.pkgTheme && typeof window.pkgTheme.toggle === 'function') {
+                    window.pkgTheme.toggle();
+                }
+            });
+        });
+
+        window.addEventListener('pkg:theme-change', syncPublicThemeToggles);
+        syncPublicThemeToggles();
 
         // PWA launch splash shown after opening installed app.
         (function () {

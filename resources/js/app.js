@@ -190,6 +190,10 @@ function shouldSkipReveal(element) {
         return true;
     }
 
+    if (!element.hasAttribute('data-reveal') && element.closest('[data-reveal]')) {
+        return true;
+    }
+
     return false;
 }
 
@@ -198,16 +202,13 @@ function initializeScrollReveal(scope = document) {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const candidates = Array.from(scope.querySelectorAll([
         '[data-reveal]',
-        'main .pkg-panel',
-        'main .pkg-panel-lg',
-        'main .pkg-card',
-        'main .pkg-card-soft',
+        'main > section',
+        'main > div > section',
         'main .pkg-page-header',
         'main .pkg-empty-state',
         'main .table-responsive',
         'main .pkg-section-surface',
         'main .pkg-hero-shell',
-        'main .pkg-inline-stat',
     ].join(', ')));
 
     if (!candidates.length) {
@@ -241,6 +242,9 @@ function initializeScrollReveal(scope = document) {
     }
 
     let revealIndex = 0;
+    const isMobile = window.innerWidth < 768;
+    const staggerStep = isMobile ? 40 : 55;
+    const maxDelay = isMobile ? 120 : 180;
 
     candidates.forEach((element) => {
         if (shouldSkipReveal(element)) {
@@ -251,7 +255,7 @@ function initializeScrollReveal(scope = document) {
             element.setAttribute('data-reveal', 'up');
         }
 
-        const stagger = (revealIndex % 6) * 90;
+        const stagger = Math.min((revealIndex % 4) * staggerStep, maxDelay);
         element.style.setProperty('--reveal-delay', `${stagger}ms`);
         element.dataset.revealProcessed = 'true';
         scrollRevealObserver.observe(element);

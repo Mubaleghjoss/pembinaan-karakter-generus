@@ -33,6 +33,26 @@
         --pkg-shadow-lg: 0 32px 90px rgba(15, 23, 42, 0.16);
         --pkg-sidebar-surface: color-mix(in srgb, var(--color-sidebar, #ffffff) 88%, #ffffff);
         --pkg-topbar-surface: color-mix(in srgb, var(--color-topbar, #ffffff) 90%, #ffffff);
+        --pkg-public-nav-bg: color-mix(in srgb, var(--pkg-shell-strong) 82%, rgba(255, 255, 255, 0.88));
+        --pkg-public-nav-text: #0f172a;
+        --pkg-public-nav-muted: #475569;
+        --pkg-home-hero-bg:
+            radial-gradient(circle at top left, color-mix(in srgb, var(--pkg-brand) 15%, transparent), transparent 26%),
+            radial-gradient(circle at 85% 12%, color-mix(in srgb, var(--pkg-brand-secondary) 12%, transparent), transparent 24%),
+            linear-gradient(135deg, color-mix(in srgb, var(--pkg-shell-strong) 94%, #ffffff), color-mix(in srgb, var(--pkg-surface) 96%, #ffffff));
+        --pkg-home-hero-text: #0f172a;
+        --pkg-home-hero-muted: #334155;
+        --pkg-home-hero-badge-bg: rgba(255, 255, 255, 0.78);
+        --pkg-home-hero-stat-bg: rgba(255, 255, 255, 0.72);
+        --pkg-home-hero-stat-border: rgba(148, 163, 184, 0.22);
+        --pkg-motion-fast: 160ms;
+        --pkg-motion-base: 240ms;
+        --pkg-motion-slow: 320ms;
+        --pkg-motion-enter: cubic-bezier(0.2, 0, 0, 1);
+        --pkg-motion-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+        --pkg-reveal-distance-y: 18px;
+        --pkg-reveal-distance-x: 20px;
+        --pkg-reveal-scale: 0.985;
     }
 
     html {
@@ -59,6 +79,18 @@
         --pkg-shadow-lg: 0 34px 96px rgba(0, 0, 0, 0.5);
         --pkg-sidebar-surface: color-mix(in srgb, var(--color-sidebar, #ffffff) 18%, var(--color-dark, #020617));
         --pkg-topbar-surface: color-mix(in srgb, var(--color-topbar, #ffffff) 16%, var(--color-dark, #020617));
+        --pkg-public-nav-bg: color-mix(in srgb, var(--color-dark, #020617) 84%, rgba(15, 23, 42, 0.88));
+        --pkg-public-nav-text: #f8fafc;
+        --pkg-public-nav-muted: #cbd5e1;
+        --pkg-home-hero-bg:
+            radial-gradient(circle at top left, color-mix(in srgb, var(--pkg-brand) 26%, transparent), transparent 26%),
+            radial-gradient(circle at 85% 12%, color-mix(in srgb, var(--pkg-brand-secondary) 20%, transparent), transparent 24%),
+            linear-gradient(135deg, color-mix(in srgb, var(--pkg-shell-strong) 92%, rgba(15, 23, 42, 0.96)), color-mix(in srgb, var(--pkg-surface) 94%, rgba(2, 6, 23, 0.94)));
+        --pkg-home-hero-text: #f8fafc;
+        --pkg-home-hero-muted: #dbeafe;
+        --pkg-home-hero-badge-bg: rgba(15, 23, 42, 0.44);
+        --pkg-home-hero-stat-bg: rgba(15, 23, 42, 0.4);
+        --pkg-home-hero-stat-border: rgba(255, 255, 255, 0.12);
     }
 
     .theme-preview-scope {
@@ -230,6 +262,59 @@
             radial-gradient(circle at top left, rgba(13, 148, 136, 0.16), transparent 34%),
             radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.14), transparent 30%),
             linear-gradient(135deg, var(--pkg-shell-strong), var(--pkg-surface));
+    }
+
+    .pkg-public-nav-theme {
+        background: var(--pkg-public-nav-bg);
+        color: var(--pkg-public-nav-text);
+        border: 1px solid color-mix(in srgb, var(--pkg-border) 88%, transparent);
+        box-shadow: var(--pkg-shadow-soft);
+    }
+
+    .pkg-public-nav-link {
+        color: var(--pkg-public-nav-text);
+    }
+
+    .pkg-public-nav-link:hover {
+        color: var(--pkg-brand);
+    }
+
+    .pkg-public-nav-copy {
+        color: var(--pkg-public-nav-muted);
+    }
+
+    .pkg-home-hero {
+        background: var(--pkg-home-hero-bg);
+        color: var(--pkg-home-hero-text);
+    }
+
+    .pkg-home-hero h1,
+    .pkg-home-hero .pkg-home-hero-title {
+        color: var(--pkg-home-hero-text);
+    }
+
+    .pkg-home-hero-badge {
+        background: var(--pkg-home-hero-badge-bg);
+        color: var(--pkg-home-hero-text);
+        border-color: color-mix(in srgb, var(--pkg-home-hero-stat-border) 88%, transparent);
+    }
+
+    .pkg-home-hero-copy {
+        color: var(--pkg-home-hero-muted);
+    }
+
+    .pkg-home-hero-stat {
+        background: var(--pkg-home-hero-stat-bg);
+        border-color: var(--pkg-home-hero-stat-border);
+        color: var(--pkg-home-hero-text);
+    }
+
+    .pkg-home-hero-stat-label {
+        color: color-mix(in srgb, var(--pkg-home-hero-muted) 86%, transparent);
+    }
+
+    .pkg-home-hero-stat-copy {
+        color: var(--pkg-home-hero-muted);
     }
 
     .pkg-sidebar .nav-item,
