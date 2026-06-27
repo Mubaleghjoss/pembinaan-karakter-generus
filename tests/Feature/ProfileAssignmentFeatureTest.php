@@ -143,12 +143,14 @@ class ProfileAssignmentFeatureTest extends TestCase
 
     private function pamongUser(): User
     {
-        $role = Role::create([
-            'name' => User::ROLE_TEACHER,
-            'display_name' => 'Pamong',
-            'permissions' => ['view_students'],
-            'is_active' => true,
-        ]);
+        $role = Role::updateOrCreate(
+            ['name' => User::ROLE_TEACHER],
+            [
+                'display_name' => 'Pamong',
+                'permissions' => ['view_students'],
+                'is_active' => true,
+            ]
+        );
 
         return User::factory()->create([
             'role_id' => $role->id,
@@ -159,12 +161,14 @@ class ProfileAssignmentFeatureTest extends TestCase
 
     private function adminUser(): User
     {
-        $role = Role::create([
-            'name' => User::ROLE_ADMIN,
-            'display_name' => 'Administrator',
-            'permissions' => ['*'],
-            'is_active' => true,
-        ]);
+        $role = Role::updateOrCreate(
+            ['name' => User::ROLE_ADMIN],
+            [
+                'display_name' => 'Administrator',
+                'permissions' => ['*'],
+                'is_active' => true,
+            ]
+        );
 
         return User::factory()->create(['role_id' => $role->id]);
     }

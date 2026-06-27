@@ -187,6 +187,33 @@ class QrTokenServiceTest extends TestCase
             });
     }
 
+    public function test_string_config_values_generate_qr_without_type_error(): void
+    {
+        config([
+            'qrcode.token.expiry_minutes' => '45',
+            'qrcode.token.random_length' => '32',
+            'qrcode.generation.size' => '300',
+            'qrcode.generation.margin' => '10',
+        ]);
+
+        $kelas = Kelas::factory()->create();
+        $siswa = Siswa::factory()->create(['kelas_id' => $kelas->id]);
+        $now = Carbon::parse('2026-06-27 15:39:07');
+
+        Carbon::setTestNow($now);
+
+        try {
+            $qrData = $this->qrTokenService->getQrData($siswa);
+            $siswa->refresh();
+
+            $this->assertNotEmpty($qrData['token']);
+            $this->assertStringStartsWith('data:image/svg+xml;base64,', $qrData['qr_image_base64']);
+            $this->assertTrue($siswa->qr_token_expires_at->equalTo($now->copy()->addMinutes(45)));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     /**
      * **Feature: clean-code-refactoring, Property 7: QR Token Uniqueness and Expiration**
      * **Validates: Requirements 9.3**

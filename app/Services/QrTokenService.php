@@ -31,9 +31,9 @@ class QrTokenService implements QrTokenServiceInterface
     public function generate(Siswa $siswa, ?int $expiryMinutes = null): string
     {
         // Ambil konfigurasi dari config/qrcode.php dengan fallback default
-        $expiryMinutes = $expiryMinutes ?? config('qrcode.token.expiry_minutes', 60);
+        $expiryMinutes = $expiryMinutes ?? $this->integerConfig('qrcode.token.expiry_minutes', 60);
         $hashAlgorithm = config('qrcode.token.hash_algorithm', 'sha256');
-        $randomLength = config('qrcode.token.random_length', 32);
+        $randomLength = $this->integerConfig('qrcode.token.random_length', 32);
 
         /*
          * Token Generation Algorithm:
@@ -215,8 +215,8 @@ class QrTokenService implements QrTokenServiceInterface
      */
     protected function generateQrImageBase64(string $payload): string
     {
-        $size = config('qrcode.generation.size', 300);
-        $margin = config('qrcode.generation.margin', 10);
+        $size = $this->integerConfig('qrcode.generation.size', 300);
+        $margin = $this->integerConfig('qrcode.generation.margin', 10, 0);
         $errorCorrection = $this->getErrorCorrectionLevel(config('qrcode.generation.error_correction', 'M'));
         $foregroundColor = config('qrcode.generation.foreground_color', '000000');
         $backgroundColor = config('qrcode.generation.background_color', 'ffffff');
@@ -262,8 +262,8 @@ class QrTokenService implements QrTokenServiceInterface
      */
     protected function generateQrImageSvg(string $payload): string
     {
-        $size = config('qrcode.generation.size', 300);
-        $margin = config('qrcode.generation.margin', 10);
+        $size = $this->integerConfig('qrcode.generation.size', 300);
+        $margin = $this->integerConfig('qrcode.generation.margin', 10, 0);
         $errorCorrection = $this->getErrorCorrectionLevel(config('qrcode.generation.error_correction', 'M'));
 
         $result = Builder::create()
@@ -294,5 +294,19 @@ class QrTokenService implements QrTokenServiceInterface
             'g' => hexdec(substr($hex, 2, 2)),
             'b' => hexdec(substr($hex, 4, 2)),
         ];
+    }
+
+    /**
+     * Numeric values from cached env config can arrive as strings in production.
+     */
+    protected function integerConfig(string $key, int $default, int $minimum = 1): int
+    {
+        $value = config($key, $default);
+
+        if (! is_numeric($value)) {
+            return max($minimum, $default);
+        }
+
+        return max($minimum, (int) $value);
     }
 }
