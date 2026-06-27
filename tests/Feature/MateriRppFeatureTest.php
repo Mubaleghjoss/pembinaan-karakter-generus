@@ -11,7 +11,9 @@ use App\Models\ScheduleReminder;
 use App\Models\Siswa;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MateriRppFeatureTest extends TestCase
@@ -142,6 +144,83 @@ class MateriRppFeatureTest extends TestCase
             ->assertSee('Folder Publik')
             ->assertSee('Materi Home Landing')
             ->assertSee(route('public.materi.show', $materi), false);
+    }
+
+    public function test_public_materi_uses_mobile_safe_pdf_viewer(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('materi/pdf/materi-uji.pdf', '%PDF-1.4 test');
+
+        $materi = Materi::create([
+            'judul' => 'Materi PDF Publik',
+            'deskripsi' => 'Materi untuk menguji pembaca PDF.',
+            'bulan' => '2026-06-01',
+            'pdf_path' => [[
+                'name' => 'Materi Uji.pdf',
+                'path' => 'materi/pdf/materi-uji.pdf',
+                'size' => 1024,
+            ]],
+            'is_active' => true,
+        ]);
+
+        $response = $this->get(route('public.materi.show', $materi));
+
+        $response
+            ->assertOk()
+            ->assertSee('data-pdf-viewer', false)
+            ->assertSee('data-pdf-canvas', false)
+            ->assertSee('data-pdf-page-count', false)
+            ->assertSee('Buka PDF')
+            ->assertSee('Materi PDF Publik.pdf')
+            ->assertDontSee('Materi Uji.pdf')
+            ->assertSee(route('public.materi.pdf.download', [$materi, 0]), false)
+            ->assertDontSee('<iframe', false);
+
+        $contentSecurityPolicy = $response->headers->get('Content-Security-Policy-Report-Only')
+            ?? $response->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("worker-src 'self' blob:", $contentSecurityPolicy);
+        $this->assertStringContainsString("font-src 'self' blob:", $contentSecurityPolicy);
+
+        $this->get(route('public.materi.pdf.download', [$materi, 0]))
+            ->assertOk()
+            ->assertDownload('Materi PDF Publik.pdf');
+    }
+
+    public function test_pdf_names_follow_title_for_multiple_files(): void
+    {
+        $materi = new Materi([
+            'judul' => 'RPP: SMP/SMA',
+            'pdf_path' => [
+                ['path' => 'materi/pdf/first.pdf'],
+                ['path' => 'materi/pdf/second.pdf'],
+            ],
+        ]);
+
+        $this->assertSame('RPP SMP SMA - 1.pdf', $materi->pdfFileName(0));
+        $this->assertSame('RPP SMP SMA - 2.pdf', $materi->pdfFileName(1));
+    }
+
+    public function test_new_pdf_metadata_uses_materi_title(): void
+    {
+        Storage::fake('public');
+        $admin = $this->adminUser();
+
+        $response = $this->actingAs($admin)->post(route('materi.store'), $this->materiPayloadWithoutRpp([
+            'judul' => 'Materi Akhlaqul Karimah',
+        ]) + [
+            'pdf_files' => [
+                UploadedFile::fake()->create('nama-acak.pdf', 100, 'application/pdf'),
+            ],
+        ]);
+
+        $response->assertRedirect();
+
+        $pdf = Materi::firstOrFail()->pdf_files[0];
+
+        $this->assertSame('Materi Akhlaqul Karimah.pdf', $pdf['name']);
+        $this->assertSame('nama-acak.pdf', $pdf['original_name']);
+        Storage::disk('public')->assertExists($pdf['path']);
     }
 
     public function test_admin_can_copy_and_export_month_calendar(): void

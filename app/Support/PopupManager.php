@@ -11,12 +11,20 @@ class PopupManager
     public static function definitions(): array
     {
         return [
+            'profile_assignment_prompt' => [
+                'title' => 'Perbarui kelompok dan kelas sekolah',
+                'description' => 'Popup wajib setelah login untuk memastikan kelompok siswa/pamong dan kelas sekolah siswa sesuai pembagian terbaru.',
+                'targets' => ['Siswa', 'Pamong', 'Pengurus PKG'],
+                'action_label' => 'Simpan pembaruan data',
+                'default_enabled' => true,
+                'default_required' => true,
+            ],
             'biometric_prompt' => [
                 'title' => 'Tautkan biometrik',
                 'description' => 'Popup setelah login untuk pengguna yang belum punya biometrik valid atau masih memakai credential lama.',
                 'targets' => ['Siswa', 'Ortu', 'Pamong/Admin'],
                 'action_label' => 'Buka pengaturan biometrik',
-                'default_enabled' => true,
+                'default_enabled' => false,
                 'default_required' => false,
             ],
             'biodata_prompt' => [

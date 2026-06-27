@@ -12,6 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\PamongActivityLog;
+use App\Support\ParticipantProfileOptions;
 
 class User extends Authenticatable
 {
@@ -33,6 +34,8 @@ class User extends Authenticatable
         'username',
         'email',
         'phone',
+        'kelompok',
+        'profile_assignment_confirmed_at',
         'password',
         'role_id',
         'organizational_team_id',
@@ -80,6 +83,7 @@ class User extends Authenticatable
         'locked_until' => 'datetime',
         'two_factor_confirmed_at' => 'datetime',
         'qr_token_generated_at' => 'datetime',
+        'profile_assignment_confirmed_at' => 'datetime',
         'password' => 'hashed',
     ];
 
@@ -292,6 +296,27 @@ class User extends Authenticatable
     public function usesPamongPermissionSystem(): bool
     {
         return $this->hasAnyRole(self::operationalRoleNames());
+    }
+
+    public static function kelompokOptions(): array
+    {
+        return ParticipantProfileOptions::groups();
+    }
+
+    public static function normalizeKelompok(?string $value): ?string
+    {
+        return ParticipantProfileOptions::normalizeGroup($value);
+    }
+
+    public function getKelompokLabelAttribute(): ?string
+    {
+        return static::kelompokOptions()[$this->kelompok] ?? null;
+    }
+
+    public function needsProfileAssignmentConfirmation(): bool
+    {
+        return $this->usesPamongPermissionSystem()
+            && (! $this->profile_assignment_confirmed_at || ! static::normalizeKelompok($this->kelompok));
     }
 
     public function canAccessGamificationAdmin(): bool

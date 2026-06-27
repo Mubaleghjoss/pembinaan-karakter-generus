@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Materi extends Model
 {
@@ -100,6 +101,24 @@ class Materi extends Model
     public function getPdfCountAttribute(): int
     {
         return count($this->pdf_path ?? []);
+    }
+
+    public static function pdfFileNameForTitle(string $title, int $index = 0, int $total = 1): string
+    {
+        $baseName = Str::of($title)
+            ->replaceMatches('/[\\\\\/:*?"<>|]+/', ' ')
+            ->squish()
+            ->limit(150, '')
+            ->toString();
+        $baseName = $baseName !== '' ? $baseName : 'Materi';
+        $number = $total > 1 ? ' - '.($index + 1) : '';
+
+        return "{$baseName}{$number}.pdf";
+    }
+
+    public function pdfFileName(int $index): string
+    {
+        return self::pdfFileNameForTitle($this->judul, $index, $this->pdf_count);
     }
 
     /**

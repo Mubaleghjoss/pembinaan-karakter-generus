@@ -242,6 +242,7 @@
 </div>
 
 @stack('scripts')
+@include('components.profile-assignment-prompt')
 @include('components.biometric-prompt')
 </body>
 </html>

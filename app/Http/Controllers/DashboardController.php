@@ -14,6 +14,7 @@ use App\Models\SiswaPoint;
 use App\Models\TracerKarakter;
 use App\Models\User;
 use App\Support\BiometricStatus;
+use App\Services\Contracts\PamongQrServiceInterface;
 use App\Services\MateriRppJournalWorkflowService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,8 @@ use Illuminate\Support\Facades\Cache;
 class DashboardController extends Controller
 {
     public function __construct(
-        protected MateriRppJournalWorkflowService $journalWorkflow
+        protected MateriRppJournalWorkflowService $journalWorkflow,
+        protected PamongQrServiceInterface $pamongQrService
     ) {
         $this->middleware('auth');
     }
@@ -31,12 +33,16 @@ class DashboardController extends Controller
     {
         $user = Auth::user()->loadMissing('role');
         $today = Carbon::today();
+        $dashboardQrData = $this->pamongQrService->isPamong($user)
+            ? $this->pamongQrService->getQrData($user)
+            : null;
 
         return view('dashboard', array_merge(
             $this->getPrimaryDashboardData($user, $today),
             [
                 'user' => $user,
                 'pageTitle' => 'Dashboard',
+                'dashboardQrData' => $dashboardQrData,
             ]
         ));
     }

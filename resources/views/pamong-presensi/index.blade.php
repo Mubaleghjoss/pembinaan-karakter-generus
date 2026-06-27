@@ -79,6 +79,48 @@
         </a>
     </div>
 
+    <section class="pkg-card p-5">
+        <div class="mb-4">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Ringkasan Kelompok Pamong</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                Kehadiran periode {{ $startDate->format('d M Y') }} sampai {{ $endDate->format('d M Y') }}.
+            </p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @foreach($pamongGroupSummary as $group)
+                <article class="pkg-card-soft p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">{{ $group['label'] }}</h3>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $group['members'] }} pamong</p>
+                        </div>
+                        <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                            {{ $group['records'] }} data
+                        </span>
+                    </div>
+                    <dl class="mt-4 grid grid-cols-2 gap-2 text-sm">
+                        <div class="rounded-lg bg-white p-2.5 dark:bg-slate-950/60">
+                            <dt class="text-xs text-gray-500 dark:text-gray-400">Hadir</dt>
+                            <dd class="mt-1 text-lg font-bold text-emerald-600">{{ $group['hadir'] }}</dd>
+                        </div>
+                        <div class="rounded-lg bg-white p-2.5 dark:bg-slate-950/60">
+                            <dt class="text-xs text-gray-500 dark:text-gray-400">Terlambat</dt>
+                            <dd class="mt-1 text-lg font-bold text-amber-600">{{ $group['terlambat'] }}</dd>
+                        </div>
+                        <div class="rounded-lg bg-white p-2.5 dark:bg-slate-950/60">
+                            <dt class="text-xs text-gray-500 dark:text-gray-400">Izin/Sakit</dt>
+                            <dd class="mt-1 text-lg font-bold text-blue-600">{{ $group['izin_sakit'] }}</dd>
+                        </div>
+                        <div class="rounded-lg bg-white p-2.5 dark:bg-slate-950/60">
+                            <dt class="text-xs text-gray-500 dark:text-gray-400">Alpha</dt>
+                            <dd class="mt-1 text-lg font-bold text-red-600">{{ $group['alpha'] }}</dd>
+                        </div>
+                    </dl>
+                </article>
+            @endforeach
+        </div>
+    </section>
+
     <!-- Filters -->
     <div class="pkg-card p-4">
         <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -130,6 +172,7 @@
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pamong</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kelompok</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jam Masuk</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jam Keluar</th>
@@ -157,6 +200,9 @@
                                     <div class="text-sm text-gray-500 dark:text-gray-400">{{ $item->user->username }}</div>
                                 </div>
                             </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200" data-label="Kelompok">
+                            {{ $item->user->kelompok_label ?? '-' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-label="Tanggal">
                             {{ $item->tanggal->format('d M Y') }}

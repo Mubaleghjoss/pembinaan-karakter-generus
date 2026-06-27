@@ -4,6 +4,17 @@
 
 @section('content')
 <div class="min-h-screen" x-data="dashboardData('{{ route('dashboard.secondary-panels') }}')" x-init="loadSecondaryPanels()">
+    @if($dashboardQrData)
+        <div class="w-full px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
+            @include('components.dashboard-qr-card', [
+                'dashboardQrData' => $dashboardQrData,
+                'dashboardQrIdentity' => $user->display_name.' - '.$user->username,
+                'dashboardQrDownloadName' => 'qr-presensi-'.\Illuminate\Support\Str::slug($user->username).'.svg',
+                'dashboardIdCardUrl' => route('profile.id-card'),
+            ])
+        </div>
+    @endif
+
     <!-- Hero Section -->
     <div class="w-full px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
         <div class="pkg-hero-shell rounded-[2rem] px-6 py-7 sm:px-8 lg:px-10 lg:py-10" data-reveal="zoom">

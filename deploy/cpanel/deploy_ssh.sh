@@ -201,6 +201,10 @@ cat > "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [QSA,L]
+
+<IfModule mime_module>
+  AddType application/javascript .mjs
+</IfModule>
 HTACCESS
 
 handler_written=0

@@ -406,6 +406,11 @@ function siswaCardPhotoManager() {
             kelas: @json($siswa->kelas->nama ?? '-'),
             qrUrl: @json($qrCode),
         },
+        init() {
+            if (new URLSearchParams(window.location.search).get('download') === '1') {
+                window.setTimeout(() => this.downloadPng(), 500);
+            }
+        },
         async uploadPhoto(event) {
             const file = event.target.files?.[0];
             event.target.value = '';

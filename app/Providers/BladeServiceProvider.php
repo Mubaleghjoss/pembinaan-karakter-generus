@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Siswa;
+use App\Models\User;
 use App\Support\BiometricStatus;
+use App\Support\PopupManager;
+use App\Support\TargetGrade;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
@@ -41,6 +45,37 @@ class BladeServiceProvider extends ServiceProvider
             return $user && $user->isPamongExcluded();
         });
 
+        View::composer('components.profile-assignment-prompt', function ($view) {
+            $siswa = Auth::guard('siswa')->user();
+            $pamong = Auth::guard('web')->user();
+            $profileUser = null;
+            $profileType = null;
+            $updateUrl = null;
+            $needsConfirmation = false;
+
+            if ($siswa instanceof Siswa) {
+                $profileUser = $siswa;
+                $profileType = 'siswa';
+                $updateUrl = route('siswa.profile-assignment.update');
+                $needsConfirmation = $siswa->needsProfileAssignmentConfirmation();
+            } elseif ($pamong instanceof User && $pamong->usesPamongPermissionSystem()) {
+                $profileUser = $pamong;
+                $profileType = 'pamong';
+                $updateUrl = route('profile-assignment.update');
+                $needsConfirmation = $pamong->needsProfileAssignmentConfirmation();
+            }
+
+            $view->with([
+                'profileAssignmentConfig' => PopupManager::config('profile_assignment_prompt'),
+                'profileAssignmentUser' => $profileUser,
+                'profileAssignmentType' => $profileType,
+                'profileAssignmentUpdateUrl' => $updateUrl,
+                'profileAssignmentNeedsConfirmation' => $needsConfirmation,
+                'profileAssignmentGroups' => Siswa::kelompokOptions(),
+                'profileAssignmentGrades' => TargetGrade::schoolClassOptions(),
+            ]);
+        });
+
         View::composer('components.biometric-prompt', function ($view) {
             $data = $view->getData();
 
@@ -53,6 +88,7 @@ class BladeServiceProvider extends ServiceProvider
             $biometricHasCredential = false;
             $biometricStatus = BiometricStatus::INACTIVE;
             $biometricLegacyCredentialCount = 0;
+            $profileAssignmentPending = false;
 
             if (Auth::guard('siswa')->check()) {
                 $biometricUser = Auth::guard('siswa')->user();
@@ -64,6 +100,7 @@ class BladeServiceProvider extends ServiceProvider
                 $biometricHasCredential = (bool) ($data['hasBiometricSiswa'] ?? false);
                 $biometricStatus = (string) ($data['biometricStatus']['status'] ?? BiometricStatus::INACTIVE);
                 $biometricLegacyCredentialCount = (int) ($data['biometricStatus']['legacy_count'] ?? 0);
+                $profileAssignmentPending = $biometricUser->needsProfileAssignmentConfirmation();
             } elseif (Auth::guard('web')->check()) {
                 $biometricUser = Auth::guard('web')->user();
                 $biometricUserType = 'admin';
@@ -74,6 +111,7 @@ class BladeServiceProvider extends ServiceProvider
                 $biometricHasCredential = (bool) ($data['hasBiometricAdmin'] ?? false);
                 $biometricStatus = (string) ($data['biometricStatusAdmin'] ?? BiometricStatus::INACTIVE);
                 $biometricLegacyCredentialCount = (int) ($data['legacyBiometricAdminCount'] ?? 0);
+                $profileAssignmentPending = $biometricUser->needsProfileAssignmentConfirmation();
             } elseif (Auth::guard('ortu')->check()) {
                 $biometricUser = Auth::guard('ortu')->user();
                 $biometricUserType = 'ortu';
@@ -113,6 +151,7 @@ class BladeServiceProvider extends ServiceProvider
                 'biometricHasCredential' => $biometricHasCredential,
                 'biometricStatus' => $biometricStatus,
                 'biometricLegacyCredentialCount' => $biometricLegacyCredentialCount,
+                'profileAssignmentPending' => $profileAssignmentPending,
             ]);
         });
     }

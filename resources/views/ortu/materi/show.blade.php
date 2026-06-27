@@ -51,7 +51,7 @@
                 Dokumen PDF ({{ $materi->pdf_count }} file)
             </h2>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                @foreach($materi->pdf_files as $pdf)
+                @foreach($materi->pdf_files as $index => $pdf)
                 <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-600 dark:bg-gray-800">
                     <div class="flex items-start gap-4">
                         <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-red-500 text-white">
@@ -60,7 +60,7 @@
                             </svg>
                         </div>
                         <div class="min-w-0 flex-1">
-                            <p class="truncate font-semibold text-gray-900 dark:text-white">{{ $pdf['name'] ?? basename($pdf['path']) }}</p>
+                            <p class="truncate font-semibold text-gray-900 dark:text-white">{{ $materi->pdfFileName($index) }}</p>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                 @if(isset($pdf['size']))
                                     {{ number_format($pdf['size'] / 1024, 1) }} KB |
@@ -71,12 +71,12 @@
                     </div>
                     <div class="mt-4 flex gap-2">
                         <button type="button"
-                            @click="pdfUrl = '{{ Storage::url($pdf['path']) }}'; pdfName = '{{ addslashes($pdf['name'] ?? basename($pdf['path'])) }}'; pdfModal = true"
+                            @click="pdfUrl = '{{ Storage::url($pdf['path']) }}'; pdfName = '{{ addslashes($materi->pdfFileName($index)) }}'; pdfModal = true"
                             class="btn-primary flex-1 text-sm !px-3 !py-2">
                             Lihat
                         </button>
-                        <a href="{{ Storage::url($pdf['path']) }}" target="_blank" class="btn-secondary text-sm !px-3 !py-2">
-                            Tab Baru
+                        <a href="{{ route('public.materi.pdf.download', [$materi, $index]) }}" class="btn-secondary text-sm !px-3 !py-2">
+                            Unduh
                         </a>
                     </div>
                 </div>

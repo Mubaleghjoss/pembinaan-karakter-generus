@@ -66,7 +66,7 @@
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-base font-semibold text-gray-900 dark:text-white truncate">
-                                    {{ $pdf['name'] ?? basename($pdf['path']) }}
+                                    {{ $materi->pdfFileName($index) }}
                                 </p>
                                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                     @if(isset($pdf['size']))
@@ -77,7 +77,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2 mt-4">
-                            <button @click="pdfUrl = '{{ Storage::url($pdf['path']) }}'; pdfName = '{{ addslashes($pdf['name'] ?? basename($pdf['path'])) }}'; pdfModal = true"
+                            <button @click="pdfUrl = '{{ Storage::url($pdf['path']) }}'; pdfName = '{{ addslashes($materi->pdfFileName($index)) }}'; pdfModal = true"
                                 class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -85,12 +85,12 @@
                                 </svg>
                                 Lihat
                             </button>
-                            <a href="{{ Storage::url($pdf['path']) }}" target="_blank"
+                            <a href="{{ route('public.materi.pdf.download', [$materi, $index]) }}"
                                 class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-all">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                 </svg>
-                                Tab Baru
+                                Unduh
                             </a>
                         </div>
                     </div>

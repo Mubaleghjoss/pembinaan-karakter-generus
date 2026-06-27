@@ -24,7 +24,7 @@
     $primaryActionLabel = $isLegacyBiometricState ? 'Daftarkan Ulang Sekarang' : 'Aktifkan Sekarang';
 @endphp
 
-@if($biometricPopupEnabled && $biometricUser)
+@if($biometricPopupEnabled && $biometricUser && !($profileAssignmentPending ?? false))
     @php
         $dismissedForSession = !$biometricPopupRequired && session('biometric_prompt_dismissed');
         $skipOnCurrentPage = $biometricPopupRequired

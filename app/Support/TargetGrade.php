@@ -14,6 +14,7 @@ class TargetGrade
     public const SMA_10 = 'sma_10';
     public const SMA_11 = 'sma_11';
     public const SMA_12 = 'sma_12';
+    public const PRANIKAH = 'pranikah';
 
     public static function options(): array
     {
@@ -24,6 +25,20 @@ class TargetGrade
             self::SMA_10 => 'SMA 10',
             self::SMA_11 => 'SMA 11',
             self::SMA_12 => 'SMA 12',
+            self::PRANIKAH => 'Pranikah (Selesai SMA/K)',
+        ];
+    }
+
+    public static function schoolClassOptions(): array
+    {
+        return [
+            self::SMP_7 => 'SMP Kelas 1',
+            self::SMP_8 => 'SMP Kelas 2',
+            self::SMP_9 => 'SMP Kelas 3',
+            self::SMA_10 => 'SMA Kelas 1',
+            self::SMA_11 => 'SMA Kelas 2',
+            self::SMA_12 => 'SMA Kelas 3',
+            self::PRANIKAH => 'Pranikah (Selesai SMA/K)',
         ];
     }
 

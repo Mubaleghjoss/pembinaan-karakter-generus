@@ -31,9 +31,10 @@ class SecurityHeaders
                "form-action 'self'; ".
                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; ".
                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ".
-               "font-src 'self' https://fonts.gstatic.com; ".
-               "img-src 'self' data: https:; ".
+               "font-src 'self' blob: https://fonts.gstatic.com; ".
+               "img-src 'self' data: blob: https:; ".
                "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; ".
+               "worker-src 'self' blob:; ".
                "connect-src 'self'; ".
                "frame-ancestors 'none';";
 

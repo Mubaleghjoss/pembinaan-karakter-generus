@@ -86,6 +86,7 @@ class SiswaDashboardController extends Controller
 
         $biometricStatus = BiometricStatus::resolve($siswa->id, 'siswa');
         $journalTasks = $this->journalWorkflow->studentTasks($siswa);
+        $dashboardQrData = $this->siswaService->generateQrCode($siswa->id);
 
         return view('siswa.dashboard', compact(
             'siswa',
@@ -98,7 +99,8 @@ class SiswaDashboardController extends Controller
             'shareInfos',
             'allLevels',
             'biometricStatus',
-            'journalTasks'
+            'journalTasks',
+            'dashboardQrData'
         ));
     }
 

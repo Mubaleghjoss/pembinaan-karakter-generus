@@ -422,6 +422,11 @@ function idCardManager() {
             organization: @json($orgLabel),
             qrUrl: @json($qrData['qr_image_base64']),
         },
+        init() {
+            if (new URLSearchParams(window.location.search).get('download') === '1') {
+                window.setTimeout(() => this.downloadPng(), 500);
+            }
+        },
 
         async uploadPhoto(event) {
             const file = event.target.files?.[0];

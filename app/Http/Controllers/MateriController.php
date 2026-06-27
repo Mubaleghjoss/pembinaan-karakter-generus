@@ -355,11 +355,17 @@ class MateriController extends Controller
                 $path = $file->store('materi/pdf', 'public');
                 $pdfFiles[] = [
                     'path' => $path,
-                    'name' => $file->getClientOriginalName(),
+                    'original_name' => $file->getClientOriginalName(),
                     'size' => $file->getSize(),
                     'uploaded_at' => now()->toDateTimeString()
                 ];
             }
+            $pdfCount = count($pdfFiles);
+            $pdfFiles = array_map(function (array $pdf, int $index) use ($data, $pdfCount) {
+                $pdf['name'] = Materi::pdfFileNameForTitle($data['judul'], $index, $pdfCount);
+
+                return $pdf;
+            }, $pdfFiles, array_keys($pdfFiles));
             $data['pdf_path'] = $pdfFiles;
         }
 
@@ -636,12 +642,19 @@ class MateriController extends Controller
                 $path = $file->store('materi/pdf', 'public');
                 $existingPdfs[] = [
                     'path' => $path,
-                    'name' => $file->getClientOriginalName(),
+                    'original_name' => $file->getClientOriginalName(),
                     'size' => $file->getSize(),
                     'uploaded_at' => now()->toDateTimeString()
                 ];
             }
         }
+
+        $pdfCount = count($existingPdfs);
+        $existingPdfs = array_map(function (array $pdf, int $index) use ($data, $pdfCount) {
+            $pdf['name'] = Materi::pdfFileNameForTitle($data['judul'], $index, $pdfCount);
+
+            return $pdf;
+        }, $existingPdfs, array_keys($existingPdfs));
 
         $data['pdf_path'] = !empty($existingPdfs) ? $existingPdfs : null;
 

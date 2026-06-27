@@ -78,8 +78,8 @@
                 File PDF ({{ $materi->pdf_count }} file)
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                @foreach($materi->pdf_files as $pdf)
-                <a href="{{ Storage::url($pdf['path']) }}" target="_blank" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                @foreach($materi->pdf_files as $index => $pdf)
+                <a href="{{ route('public.materi.pdf.download', [$materi, $index]) }}" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                     <div class="flex-shrink-0">
                         <svg class="w-10 h-10 text-red-500" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M10.92,12.31C10.68,11.54 10.15,9.08 11.55,9.04C12.95,9 12.03,12.16 12.03,12.16C12.42,13.65 14.05,14.72 14.05,14.72C14.55,14.57 17.4,14.24 17,15.72C16.57,17.2 13.5,15.81 13.5,15.81C11.55,15.95 10.09,16.47 10.09,16.47C8.96,18.58 7.64,19.5 7.1,18.61C6.43,17.5 9.23,16.07 9.23,16.07C10.68,13.72 10.9,12.35 10.92,12.31Z"/>
@@ -87,7 +87,7 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {{ $pdf['name'] ?? basename($pdf['path']) }}
+                            {{ $materi->pdfFileName($index) }}
                         </p>
                         @if(isset($pdf['size']))
                         <p class="text-xs text-gray-500 dark:text-gray-400">

@@ -122,6 +122,38 @@ function initializeFeatureMounts() {
     mountReactComponent('attendance-success', () => import('./components/AttendanceSuccess.jsx'));
 }
 
+let pdfViewerLoaderPromise;
+
+function initializePdfViewers() {
+    document.addEventListener('click', async (event) => {
+        const toggle = event.target.closest('[data-pdf-toggle]');
+
+        if (!toggle) {
+            return;
+        }
+
+        const root = toggle.closest('[data-pdf-viewer]');
+
+        if (!root) {
+            return;
+        }
+
+        toggle.disabled = true;
+
+        try {
+            pdfViewerLoaderPromise ??= import('./pdf-viewer.js');
+            const module = await pdfViewerLoaderPromise;
+            await module.togglePdfViewer(root);
+        } catch (error) {
+            pdfViewerLoaderPromise = null;
+            console.error('Viewer PDF gagal dimuat.', error);
+            root.querySelector('[data-pdf-error]')?.classList.remove('hidden');
+        } finally {
+            toggle.disabled = false;
+        }
+    });
+}
+
 let fullCalendarLoaderPromise;
 let html5QrcodeLoaderPromise;
 let chartJsLoaderPromise;
@@ -274,6 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeFormValidation();
     initializeQRScanner();
     initializeFeatureMounts();
+    initializePdfViewers();
     initializeScrollReveal();
 
     const flashSuccessMessage = sessionStorage.getItem('pkgActionSuccess');

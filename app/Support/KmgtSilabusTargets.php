@@ -30,6 +30,20 @@ class KmgtSilabusTargets
             }
         }
 
+        foreach ($records as $record) {
+            if ($record['target_grade'] !== TargetGrade::SMA_12) {
+                continue;
+            }
+
+            $pranikahRecord = $record;
+            $pranikahRecord['source_key'] = 'kmgt_pranikah_'.$record['source_key'];
+            $pranikahRecord['target_grade'] = TargetGrade::PRANIKAH;
+            $pranikahRecord['description'] = trim(
+                $record['description']."\n\nTarget lanjutan untuk generus Pranikah setelah menyelesaikan SMA/K."
+            );
+            $records[] = $pranikahRecord;
+        }
+
         return $records;
     }
 

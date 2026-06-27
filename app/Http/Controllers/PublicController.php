@@ -10,6 +10,7 @@ use App\Models\ThemeSetting;
 use App\Support\MateriFolderTree;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PublicController extends Controller
 {
@@ -223,6 +224,26 @@ class PublicController extends Controller
         $theme = ThemeSetting::current();
 
         return view('public.materi-detail', compact('materi', 'theme'));
+    }
+
+    public function materiPdfDownload(Materi $materi, int $index)
+    {
+        if (! $materi->is_active && ! auth()->guard('web')->check()) {
+            abort(404);
+        }
+
+        $pdf = $materi->pdf_files[$index] ?? null;
+        $path = is_array($pdf) ? ($pdf['path'] ?? null) : null;
+
+        if (! $path || ! Storage::disk('public')->exists($path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->download(
+            $path,
+            $materi->pdfFileName($index),
+            ['Content-Type' => 'application/pdf']
+        );
     }
 
     private function publicMateriBaseQuery()

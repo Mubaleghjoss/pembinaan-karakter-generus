@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use App\Support\ParticipantProfileOptions;
 use App\Support\TargetGrade;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,9 +19,11 @@ class Siswa extends Authenticatable
 {
     use HasFactory;
 
-    public const KELOMPOK_PANUNGGANGAN_UTARA = 'panunggangan utara';
-    public const KELOMPOK_SAWAH_DALAM = 'sawah dalam';
-    public const KELOMPOK_PAKULONAN = 'pakulonan';
+    public const KELOMPOK_SAWAH_DALAM_1 = ParticipantProfileOptions::SAWAH_DALAM_1;
+    public const KELOMPOK_SAWAH_DALAM_2 = ParticipantProfileOptions::SAWAH_DALAM_2;
+    public const KELOMPOK_SAWAH_DALAM = self::KELOMPOK_SAWAH_DALAM_1;
+    public const KELOMPOK_PANUNGGANGAN_UTARA = ParticipantProfileOptions::PANUNGGANGAN_UTARA;
+    public const KELOMPOK_PAKULONAN = ParticipantProfileOptions::PAKULONAN;
 
     protected $table = 'siswa';
 
@@ -35,6 +38,7 @@ class Siswa extends Authenticatable
         'phone',
         'kelas_id',
         'target_grade_override',
+        'profile_assignment_confirmed_at',
         'foto_path',
         'status',
         'nama_wali',
@@ -68,6 +72,7 @@ class Siswa extends Authenticatable
         'ortu_last_login_at' => 'datetime',
         'metadata' => 'array',
         'is_active' => 'boolean',
+        'profile_assignment_confirmed_at' => 'datetime',
     ];
 
     protected static function boot()
@@ -206,11 +211,7 @@ class Siswa extends Authenticatable
 
     public static function kelompokOptions(): array
     {
-        return [
-            self::KELOMPOK_PANUNGGANGAN_UTARA => 'Panunggangan Utara',
-            self::KELOMPOK_SAWAH_DALAM => 'Sawah Dalam',
-            self::KELOMPOK_PAKULONAN => 'Pakulonan',
-        ];
+        return ParticipantProfileOptions::groups();
     }
 
     public static function normalizeKelompok(?string $value): ?string
@@ -219,9 +220,7 @@ class Siswa extends Authenticatable
             return null;
         }
 
-        $normalized = strtolower(trim($value));
-
-        return array_key_exists($normalized, self::kelompokOptions()) ? $normalized : null;
+        return ParticipantProfileOptions::normalizeGroup($value);
     }
 
     public static function hasKelompokColumn(): bool
@@ -252,6 +251,13 @@ class Siswa extends Authenticatable
     public function getIsBiodataCompleteAttribute(): bool
     {
         return empty($this->missing_biodata_fields);
+    }
+
+    public function needsProfileAssignmentConfirmation(): bool
+    {
+        return ! $this->profile_assignment_confirmed_at
+            || ! static::normalizeKelompok($this->kelompok)
+            || ! in_array($this->target_grade_override, TargetGrade::values(), true);
     }
 
     public function scopeActive($query)

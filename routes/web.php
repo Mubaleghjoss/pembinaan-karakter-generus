@@ -39,6 +39,9 @@ Route::get('/', [App\Http\Controllers\PublicController::class, 'index'])->name('
 Route::get('/berita-publik/{slug}', [App\Http\Controllers\PublicController::class, 'berita'])->name('public.berita');
 Route::get('/scan-presensi', [App\Http\Controllers\PublicController::class, 'scanner'])->name('public.scanner');
 Route::get('/materi', [App\Http\Controllers\PublicController::class, 'materiIndex'])->name('materi.index');
+Route::get('/materi-publik/{materi}/pdf/{index}/download', [App\Http\Controllers\PublicController::class, 'materiPdfDownload'])
+    ->whereNumber('index')
+    ->name('public.materi.pdf.download');
 Route::get('/materi-publik/{materi}', [App\Http\Controllers\PublicController::class, 'materiShow'])->name('public.materi.show');
 Route::get('/kalender', [App\Http\Controllers\CalendarController::class, 'publicIndex'])->name('public.calendar.index');
 Route::get('/kalender/events', [App\Http\Controllers\CalendarController::class, 'publicEvents'])->name('public.calendar.events');
@@ -113,6 +116,7 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
         Route::get('/biometrik', [App\Http\Controllers\Auth\WebAuthnController::class, 'settingsPage'])->name('biometrik');
 
         Route::get('/dashboard', [App\Http\Controllers\SiswaDashboardController::class, 'index'])->name('dashboard');
+        Route::put('/profil-penempatan', [App\Http\Controllers\ProfileAssignmentController::class, 'updateSiswa'])->name('profile-assignment.update');
         Route::get('/materi', [App\Http\Controllers\MateriController::class, 'siswaIndex'])->name('materi.index');
         Route::get('/materi/{materi}', [App\Http\Controllers\MateriController::class, 'siswaShow'])->name('materi.show');
         Route::post('/materi-targets/{target}/toggle', [MateriTargetController::class, 'siswaToggle'])->name('materi-targets.toggle');
@@ -273,6 +277,7 @@ Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/secondary-panels', [DashboardController::class, 'secondaryPanels'])->name('dashboard.secondary-panels');
+    Route::put('/profil-penempatan', [App\Http\Controllers\ProfileAssignmentController::class, 'updatePamong'])->name('profile-assignment.update');
 
     // Profile management
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');

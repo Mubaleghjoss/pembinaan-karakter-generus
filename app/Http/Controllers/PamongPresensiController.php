@@ -41,7 +41,7 @@ class PamongPresensiController extends Controller
         $autoAlphaCount = $this->backfillClosedPamongAlpha($startDate, $endDate, $userId);
 
         $pamongUsers = User::query()
-            ->select('id', 'name', 'username')
+            ->select('id', 'name', 'username', 'kelompok')
             ->whereHas('role', function ($q) {
                 $q->whereIn('name', User::attendanceRoleNames());
             })
@@ -64,6 +64,7 @@ class PamongPresensiController extends Controller
             $endDate->format('Y-m-d'),
             $userId
         );
+        $pamongGroupSummary = $this->buildPamongGroupPeriodSummary($startDate, $endDate, $currentUser);
 
         return view('pamong-presensi.index', compact(
             'presensi',
@@ -73,7 +74,8 @@ class PamongPresensiController extends Controller
             'manualDate',
             'startDate',
             'endDate',
-            'autoAlphaCount'
+            'autoAlphaCount',
+            'pamongGroupSummary'
         ));
     }
 
@@ -121,6 +123,7 @@ class PamongPresensiController extends Controller
                     'role_id',
                     'organizational_team_id',
                     'organizational_title',
+                    'kelompok',
                 ])
                 ->with([
                     'role:id,name,display_name',
@@ -188,6 +191,24 @@ class PamongPresensiController extends Controller
                 ->values();
         }
 
+        $pamongGroupSummary = collect(User::kelompokOptions())
+            ->map(function (string $label, string $value) use ($pamongUsers, $attendanceByUser) {
+                $members = $pamongUsers->where('kelompok', $value)->values();
+                $filled = $members->filter(fn (User $user) => $attendanceByUser->has($user->id))->values();
+
+                return [
+                    'key' => $value,
+                    'label' => $label,
+                    'total' => $members->count(),
+                    'filled' => $filled->count(),
+                    'missing' => $members->count() - $filled->count(),
+                    'hadir' => $filled->filter(fn (User $user) => $attendanceByUser->get($user->id)?->status === 'hadir')->count(),
+                    'terlambat' => $filled->filter(fn (User $user) => $attendanceByUser->get($user->id)?->status === 'terlambat')->count(),
+                    'percent' => $members->count() > 0 ? round(($filled->count() / $members->count()) * 100, 1) : 0,
+                ];
+            })
+            ->values();
+
         $participants = collect()
             ->merge($pamongUsers->map(function (User $user) {
                 return [
@@ -253,6 +274,7 @@ class PamongPresensiController extends Controller
             'pamongUsers',
             'siswaList',
             'studentGroupSummary',
+            'pamongGroupSummary',
             'participants',
             'attendanceByParticipant',
             'filledParticipants',
@@ -565,7 +587,7 @@ class PamongPresensiController extends Controller
                 'verified_at',
             ])
             ->with([
-                'user:id,name,username,avatar_path',
+                'user:id,name,username,avatar_path,kelompok',
                 'verifier:id,name',
             ])
             ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
@@ -578,6 +600,40 @@ class PamongPresensiController extends Controller
             })
             ->orderByDesc('tanggal')
             ->orderByDesc('jam_masuk');
+    }
+
+    protected function buildPamongGroupPeriodSummary(Carbon $startDate, Carbon $endDate, User $currentUser)
+    {
+        $users = User::query()
+            ->select(['id', 'name', 'username', 'kelompok'])
+            ->where('status', 'active')
+            ->whereHas('role', fn ($query) => $query->whereIn('name', User::operationalRoleNames()))
+            ->when(! $currentUser->isAdmin(), fn ($query) => $query->whereKey($currentUser->id))
+            ->get();
+
+        $attendance = PamongPresensi::query()
+            ->select(['id', 'user_id', 'status'])
+            ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->whereIn('user_id', $users->pluck('id'))
+            ->get();
+
+        return collect(User::kelompokOptions())
+            ->map(function (string $label, string $value) use ($users, $attendance) {
+                $memberIds = $users->where('kelompok', $value)->pluck('id');
+                $records = $attendance->whereIn('user_id', $memberIds);
+
+                return [
+                    'key' => $value,
+                    'label' => $label,
+                    'members' => $memberIds->count(),
+                    'records' => $records->count(),
+                    'hadir' => $records->where('status', 'hadir')->count(),
+                    'terlambat' => $records->where('status', 'terlambat')->count(),
+                    'izin_sakit' => $records->whereIn('status', ['izin', 'sakit'])->count(),
+                    'alpha' => $records->where('status', 'alpha')->count(),
+                ];
+            })
+            ->values();
     }
 
     protected function backfillClosedPamongAlpha(Carbon|string $startDate, Carbon|string $endDate, ?int $userId = null): int

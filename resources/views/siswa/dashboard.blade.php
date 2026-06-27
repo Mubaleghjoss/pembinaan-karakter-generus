@@ -17,6 +17,15 @@
     };
 @endphp
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6">
+        @include('components.dashboard-qr-card', [
+            'dashboardQrData' => $dashboardQrData,
+            'dashboardQrIdentity' => $siswa->nama.' - '.$siswa->nis,
+            'dashboardQrDownloadName' => 'qr-presensi-'.\Illuminate\Support\Str::slug($siswa->nis).'.svg',
+            'dashboardIdCardUrl' => route('siswa.kartu'),
+        ])
+    </div>
+
     <!-- Share Info Banners -->
     @if(isset($shareInfos))
     @foreach($shareInfos as $info)

@@ -129,6 +129,48 @@
         @endforeach
     </div>
 
+    @if($includePamong)
+        <div class="pkg-card p-5">
+            <div class="mb-4">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Ringkasan Kelompok Pamong</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total target pamong dan capaian presensi per kelompok.</p>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach($pamongGroupSummary as $group)
+                    <div class="pkg-card-soft p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="font-bold text-gray-900 dark:text-white">{{ $group['label'] }}</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Total {{ $group['total'] }} pamong</p>
+                            </div>
+                            <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                                {{ $group['percent'] }}%
+                            </span>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+                            <div class="rounded-lg bg-white p-3 dark:bg-slate-950/60">
+                                <p class="text-gray-500 dark:text-gray-400">Sudah</p>
+                                <p class="text-xl font-bold text-green-600">{{ $group['filled'] }}</p>
+                            </div>
+                            <div class="rounded-lg bg-white p-3 dark:bg-slate-950/60">
+                                <p class="text-gray-500 dark:text-gray-400">Belum</p>
+                                <p class="text-xl font-bold text-amber-600">{{ $group['missing'] }}</p>
+                            </div>
+                            <div class="rounded-lg bg-white p-3 dark:bg-slate-950/60">
+                                <p class="text-gray-500 dark:text-gray-400">Hadir</p>
+                                <p class="text-xl font-bold text-green-600">{{ $group['hadir'] }}</p>
+                            </div>
+                            <div class="rounded-lg bg-white p-3 dark:bg-slate-950/60">
+                                <p class="text-gray-500 dark:text-gray-400">Terlambat</p>
+                                <p class="text-xl font-bold text-yellow-600">{{ $group['terlambat'] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     @if($includeSiswa)
         <div class="pkg-card p-5">
             <div class="mb-4">
@@ -142,7 +184,7 @@
                     <p class="pkg-empty-copy">Tetapkan kelompok siswa agar ringkasan per wilayah bisa ditampilkan.</p>
                 </div>
             @else
-                <div class="grid gap-4 md:grid-cols-3">
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     @foreach($studentGroupSummary as $group)
                         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/70">
                             <div class="flex items-start justify-between gap-3">
