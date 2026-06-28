@@ -31,19 +31,7 @@
             @include('materi.partials.rpp-summary', ['materi' => $materi])
         @endif
 
-        <!-- Video -->
-        @if($materi->youtube_embed_url)
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Video Pembelajaran</h2>
-            <div class="aspect-video">
-                <iframe src="{{ $materi->youtube_embed_url }}" 
-                    class="w-full h-full rounded-lg"
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen></iframe>
-            </div>
-        </div>
-        @endif
+        @include('materi.partials.video-list', ['materi' => $materi, 'withBorder' => true])
 
         <!-- PDF Files -->
         @if($materi->hasPdfFiles())

@@ -404,7 +404,7 @@
                                 @if($item->pdf_path)
                                 <span class="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded">PDF</span>
                                 @endif
-                                @if($item->video_url)
+                                @if($item->has_video_links)
                                 <span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">Video</span>
                                 @endif
                             </div>

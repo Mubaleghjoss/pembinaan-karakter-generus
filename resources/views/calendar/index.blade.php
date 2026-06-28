@@ -77,7 +77,38 @@
         </div>
 
         <!-- Calendar Container -->
-        <div class="pkg-panel p-4">
+        <div class="pkg-panel p-4" data-admin-calendar-shell>
+            <div class="mb-4 rounded-xl border border-gray-200 bg-white/70 p-3 dark:border-gray-700 dark:bg-gray-900/70">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-center gap-2">
+                        <button type="button" class="btn-secondary !h-10 !w-10 !p-0" data-calendar-prev aria-label="Bulan sebelumnya" title="Bulan sebelumnya">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="btn-secondary !h-10 !w-10 !p-0" data-calendar-next aria-label="Bulan berikutnya" title="Bulan berikutnya">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="btn-secondary text-sm !px-3 !py-2" data-calendar-today>Hari Ini</button>
+                        <div class="min-w-0 pl-2">
+                            <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Periode</p>
+                            <p class="truncate text-base font-bold text-gray-900 dark:text-white" data-calendar-title>Kalender</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                        <div class="flex items-center gap-2">
+                            <input type="month" class="pkg-field text-sm sm:w-44" data-calendar-jump aria-label="Pilih bulan kalender">
+                            <button type="button" class="btn-primary text-sm !px-3 !py-2" data-calendar-go>Lihat</button>
+                        </div>
+                        <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-950">
+                            <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold transition" data-calendar-view="dayGridMonth">Bulan</button>
+                            <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold transition" data-calendar-view="listWeek">Daftar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div id="calendar"></div>
         </div>
 
@@ -102,22 +133,6 @@
 .fc {
     font-family: inherit;
 }
-.fc .fc-toolbar-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-.fc .fc-button {
-    background-color: #4F46E5;
-    border-color: #4F46E5;
-}
-.fc .fc-button:hover {
-    background-color: #4338CA;
-    border-color: #4338CA;
-}
-.fc .fc-button-primary:not(:disabled).fc-button-active {
-    background-color: #3730A3;
-    border-color: #3730A3;
-}
 .fc .fc-daygrid-day.fc-day-today {
     background-color: #EEF2FF;
 }
@@ -127,9 +142,6 @@
     border-radius: 4px;
 }
 /* Dark mode styles */
-.dark .fc .fc-toolbar-title {
-    color: #fff;
-}
 .dark .fc .fc-col-header-cell-cushion,
 .dark .fc .fc-daygrid-day-number {
     color: #d1d5db;
@@ -167,16 +179,48 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     const { Calendar, dayGridPlugin, listPlugin, localeId } = calendarModules;
+    const shell = calendarEl.closest('[data-admin-calendar-shell]');
+    const titleEl = shell?.querySelector('[data-calendar-title]');
+    const jumpInput = shell?.querySelector('[data-calendar-jump]');
+    const viewButtons = shell ? Array.from(shell.querySelectorAll('[data-calendar-view]')) : [];
+    const monthFormatter = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' });
+    const activeViewClass = ['bg-blue-600', 'text-white', 'shadow-sm'];
+    const idleViewClass = ['text-gray-600', 'hover:bg-white', 'dark:text-gray-300', 'dark:hover:bg-gray-900'];
+    let calendar;
 
-    const calendar = new Calendar(calendarEl, {
+    const syncToolbar = () => {
+        if (!calendar) return;
+
+        const date = calendar.getDate();
+        const monthValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+        if (titleEl) {
+            titleEl.textContent = monthFormatter.format(date);
+        }
+
+        if (jumpInput) {
+            jumpInput.value = monthValue;
+        }
+
+        viewButtons.forEach((button) => {
+            const isActive = button.dataset.calendarView === calendar.view.type;
+            activeViewClass.forEach((className) => button.classList.toggle(className, isActive));
+            idleViewClass.forEach((className) => button.classList.toggle(className, !isActive));
+        });
+    };
+
+    const goToSelectedMonth = () => {
+        if (!jumpInput?.value || !calendar) return;
+
+        calendar.gotoDate(`${jumpInput.value}-01`);
+    };
+
+    calendar = new Calendar(calendarEl, {
         plugins: [dayGridPlugin, listPlugin],
         initialView: 'dayGridMonth',
+        initialDate: @json(sprintf('%04d-%02d-01', (int) $year, (int) $month)),
         locale: localeId,
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,listWeek'
-        },
+        headerToolbar: false,
         buttonText: {
             today: 'Hari Ini',
             month: 'Bulan',
@@ -197,6 +241,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         eventDidMount: function(info) {
             info.el.style.cursor = 'pointer';
         },
+        datesSet: syncToolbar,
         height: 'auto',
         dayMaxEvents: 3,
         moreLinkText: 'lainnya'
@@ -204,6 +249,19 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     calendarInstance = calendar;
     calendar.render();
+    syncToolbar();
+
+    shell?.querySelector('[data-calendar-prev]')?.addEventListener('click', () => calendar.prev());
+    shell?.querySelector('[data-calendar-next]')?.addEventListener('click', () => calendar.next());
+    shell?.querySelector('[data-calendar-today]')?.addEventListener('click', () => calendar.today());
+    shell?.querySelector('[data-calendar-go]')?.addEventListener('click', goToSelectedMonth);
+    jumpInput?.addEventListener('change', goToSelectedMonth);
+    viewButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            calendar.changeView(button.dataset.calendarView);
+            syncToolbar();
+        });
+    });
 
     document.querySelector('[data-calendar-copy]')?.addEventListener('click', copyCalendarText);
     document.querySelector('[data-calendar-export]')?.addEventListener('click', exportCalendarExcel);
@@ -216,6 +274,16 @@ function notifyCalendar(message, type = 'info') {
     }
 
     alert(message);
+}
+
+function calendarEscape(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
 }
 
 function currentCalendarMonthParams() {
@@ -394,6 +462,45 @@ function showEventDetail(event) {
                 ${props.journal_status_label ? `<p class="mt-3 text-xs text-emerald-700 dark:text-emerald-300">Status jurnal: ${props.journal_status_label}</p>` : ''}
             </div>
         `;
+    } else if (props.type === 'materi') {
+        const title = calendarEscape(props.title || event.title || 'Materi');
+        const description = props.description ? calendarEscape(props.description) : '';
+        const folder = props.folder ? calendarEscape(props.folder) : '-';
+        const monthLabel = props.month_label ? calendarEscape(props.month_label) : '-';
+        const adminUrl = calendarEscape(props.admin_url || props.url || '#');
+        const publicUrl = calendarEscape(props.url || '#');
+
+        html = `
+            <div class="text-center">
+                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-4 bg-blue-100 text-blue-700">
+                    MTR
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">${title}</h2>
+                <p class="text-gray-600 dark:text-gray-300 mt-1">${event.start.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+
+                <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div class="p-3 bg-blue-50 rounded-lg dark:bg-blue-900/30">
+                        <p class="text-gray-500 dark:text-gray-400">Folder</p>
+                        <p class="font-semibold text-blue-700 dark:text-blue-300">${folder}</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg dark:bg-slate-800">
+                        <p class="text-gray-500 dark:text-gray-400">Periode</p>
+                        <p class="font-semibold text-slate-700 dark:text-slate-200">${monthLabel}</p>
+                    </div>
+                </div>
+
+                ${description ? `
+                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-left">
+                    <p class="text-sm text-gray-700 dark:text-gray-200">${description}</p>
+                </div>
+                ` : ''}
+
+                <div class="mt-5 flex flex-wrap justify-center gap-2">
+                    <a href="${adminUrl}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Lihat Materi</a>
+                    <a href="${publicUrl}" target="_blank" rel="noopener" class="inline-block px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">Halaman Publik</a>
+                </div>
+            </div>
+        `;
     } else if (props.type === 'schedule-reminder') {
         html = `
             <div class="text-center">
@@ -512,10 +619,23 @@ function showDateStatsModal(data) {
             </div>
         `).join('')
         : '<p class="text-gray-500 text-center py-4">Tidak ada data presensi</p>';
+
+    const materiHtml = (data.materi || []).length > 0
+        ? data.materi.map((item) => `
+            <div class="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                <p class="font-semibold text-gray-900 dark:text-white">${calendarEscape(item.title)}</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">${calendarEscape(item.folder || '-')}</p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <a href="${calendarEscape(item.url)}" class="inline-flex rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Lihat Materi</a>
+                    <a href="${calendarEscape(item.public_url)}" target="_blank" rel="noopener" class="inline-flex rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">Halaman Publik</a>
+                </div>
+            </div>
+        `).join('')
+        : '<p class="text-gray-500 text-center py-4">Tidak ada materi pada tanggal ini</p>';
     
     content.innerHTML = `
         <div>
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Kalender ${data.date}</h2>
+            <h2 class="text-xl font-bold text-gray-800 mb-4 dark:text-white">Kalender ${data.date}</h2>
             
             <div class="grid grid-cols-3 gap-3 mb-4">
                 <div class="p-3 bg-green-50 rounded-lg text-center">
@@ -532,10 +652,17 @@ function showDateStatsModal(data) {
                 </div>
             </div>
             
-            <div class="border-t border-gray-200 pt-4">
-                <h3 class="font-semibold text-gray-700 mb-2">Detail Presensi</h3>
+            <div class="border-t border-gray-200 pt-4 dark:border-gray-700">
+                <h3 class="font-semibold text-gray-700 mb-2 dark:text-gray-200">Detail Presensi</h3>
                 <div class="max-h-60 overflow-y-auto">
                     ${recordsHtml}
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-4 mt-4 dark:border-gray-700">
+                <h3 class="font-semibold text-gray-700 mb-2 dark:text-gray-200">Materi Kalender</h3>
+                <div class="space-y-3">
+                    ${materiHtml}
                 </div>
             </div>
         </div>

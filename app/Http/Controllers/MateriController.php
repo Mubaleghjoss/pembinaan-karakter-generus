@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -503,9 +504,12 @@ class MateriController extends Controller
             'materi_folder_id' => 'nullable|integer|exists:materi_folders,id',
             'deskripsi' => 'required|string',
             'bulan' => 'required|date',
+            'calendar_date' => 'nullable|date',
             'pdf_files' => 'nullable|array',
             'pdf_files.*' => 'file|mimes:pdf|max:10240', // 10MB max per file
-            'video_url' => 'nullable|url',
+            'video_url' => 'nullable|url|max:2048',
+            'video_links' => 'nullable|array',
+            'video_links.*' => 'nullable|url|max:2048',
             'remove_pdfs' => 'nullable|array',
             'rpp_action' => 'nullable|in:draft,publish',
             'publish_rpp' => 'nullable|boolean',
@@ -532,13 +536,17 @@ class MateriController extends Controller
     protected function materiPayload(Request $request, ?array $rppPlan, bool $publishRpp): array
     {
         $rppEnabled = $request->boolean('rpp_is_enabled');
+        $videoLinks = Materi::normalizeVideoLinksInput(array_merge(
+            $request->filled('video_url') ? [$request->input('video_url')] : [],
+            $request->input('video_links', [])
+        ));
 
-        return [
+        $payload = [
             'judul' => $request->judul,
             'materi_folder_id' => $request->input('materi_folder_id') ?: null,
             'deskripsi' => $request->deskripsi,
             'bulan' => $request->bulan,
-            'video_url' => $request->video_url,
+            'video_url' => $videoLinks[0] ?? null,
             'rpp_is_enabled' => $rppEnabled,
             'rpp_status' => $rppEnabled && $publishRpp ? 'published' : 'draft',
             'rpp_total_pages' => $rppEnabled ? $request->integer('rpp_total_pages') : null,
@@ -554,6 +562,16 @@ class MateriController extends Controller
             'rpp_teacher_overrides' => null,
             'rpp_published_at' => $rppEnabled && $publishRpp ? now() : null,
         ];
+
+        if (Schema::hasColumn('materi', 'video_links')) {
+            $payload['video_links'] = $videoLinks ?: null;
+        }
+
+        if (Schema::hasColumn('materi', 'calendar_date')) {
+            $payload['calendar_date'] = $request->input('calendar_date') ?: null;
+        }
+
+        return $payload;
     }
 
     protected function shouldPublishRpp(Request $request): bool

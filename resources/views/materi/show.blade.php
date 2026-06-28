@@ -104,14 +104,7 @@
         </div>
         @endif
 
-        @if($materi->youtube_embed_url)
-        <div class="p-6">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Video</h2>
-            <div class="aspect-video">
-                <iframe src="{{ $materi->youtube_embed_url }}" class="w-full h-full rounded-lg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>
-        </div>
-        @endif
+        @include('materi.partials.video-list', ['materi' => $materi])
 
         @if(($canEditMateri ?? false) || ($canDeleteMateri ?? false))
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">

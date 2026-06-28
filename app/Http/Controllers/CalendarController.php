@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\CalendarMonthExport;
 use App\Models\AttendanceSchedule;
 use App\Models\Karakter;
+use App\Models\Materi;
 use App\Models\MateriRppJournal;
 use App\Models\Presensi;
 use App\Models\ScheduleReminder;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class CalendarController extends Controller
 {
@@ -43,12 +45,13 @@ class CalendarController extends Controller
         $end = Carbon::parse(substr($endStr, 0, 10))->endOfDay();
 
         $cacheKey = sprintf(
-            'calendar:public:%s:%s:%s:%s:%s',
+            'calendar:public:%s:%s:%s:%s:%s:%s',
             $start->format('Y-m-d'),
             $end->format('Y-m-d'),
             Karakter::max('updated_at') ?: 'no-karakter',
             $this->scheduleReminderCacheVersion(),
-            AttendanceSchedule::max('updated_at') ?: 'no-schedules'
+            AttendanceSchedule::max('updated_at') ?: 'no-schedules',
+            $this->materiCalendarCacheVersion()
         );
 
         $events = Cache::remember($cacheKey, now()->addSeconds(90), function () use ($start, $end) {
@@ -220,7 +223,7 @@ class CalendarController extends Controller
         $end = Carbon::parse(substr($endStr, 0, 10))->endOfDay();
 
         $cacheKey = sprintf(
-            'calendar:admin:%d:%s:%s:%s:%s:%s:%s:%s:%s',
+            'calendar:admin:%d:%s:%s:%s:%s:%s:%s:%s:%s:%s',
             $user->id,
             $user->role_id,
             $start->format('Y-m-d'),
@@ -229,7 +232,8 @@ class CalendarController extends Controller
             SiswaKarakterChecklist::max('updated_at') ?: 'no-checklists',
             $this->scheduleReminderCacheVersion(),
             AttendanceSchedule::max('updated_at') ?: 'no-schedules',
-            MateriRppJournal::max('updated_at') ?: 'no-rpp-journals'
+            MateriRppJournal::max('updated_at') ?: 'no-rpp-journals',
+            $this->materiCalendarCacheVersion()
         );
 
         $events = Cache::remember($cacheKey, now()->addSeconds(90), function () use ($user, $start, $end, $siswaIds) {
@@ -381,6 +385,10 @@ class CalendarController extends Controller
             $events[] = $event;
         }
 
+        foreach ($this->buildMateriCalendarEvents($start, $end, true) as $event) {
+            $events[] = $event;
+        }
+
         return $this->attachRppJournalState($events, $user);
     }
 
@@ -492,7 +500,53 @@ class CalendarController extends Controller
             $events[] = $event;
         }
 
+        foreach ($this->buildMateriCalendarEvents($start, $end, false) as $event) {
+            $events[] = $event;
+        }
+
         return $events;
+    }
+
+    protected function buildMateriCalendarEvents(Carbon $start, Carbon $end, bool $includeAdminUrl = false): array
+    {
+        if (! Schema::hasColumn('materi', 'calendar_date')) {
+            return [];
+        }
+
+        return Materi::query()
+            ->with('folder.parent')
+            ->active()
+            ->whereNotNull('calendar_date')
+            ->whereBetween('calendar_date', [$start->toDateString(), $end->toDateString()])
+            ->orderBy('calendar_date')
+            ->orderBy('judul')
+            ->get()
+            ->map(function (Materi $materi) use ($includeAdminUrl) {
+                $props = [
+                    'type' => 'materi',
+                    'materi_id' => $materi->id,
+                    'title' => $materi->judul,
+                    'description' => $materi->deskripsi,
+                    'folder' => $materi->folder?->display_name ?? $materi->folder?->name,
+                    'month_label' => $materi->bulan?->translatedFormat('F Y'),
+                    'url' => route('public.materi.show', $materi),
+                ];
+
+                if ($includeAdminUrl) {
+                    $props['admin_url'] = route('materi.show', $materi);
+                }
+
+                return [
+                    'id' => ($includeAdminUrl ? 'materi-' : 'public-materi-') . $materi->id,
+                    'title' => 'Materi: ' . $materi->judul,
+                    'start' => $materi->calendar_date?->toDateString(),
+                    'allDay' => true,
+                    'color' => '#2563EB',
+                    'type' => 'materi',
+                    'extendedProps' => $props,
+                ];
+            })
+            ->all();
     }
 
     protected function calendarMonthRange(Request $request): array
@@ -570,6 +624,7 @@ class CalendarController extends Controller
             'pkg_task' => 'Tugas PKG',
             'karakter-summary' => 'Aktivitas Karakter',
             ScheduleReminder::SOURCE_MATERI_RPP => 'RPP Materi',
+            'materi' => 'Materi',
             'schedule-reminder' => 'Jadwal Pengingat',
             'attendance-schedule' => 'Jadwal Presensi',
             default => 'Agenda',
@@ -599,6 +654,10 @@ class CalendarController extends Controller
                     ? 'Kejar target ' . Carbon::parse($props['range_start_date'])->format('d/m/Y') . ' s/d ' . Carbon::parse($props['range_end_date'])->format('d/m/Y')
                     : null,
             ]))),
+            'materi' => trim(implode('; ', array_filter([
+                filled($props['folder'] ?? null) ? 'Folder ' . $props['folder'] : null,
+                filled($props['month_label'] ?? null) ? 'Periode ' . $props['month_label'] : null,
+            ]))) ?: '-',
             'schedule-reminder' => $props['description'] ?? '-',
             'attendance-schedule' => sprintf(
                 'Target %s; buka %s; tepat waktu %s; tutup %s',
@@ -617,6 +676,7 @@ class CalendarController extends Controller
             ScheduleReminder::SOURCE_MATERI_RPP => filled($props['teacher_name'] ?? null) ? 'Pengajar: ' . $props['teacher_name'] : '-',
             'attendance-schedule' => filled($props['target_label'] ?? null) ? 'Target: ' . $props['target_label'] : '-',
             'schedule-reminder' => filled($props['target_audience'] ?? null) ? 'Target: ' . $this->calendarAudienceLabel($props['target_audience']) : '-',
+            'materi' => filled($props['folder'] ?? null) ? 'Folder: ' . $props['folder'] : '-',
             default => '-',
         };
     }
@@ -627,6 +687,7 @@ class CalendarController extends Controller
             'schedule-reminder' => $props['location'] ?? '-',
             'attendance-schedule' => $props['action_label'] ?? '-',
             ScheduleReminder::SOURCE_MATERI_RPP => '-',
+            'materi' => $props['url'] ?? '-',
             default => $props['url'] ?? '-',
         };
     }
@@ -689,7 +750,7 @@ class CalendarController extends Controller
         }
 
         $stats = Cache::remember(
-            sprintf('calendar:date-stats:%d:%s', $user->id, $date->format('Y-m-d')),
+            sprintf('calendar:date-stats:%d:%s:%s', $user->id, $date->format('Y-m-d'), $this->materiCalendarCacheVersion()),
             now()->addSeconds(60),
             function () use ($siswaIds, $date) {
                 $presensi = Presensi::whereIn('siswa_id', $siswaIds)
@@ -710,11 +771,44 @@ class CalendarController extends Controller
                         'status' => $item->status,
                         'jam_masuk' => $item->jam_masuk?->format('H:i'),
                     ])->values(),
+                    'materi' => $this->materiDateRows($date),
                 ];
             }
         );
 
         return response()->json($stats);
+    }
+
+    protected function materiDateRows(Carbon $date): array
+    {
+        if (! Schema::hasColumn('materi', 'calendar_date')) {
+            return [];
+        }
+
+        return Materi::query()
+            ->with('folder.parent')
+            ->active()
+            ->whereDate('calendar_date', $date->toDateString())
+            ->orderBy('judul')
+            ->get()
+            ->map(fn (Materi $materi) => [
+                'id' => $materi->id,
+                'title' => $materi->judul,
+                'folder' => $materi->folder?->display_name ?? $materi->folder?->name ?? '-',
+                'url' => route('materi.show', $materi),
+                'public_url' => route('public.materi.show', $materi),
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function materiCalendarCacheVersion(): string
+    {
+        if (! Schema::hasColumn('materi', 'calendar_date')) {
+            return 'no-materi-calendar-date';
+        }
+
+        return (string) (Materi::max('updated_at') ?: 'no-materi');
     }
 
     protected function expandAttendanceScheduleEvents($user, Carbon $start, Carbon $end, string $viewer = 'admin'): array

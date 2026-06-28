@@ -56,7 +56,7 @@
                                     @if($item->hasPdfFiles())
                                         <span class="rounded bg-red-100 px-2 py-1 text-xs text-red-800 dark:bg-red-900 dark:text-red-200">PDF</span>
                                     @endif
-                                    @if($item->video_url)
+                                    @if($item->has_video_links)
                                         <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-200">Video</span>
                                     @endif
                                     @if($item->isRppPublished())

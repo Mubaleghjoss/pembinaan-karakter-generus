@@ -67,6 +67,14 @@
             </div>
 
             <div>
+                <label for="calendar_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tanggal tampil di kalender
+                </label>
+                <input type="date" name="calendar_date" id="calendar_date" value="{{ old('calendar_date') }}" class="w-full px-3 py-2 pkg-field">
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Jika diisi, materi aktif akan tampil di kalender pada tanggal ini.</p>
+            </div>
+
+            <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     File PDF (opsional, bisa lebih dari satu)
                 </label>
@@ -89,12 +97,9 @@
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Maksimal 10MB per file, format PDF.</p>
             </div>
 
-            <div>
-                <label for="video_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Link Video YouTube (opsional)
-                </label>
-                <input type="url" name="video_url" id="video_url" value="{{ old('video_url') }}" class="w-full px-3 py-2 pkg-field" placeholder="https://www.youtube.com/watch?v=...">
-            </div>
+            @include('materi.partials.video-links-input', [
+                'videoLinks' => old('video_links', old('video_url') ? [old('video_url')] : ['']),
+            ])
 
             @include('materi.partials.rpp-form')
         </div>

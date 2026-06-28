@@ -124,6 +124,26 @@ function chatManager() {
             return this.unreadCounts[`siswa_${id}`] || 0;
         },
 
+        messageDateKey(message) {
+            return message?.full_date || message?.date || '';
+        },
+
+        messageDateLabel(message) {
+            return message?.date_label || message?.date || message?.full_date || '';
+        },
+
+        shouldShowDateSeparator(messages, index) {
+            if (!messages?.[index]) {
+                return false;
+            }
+
+            if (index === 0) {
+                return true;
+            }
+
+            return this.messageDateKey(messages[index]) !== this.messageDateKey(messages[index - 1]);
+        },
+
         kelasOptions() {
             return this.siswaList
                 .map((siswa) => ({

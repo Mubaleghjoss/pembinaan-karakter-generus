@@ -24,8 +24,10 @@ class Materi extends Model
         'materi_folder_id',
         'deskripsi',
         'bulan',
+        'calendar_date',
         'pdf_path',
         'video_url',
+        'video_links',
         'is_active',
         'rpp_is_enabled',
         'rpp_status',
@@ -51,8 +53,10 @@ class Materi extends Model
      */
     protected $casts = [
         'bulan' => 'date',
+        'calendar_date' => 'date',
         'is_active' => 'boolean',
         'pdf_path' => 'array', // Now stores array of PDF files
+        'video_links' => 'array',
         'rpp_is_enabled' => 'boolean',
         'rpp_total_pages' => 'integer',
         'rpp_start_page' => 'integer',
@@ -121,6 +125,143 @@ class Materi extends Model
         return self::pdfFileNameForTitle($this->judul, $index, $this->pdf_count);
     }
 
+    public static function normalizeVideoLinksInput(mixed $links): array
+    {
+        if (is_string($links)) {
+            $links = [$links];
+        }
+
+        if (! is_array($links)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($links as $link) {
+            if (is_array($link)) {
+                $normalized = array_merge($normalized, self::normalizeVideoLinksInput($link));
+                continue;
+            }
+
+            $url = trim((string) $link);
+
+            if ($url === '' || ! filter_var($url, FILTER_VALIDATE_URL)) {
+                continue;
+            }
+
+            $normalized[] = $url;
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    public static function youtubeIdFromUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        preg_match(
+            '/(?:(?:youtube|youtube-nocookie)\.com\/(?:shorts\/|[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/',
+            $url,
+            $matches
+        );
+
+        return $matches[1] ?? null;
+    }
+
+    public static function googleDriveFileIdFromUrl(?string $url): ?string
+    {
+        $host = parse_url((string) $url, PHP_URL_HOST) ?? '';
+
+        if (! $url || (! str_contains($host, 'drive.google.com') && ! str_contains($host, 'docs.google.com'))) {
+            return null;
+        }
+
+        if (preg_match('/\/file\/d\/([a-zA-Z0-9_-]+)/', $url, $matches)) {
+            return $matches[1];
+        }
+
+        parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $query);
+
+        return isset($query['id']) && is_string($query['id']) ? $query['id'] : null;
+    }
+
+    public static function embedVideoUrl(?string $url): ?string
+    {
+        $youtubeId = self::youtubeIdFromUrl($url);
+
+        if ($youtubeId) {
+            return "https://www.youtube.com/embed/{$youtubeId}";
+        }
+
+        $driveId = self::googleDriveFileIdFromUrl($url);
+
+        if ($driveId) {
+            return "https://drive.google.com/file/d/{$driveId}/preview";
+        }
+
+        return null;
+    }
+
+    public static function videoSourceLabel(?string $url): string
+    {
+        $host = parse_url((string) $url, PHP_URL_HOST) ?: '';
+
+        if (str_contains($host, 'youtube.com') || str_contains($host, 'youtube-nocookie.com') || str_contains($host, 'youtu.be')) {
+            return 'YouTube';
+        }
+
+        if (str_contains($host, 'drive.google.com') || str_contains($host, 'docs.google.com')) {
+            return 'Google Drive';
+        }
+
+        return 'Link Video';
+    }
+
+    public function getVideoLinkUrlsAttribute(): array
+    {
+        $links = [];
+        $rawLinks = $this->attributes['video_links'] ?? null;
+
+        if (is_string($rawLinks) && trim($rawLinks) !== '') {
+            $decoded = json_decode($rawLinks, true);
+            $links = is_array($decoded) ? $decoded : [];
+        } elseif (is_array($rawLinks)) {
+            $links = $rawLinks;
+        }
+
+        if ($this->video_url) {
+            array_unshift($links, $this->video_url);
+        }
+
+        return self::normalizeVideoLinksInput($links);
+    }
+
+    public function getVideoItemsAttribute(): array
+    {
+        return collect($this->video_link_urls)
+            ->map(function (string $url, int $index) {
+                $source = self::videoSourceLabel($url);
+
+                return [
+                    'url' => $url,
+                    'embed_url' => self::embedVideoUrl($url),
+                    'source' => $source,
+                    'title' => count($this->video_link_urls) > 1
+                        ? 'Video '.($index + 1).' - '.$source
+                        : $source,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public function getHasVideoLinksAttribute(): bool
+    {
+        return ! empty($this->video_link_urls);
+    }
+
     /**
      * Get the user who created this materi.
      */
@@ -161,14 +302,15 @@ class Materi extends Model
      */
     public function getYoutubeIdAttribute(): ?string
     {
-        if (!$this->video_url) {
-            return null;
+        foreach ($this->video_link_urls as $url) {
+            $id = self::youtubeIdFromUrl($url);
+
+            if ($id) {
+                return $id;
+            }
         }
 
-        // Match various YouTube URL formats
-        preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/', $this->video_url, $matches);
-        
-        return $matches[1] ?? null;
+        return null;
     }
 
     /**

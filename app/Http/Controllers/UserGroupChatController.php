@@ -119,6 +119,7 @@ class UserGroupChatController extends Controller
                     'is_mine' => ($message->sender_user_id === $userId) || ($message->sender_siswa_id === $siswaId),
                     'created_at' => $message->created_at->format('H:i'),
                     'date' => $message->created_at->format('d M Y'),
+                    'date_label' => $this->chatDateLabel($message->created_at),
                     'full_date' => $message->created_at->format('Y-m-d'),
                 ];
             })
@@ -189,6 +190,7 @@ class UserGroupChatController extends Controller
                 'is_mine' => true,
                 'created_at' => $message->created_at->format('H:i'),
                 'date' => $message->created_at->format('d M Y'),
+                'date_label' => $this->chatDateLabel($message->created_at),
                 'full_date' => $message->created_at->format('Y-m-d'),
             ]
         ]);
@@ -283,5 +285,18 @@ class UserGroupChatController extends Controller
                 })
             ]
         ]);
+    }
+
+    protected function chatDateLabel($date): string
+    {
+        if ($date->isToday()) {
+            return 'Hari ini';
+        }
+
+        if ($date->isYesterday()) {
+            return 'Kemarin';
+        }
+
+        return $date->translatedFormat('d F Y');
     }
 }

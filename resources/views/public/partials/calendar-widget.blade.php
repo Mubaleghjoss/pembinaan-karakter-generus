@@ -7,6 +7,7 @@
     $homeMateriFolderCount = $homeMateriFolderCount ?? 0;
     $calendarPanelId = $calendarId . '-calendar-panel';
     $materiPanelId = $calendarId . '-materi-panel';
+    $calendarInitialDate = $calendarInitialDate ?? now()->format('Y-m-01');
 @endphp
 
 <section
@@ -50,8 +51,39 @@
                 </div>
             </div>
 
-            <div class="pkg-panel p-4" data-reveal="up">
-                <div id="{{ $calendarId }}" data-public-calendar data-events-url="{{ route('public.calendar.events') }}"></div>
+            <div class="pkg-panel p-4" data-reveal="up" data-public-calendar-shell>
+                <div class="mb-4 rounded-xl border border-gray-200 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-900/70" data-public-calendar-toolbar>
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex min-w-0 items-center gap-2">
+                            <button type="button" class="btn-secondary !h-10 !w-10 !p-0" data-calendar-prev aria-label="Bulan sebelumnya" title="Bulan sebelumnya">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-secondary !h-10 !w-10 !p-0" data-calendar-next aria-label="Bulan berikutnya" title="Bulan berikutnya">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-secondary text-sm !px-3 !py-2" data-calendar-today>Hari Ini</button>
+                            <div class="min-w-0 pl-2">
+                                <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Periode</p>
+                                <p class="truncate text-base font-bold text-gray-900 dark:text-white" data-calendar-title>Kalender</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                            <div class="flex items-center gap-2">
+                                <input type="month" class="pkg-field text-sm sm:w-44" data-calendar-jump aria-label="Pilih bulan kalender">
+                                <button type="button" class="btn-primary text-sm !px-3 !py-2" data-calendar-go>Lihat</button>
+                            </div>
+                            <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-slate-700 dark:bg-slate-950">
+                                <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold transition" data-calendar-view="dayGridMonth">Bulan</button>
+                                <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold transition" data-calendar-view="listWeek">Daftar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="{{ $calendarId }}" data-public-calendar data-events-url="{{ route('public.calendar.events') }}" data-initial-date="{{ $calendarInitialDate }}"></div>
             </div>
         </div>
 
@@ -110,35 +142,6 @@
 .fc {
     font-family: inherit;
 }
-.fc .fc-toolbar-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-}
-.fc .fc-button {
-    background-color: #0F766E;
-    border-color: #0F766E;
-}
-.fc .fc-button:hover {
-    background-color: #115E59;
-    border-color: #115E59;
-}
-.fc .fc-button-primary:not(:disabled).fc-button-active {
-    background-color: #134E4A;
-    border-color: #134E4A;
-}
-.fc .fc-prev-button .fc-icon,
-.fc .fc-next-button .fc-icon {
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-    font-size: 1rem;
-    font-weight: 800;
-    line-height: 1;
-}
-.fc .fc-icon-chevron-left::before {
-    content: "<" !important;
-}
-.fc .fc-icon-chevron-right::before {
-    content: ">" !important;
-}
 .fc .fc-daygrid-day.fc-day-today {
     background-color: #ECFDF5;
 }
@@ -147,7 +150,6 @@
     font-size: 0.75rem;
     padding: 2px 4px;
 }
-.dark .fc .fc-toolbar-title,
 .dark .fc .fc-col-header-cell-cushion,
 .dark .fc .fc-daygrid-day-number {
     color: #E5E7EB;
@@ -186,19 +188,51 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     widgets.forEach((calendarEl) => {
         const section = calendarEl.closest('section');
+        const shell = calendarEl.closest('[data-public-calendar-shell]');
+        const titleEl = shell?.querySelector('[data-calendar-title]');
+        const jumpInput = shell?.querySelector('[data-calendar-jump]');
+        const viewButtons = shell ? Array.from(shell.querySelectorAll('[data-calendar-view]')) : [];
         const modal = section.querySelector('[data-public-calendar-modal]');
         const content = section.querySelector('[data-public-calendar-content]');
         const closeButton = section.querySelector('[data-public-calendar-close]');
+        const monthFormatter = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' });
+        const activeViewClass = ['bg-emerald-600', 'text-white', 'shadow-sm'];
+        const idleViewClass = ['text-gray-600', 'hover:bg-white', 'dark:text-gray-300', 'dark:hover:bg-slate-900'];
+        let calendar;
 
-        const calendar = new Calendar(calendarEl, {
+        const syncToolbar = () => {
+            if (!calendar) return;
+
+            const date = calendar.getDate();
+            const monthValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+            if (titleEl) {
+                titleEl.textContent = monthFormatter.format(date);
+            }
+
+            if (jumpInput) {
+                jumpInput.value = monthValue;
+            }
+
+            viewButtons.forEach((button) => {
+                const isActive = button.dataset.calendarView === calendar.view.type;
+                activeViewClass.forEach((className) => button.classList.toggle(className, isActive));
+                idleViewClass.forEach((className) => button.classList.toggle(className, !isActive));
+            });
+        };
+
+        const goToSelectedMonth = () => {
+            if (!jumpInput?.value || !calendar) return;
+
+            calendar.gotoDate(`${jumpInput.value}-01`);
+        };
+
+        calendar = new Calendar(calendarEl, {
             plugins: [dayGridPlugin, listPlugin],
             initialView: 'dayGridMonth',
+            initialDate: calendarEl.dataset.initialDate || undefined,
             locale: localeId,
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,listWeek'
-            },
+            headerToolbar: false,
             buttonText: {
                 today: 'Hari Ini',
                 month: 'Bulan',
@@ -218,12 +252,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             eventDidMount: function(info) {
                 info.el.style.cursor = 'pointer';
             },
+            datesSet: syncToolbar,
             height: 'auto',
             dayMaxEvents: 3,
             moreLinkText: 'lainnya'
         });
 
         calendar.render();
+        syncToolbar();
+
+        shell?.querySelector('[data-calendar-prev]')?.addEventListener('click', () => calendar.prev());
+        shell?.querySelector('[data-calendar-next]')?.addEventListener('click', () => calendar.next());
+        shell?.querySelector('[data-calendar-today]')?.addEventListener('click', () => calendar.today());
+        shell?.querySelector('[data-calendar-go]')?.addEventListener('click', goToSelectedMonth);
+        jumpInput?.addEventListener('change', goToSelectedMonth);
+        viewButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                calendar.changeView(button.dataset.calendarView);
+                syncToolbar();
+            });
+        });
 
         closeButton?.addEventListener('click', function() {
             modal.classList.add('hidden');
@@ -241,6 +289,16 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 function publicCalendarText(value, fallback = '-') {
     return value || fallback;
+}
+
+function publicCalendarEscape(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
 }
 
 function publicCalendarEventHtml(event) {
@@ -268,6 +326,34 @@ function publicCalendarEventHtml(event) {
                     </div>
                 </div>
                 ${props.url ? `<a href="${props.url}" class="btn-primary mt-5 inline-flex justify-center">Buka Materi</a>` : ''}
+            </div>
+        `;
+    }
+
+    if (type === 'materi') {
+        const title = publicCalendarEscape(props.title || event.title || 'Materi');
+        const description = props.description ? publicCalendarEscape(props.description) : '';
+        const folder = props.folder ? publicCalendarEscape(props.folder) : '-';
+        const monthLabel = props.month_label ? publicCalendarEscape(props.month_label) : '-';
+        const url = publicCalendarEscape(props.url || '#');
+
+        return `
+            <div class="text-center">
+                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-700">MTR</div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">${title}</h2>
+                <p class="mt-1 text-gray-600 dark:text-gray-300">${dateLabel}</p>
+                <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/30">
+                        <p class="text-gray-500 dark:text-gray-400">Folder</p>
+                        <p class="font-semibold text-blue-700 dark:text-blue-300">${folder}</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+                        <p class="text-gray-500 dark:text-gray-400">Periode</p>
+                        <p class="font-semibold text-slate-700 dark:text-slate-200">${monthLabel}</p>
+                    </div>
+                </div>
+                ${description ? `<p class="mt-4 rounded-lg bg-gray-50 p-3 text-left text-sm text-gray-700 dark:bg-slate-800 dark:text-gray-200">${description}</p>` : ''}
+                <a href="${url}" class="btn-primary mt-5 inline-flex justify-center">Buka Materi</a>
             </div>
         `;
     }

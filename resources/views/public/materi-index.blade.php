@@ -135,7 +135,7 @@
                                         {{ $item->pdf_count }} PDF
                                     </span>
                                 @endif
-                                @if($item->youtube_embed_url)
+                                @if($item->has_video_links)
                                     <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
                                         Video
                                     </span>

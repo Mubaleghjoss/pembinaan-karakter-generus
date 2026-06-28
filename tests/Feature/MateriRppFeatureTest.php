@@ -103,6 +103,136 @@ class MateriRppFeatureTest extends TestCase
         $this->assertRppEventExists($response->json(), $materi->id);
     }
 
+    public function test_admin_calendar_reads_active_materi_calendar_date(): void
+    {
+        $admin = $this->adminUser();
+        $folder = MateriFolder::create([
+            'name' => 'Akhlaqul Karimah',
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('materi.store'), $this->materiPayloadWithoutRpp([
+            'judul' => 'Materi Kalender Biasa',
+            'materi_folder_id' => $folder->id,
+            'calendar_date' => '2026-03-15',
+        ]));
+
+        $response->assertRedirect();
+
+        $materi = Materi::where('judul', 'Materi Kalender Biasa')->firstOrFail();
+
+        $this->assertSame('2026-03-15', $materi->calendar_date->toDateString());
+
+        $events = $this->actingAs($admin)->getJson(route('calendar.events', [
+            'start' => '2026-03-01',
+            'end' => '2026-04-01',
+        ]));
+
+        $events->assertOk();
+
+        $event = $this->materiEvent($events->json(), $materi->id);
+
+        $this->assertNotNull($event);
+        $this->assertSame('Materi: Materi Kalender Biasa', $event['title']);
+        $this->assertSame('2026-03-15', $event['start']);
+        $this->assertSame('materi', $event['extendedProps']['type']);
+        $this->assertSame('Akhlaqul Karimah', $event['extendedProps']['folder']);
+        $this->assertSame(route('materi.show', $materi), $event['extendedProps']['admin_url']);
+        $this->assertSame(route('public.materi.show', $materi), $event['extendedProps']['url']);
+    }
+
+    public function test_public_calendar_reads_active_materi_and_hides_inactive_materi(): void
+    {
+        $active = Materi::create([
+            'judul' => 'Materi Aktif Kalender',
+            'deskripsi' => 'Materi aktif yang boleh tampil.',
+            'bulan' => '2026-04-01',
+            'calendar_date' => '2026-04-10',
+            'is_active' => true,
+        ]);
+        $inactive = Materi::create([
+            'judul' => 'Materi Nonaktif Kalender',
+            'deskripsi' => 'Materi nonaktif tidak boleh tampil.',
+            'bulan' => '2026-04-01',
+            'calendar_date' => '2026-04-10',
+            'is_active' => false,
+        ]);
+
+        $response = $this->getJson(route('public.calendar.events', [
+            'start' => '2026-04-01',
+            'end' => '2026-05-01',
+        ]));
+
+        $response->assertOk();
+
+        $this->assertNotNull($this->materiEvent($response->json(), $active->id));
+        $this->assertNull($this->materiEvent($response->json(), $inactive->id));
+    }
+
+    public function test_admin_date_stats_returns_materi_for_selected_date(): void
+    {
+        $admin = $this->adminUser();
+        $folder = MateriFolder::create([
+            'name' => 'PKG',
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $materi = Materi::create([
+            'judul' => 'Materi Tanggal Kalender',
+            'materi_folder_id' => $folder->id,
+            'deskripsi' => 'Materi untuk ringkasan tanggal.',
+            'bulan' => '2026-05-01',
+            'calendar_date' => '2026-05-12',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->getJson(route('calendar.date-stats', [
+            'date' => '2026-05-12',
+        ]));
+
+        $response->assertOk()
+            ->assertJsonPath('materi.0.id', $materi->id)
+            ->assertJsonPath('materi.0.title', 'Materi Tanggal Kalender')
+            ->assertJsonPath('materi.0.folder', 'PKG')
+            ->assertJsonPath('materi.0.url', route('materi.show', $materi))
+            ->assertJsonPath('materi.0.public_url', route('public.materi.show', $materi));
+    }
+
+    public function test_editing_materi_calendar_date_moves_admin_calendar_event_after_cache_clear(): void
+    {
+        $admin = $this->adminUser();
+
+        $this->actingAs($admin)->post(route('materi.store'), $this->materiPayloadWithoutRpp([
+            'judul' => 'Materi Pindah Kalender',
+            'calendar_date' => '2026-06-03',
+        ]));
+
+        $materi = Materi::where('judul', 'Materi Pindah Kalender')->firstOrFail();
+
+        $this->actingAs($admin)->put(route('materi.update', $materi), $this->materiPayloadWithoutRpp([
+            'judul' => 'Materi Pindah Kalender',
+            'calendar_date' => '2026-06-20',
+        ]));
+
+        Cache::flush();
+
+        $oldDateEvents = $this->actingAs($admin)->getJson(route('calendar.events', [
+            'start' => '2026-06-03',
+            'end' => '2026-06-04',
+        ]));
+        $newDateEvents = $this->actingAs($admin)->getJson(route('calendar.events', [
+            'start' => '2026-06-20',
+            'end' => '2026-06-21',
+        ]));
+
+        $oldDateEvents->assertOk();
+        $newDateEvents->assertOk();
+
+        $this->assertNull($this->materiEvent($oldDateEvents->json(), $materi->id));
+        $this->assertSame('2026-06-20', $this->materiEvent($newDateEvents->json(), $materi->id)['start'] ?? null);
+    }
+
     public function test_public_calendar_and_homepage_render(): void
     {
         $rootFolder = MateriFolder::firstOrCreate(
@@ -130,7 +260,9 @@ class MateriRppFeatureTest extends TestCase
 
         $this->get(route('public.calendar.index'))
             ->assertOk()
-            ->assertSee('Kalender Aktivitas');
+            ->assertSee('Kalender Aktivitas')
+            ->assertSee('data-calendar-jump', false)
+            ->assertSee('data-calendar-prev', false);
 
         $this->get(route('public.index'))
             ->assertOk()
@@ -185,6 +317,59 @@ class MateriRppFeatureTest extends TestCase
         $this->get(route('public.materi.pdf.download', [$materi, 0]))
             ->assertOk()
             ->assertDownload('Materi PDF Publik.pdf');
+    }
+
+    public function test_public_materi_embeds_youtube_and_google_drive_videos(): void
+    {
+        $materi = Materi::create([
+            'judul' => 'Materi Video Publik',
+            'deskripsi' => 'Materi dengan beberapa link video.',
+            'bulan' => '2026-06-01',
+            'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'video_links' => [
+                'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUv/view?usp=sharing',
+            ],
+            'is_active' => true,
+        ]);
+
+        $response = $this->get(route('public.materi.show', $materi));
+
+        $response
+            ->assertOk()
+            ->assertSee('Video Pembelajaran')
+            ->assertSee('https://www.youtube.com/embed/dQw4w9WgXcQ', false)
+            ->assertSee('https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUv/preview', false)
+            ->assertSee('allowfullscreen', false);
+
+        $contentSecurityPolicy = $response->headers->get('Content-Security-Policy-Report-Only')
+            ?? $response->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString('https://drive.google.com', $contentSecurityPolicy);
+    }
+
+    public function test_admin_can_save_many_video_links_for_materi(): void
+    {
+        $admin = $this->adminUser();
+
+        $response = $this->actingAs($admin)->post(route('materi.store'), $this->materiPayloadWithoutRpp([
+            'judul' => 'Materi Banyak Video',
+        ]) + [
+            'video_links' => [
+                'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUv/view',
+            ],
+        ]);
+
+        $response->assertRedirect();
+
+        $materi = Materi::where('judul', 'Materi Banyak Video')->firstOrFail();
+
+        $this->assertSame('https://www.youtube.com/watch?v=dQw4w9WgXcQ', $materi->video_url);
+        $this->assertSame([
+            'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUv/view',
+        ], $materi->video_link_urls);
     }
 
     public function test_pdf_names_follow_title_for_multiple_files(): void
@@ -626,6 +811,8 @@ class MateriRppFeatureTest extends TestCase
             'judul' => $overrides['judul'] ?? 'Materi Tanpa RPP',
             'deskripsi' => $overrides['deskripsi'] ?? 'Materi biasa tanpa rencana kalender.',
             'bulan' => $overrides['bulan'] ?? '2026-02-01',
+            'calendar_date' => $overrides['calendar_date'] ?? null,
+            'materi_folder_id' => $overrides['materi_folder_id'] ?? null,
             'video_url' => $overrides['video_url'] ?? null,
             'rpp_action' => $overrides['rpp_action'] ?? 'draft',
         ];
@@ -683,5 +870,11 @@ class MateriRppFeatureTest extends TestCase
             }),
             'Event RPP materi harus muncul di response kalender.'
         );
+    }
+
+    private function materiEvent(array $events, int $materiId): ?array
+    {
+        return collect($events)->first(fn (array $event) => ($event['type'] ?? null) === 'materi'
+            && ($event['extendedProps']['materi_id'] ?? null) === $materiId);
     }
 }

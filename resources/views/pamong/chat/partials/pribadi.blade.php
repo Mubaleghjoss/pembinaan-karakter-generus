@@ -100,15 +100,22 @@
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
             </template>
-            <template x-for="msg in pribadiMessages" :key="msg.id">
-                <div :class="msg.is_mine ? 'flex justify-end' : 'flex justify-start'">
-                    <div :class="msg.is_mine ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'"
-                         class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg">
-                        <template x-if="msg.attachment_url">
-                            <img :src="msg.attachment_url" class="rounded-lg max-w-full mb-2 cursor-pointer" @click="window.open(msg.attachment_url, '_blank')">
-                        </template>
-                        <p class="text-sm whitespace-pre-wrap" x-text="msg.message"></p>
-                        <p class="text-xs mt-1 opacity-70" x-text="msg.created_at"></p>
+            <template x-for="(msg, index) in pribadiMessages" :key="msg.id">
+                <div class="space-y-2">
+                    <template x-if="shouldShowDateSeparator(pribadiMessages, index)">
+                        <div class="flex justify-center">
+                            <span class="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-500 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" x-text="messageDateLabel(msg)"></span>
+                        </div>
+                    </template>
+                    <div :class="msg.is_mine ? 'flex justify-end' : 'flex justify-start'">
+                        <div :class="msg.is_mine ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'"
+                             class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg">
+                            <template x-if="msg.attachment_url">
+                                <img :src="msg.attachment_url" class="rounded-lg max-w-full mb-2 cursor-pointer" @click="window.open(msg.attachment_url, '_blank')">
+                            </template>
+                            <p class="text-sm whitespace-pre-wrap" x-text="msg.message"></p>
+                            <p class="text-xs mt-1 opacity-70" x-text="msg.created_at"></p>
+                        </div>
                     </div>
                 </div>
             </template>

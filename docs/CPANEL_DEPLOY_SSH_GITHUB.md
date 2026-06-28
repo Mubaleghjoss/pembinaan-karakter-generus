@@ -355,6 +355,8 @@ Lalu jalankan SQL manual terbaru untuk fitur RPP, target materi, jurnal, dan syn
 cd ~/pembinaan-karakter-generus
 mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_25_rpp_sync_schema.sql
 mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_27_profile_assignment.sql
+mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_28_materi_video_links.sql
+mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_28_materi_calendar_date.sql
 ```
 
 Jika server belum pernah menerima update manual sebelumnya, jalankan file manual SQL lama berurutan sesuai kebutuhan:
@@ -368,6 +370,8 @@ mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_202
 mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_05_09_lapor_pkg_permissions.sql
 mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_25_rpp_sync_schema.sql
 mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_27_profile_assignment.sql
+mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_28_materi_video_links.sql
+mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_28_materi_calendar_date.sql
 ```
 
 Jika memakai migrasi Laravel langsung, alternatifnya:
@@ -416,6 +420,8 @@ Setelah import penuh, tetap aman menjalankan SQL skema terbaru untuk memastikan 
 cd ~/pembinaan-karakter-generus
 mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_25_rpp_sync_schema.sql
 mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_27_profile_assignment.sql
+mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_28_materi_video_links.sql
+mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_06_28_materi_calendar_date.sql
 ```
 
 Jika import phpMyAdmin berhenti pada foreign key `materi_rpp_journals_schedule_reminder_id_foreign`, artinya ada jurnal RPP yang menunjuk event kalender yang tidak ikut ada di tabel `schedule_reminders`.

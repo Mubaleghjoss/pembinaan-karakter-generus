@@ -110,6 +110,8 @@ class PamongChatController extends Controller
                 'sender_name' => $m->sender_name,
                 'created_at' => $m->created_at->format('H:i'),
                 'date' => $m->created_at->format('d M Y'),
+                'date_label' => $this->chatDateLabel($m->created_at),
+                'full_date' => $m->created_at->format('Y-m-d'),
             ]),
         ]);
     }
@@ -166,6 +168,8 @@ class PamongChatController extends Controller
                 'sender_name' => $user->username,
                 'created_at' => $chat->created_at->format('H:i'),
                 'date' => $chat->created_at->format('d M Y'),
+                'date_label' => $this->chatDateLabel($chat->created_at),
+                'full_date' => $chat->created_at->format('Y-m-d'),
             ],
         ]);
     }
@@ -513,6 +517,19 @@ class PamongChatController extends Controller
         return Siswa::query()
             ->where('is_active', true)
             ->forUser($user);
+    }
+
+    protected function chatDateLabel($date): string
+    {
+        if ($date->isToday()) {
+            return 'Hari ini';
+        }
+
+        if ($date->isYesterday()) {
+            return 'Kemarin';
+        }
+
+        return $date->translatedFormat('d F Y');
     }
 
     protected function normalizedIdCollection(array $ids)
