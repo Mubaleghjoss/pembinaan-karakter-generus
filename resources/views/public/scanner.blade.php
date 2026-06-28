@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Scan Presensi - ' . ($theme->app_name ?? 'PKG Presensi'))
+@section('title', 'Pindai Presensi - ' . ($theme->app_name ?? 'PKG Presensi'))
 
 @php
     $publicScannerEntry = 'resources/js/public-scanner.js';
@@ -34,8 +34,8 @@
                         <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.72)]"></span>
                         Presensi digital
                     </span>
-                    <h1 class="pkg-page-heading mt-5 text-4xl">Scan presensi lebih cepat dan lebih jelas.</h1>
-                    <p class="pkg-page-subheading mt-3 text-base sm:text-lg">Arahkan kamera ke QR Code untuk mencatat kehadiran secara aman dengan tampilan yang lebih rapi dan mudah dipahami.</p>
+                    <h1 class="pkg-page-heading mt-5 text-4xl">Pindai presensi lebih cepat dan lebih jelas.</h1>
+                    <p class="pkg-page-subheading mt-3 text-base sm:text-lg">Arahkan kamera ke kode QR atau unggah gambar barcode presensi untuk mencatat kehadiran secara aman.</p>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                     <div class="pkg-hero-kpi">
@@ -44,7 +44,7 @@
                     </div>
                     <div class="pkg-hero-kpi">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Mode</p>
-                        <p class="text-lg font-black text-slate-950 dark:text-white">QR Camera</p>
+                        <p class="text-lg font-black text-slate-950 dark:text-white">Kamera QR</p>
                     </div>
                     <div class="pkg-hero-kpi">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Akses</p>
@@ -61,7 +61,7 @@
                     <p class="text-sm font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Kegiatan Presensi Aktif</p>
                     <h2 class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">Presensi Untuk Kegiatan</h2>
                     <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
-                        Pastikan kegiatan di bawah ini sesuai sebelum melakukan scan QR.
+                        Pastikan kegiatan di bawah ini sesuai sebelum memindai kode QR.
                     </p>
                 </div>
                 <div class="flex flex-col items-start gap-1 sm:items-end">
@@ -146,16 +146,16 @@
         <!-- Scanner Component -->
         <div class="max-w-md mx-auto pkg-panel-lg overflow-hidden" data-reveal="up">
             <div class="p-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center">
-                <h2 class="text-2xl font-bold mb-1">Scan QR Code</h2>
-                <p class="text-blue-100 text-sm">Arahkan kamera ke QR Code Peserta</p>
+                <h2 class="text-2xl font-bold mb-1">Pindai Kode QR</h2>
+                <p class="text-blue-100 text-sm">Arahkan kamera ke barcode presensi peserta</p>
             </div>
 
             <div class="p-6">
                 @unless($publicScannerAssetAvailable)
                     <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
-                        <p class="text-sm font-bold uppercase tracking-wide">Asset scanner belum tersedia</p>
+                        <p class="text-sm font-bold uppercase tracking-wide">Asset pemindai belum tersedia</p>
                         <p class="mt-1 text-sm leading-relaxed">
-                            File build scanner belum ditemukan di server. Upload ulang folder <span class="font-mono">public/build</span> dari hasil build lokal agar fitur kamera dapat berjalan.
+                            File build pemindai belum ditemukan di server. Upload ulang folder <span class="font-mono">public/build</span> dari hasil build lokal agar fitur kamera dapat berjalan.
                         </p>
                     </div>
                 @endunless
@@ -185,7 +185,7 @@
                         <h3 class="text-xl font-bold mb-2">Presensi Berhasil!</h3>
                         <p id="success-text" class="text-green-700 dark:text-green-100 mb-4"></p>
                         <button onclick="resetScanner()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors">
-                            Scan Lagi
+                            Pindai Lagi
                         </button>
                     </div>
                 </div>
@@ -203,7 +203,7 @@
                         @disabled(!$publicScannerAssetAvailable)
                         class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
                     >
-                        Mulai Scan Kamera
+                        Mulai Pindai Kamera
                     </button>
                     <p class="mt-4 text-sm text-gray-400 dark:text-slate-400">Pastikan browser diizinkan mengakses kamera</p>
                 </div>
@@ -217,8 +217,8 @@
                             <span class="font-bold text-blue-800 dark:text-blue-200">Langkah Selanjutnya:</span>
                         </div>
                         <p class="text-sm text-blue-700 dark:text-blue-100 ml-8">
-                            Klik tombol <strong class="text-blue-900 dark:text-blue-200">"Request Camera Permissions"</strong> (biru) untuk mengaktifkan kamera,
-                            atau <strong class="text-green-700 dark:text-green-200">"Scan an Image File"</strong> (hijau) untuk scan dari gambar.
+                            Klik <strong class="text-blue-900 dark:text-blue-200">Izinkan Kamera</strong> untuk memindai langsung,
+                            atau pilih <strong class="text-green-700 dark:text-green-200">Pindai dari Gambar</strong> jika barcode sudah tersimpan di HP atau laptop.
                         </p>
                     </div>
                     
@@ -246,15 +246,15 @@
                     <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl font-bold text-blue-600">1</span>
                     </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">Klik Mulai Scan</h3>
-                    <p class="text-gray-600 dark:text-slate-300 text-sm">Klik tombol "Mulai Scan Kamera" untuk mengaktifkan kamera</p>
+                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">Klik Mulai Pindai</h3>
+                    <p class="text-gray-600 dark:text-slate-300 text-sm">Klik tombol "Mulai Pindai Kamera" untuk mengaktifkan kamera</p>
                 </div>
                 <div class="text-center">
                     <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl font-bold text-green-600">2</span>
                     </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">Arahkan ke QR Code</h3>
-                    <p class="text-gray-600 dark:text-slate-300 text-sm">Arahkan kamera ke QR Code pada kartu peserta Anda</p>
+                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">Arahkan ke Kode QR</h3>
+                    <p class="text-gray-600 dark:text-slate-300 text-sm">Arahkan kamera ke barcode presensi pada kartu peserta Anda</p>
                 </div>
                 <div class="text-center">
                     <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -275,7 +275,7 @@
                 <div>
                     <h3 class="font-bold text-yellow-900 dark:text-amber-200 mb-2">Tips Penting:</h3>
                     <ul class="text-yellow-800 dark:text-amber-100 text-sm space-y-1 list-disc list-inside">
-                        <li>Pastikan QR Code terlihat jelas dan tidak buram</li>
+                        <li>Pastikan kode QR terlihat jelas dan tidak buram</li>
                         <li>Gunakan pencahayaan yang cukup</li>
                         <li>Izinkan browser mengakses kamera Anda</li>
                         <li>Pastikan Anda berada dalam waktu presensi yang ditentukan</li>
@@ -461,7 +461,7 @@
             window.startScanning = function () {
                 const errorText = document.getElementById('error-text');
                 if (errorText) {
-                    errorText.textContent = 'Asset scanner belum tersedia di server. Upload ulang folder public/build dari hasil npm run build lokal.';
+                    errorText.textContent = 'Asset pemindai belum tersedia di server. Upload ulang folder public/build dari hasil npm run build lokal.';
                 }
                 document.getElementById('error-message')?.classList.remove('hidden');
             };

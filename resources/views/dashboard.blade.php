@@ -9,7 +9,7 @@
             @include('components.dashboard-qr-card', [
                 'dashboardQrData' => $dashboardQrData,
                 'dashboardQrIdentity' => $user->display_name.' - '.$user->username,
-                'dashboardQrDownloadName' => 'qr-presensi-'.\Illuminate\Support\Str::slug($user->username).'.svg',
+                'dashboardQrDownloadName' => 'barcode-presensi-'.\Illuminate\Support\Str::slug($user->display_name ?: $user->name ?: $user->username).'.png',
                 'dashboardIdCardUrl' => route('profile.id-card'),
             ])
         </div>

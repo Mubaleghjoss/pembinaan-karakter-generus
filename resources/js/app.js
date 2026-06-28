@@ -305,6 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeConfirmActions();
     initializeFormValidation();
     initializeQRScanner();
+    initializeDashboardQrDownloads();
     initializeFeatureMounts();
     initializePdfViewers();
     initializeScrollReveal();
@@ -469,6 +470,98 @@ function initializeQRScanner() {
     if (scannerButton) {
         scannerButton.addEventListener('click', startQRScanner);
     }
+}
+
+function initializeDashboardQrDownloads() {
+    document.querySelectorAll('[data-dashboard-qr-download]').forEach((button) => {
+        if (button.dataset.qrDownloadBound === 'true') {
+            return;
+        }
+
+        button.dataset.qrDownloadBound = 'true';
+        button.addEventListener('click', () => downloadDashboardQrAsPng(button));
+    });
+}
+
+async function downloadDashboardQrAsPng(button) {
+    const card = button.closest('[data-dashboard-qr]');
+    const imageSrc = card?.dataset.qrSrc || card?.querySelector('img')?.src;
+    const fileName = sanitizeDownloadName(card?.dataset.qrDownloadName || 'barcode-presensi.png');
+
+    if (!imageSrc) {
+        showNotification('Barcode presensi belum tersedia untuk diunduh.', 'error');
+        return;
+    }
+
+    button.disabled = true;
+    button.classList.add('opacity-75');
+
+    try {
+        const image = await loadImageForCanvas(imageSrc);
+        const size = 1024;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, size, size);
+        context.drawImage(image, 0, 0, size, size);
+
+        const blob = await canvasToBlob(canvas);
+        triggerDownload(blob, fileName);
+        showNotification('Barcode presensi PNG berhasil diunduh.', 'success');
+    } catch (error) {
+        console.error('Gagal mengunduh barcode presensi:', error);
+        showNotification('Barcode presensi gagal diunduh sebagai PNG. Coba muat ulang halaman.', 'error');
+    } finally {
+        button.disabled = false;
+        button.classList.remove('opacity-75');
+    }
+}
+
+function loadImageForCanvas(src) {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('QR image failed to load'));
+        image.src = src;
+    });
+}
+
+function canvasToBlob(canvas) {
+    return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+            if (blob) {
+                resolve(blob);
+                return;
+            }
+
+            reject(new Error('Canvas did not produce a PNG blob'));
+        }, 'image/png', 1);
+    });
+}
+
+function triggerDownload(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function sanitizeDownloadName(fileName) {
+    const normalized = String(fileName || 'barcode-presensi.png')
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, '-')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .toLowerCase();
+
+    return normalized.endsWith('.png') ? normalized : `${normalized || 'barcode-presensi'}.png`;
 }
 
 function startQRScanner() {

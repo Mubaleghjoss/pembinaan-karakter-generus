@@ -21,7 +21,7 @@
         @include('components.dashboard-qr-card', [
             'dashboardQrData' => $dashboardQrData,
             'dashboardQrIdentity' => $siswa->nama.' - '.$siswa->nis,
-            'dashboardQrDownloadName' => 'qr-presensi-'.\Illuminate\Support\Str::slug($siswa->nis).'.svg',
+            'dashboardQrDownloadName' => 'barcode-presensi-'.\Illuminate\Support\Str::slug($siswa->nama ?: $siswa->nis).'.png',
             'dashboardIdCardUrl' => route('siswa.kartu'),
         ])
     </div>

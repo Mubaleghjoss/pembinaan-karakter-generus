@@ -27,6 +27,7 @@ class ProfileAssignmentFeatureTest extends TestCase
     public function test_siswa_must_confirm_group_and_school_grade_and_sees_qr(): void
     {
         $siswa = Siswa::factory()->create([
+            'nama' => 'Akun Tester',
             'kelompok' => 'sawah dalam',
             'target_grade_override' => null,
             'profile_assignment_confirmed_at' => null,
@@ -36,6 +37,7 @@ class ProfileAssignmentFeatureTest extends TestCase
 
         $dashboard->assertOk()
             ->assertSee('data-dashboard-qr', false)
+            ->assertSee('barcode-presensi-akun-tester.png', false)
             ->assertSee('Perbarui Data Penempatan')
             ->assertSee('Sawah Dalam 1')
             ->assertSee('Sawah Dalam 2')
@@ -69,6 +71,7 @@ class ProfileAssignmentFeatureTest extends TestCase
 
         $dashboard->assertOk()
             ->assertSee('data-dashboard-qr', false)
+            ->assertSee('barcode-presensi-pamong-tester.png', false)
             ->assertSee('Perbarui Data Penempatan')
             ->assertSee('Sawah Dalam 1')
             ->assertSee('Pakulonan');
@@ -154,6 +157,7 @@ class ProfileAssignmentFeatureTest extends TestCase
 
         return User::factory()->create([
             'role_id' => $role->id,
+            'name' => 'Pamong Tester',
             'kelompok' => null,
             'profile_assignment_confirmed_at' => null,
         ]);

@@ -3,6 +3,8 @@
         x-data="{ expanded: true }"
         class="pkg-panel mx-auto w-full max-w-xl overflow-hidden"
         data-dashboard-qr
+        data-qr-src="{{ $dashboardQrData['qr_image_base64'] }}"
+        data-qr-download-name="{{ $dashboardQrDownloadName }}"
     >
         <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
             <div class="min-w-0">
@@ -37,16 +39,16 @@
                 Tunjukkan QR ini kepada petugas scan presensi.
             </p>
             <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <a
-                    href="{{ $dashboardQrData['qr_image_base64'] }}"
-                    download="{{ $dashboardQrDownloadName }}"
+                <button
+                    type="button"
+                    data-dashboard-qr-download
                     class="btn-primary justify-center text-sm"
                 >
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v10m0 0l-4-4m4 4l4-4M5 20h14"/>
                     </svg>
-                    Unduh QR
-                </a>
+                    Unduh Barcode PNG
+                </button>
                 <a href="{{ $dashboardIdCardUrl }}?download=1" class="btn-secondary justify-center text-sm">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16v12H4zM8 10h3m-3 3h5m3-3h.01"/>
