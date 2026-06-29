@@ -3,6 +3,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 let html5QrcodeScanner = null;
 let scannerTextObserver = null;
 let scannerTextUpdateQueued = false;
+let currentScannerMode = 'qr';
 
 const scannerTextReplacements = new Map([
     ['Request Camera Permissions', 'Izinkan Kamera'],
@@ -27,7 +28,33 @@ function hideById(id) {
     document.getElementById(id)?.classList.add('hidden');
 }
 
+window.clearScannerMessages = function clearScannerMessages() {
+    hideById('success-message');
+    hideById('error-message');
+};
+
+window.showScannerMode = function showScannerMode(mode) {
+    currentScannerMode = mode === 'face' ? 'face' : 'qr';
+
+    if (currentScannerMode === 'face') {
+        window.stopScanning();
+    } else if (typeof window.stopFaceAttendance === 'function') {
+        window.stopFaceAttendance();
+    }
+
+    document.querySelectorAll('[data-scanner-panel]').forEach((panel) => {
+        panel.classList.toggle('hidden', panel.dataset.scannerPanel !== currentScannerMode);
+    });
+
+    document.querySelectorAll('[data-scanner-mode-button]').forEach((button) => {
+        button.classList.toggle('scanner-mode-button-active', button.dataset.scannerModeButton === currentScannerMode);
+    });
+
+    window.clearScannerMessages();
+};
+
 window.startScanning = function startScanning() {
+    window.clearScannerMessages();
     hideById('start-section');
     showById('scanner-section');
 
@@ -97,6 +124,7 @@ window.stopScanning = function stopScanning() {
 };
 
 window.showError = function showError(message) {
+    hideById('success-message');
     const errorText = document.getElementById('error-text');
     if (errorText) {
         errorText.textContent = message;
@@ -106,10 +134,13 @@ window.showError = function showError(message) {
 
 window.closeError = function closeError() {
     hideById('error-message');
-    window.resetScanner();
+    if (currentScannerMode === 'face' && typeof window.resetFaceScanner === 'function') {
+        window.resetFaceScanner();
+    }
 };
 
 window.showSuccess = function showSuccess(message) {
+    hideById('error-message');
     const successText = document.getElementById('success-text');
     if (successText) {
         successText.textContent = message;
@@ -119,10 +150,13 @@ window.showSuccess = function showSuccess(message) {
 
 window.resetScanner = function resetScanner() {
     stopScannerTextLocalization();
-    hideById('success-message');
-    hideById('error-message');
+    window.clearScannerMessages();
     hideById('scanner-section');
-    showById('start-section');
+    if (currentScannerMode === 'face' && typeof window.resetFaceScanner === 'function') {
+        window.resetFaceScanner();
+    } else {
+        showById('start-section');
+    }
 };
 
 function startScannerTextLocalization() {

@@ -40,6 +40,9 @@
     <div x-show="activeSettingsTab === 'share_info'" x-cloak>
         @include('settings.partials.share-info')
     </div>
+    <div x-show="activeSettingsTab === 'face_attendance'" x-cloak>
+        @include('settings.partials.face-attendance')
+    </div>
     <div x-show="activeSettingsTab === 'popup'" x-cloak>
         @include('settings.partials.popup')
     </div>
@@ -48,7 +51,7 @@
 @push('scripts')
 <script>
     function settingsTabs(initialTab) {
-        const validTabs = ['general', 'id_card', 'theme', 'kelas', 'permissions', 'share_info', 'popup'];
+        const validTabs = ['general', 'id_card', 'theme', 'kelas', 'permissions', 'share_info', 'face_attendance', 'popup'];
 
         return {
             activeSettingsTab: validTabs.includes(initialTab) ? initialTab : 'general',

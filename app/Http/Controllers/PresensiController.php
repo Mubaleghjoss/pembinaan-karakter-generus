@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use App\Models\Siswa;
 
@@ -995,6 +996,7 @@ class PresensiController extends Controller
                 'verified_by',
                 'verified_at',
                 'keterangan',
+                'metadata',
             ])
             ->with([
                 'siswa' => fn ($query) => $query->select($siswaColumns),
@@ -1034,6 +1036,7 @@ class PresensiController extends Controller
                 'verified_by',
                 'verified_at',
                 'keterangan',
+                'metadata',
             ])
             ->with([
                 'siswa' => fn ($query) => $query->select($siswaColumns),
@@ -1083,6 +1086,7 @@ class PresensiController extends Controller
                     'keterangan' => $item->keterangan ?: '-',
                     'verified_by' => $item->verifier?->name,
                     'verified_at' => $this->formatRecapTime($item->verified_at),
+                    'face_proof' => $this->buildFaceProof($item->metadata),
                 ];
             });
     }
@@ -1106,6 +1110,7 @@ class PresensiController extends Controller
                 'is_verified',
                 'verified_by',
                 'verified_at',
+                'metadata',
             ])
             ->with([
                 'user:id,name,username,role_id,organizational_team_id,organizational_title,status',
@@ -1158,8 +1163,30 @@ class PresensiController extends Controller
                     'keterangan' => $item->keterangan ?: '-',
                     'verified_by' => $item->verifier?->name,
                     'verified_at' => $this->formatRecapTime($item->verified_at),
+                    'face_proof' => $this->buildFaceProof($item->metadata),
                 ];
             });
+    }
+
+    protected function buildFaceProof(?array $metadata): ?array
+    {
+        $face = data_get($metadata, 'face');
+
+        if (! is_array($face) || data_get($face, 'method') !== 'face') {
+            return null;
+        }
+
+        $proofPath = data_get($face, 'proof_path');
+
+        return [
+            'proof_path' => $proofPath,
+            'proof_url' => $proofPath ? Storage::disk('public')->url($proofPath) : data_get($face, 'proof_url'),
+            'similarity_percent' => data_get($face, 'similarity_percent'),
+            'match_distance' => data_get($face, 'match_distance'),
+            'distance_meters' => data_get($face, 'location.distance_meters'),
+            'radius_meters' => data_get($face, 'location.radius_meters'),
+            'accuracy_meters' => data_get($face, 'location.accuracy_meters'),
+        ];
     }
 
     protected function buildRecapStats(Collection $rows): array

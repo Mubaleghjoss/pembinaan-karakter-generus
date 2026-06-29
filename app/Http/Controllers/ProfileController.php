@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\OrganizationalTeam;
 use App\Services\Contracts\PamongQrServiceInterface;
+use App\Services\FaceAttendanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -47,7 +48,7 @@ class ProfileController extends Controller
     /**
      * Show the current user's operational ID card.
      */
-    public function idCard(PamongQrServiceInterface $pamongQrService)
+    public function idCard(PamongQrServiceInterface $pamongQrService, FaceAttendanceService $faceAttendanceService)
     {
         $user = Auth::user()->load(['role', 'organizationalTeam']);
 
@@ -56,10 +57,16 @@ class ProfileController extends Controller
         }
 
         $qrData = $pamongQrService->getQrData($user);
+        $faceProfile = $faceAttendanceService->activeProfileFor($user);
+        $faceAttendanceSettings = $faceAttendanceService->config();
+        $faceEnrollmentEnabled = $faceAttendanceService->enrollmentEnabledFor($user);
 
         return view('profile.id-card', [
             'user' => $user,
             'qrData' => $qrData,
+            'faceProfile' => $faceProfile,
+            'faceAttendanceSettings' => $faceAttendanceSettings,
+            'faceEnrollmentEnabled' => $faceEnrollmentEnabled,
             'pageTitle' => 'ID Card Saya',
         ]);
     }

@@ -54,6 +54,9 @@ class PamongPresensiService implements PamongPresensiServiceInterface
             if (!$existing->jam_keluar && in_array($existing->status, ['hadir', 'terlambat'])) {
                 $existing->update([
                     'jam_keluar' => $now,
+                    'metadata' => $metadata
+                        ? array_merge($existing->metadata ?? [], ['qr_checkout' => $metadata])
+                        : $existing->metadata,
                 ]);
 
                 return [
@@ -81,6 +84,7 @@ class PamongPresensiService implements PamongPresensiServiceInterface
             'status' => $status,
             'qr_code_used' => $token,
             'is_verified' => false,
+            'metadata' => $metadata ?: null,
         ]);
 
         return [
@@ -88,6 +92,59 @@ class PamongPresensiService implements PamongPresensiServiceInterface
             'message' => $status === 'terlambat'
                 ? 'Berhasil mencatat kehadiran (Terlambat)'
                 : 'Berhasil mencatat kehadiran',
+            'presensi' => $presensi,
+        ];
+    }
+
+    public function recordFaceAttendance(User $pamong, array $metadata): array
+    {
+        $today = Carbon::today()->format('Y-m-d');
+        $now = Carbon::now();
+
+        $existing = PamongPresensi::where('user_id', $pamong->id)
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        if ($existing) {
+            if (! $existing->jam_keluar && in_array($existing->status, ['hadir', 'terlambat'], true)) {
+                $existing->update([
+                    'jam_keluar' => $now,
+                    'metadata' => array_merge($existing->metadata ?? [], [
+                        'face_checkout' => $metadata['face'] ?? $metadata,
+                    ]),
+                ]);
+
+                return [
+                    'status' => 'checkout',
+                    'message' => 'Berhasil mencatat jam keluar',
+                    'presensi' => $existing->fresh(),
+                ];
+            }
+
+            return [
+                'status' => 'already_present',
+                'message' => 'Presensi hari ini sudah tercatat',
+                'presensi' => $existing,
+            ];
+        }
+
+        $status = $this->determineAttendanceStatus($now->format('H:i'));
+
+        $presensi = PamongPresensi::create([
+            'user_id' => $pamong->id,
+            'tanggal' => $today,
+            'jam_masuk' => $now,
+            'status' => $status,
+            'qr_code_used' => null,
+            'is_verified' => false,
+            'metadata' => array_merge(['attendance_method' => 'face'], $metadata),
+        ]);
+
+        return [
+            'status' => 'checkin',
+            'message' => $status === 'terlambat'
+                ? 'Berhasil mencatat kehadiran dengan scan wajah (Terlambat)'
+                : 'Berhasil mencatat kehadiran dengan scan wajah',
             'presensi' => $presensi,
         ];
     }

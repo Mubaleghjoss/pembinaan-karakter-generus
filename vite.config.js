@@ -8,6 +8,7 @@ export default defineConfig({
             input: [
                 'resources/js/app.js',
                 'resources/js/public-scanner.js',
+                'resources/js/face-attendance.js',
                 'resources/js/qr-print.js',
                 'resources/js/rpg-beta-3d.js',
             ],
@@ -25,6 +26,10 @@ export default defineConfig({
 
                     if (id.includes('html5-qrcode')) {
                         return 'qr-scanner';
+                    }
+
+                    if (id.includes('@vladmandic/human')) {
+                        return 'face-scanner';
                     }
 
                     if (id.includes('swiper')) {

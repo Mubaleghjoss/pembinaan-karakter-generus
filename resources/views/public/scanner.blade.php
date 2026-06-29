@@ -22,6 +22,18 @@
         ? asset('build/assets/' . basename($publicScannerFallbackFile))
         : null;
     $publicScannerAssetAvailable = (bool) ($publicScannerManifestFileExists || $publicScannerFallbackUrl);
+
+    $faceAttendanceEntry = 'resources/js/face-attendance.js';
+    $faceAttendanceManifestFile = $publicScannerManifest[$faceAttendanceEntry]['file'] ?? null;
+    $faceAttendanceManifestFileExists = $faceAttendanceManifestFile
+        ? is_file(public_path('build/' . $faceAttendanceManifestFile))
+        : false;
+    $faceAttendanceFallbackFiles = glob(public_path('build/assets/face-attendance-*.js')) ?: [];
+    $faceAttendanceFallbackFile = $faceAttendanceFallbackFiles[0] ?? null;
+    $faceAttendanceFallbackUrl = $faceAttendanceFallbackFile
+        ? asset('build/assets/' . basename($faceAttendanceFallbackFile))
+        : null;
+    $faceAttendanceAssetAvailable = (bool) ($faceAttendanceManifestFileExists || $faceAttendanceFallbackUrl);
 @endphp
 
 @section('content')
@@ -35,7 +47,7 @@
                         Presensi digital
                     </span>
                     <h1 class="pkg-page-heading mt-5 text-4xl">Pindai presensi lebih cepat dan lebih jelas.</h1>
-                    <p class="pkg-page-subheading mt-3 text-base sm:text-lg">Arahkan kamera ke kode QR atau unggah gambar barcode presensi untuk mencatat kehadiran secara aman.</p>
+                    <p class="pkg-page-subheading mt-3 text-base sm:text-lg">Arahkan kamera ke kode QR atau gunakan scan wajah dengan lokasi aktif untuk mencatat kehadiran secara aman.</p>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                     <div class="pkg-hero-kpi">
@@ -44,7 +56,7 @@
                     </div>
                     <div class="pkg-hero-kpi">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Mode</p>
-                        <p class="text-lg font-black text-slate-950 dark:text-white">Kamera QR</p>
+                        <p class="text-lg font-black text-slate-950 dark:text-white">QR & Wajah</p>
                     </div>
                     <div class="pkg-hero-kpi">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Akses</p>
@@ -146,8 +158,8 @@
         <!-- Scanner Component -->
         <div class="max-w-md mx-auto pkg-panel-lg overflow-hidden" data-reveal="up">
             <div class="p-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center">
-                <h2 class="text-2xl font-bold mb-1">Pindai Kode QR</h2>
-                <p class="text-blue-100 text-sm">Arahkan kamera ke barcode presensi peserta</p>
+                <h2 class="text-2xl font-bold mb-1">Pindai Presensi</h2>
+                <p class="text-blue-100 text-sm">Gunakan barcode QR atau scan wajah sesuai data yang sudah terdaftar</p>
             </div>
 
             <div class="p-6">
@@ -159,6 +171,23 @@
                         </p>
                     </div>
                 @endunless
+                @unless($faceAttendanceAssetAvailable)
+                    <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+                        <p class="text-sm font-bold uppercase tracking-wide">Asset scan wajah belum tersedia</p>
+                        <p class="mt-1 text-sm leading-relaxed">
+                            File build scan wajah belum ditemukan di server. Upload ulang folder <span class="font-mono">public/build</span> dan <span class="font-mono">public/vendor/human/models</span>.
+                        </p>
+                    </div>
+                @endunless
+
+                <div class="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-900">
+                    <button type="button" data-scanner-mode-button="qr" onclick="showScannerMode('qr')" class="scanner-mode-button scanner-mode-button-active">
+                        Pindai QR
+                    </button>
+                    <button type="button" data-scanner-mode-button="face" onclick="showScannerMode('face')" class="scanner-mode-button">
+                        Scan Wajah
+                    </button>
+                </div>
 
                 <!-- Error Message -->
                 <div id="error-message" class="hidden mb-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 flex items-start gap-3 dark:bg-red-950/30 dark:border-red-800">
@@ -190,45 +219,99 @@
                     </div>
                 </div>
 
-                <!-- Start Button -->
-                <div id="start-section" class="text-center py-8">
-                    <div class="mb-8 relative inline-block">
-                        <div class="absolute inset-0 bg-blue-200 rounded-full animate-ping opacity-20"></div>
-                        <div class="bg-blue-50 p-6 rounded-full relative z-10">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><rect width="10" height="10" x="7" y="7" rx="2" /><path d="m16 16-.01-.01" /></svg>
+                <div data-scanner-panel="qr">
+                    <!-- Start Button -->
+                    <div id="start-section" class="text-center py-8">
+                        <div class="mb-8 relative inline-block">
+                            <div class="absolute inset-0 bg-blue-200 rounded-full animate-ping opacity-20"></div>
+                            <div class="bg-blue-50 p-6 rounded-full relative z-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><rect width="10" height="10" x="7" y="7" rx="2" /><path d="m16 16-.01-.01" /></svg>
+                            </div>
                         </div>
+                        <button
+                            onclick="startScanning()"
+                            @disabled(!$publicScannerAssetAvailable)
+                            class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
+                        >
+                            Mulai Pindai QR
+                        </button>
+                        <p class="mt-4 text-sm text-gray-400 dark:text-slate-400">Pastikan browser diizinkan mengakses kamera</p>
                     </div>
-                    <button
-                        onclick="startScanning()"
-                        @disabled(!$publicScannerAssetAvailable)
-                        class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
-                    >
-                        Mulai Pindai Kamera
-                    </button>
-                    <p class="mt-4 text-sm text-gray-400 dark:text-slate-400">Pastikan browser diizinkan mengakses kamera</p>
+
+                    <!-- Scanner Container -->
+                    <div id="scanner-section" class="hidden">
+                        <!-- Step Indicator -->
+                        <div class="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/70">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">!</div>
+                                <span class="font-bold text-blue-800 dark:text-blue-200">Langkah Selanjutnya:</span>
+                            </div>
+                            <p class="text-sm text-blue-700 dark:text-blue-100 ml-8">
+                                Klik <strong class="text-blue-900 dark:text-blue-200">Izinkan Kamera</strong> untuk memindai langsung,
+                                atau pilih <strong class="text-green-700 dark:text-green-200">Pindai dari Gambar</strong> jika barcode sudah tersimpan di HP atau laptop.
+                            </p>
+                        </div>
+
+                        <div id="reader" class="rounded-xl border-2 border-blue-500 shadow-inner overflow-hidden"></div>
+                        <button
+                            onclick="stopScanning()"
+                            class="mt-6 w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                            Batalkan
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Scanner Container -->
-                <div id="scanner-section" class="hidden">
-                    <!-- Step Indicator -->
-                    <div class="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/70">
-                        <div class="flex items-center gap-2 mb-2">
-                            <div class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">!</div>
-                            <span class="font-bold text-blue-800 dark:text-blue-200">Langkah Selanjutnya:</span>
-                        </div>
-                        <p class="text-sm text-blue-700 dark:text-blue-100 ml-8">
-                            Klik <strong class="text-blue-900 dark:text-blue-200">Izinkan Kamera</strong> untuk memindai langsung,
-                            atau pilih <strong class="text-green-700 dark:text-green-200">Pindai dari Gambar</strong> jika barcode sudah tersimpan di HP atau laptop.
-                        </p>
+                <div
+                    data-scanner-panel="face"
+                    data-face-scanner
+                    data-scan-url="{{ route('face-presensi.scan') }}"
+                    data-csrf-token="{{ csrf_token() }}"
+                    data-model-base-path="{{ asset('vendor/human/models') }}"
+                    class="hidden"
+                >
+                    <div data-face-status class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+                        Klik mulai scan wajah. Sistem akan meminta izin kamera dan lokasi.
                     </div>
-                    
-                    <div id="reader" class="rounded-xl border-2 border-blue-500 shadow-inner overflow-hidden"></div>
-                    <button
-                        onclick="stopScanning()"
-                        class="mt-6 w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        Batalkan
-                    </button>
+
+                    <div class="face-capture-frame">
+                        <video data-face-video autoplay playsinline muted></video>
+                        <canvas data-face-canvas class="hidden"></canvas>
+                        <div class="face-guide" aria-hidden="true">
+                            <div class="face-guide__head"></div>
+                            <div class="face-guide__shoulders"></div>
+                        </div>
+                        <div class="face-auto-scan" aria-hidden="true"></div>
+                        <div class="face-scan-hud">
+                            <span data-face-phase>Siap</span>
+                            <span data-face-progress>0%</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                        <div data-face-progress-bar class="h-full w-0 rounded-full bg-emerald-500 transition-all duration-300"></div>
+                    </div>
+
+                    <div class="mt-5 grid gap-3">
+                        <button
+                            type="button"
+                            class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                            data-face-action="start-scan"
+                            @disabled(!$faceAttendanceAssetAvailable)
+                        >
+                            Mulai Scan Wajah
+                        </button>
+                        <button
+                            type="button"
+                            class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                            data-face-action="stop"
+                        >
+                            Batalkan
+                        </button>
+                    </div>
+
+                    <p class="mt-4 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        Pastikan wajah sudah didaftarkan dari dashboard akun, lokasi aktif, dan perangkat berada dalam radius presensi.
+                    </p>
                 </div>
             </div>
         </div>
@@ -246,15 +329,15 @@
                     <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl font-bold text-blue-600">1</span>
                     </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">Klik Mulai Pindai</h3>
-                    <p class="text-gray-600 dark:text-slate-300 text-sm">Klik tombol "Mulai Pindai Kamera" untuk mengaktifkan kamera</p>
+                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">Pilih Mode</h3>
+                    <p class="text-gray-600 dark:text-slate-300 text-sm">Pilih Pindai QR atau Scan Wajah sesuai data presensi yang Anda gunakan</p>
                 </div>
                 <div class="text-center">
                     <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl font-bold text-green-600">2</span>
                     </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">Arahkan ke Kode QR</h3>
-                    <p class="text-gray-600 dark:text-slate-300 text-sm">Arahkan kamera ke barcode presensi pada kartu peserta Anda</p>
+                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">Izinkan Akses</h3>
+                    <p class="text-gray-600 dark:text-slate-300 text-sm">Izinkan kamera untuk QR atau kamera dan lokasi untuk scan wajah</p>
                 </div>
                 <div class="text-center">
                     <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -275,9 +358,9 @@
                 <div>
                     <h3 class="font-bold text-yellow-900 dark:text-amber-200 mb-2">Tips Penting:</h3>
                     <ul class="text-yellow-800 dark:text-amber-100 text-sm space-y-1 list-disc list-inside">
-                        <li>Pastikan kode QR terlihat jelas dan tidak buram</li>
+                        <li>Pastikan kode QR atau wajah terlihat jelas dan tidak buram</li>
                         <li>Gunakan pencahayaan yang cukup</li>
-                        <li>Izinkan browser mengakses kamera Anda</li>
+                        <li>Izinkan browser mengakses kamera dan lokasi saat memakai scan wajah</li>
                         <li>Pastikan Anda berada dalam waktu presensi yang ditentukan</li>
                     </ul>
                 </div>
@@ -287,6 +370,133 @@
 </div>
 
 <style>
+    .scanner-mode-button {
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-weight: 800;
+        color: #475569;
+        transition: all 0.2s ease;
+    }
+
+    .scanner-mode-button-active {
+        background: #ffffff;
+        color: #0f172a;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    }
+
+    .dark .scanner-mode-button {
+        color: #cbd5e1;
+    }
+
+    .dark .scanner-mode-button-active {
+        background: #0f172a;
+        color: #ffffff;
+    }
+
+    .face-capture-frame {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 4 / 3;
+        border-radius: 18px;
+        background: #020617;
+        border: 2px solid rgba(16, 185, 129, 0.7);
+    }
+
+    .face-capture-frame video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+    }
+
+    .face-auto-scan {
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        top: 18%;
+        height: 3px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.95), rgba(16, 185, 129, 0.2), transparent);
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.85);
+        opacity: 0;
+        transform: translateY(0);
+        pointer-events: none;
+    }
+
+    [data-face-scan-state="active"] .face-auto-scan {
+        opacity: 1;
+        animation: face-scan-line 1.7s ease-in-out infinite;
+    }
+
+    [data-face-scan-state="success"] .face-auto-scan {
+        opacity: 1;
+        background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.9), transparent);
+    }
+
+    [data-face-scan-state="error"] .face-auto-scan {
+        opacity: 1;
+        background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.9), transparent);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.65);
+    }
+
+    .face-scan-hud {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.78);
+        color: #ecfdf5;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 800;
+        backdrop-filter: blur(10px);
+    }
+
+    @keyframes face-scan-line {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(260px);
+        }
+    }
+
+    .face-guide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    }
+
+    .face-guide__head {
+        position: absolute;
+        width: min(46%, 190px);
+        aspect-ratio: 0.78;
+        border: 3px solid rgba(16, 185, 129, 0.92);
+        border-radius: 48% 48% 44% 44%;
+        box-shadow: 0 0 0 999px rgba(2, 6, 23, 0.14), 0 0 26px rgba(16, 185, 129, 0.45);
+        transform: translateY(-10%);
+    }
+
+    .face-guide__shoulders {
+        position: absolute;
+        bottom: 9%;
+        width: min(74%, 320px);
+        height: 26%;
+        border: 3px solid rgba(16, 185, 129, 0.74);
+        border-top: 0;
+        border-radius: 0 0 999px 999px;
+    }
+
     /* Custom styling untuk tombol html5-qrcode */
     #reader__dashboard_section_csr button,
     #reader__dashboard_section_fsr button,
@@ -465,6 +675,21 @@
                 }
                 document.getElementById('error-message')?.classList.remove('hidden');
             };
+        </script>
+    @endif
+
+    @if($faceAttendanceManifestFileExists)
+        @vite([$faceAttendanceEntry])
+    @elseif($faceAttendanceFallbackUrl)
+        <script type="module" src="{{ $faceAttendanceFallbackUrl }}"></script>
+    @else
+        <script>
+            document.querySelectorAll('[data-face-action="start-scan"]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const status = document.querySelector('[data-face-scanner] [data-face-status]');
+                    if (status) status.textContent = 'Asset scan wajah belum tersedia. Jalankan npm run build dan upload folder public/build.';
+                });
+            });
         </script>
     @endif
 @endpush

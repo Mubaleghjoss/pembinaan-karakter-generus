@@ -164,6 +164,72 @@ class PresensiService implements PresensiServiceInterface
         ];
     }
 
+    public function recordFaceAttendance(Siswa $siswa, array $metadata): array
+    {
+        $today = Carbon::today()->format('Y-m-d');
+        $now = Carbon::now();
+
+        $existing = $this->presensiRepository->findByStudentAndDate($siswa->id, $today);
+
+        if ($existing) {
+            if (! $existing->jam_keluar && in_array($existing->status, ['hadir', 'terlambat'], true)) {
+                $nextMetadata = array_merge($existing->metadata ?? [], [
+                    'face_checkout' => $metadata['face'] ?? $metadata,
+                ]);
+
+                $presensi = $this->presensiRepository->update($existing->id, [
+                    'jam_keluar' => $now,
+                    'scan_location' => $metadata['scan_location'] ?? null,
+                    'scan_device_info' => $metadata['scan_device_info'] ?? null,
+                    'scan_ip_address' => $metadata['scan_ip_address'] ?? null,
+                    'metadata' => $nextMetadata,
+                ]);
+
+                return [
+                    'status' => 'checkout',
+                    'message' => 'Berhasil mencatat jam keluar',
+                    'presensi' => $presensi,
+                ];
+            }
+
+            return [
+                'status' => 'already_present',
+                'message' => 'Presensi hari ini sudah tercatat',
+                'presensi' => $existing,
+            ];
+        }
+
+        $status = $this->determineAttendanceStatus($now->format('H:i'));
+
+        $presensi = $this->presensiRepository->create([
+            'siswa_id' => $siswa->id,
+            'tanggal' => $today,
+            'jam_masuk' => $now,
+            'status' => $status,
+            'qr_code_used' => null,
+            'scan_location' => $metadata['scan_location'] ?? null,
+            'scan_device_info' => $metadata['scan_device_info'] ?? null,
+            'scan_ip_address' => $metadata['scan_ip_address'] ?? null,
+            'is_verified' => false,
+            'metadata' => array_merge(['attendance_method' => 'face'], $metadata),
+        ]);
+
+        try {
+            $gamificationService = app(GamificationService::class);
+            $gamificationService->awardAttendancePoints($siswa, $status, $presensi);
+        } catch (\Exception $e) {
+            \Log::warning('Gamification points failed: ' . $e->getMessage());
+        }
+
+        return [
+            'status' => 'checkin',
+            'message' => $status === 'terlambat'
+                ? 'Berhasil mencatat kehadiran dengan scan wajah (Terlambat)'
+                : 'Berhasil mencatat kehadiran dengan scan wajah',
+            'presensi' => $presensi,
+        ];
+    }
+
     /**
      * Mendapatkan statistik kehadiran
      *

@@ -22,7 +22,7 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-XSS-Protection', '0');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+        $response->headers->set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(self)');
 
         // Content Security Policy
         $csp = "default-src 'self'; ".

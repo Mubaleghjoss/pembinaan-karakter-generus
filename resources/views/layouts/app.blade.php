@@ -641,6 +641,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
     <script src="/js/csrf-handler.js?v={{ time() }}"></script>
     
     @include('components.profile-assignment-prompt')
+    @include('components.face-enrollment-prompt')
     @include('components.biometric-prompt')
 </body>
 </html>

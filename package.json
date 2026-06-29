@@ -24,6 +24,7 @@
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/list": "^6.1.20",
+    "@vladmandic/human": "^3.3.6",
     "alpinejs": "^3.15.11",
     "axios": "^1.15.0",
     "chart.js": "^4.5.1",

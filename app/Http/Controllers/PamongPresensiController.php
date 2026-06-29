@@ -585,6 +585,7 @@ class PamongPresensiController extends Controller
                 'is_verified',
                 'verified_by',
                 'verified_at',
+                'metadata',
             ])
             ->with([
                 'user:id,name,username,avatar_path,kelompok',

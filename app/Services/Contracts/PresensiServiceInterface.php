@@ -6,6 +6,7 @@ use App\DTOs\RecordAttendanceDTO;
 use App\DTOs\ScanQrDTO;
 use App\DTOs\StatisticsFilterDTO;
 use App\Models\Presensi;
+use App\Models\Siswa;
 
 /**
  * Interface untuk service layer Presensi
@@ -33,6 +34,15 @@ interface PresensiServiceInterface
      * @throws \App\Exceptions\QrTokenExpiredException Jika token QR sudah expired
      */
     public function scanQrCode(ScanQrDTO $dto): array;
+
+    /**
+     * Memproses scan wajah untuk presensi siswa.
+     *
+     * @param Siswa $siswa Siswa yang cocok dengan hasil scan wajah
+     * @param array $metadata Metadata bukti scan wajah dan lokasi
+     * @return array Hasil scan dengan status dan data presensi
+     */
+    public function recordFaceAttendance(Siswa $siswa, array $metadata): array;
 
     /**
      * Mendapatkan statistik kehadiran

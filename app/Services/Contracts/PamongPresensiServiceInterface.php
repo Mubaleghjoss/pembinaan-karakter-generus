@@ -24,6 +24,15 @@ interface PamongPresensiServiceInterface
     public function recordAttendance(User $pamong, string $token, array $metadata = []): array;
 
     /**
+     * Mencatat kehadiran pamong via scan wajah.
+     *
+     * @param User $pamong User pamong/admin yang cocok dengan hasil scan wajah
+     * @param array $metadata Metadata bukti scan wajah dan lokasi
+     * @return array Hasil scan dengan status dan data presensi
+     */
+    public function recordFaceAttendance(User $pamong, array $metadata): array;
+
+    /**
      * Mendapatkan statistik kehadiran pamong
      *
      * @param string $startDate Tanggal mulai (Y-m-d)

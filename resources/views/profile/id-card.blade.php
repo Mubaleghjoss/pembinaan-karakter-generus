@@ -13,6 +13,25 @@
         : (!empty($siteSettings['site_logo']) ? asset('storage/' . $siteSettings['site_logo']) : null);
     $roleLabel = $user->operationalRoleLabel();
     $orgLabel = $user->organizationalLabel();
+    $faceAttendanceEntry = 'resources/js/face-attendance.js';
+    $faceAttendanceManifestPath = public_path('build/manifest.json');
+    $faceAttendanceManifest = [];
+
+    if (is_file($faceAttendanceManifestPath)) {
+        $decodedManifest = json_decode(file_get_contents($faceAttendanceManifestPath), true);
+        $faceAttendanceManifest = is_array($decodedManifest) ? $decodedManifest : [];
+    }
+
+    $faceAttendanceManifestFile = $faceAttendanceManifest[$faceAttendanceEntry]['file'] ?? null;
+    $faceAttendanceManifestFileExists = $faceAttendanceManifestFile
+        ? is_file(public_path('build/' . $faceAttendanceManifestFile))
+        : false;
+    $faceAttendanceFallbackFiles = glob(public_path('build/assets/face-attendance-*.js')) ?: [];
+    $faceAttendanceFallbackFile = $faceAttendanceFallbackFiles[0] ?? null;
+    $faceAttendanceFallbackUrl = $faceAttendanceFallbackFile
+        ? asset('build/assets/' . basename($faceAttendanceFallbackFile))
+        : null;
+    $faceAttendanceAssetAvailable = (bool) ($faceAttendanceManifestFileExists || $faceAttendanceFallbackUrl);
 @endphp
 
 <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8" x-data="idCardManager()">
@@ -135,6 +154,98 @@
                         <span x-text="isUploadingPhoto ? 'Mengunggah...' : 'Ambil Foto Langsung'"></span>
                     </button>
                 </div>
+            </div>
+
+            <div
+                class="pkg-card p-4"
+                data-face-enrollment
+                data-enroll-url="{{ route('face-profile.enroll') }}"
+                data-csrf-token="{{ csrf_token() }}"
+                data-model-base-path="{{ asset('vendor/human/models') }}"
+            >
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Data Wajah Presensi</h2>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            Dipakai untuk alternatif presensi scan wajah.
+                        </p>
+                    </div>
+                    <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $faceProfile ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200' }}">
+                        {{ $faceProfile ? 'Terdaftar' : 'Belum Ada' }}
+                    </span>
+                </div>
+
+                @if($faceProfile)
+                    <div class="mt-4 overflow-hidden rounded-xl border border-emerald-200 dark:border-emerald-900/70">
+                        @if($faceProfile->photo_path)
+                            <img src="{{ Storage::disk('public')->url($faceProfile->photo_path) }}" alt="Foto wajah presensi" class="h-40 w-full object-cover">
+                        @endif
+                        <div class="bg-emerald-50 p-3 text-xs leading-5 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100">
+                            Terakhir disimpan {{ $faceProfile->created_at?->format('d M Y H:i') }}.
+                            @if($faceProfile->last_used_at)
+                                Scan terakhir {{ $faceProfile->last_used_at->format('d M Y H:i') }}.
+                            @endif
+                        </div>
+                    </div>
+                @else
+                    <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                        Data wajah belum tersimpan. Jika popup wajib sudah muncul, selesaikan pendaftaran di sini agar scan wajah bisa dipakai.
+                    </div>
+                @endif
+
+                @unless($faceEnrollmentEnabled)
+                    <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                        Scan wajah untuk pamong/admin sedang nonaktif di pengaturan.
+                    </div>
+                @else
+                    @unless($faceAttendanceAssetAvailable)
+                        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                            Asset scan wajah belum tersedia. Jalankan build frontend dan upload folder <span class="font-mono">public/build</span>.
+                        </div>
+                    @endunless
+
+                    <div class="mt-4">
+                        <div data-face-status class="mb-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs font-semibold leading-5 text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
+                            Klik perbarui data wajah untuk membuka kamera.
+                        </div>
+
+                        <div class="face-capture-frame">
+                            <video data-face-video autoplay playsinline muted></video>
+                            <canvas data-face-canvas class="hidden"></canvas>
+                            <div class="face-guide" aria-hidden="true">
+                                <div class="face-guide__head"></div>
+                                <div class="face-guide__shoulders"></div>
+                            </div>
+                            <div class="face-auto-scan" aria-hidden="true"></div>
+                            <div class="face-scan-hud">
+                                <span data-face-phase>Siap</span>
+                                <span data-face-progress>0%</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                            <div data-face-progress-bar class="h-full w-0 rounded-full bg-emerald-500 transition-all duration-300"></div>
+                        </div>
+
+                        <div class="mt-4 grid gap-2">
+                            <button
+                                type="button"
+                                class="btn-primary w-full justify-center text-sm !px-4 !py-2"
+                                data-face-action="start-enrollment"
+                                @disabled(!$faceAttendanceAssetAvailable)
+                            >
+                                {{ $faceProfile ? 'Perbarui Data Wajah' : 'Daftarkan Data Wajah' }}
+                            </button>
+                            <button type="button" class="btn-secondary w-full justify-center text-sm !px-4 !py-2" data-face-action="stop">
+                                Hentikan Kamera
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                        Radius scan saat ini {{ number_format($faceAttendanceSettings['radius_meters'] ?? 0, 0, ',', '.') }} m.
+                        Minimal kemiripan {{ $faceAttendanceSettings['match_threshold'] ?? 35.00 }}%.
+                    </div>
+                @endunless
             </div>
 
             <div class="pkg-card-soft p-4">
@@ -396,6 +507,108 @@
         font-size: 1.3mm;
         color: rgba(255,255,255,0.5);
         letter-spacing: 0.1mm;
+    }
+
+    .face-capture-frame {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 4 / 3;
+        border-radius: 16px;
+        background: #020617;
+        border: 1px solid rgba(16, 185, 129, 0.62);
+    }
+
+    .face-capture-frame video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+    }
+
+    .face-guide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    }
+
+    .face-guide__head {
+        position: absolute;
+        width: min(48%, 150px);
+        aspect-ratio: 0.78;
+        border: 3px solid rgba(16, 185, 129, 0.92);
+        border-radius: 48% 48% 44% 44%;
+        box-shadow: 0 0 0 999px rgba(2, 6, 23, 0.16), 0 0 24px rgba(16, 185, 129, 0.42);
+        transform: translateY(-10%);
+    }
+
+    .face-guide__shoulders {
+        position: absolute;
+        bottom: 9%;
+        width: min(76%, 250px);
+        height: 26%;
+        border: 3px solid rgba(16, 185, 129, 0.72);
+        border-top: 0;
+        border-radius: 0 0 999px 999px;
+    }
+
+    .face-auto-scan {
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        top: 18%;
+        height: 3px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.95), rgba(16, 185, 129, 0.2), transparent);
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.85);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    [data-face-scan-state="active"] .face-auto-scan {
+        opacity: 1;
+        animation: face-scan-line 1.7s ease-in-out infinite;
+    }
+
+    [data-face-scan-state="success"] .face-auto-scan {
+        opacity: 1;
+        background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.9), transparent);
+    }
+
+    [data-face-scan-state="error"] .face-auto-scan {
+        opacity: 1;
+        background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.9), transparent);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.65);
+    }
+
+    .face-scan-hud {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.78);
+        color: #ecfdf5;
+        padding: 7px 10px;
+        font-size: 11px;
+        font-weight: 800;
+        backdrop-filter: blur(10px);
+    }
+
+    @keyframes face-scan-line {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(190px);
+        }
     }
 </style>
 
@@ -807,3 +1020,11 @@ function idCardManager() {
 }
 </script>
 @endsection
+
+@push('scripts')
+    @if($faceAttendanceManifestFileExists)
+        @vite([$faceAttendanceEntry])
+    @elseif($faceAttendanceFallbackUrl)
+        <script type="module" src="{{ $faceAttendanceFallbackUrl }}"></script>
+    @endif
+@endpush

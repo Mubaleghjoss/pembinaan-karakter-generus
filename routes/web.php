@@ -47,6 +47,9 @@ Route::get('/kalender', [App\Http\Controllers\CalendarController::class, 'public
 Route::get('/kalender/events', [App\Http\Controllers\CalendarController::class, 'publicEvents'])->name('public.calendar.events');
 // Public QR Scan endpoint (no auth required for public scanner)
 Route::post('/qr/scan', [PresensiController::class, 'scan'])->name('qr.scan.post');
+Route::post('/face-presensi/scan', [App\Http\Controllers\FaceAttendanceController::class, 'scan'])
+    ->middleware('throttle:qr-scan')
+    ->name('face-presensi.scan');
 
 // Laporan Penyaksian - Public Form (like Google Form)
 Route::get('/lapor-pkg', [App\Http\Controllers\LaporanPenyaksianController::class, 'create'])->name('laporan-penyaksian.create');
@@ -140,6 +143,8 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
         })->name('pr.submit');
         Route::get('/kartu', [App\Http\Controllers\SiswaDashboardController::class, 'kartu'])->name('kartu');
         Route::get('/kartu/print', [App\Http\Controllers\SiswaDashboardController::class, 'kartuPrint'])->name('kartu.print');
+        Route::get('/face-profile', [App\Http\Controllers\FaceAttendanceController::class, 'profile'])->name('face-profile.show');
+        Route::post('/face-profile/enroll', [App\Http\Controllers\FaceAttendanceController::class, 'enroll'])->name('face-profile.enroll');
 
         // Canonical Tugas PKG routes
         Route::prefix('/tugas-pkg')->name('tugas-pkg.')->group(function () {
@@ -284,6 +289,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/id-card', [ProfileController::class, 'idCard'])->name('profile.id-card');
     Route::get('/profile/id-card/print', [ProfileController::class, 'idCardPrint'])->name('profile.id-card.print');
     Route::post('/profile/id-card/refresh-qr', [ProfileController::class, 'refreshIdCardQr'])->name('profile.id-card.refresh-qr');
+    Route::get('/face-profile', [App\Http\Controllers\FaceAttendanceController::class, 'profile'])->name('face-profile.show');
+    Route::post('/face-profile/enroll', [App\Http\Controllers\FaceAttendanceController::class, 'enroll'])->name('face-profile.enroll');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update.post');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
@@ -499,6 +506,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/settings/footer', [App\Http\Controllers\SettingsController::class, 'updateFooter'])->name('settings.update.footer');
         Route::put('/settings/permissions', [App\Http\Controllers\SettingsController::class, 'updateDefaultPermissions'])->name('settings.update.permissions');
         Route::put('/settings/popup', [App\Http\Controllers\SettingsController::class, 'updatePopups'])->name('settings.update.popup');
+        Route::put('/settings/face-attendance', [App\Http\Controllers\SettingsController::class, 'updateFaceAttendance'])->name('settings.update.face-attendance');
 
         // Backup & Restore
         Route::get('/settings/backup', [App\Http\Controllers\BackupController::class, 'index'])->name('settings.backup');

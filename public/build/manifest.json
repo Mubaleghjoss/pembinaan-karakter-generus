@@ -12,6 +12,10 @@
     "name": "calendar-vendor",
     "isDynamicEntry": true
   },
+  "_face-scanner-CjmZw9SX.js": {
+    "file": "assets/face-scanner-CjmZw9SX.js",
+    "name": "face-scanner"
+  },
   "_icon-pack-D8t0f58e.js": {
     "file": "assets/icon-pack-D8t0f58e.js",
     "name": "icon-pack",
@@ -61,7 +65,7 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-BYJOJw_m.js",
+    "file": "assets/app-BWtd81pX.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -82,7 +86,7 @@
       "_browser-C8KFpyF2.js"
     ],
     "css": [
-      "assets/app-CDO34FKO.css"
+      "assets/app-B9GSuOJT.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -108,7 +112,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-VqlwQeaD.js",
+    "file": "assets/QRScanner-Ch2Ba6q3.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -118,6 +122,15 @@
       "resources/js/app.js",
       "resources/js/components/AttendanceSuccess.jsx",
       "_icon-pack-D8t0f58e.js"
+    ]
+  },
+  "resources/js/face-attendance.js": {
+    "file": "assets/face-attendance-4of68MKV.js",
+    "name": "face-attendance",
+    "src": "resources/js/face-attendance.js",
+    "isEntry": true,
+    "imports": [
+      "_face-scanner-CjmZw9SX.js"
     ]
   },
   "resources/js/pdf-viewer.js": {
@@ -130,7 +143,7 @@
     ]
   },
   "resources/js/public-scanner.js": {
-    "file": "assets/public-scanner-COIKflt6.js",
+    "file": "assets/public-scanner-BJR0ztSR.js",
     "name": "public-scanner",
     "src": "resources/js/public-scanner.js",
     "isEntry": true,

@@ -243,6 +243,7 @@
 
 @stack('scripts')
 @include('components.profile-assignment-prompt')
+@include('components.face-enrollment-prompt')
 @include('components.biometric-prompt')
 </body>
 </html>

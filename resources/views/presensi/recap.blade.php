@@ -198,6 +198,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Jam Masuk</th>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Jam Keluar</th>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Bukti</th>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Keterangan</th>
                     </tr>
                 </thead>
@@ -231,13 +232,35 @@
                                     {{ $record['status_label'] }}
                                 </span>
                             </td>
+                            <td data-label="Bukti" class="whitespace-nowrap px-6 py-4">
+                                @if($record['face_proof'] ?? null)
+                                    <div class="flex items-center gap-3">
+                                        @if($record['face_proof']['proof_url'] ?? null)
+                                            <a href="{{ $record['face_proof']['proof_url'] }}" target="_blank" rel="noopener" class="block h-12 w-12 overflow-hidden rounded-xl border border-emerald-200 dark:border-emerald-900">
+                                                <img src="{{ $record['face_proof']['proof_url'] }}" alt="Bukti scan wajah" class="h-full w-full object-cover">
+                                            </a>
+                                        @endif
+                                        <div class="space-y-1">
+                                            <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-200">
+                                                Scan Wajah
+                                            </span>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                {{ $record['face_proof']['similarity_percent'] ?? '-' }}% cocok -
+                                                {{ round((float) ($record['face_proof']['distance_meters'] ?? 0)) }} m
+                                            </p>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
+                                @endif
+                            </td>
                             <td data-label="Keterangan" class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                                 {{ $record['keterangan'] }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-6 py-0 pkg-mobile-empty">
+                            <td colspan="10" class="px-6 py-0 pkg-mobile-empty">
                                 <div class="pkg-empty-state">
                                     <svg class="pkg-empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />

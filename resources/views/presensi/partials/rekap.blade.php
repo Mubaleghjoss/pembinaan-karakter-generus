@@ -280,6 +280,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tanggal</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Jam Masuk</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Bukti</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Verifikasi</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Aksi</th>
                     </tr>
@@ -311,6 +312,26 @@
                                 <span class="pkg-status-badge"
                                       :class="statusBadgeClass(item.status)"
                                       x-text="statusLabel(item.status)"></span>
+                            </td>
+                            <td class="px-4 py-4">
+                                <template x-if="item.face_proof">
+                                    <div class="flex min-w-[190px] items-center gap-3">
+                                        <a :href="item.face_proof.proof_url" target="_blank" rel="noopener" class="block h-12 w-12 overflow-hidden rounded-xl border border-emerald-200 dark:border-emerald-900">
+                                            <img :src="item.face_proof.proof_url" alt="Bukti scan wajah" class="h-full w-full object-cover">
+                                        </a>
+                                        <div class="space-y-1">
+                                            <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-200">
+                                                Scan Wajah
+                                            </span>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                <span x-text="item.face_proof.similarity_percent ?? '-'"></span>% cocok
+                                                <span> - </span>
+                                                <span x-text="Math.round(item.face_proof.distance_meters || 0)"></span> m
+                                            </p>
+                                        </div>
+                                    </div>
+                                </template>
+                                <span x-show="!item.face_proof" class="text-sm text-gray-400 dark:text-gray-500">-</span>
                             </td>
                             <td class="px-4 py-4">
                                 <span class="pkg-status-badge"

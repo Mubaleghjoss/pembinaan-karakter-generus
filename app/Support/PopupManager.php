@@ -27,6 +27,14 @@ class PopupManager
                 'default_enabled' => false,
                 'default_required' => false,
             ],
+            'face_enrollment_prompt' => [
+                'title' => 'Daftarkan wajah presensi',
+                'description' => 'Popup wajib untuk siswa dan pamong yang belum punya data wajah awal sebelum memakai scan wajah presensi.',
+                'targets' => ['Siswa', 'Pamong', 'Pengurus PKG', 'Admin'],
+                'action_label' => 'Buka pendaftaran wajah',
+                'default_enabled' => true,
+                'default_required' => true,
+            ],
             'biodata_prompt' => [
                 'title' => 'Lengkapi biodata',
                 'description' => 'Popup setelah login untuk siswa dengan biodata yang belum lengkap.',

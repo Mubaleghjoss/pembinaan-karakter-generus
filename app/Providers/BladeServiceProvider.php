@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\BiometricStatus;
 use App\Support\PopupManager;
 use App\Support\TargetGrade;
+use App\Services\FaceAttendanceService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
@@ -151,6 +152,56 @@ class BladeServiceProvider extends ServiceProvider
                 'biometricHasCredential' => $biometricHasCredential,
                 'biometricStatus' => $biometricStatus,
                 'biometricLegacyCredentialCount' => $biometricLegacyCredentialCount,
+                'profileAssignmentPending' => $profileAssignmentPending,
+            ]);
+        });
+
+        View::composer('components.face-enrollment-prompt', function ($view) {
+            $faceUser = null;
+            $faceUserType = null;
+            $faceProfileExists = false;
+            $faceProfileUrl = null;
+            $faceEnrollmentEnabledForUser = false;
+            $profileAssignmentPending = false;
+
+            try {
+                $service = app(FaceAttendanceService::class);
+
+                if (Auth::guard('siswa')->check()) {
+                    $faceUser = Auth::guard('siswa')->user();
+                    $faceUserType = 'siswa';
+                    $faceProfileUrl = route('siswa.face-profile.show');
+                    $faceEnrollmentEnabledForUser = $service->enrollmentEnabledFor($faceUser);
+                    $profileAssignmentPending = $faceUser->needsProfileAssignmentConfirmation();
+                } elseif (Auth::guard('web')->check()) {
+                    $user = Auth::guard('web')->user();
+
+                    if ($user instanceof User && $user->hasAnyRole(User::attendanceRoleNames())) {
+                        $faceUser = $user;
+                        $faceUserType = 'pamong';
+                        $faceProfileUrl = route('face-profile.show');
+                        $faceEnrollmentEnabledForUser = $service->enrollmentEnabledFor($faceUser);
+                        $profileAssignmentPending = method_exists($faceUser, 'needsProfileAssignmentConfirmation')
+                            && $faceUser->needsProfileAssignmentConfirmation();
+                    }
+                }
+
+                if ($faceUser && $faceEnrollmentEnabledForUser) {
+                    $faceProfileExists = (bool) $service->activeProfileFor($faceUser);
+                }
+            } catch (\Throwable $exception) {
+                \Log::warning('Failed to resolve face enrollment prompt status.', [
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+
+            $view->with([
+                'faceEnrollmentConfig' => PopupManager::config('face_enrollment_prompt'),
+                'faceEnrollmentUser' => $faceUser,
+                'faceEnrollmentUserType' => $faceUserType,
+                'faceEnrollmentProfileExists' => $faceProfileExists,
+                'faceEnrollmentUrl' => $faceProfileUrl,
+                'faceEnrollmentEnabledForUser' => $faceEnrollmentEnabledForUser,
                 'profileAssignmentPending' => $profileAssignmentPending,
             ]);
         });

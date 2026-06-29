@@ -177,6 +177,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jam Masuk</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jam Keluar</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bukti</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Keterangan</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
                     </tr>
@@ -225,6 +226,33 @@
                             </span>
                             @if($item->late_duration_formatted)
                                 <span class="ml-1 text-xs text-gray-500 dark:text-gray-400">({{ $item->late_duration_formatted }})</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap" data-label="Bukti">
+                            @php
+                                $faceProof = data_get($item->metadata, 'face');
+                                $proofPath = is_array($faceProof) ? data_get($faceProof, 'proof_path') : null;
+                                $proofUrl = $proofPath ? Storage::disk('public')->url($proofPath) : data_get($faceProof, 'proof_url');
+                            @endphp
+                            @if(is_array($faceProof) && data_get($faceProof, 'method') === 'face')
+                                <div class="flex items-center gap-3">
+                                    @if($proofUrl)
+                                        <a href="{{ $proofUrl }}" target="_blank" rel="noopener" class="block h-12 w-12 overflow-hidden rounded-xl border border-emerald-200 dark:border-emerald-900">
+                                            <img src="{{ $proofUrl }}" alt="Bukti scan wajah" class="h-full w-full object-cover">
+                                        </a>
+                                    @endif
+                                    <div class="space-y-1">
+                                        <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-200">
+                                            Scan Wajah
+                                        </span>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ data_get($faceProof, 'similarity_percent', '-') }}% cocok -
+                                            {{ round((float) data_get($faceProof, 'location.distance_meters', 0)) }} m
+                                        </p>
+                                    </div>
+                                </div>
+                            @else
+                                <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate" data-label="Keterangan">
@@ -319,7 +347,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 pkg-mobile-empty" data-label="">
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 pkg-mobile-empty" data-label="">
                             Tidak ada data presensi pamong
                         </td>
                     </tr>

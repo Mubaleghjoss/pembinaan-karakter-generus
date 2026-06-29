@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Models\PamongPermission;
 use App\Models\ThemeSetting;
 use App\Models\User;
+use App\Support\FaceAttendanceConfig;
 use App\Support\OperationalPermissionPreset;
 use App\Support\PopupManager;
 use App\Services\BackupService;
@@ -121,6 +122,7 @@ class SettingsController extends Controller
         // Load all tab data once so settings tabs can switch without a page refresh.
         $shareInfos = \App\Models\ShareInfo::with('creator')->orderByDesc('created_at')->get();
         $popupSettings = PopupManager::all();
+        $faceAttendanceSettings = FaceAttendanceConfig::all();
 
         return view('settings.index', compact(
             'tab',
@@ -135,7 +137,8 @@ class SettingsController extends Controller
             'kelasSettings',
             'tingkatList',
             'shareInfos',
-            'popupSettings'
+            'popupSettings',
+            'faceAttendanceSettings'
         ));
     }
 
@@ -364,6 +367,34 @@ class SettingsController extends Controller
 
         return redirect()->route('settings.index', ['tab' => 'popup'])
             ->with('success', 'Pengaturan popup berhasil disimpan!');
+    }
+
+    public function updateFaceAttendance(Request $request)
+    {
+        $validated = $request->validate([
+            'enabled_siswa' => ['nullable', 'boolean'],
+            'enabled_pamong' => ['nullable', 'boolean'],
+            'center_lat' => ['required', 'numeric', 'between:-90,90'],
+            'center_lng' => ['required', 'numeric', 'between:-180,180'],
+            'radius_value' => ['required', 'numeric', 'min:1', 'max:1000'],
+            'radius_unit' => ['required', 'string', 'in:meter,kilometer'],
+            'match_threshold' => ['required', 'numeric', 'min:20', 'max:100'],
+            'max_accuracy_meters' => ['required', 'integer', 'min:5', 'max:5000'],
+        ]);
+
+        FaceAttendanceConfig::store([
+            'enabled_siswa' => $request->boolean('enabled_siswa'),
+            'enabled_pamong' => $request->boolean('enabled_pamong'),
+            'center_lat' => $validated['center_lat'],
+            'center_lng' => $validated['center_lng'],
+            'radius_value' => $validated['radius_value'],
+            'radius_unit' => $validated['radius_unit'],
+            'match_threshold' => $validated['match_threshold'],
+            'max_accuracy_meters' => $validated['max_accuracy_meters'],
+        ]);
+
+        return redirect()->route('settings.index', ['tab' => 'face_attendance'])
+            ->with('success', 'Pengaturan scan wajah berhasil disimpan!');
     }
 
     /**
