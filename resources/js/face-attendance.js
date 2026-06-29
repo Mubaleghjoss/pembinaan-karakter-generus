@@ -54,36 +54,41 @@ function delay(ms) {
 
 async function getHuman(root) {
     if (!humanPromise) {
-        const human = new Human({
-            backend: 'webgl',
-            modelBasePath: modelBasePath(root),
-            filter: { enabled: true, equalization: true, flip: false },
-            face: {
-                enabled: true,
-                detector: {
+        humanPromise = (async () => {
+            const human = new Human({
+                backend: 'webgl',
+                modelBasePath: modelBasePath(root),
+                warmup: 'none',
+                filter: { enabled: true, equalization: true, flip: false },
+                face: {
                     enabled: true,
-                    maxDetected: 2,
-                    minConfidence: 0.55,
-                    rotation: false,
+                    detector: {
+                        enabled: true,
+                        maxDetected: 2,
+                        minConfidence: 0.55,
+                        rotation: false,
+                    },
+                    description: { enabled: true, minConfidence: 0.5 },
+                    mesh: { enabled: false },
+                    attention: { enabled: false },
+                    iris: { enabled: false },
+                    emotion: { enabled: false },
+                    antispoof: { enabled: false },
+                    liveness: { enabled: false },
                 },
-                description: { enabled: true, minConfidence: 0.5 },
-                mesh: { enabled: false },
-                attention: { enabled: false },
-                iris: { enabled: false },
-                emotion: { enabled: false },
-                antispoof: { enabled: false },
-                liveness: { enabled: false },
-            },
-            body: { enabled: false },
-            hand: { enabled: false },
-            object: { enabled: false },
-            segmentation: { enabled: false },
-            gesture: { enabled: false },
-        });
+                body: { enabled: false },
+                hand: { enabled: false },
+                object: { enabled: false },
+                segmentation: { enabled: false },
+                gesture: { enabled: false },
+            });
 
-        humanPromise = human.load().then(async () => {
-            await human.warmup();
+            await human.load();
+
             return human;
+        })().catch((error) => {
+            humanPromise = null;
+            throw error;
         });
     }
 
