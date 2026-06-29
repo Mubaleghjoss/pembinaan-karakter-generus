@@ -70,7 +70,8 @@ class FaceAttendanceFeatureTest extends TestCase
         $this->actingAs($siswa, 'siswa')
             ->get(route('siswa.dashboard'))
             ->assertOk()
-            ->assertSee('Daftarkan Wajah Presensi');
+            ->assertSee('Daftarkan Wajah Presensi')
+            ->assertSee('Lewati dulu');
 
         app(FaceAttendanceService::class)->enroll($siswa, $this->descriptor(0.15), $this->imageData(), null);
 

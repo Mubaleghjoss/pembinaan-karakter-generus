@@ -3,6 +3,7 @@
     $faceEnrollmentEnabled = (bool) ($faceEnrollmentConfig['enabled'] ?? false);
     $faceEnrollmentRequired = (bool) ($faceEnrollmentConfig['required'] ?? false);
     $skipCurrentPage = request()->routeIs('face-profile.show') || request()->routeIs('siswa.face-profile.show');
+    $faceEnrollmentDismissKey = 'face_enrollment_prompt_skipped_'.md5(($faceEnrollmentUserType ?? 'guest').':'.($faceEnrollmentUser->id ?? '0'));
 @endphp
 
 @if(
@@ -14,8 +15,19 @@
     && !$skipCurrentPage
 )
     <div
-        x-data="{ open: true }"
+        x-data="{
+            open: false,
+            dismissKey: @js($faceEnrollmentDismissKey),
+            init() {
+                this.open = sessionStorage.getItem(this.dismissKey) !== '1';
+            },
+            dismiss() {
+                sessionStorage.setItem(this.dismissKey, '1');
+                this.open = false;
+            }
+        }"
         x-show="open"
+        x-cloak
         class="fixed inset-0 z-[115] flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4"
         role="dialog"
         aria-modal="true"
@@ -45,16 +57,14 @@
 
             @if($faceEnrollmentRequired)
                 <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                    Pendaftaran wajah sedang diwajibkan oleh admin untuk akun siswa dan pamong.
+                    Pendaftaran wajah sedang diwajibkan oleh admin untuk akun siswa dan pamong, tetapi bisa dilewati sementara agar pengaturan lain tetap bisa dibuka.
                 </div>
             @endif
 
             <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                @unless($faceEnrollmentRequired)
-                    <button type="button" class="btn-secondary justify-center" @click="open = false">
-                        Nanti
-                    </button>
-                @endunless
+                <button type="button" class="btn-secondary justify-center" @click="dismiss()">
+                    Lewati dulu
+                </button>
                 <a href="{{ $faceEnrollmentUrl }}" class="btn-primary justify-center">
                     Buka Pendaftaran Wajah
                 </a>
