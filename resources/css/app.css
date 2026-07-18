@@ -202,9 +202,42 @@ body {
 }
 
 .pkg-mobile-menu-shell {
+    max-height: calc(100svh - 4.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: color-mix(in srgb, var(--pkg-public-nav-bg, #ffffff) 96%, transparent);
     border-top: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
     backdrop-filter: blur(18px);
+}
+
+.pkg-mobile-menu-toggle {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 1px solid color-mix(in srgb, var(--pkg-border, rgba(148, 163, 184, 0.24)) 90%, transparent);
+    border-radius: 9999px;
+    padding: 0.6rem 0.8rem;
+    background: color-mix(in srgb, var(--pkg-surface, #ffffff) 88%, transparent);
+    color: var(--pkg-text, #0f172a);
+    box-shadow: var(--pkg-shadow-soft, 0 18px 46px rgba(15, 23, 42, 0.08));
+    font-size: 0.75rem;
+    font-weight: 800;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.pkg-mobile-menu-toggle:active {
+    transform: scale(0.97);
+}
+
+.pkg-mobile-menu-toggle .pkg-menu-close-icon,
+.pkg-mobile-menu-toggle.is-open .pkg-menu-open-icon {
+    display: none;
+}
+
+.pkg-mobile-menu-toggle.is-open .pkg-menu-close-icon {
+    display: block;
 }
 
 .pkg-mobile-menu-card {
@@ -511,13 +544,59 @@ html.reveal-ready [data-reveal].is-visible {
 }
 
 .pkg-auth-page {
-    min-height: 100vh;
+    min-height: 100svh;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2.5rem 1rem;
     overflow: hidden;
+}
+
+.pkg-pwa-push-button {
+    position: relative;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
+    border-radius: 0.85rem;
+    padding: 0.55rem 0.7rem;
+    background: var(--pkg-surface-muted, #f1f5f9);
+    color: var(--pkg-text-muted, #475569);
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.pkg-pwa-push-button:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--pkg-brand, #0f766e) 32%, transparent);
+    color: var(--pkg-brand, #0f766e);
+}
+
+.pkg-pwa-push-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.68;
+}
+
+.pkg-pwa-push-dot {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 9999px;
+    background: #94a3b8;
+}
+
+[data-pwa-push-control][data-state="active"] .pkg-pwa-push-button {
+    border-color: color-mix(in srgb, #16a34a 38%, transparent);
+    background: color-mix(in srgb, #16a34a 12%, var(--pkg-surface, #ffffff));
+    color: #15803d;
+}
+
+[data-pwa-push-control][data-state="active"] .pkg-pwa-push-dot {
+    background: #22c55e;
+    box-shadow: 0 0 0 3px color-mix(in srgb, #22c55e 18%, transparent);
 }
 
 .pkg-auth-backdrop {
@@ -577,6 +656,45 @@ html.reveal-ready [data-reveal].is-visible {
     font-size: 0.875rem;
     color: var(--pkg-text-muted, #64748b);
     background: var(--pkg-surface, #ffffff);
+}
+
+@media (max-width: 1023px) {
+    .pkg-auth-page {
+        align-items: flex-start;
+        padding:
+            max(1rem, env(safe-area-inset-top))
+            max(0.75rem, env(safe-area-inset-right))
+            max(1.25rem, env(safe-area-inset-bottom))
+            max(0.75rem, env(safe-area-inset-left));
+        overflow-y: auto;
+    }
+
+    .pkg-auth-shell {
+        max-width: 34rem;
+    }
+
+    .pkg-auth-panel {
+        border-radius: 1.15rem;
+        box-shadow: var(--pkg-shadow-md, 0 24px 64px rgba(15, 23, 42, 0.12));
+    }
+
+    .pkg-auth-mark {
+        width: 3.75rem;
+        height: 3.75rem;
+        margin-bottom: 0.5rem;
+        border-radius: 1.15rem;
+        box-shadow: 0 14px 30px color-mix(in srgb, var(--auth-accent, var(--pkg-brand, #0f766e)) 22%, transparent);
+    }
+}
+
+@media (max-width: 420px) {
+    .pkg-auth-page {
+        padding-inline: 0.6rem;
+    }
+
+    .pkg-auth-panel {
+        border-radius: 1rem;
+    }
 }
 
 .pkg-page-header {

@@ -7,6 +7,7 @@ use App\Models\SiswaKarakterChecklist;
 use App\Services\GamificationService;
 use App\Services\TaskProofAudioService;
 use App\Services\TaskProofImageService;
+use App\Services\TaskPwaNotificationService;
 use App\Support\InvalidKarakterChecklistCleaner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -237,7 +238,7 @@ class SiswaKarakterController extends Controller
                     ->with('error', 'Durasi voice note melebihi batas tugas ini, maksimal ' . $maxVoiceSeconds . ' detik.');
             }
 
-            SiswaKarakterChecklist::create([
+            $checklist = SiswaKarakterChecklist::create([
                 'siswa_id' => $siswa->id,
                 'karakter_id' => $karakter->id,
                 'checked_at' => $checkedAt,
@@ -251,6 +252,8 @@ class SiswaKarakterController extends Controller
                 'voice_note_size_kb' => $voiceNoteData['size_kb'] ?? null,
                 'voice_note_duration_seconds' => $voiceDuration,
             ]);
+
+            app(TaskPwaNotificationService::class)->notifyPamongAboutSubmission($checklist);
             
             $dateLabel = $forDate === now()->toDateString() ? 'hari ini' : \Carbon\Carbon::parse($forDate)->translatedFormat('d M Y');
             $photoBonus = ($karakter->allows_photo_proof && !empty($proofData['path']))

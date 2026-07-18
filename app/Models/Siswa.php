@@ -10,14 +10,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class Siswa extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, HasPushSubscriptions, Notifiable;
 
     public const KELOMPOK_SAWAH_DALAM_1 = ParticipantProfileOptions::SAWAH_DALAM_1;
     public const KELOMPOK_SAWAH_DALAM_2 = ParticipantProfileOptions::SAWAH_DALAM_2;

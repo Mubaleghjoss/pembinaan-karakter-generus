@@ -61,6 +61,17 @@ else
   exit 1
 fi
 
+echo "Cek dependency Web Push..."
+if ! APP_ROOT="$APP_ROOT" "$php_cmd" -r '
+    require getenv("APP_ROOT")."/vendor/autoload.php";
+    exit(class_exists("NotificationChannels\\WebPush\\WebPushChannel") ? 0 : 1);
+  '
+then
+  echo "Dependency Web Push belum tersedia di vendor server."
+  echo "Jalankan composer install dengan PHP 8.2 atau unggah vendor terbaru, lalu deploy ulang."
+  exit 1
+fi
+
 echo "Rapikan permission vendor dan cache Laravel..."
 if [ -d "$APP_ROOT/vendor" ]; then
   chmod -R u+rwX,go+rX "$APP_ROOT/vendor"

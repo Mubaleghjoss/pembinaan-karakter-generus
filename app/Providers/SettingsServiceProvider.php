@@ -8,9 +8,9 @@ use App\Models\ChatGroupMessage;
 use App\Models\Karakter;
 use App\Models\LaporanPenyaksian;
 use App\Models\Setting;
-use App\Models\SiswaKarakterChecklist;
 use App\Models\ThemeSetting;
 use App\Services\MateriRppJournalWorkflowService;
+use App\Services\TaskPwaNotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -40,7 +40,7 @@ class SettingsServiceProvider extends ServiceProvider
                     'site_logo' => Setting::get('site_logo') ?: $currentTheme->logo_path,
                     'primary_color' => Setting::get('primary_color', '#667EEA'),
                 ];
-                
+
                 $cardTitle = Setting::get('card_title', 'KARTU IDENTITAS');
                 if (strcasecmp(trim((string) $cardTitle), 'KARTU PESERTA') === 0) {
                     $cardTitle = 'KARTU IDENTITAS';
@@ -65,14 +65,8 @@ class SettingsServiceProvider extends ServiceProvider
                 $ortuSidebarUnreadChatCount = 0;
                 $user = Auth::user();
                 if ($user && $user->hasPamongMenuAccess('tracer_karakter')) {
-                    $pendingQuery = SiswaKarakterChecklist::query()->whereNull('verified_at');
-
-                    if ($user->isTeacher()) {
-                        $assignedIds = $user->getAssignedSiswaIds();
-                        $pendingQuery->whereIn('siswa_id', $assignedIds ?: [0]);
-                    }
-
-                    $pendingPkgVerificationCount = (int) $pendingQuery->count();
+                    $pendingPkgVerificationCount = app(TaskPwaNotificationService::class)
+                        ->pendingVerificationCount($user);
                 }
 
                 if ($user && $user->hasPamongMenuAccess('laporan_penyaksian')) {
@@ -117,21 +111,8 @@ class SettingsServiceProvider extends ServiceProvider
                 if (Auth::guard('siswa')->check()) {
                     $siswa = Auth::guard('siswa')->user();
 
-                    $siswaSidebarPendingTaskCount = (int) Karakter::query()
-                        ->where('is_active', true)
-                        ->where(function ($query) use ($today) {
-                            $query->whereNull('tanggal_mulai')
-                                ->orWhereDate('tanggal_mulai', '<=', $today);
-                        })
-                        ->where(function ($query) use ($today) {
-                            $query->whereNull('tanggal_selesai')
-                                ->orWhereDate('tanggal_selesai', '>=', $today);
-                        })
-                        ->whereDoesntHave('checklists', function ($query) use ($siswa, $today) {
-                            $query->where('siswa_id', $siswa->id)
-                                ->whereDate('checked_at', $today);
-                        })
-                        ->count();
+                    $siswaSidebarPendingTaskCount = app(TaskPwaNotificationService::class)
+                        ->pendingStudentTaskCount($siswa, $today);
 
                     $siswaSidebarUnreadChatCount = (int) Chat::query()
                         ->where('receiver_siswa_id', $siswa->id)
@@ -179,7 +160,7 @@ class SettingsServiceProvider extends ServiceProvider
                         ->where('is_read', false)
                         ->count();
                 }
-                
+
                 $view->with('siteSettings', $siteSettings);
                 $view->with('cardSettings', $cardSettings);
                 $view->with('currentTheme', $currentTheme);

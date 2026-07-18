@@ -28,7 +28,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('siswa.login.post') }}" class="space-y-6">
+    <form method="POST" action="{{ route('siswa.login.post') }}" class="space-y-4 sm:space-y-5">
         @csrf
 
         <div>
@@ -39,7 +39,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/>
                     </svg>
                 </div>
-                <input type="text" name="nis" id="nis" value="{{ old('nis') }}" class="form-input pkg-field-icon-left py-3" placeholder="Masukkan NIS" required autofocus>
+                <input type="text" name="nis" id="nis" value="{{ old('nis') }}" inputmode="numeric" autocomplete="username" autocapitalize="none" spellcheck="false" class="form-input pkg-field-icon-left py-3" placeholder="Masukkan NIS" required autofocus>
             </div>
         </div>
 
@@ -51,7 +51,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8"/>
                     </svg>
                 </div>
-                <input type="password" name="password" id="password" class="form-input pkg-field-icon-left pkg-field-icon-right py-3" placeholder="Masukkan password" required>
+                <input type="password" name="password" id="password" autocomplete="current-password" class="form-input pkg-field-icon-left pkg-field-icon-right py-3" placeholder="Masukkan password" required>
                 <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                     <svg id="eye-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>

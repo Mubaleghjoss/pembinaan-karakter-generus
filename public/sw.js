@@ -1,5 +1,5 @@
 // PKG Presensi Service Worker
-const CACHE_NAME = 'pkg-presensi-v10';
+const CACHE_NAME = 'pkg-presensi-v11';
 const urlsToCache = [
     '/',
     '/manifest.json',
@@ -98,4 +98,71 @@ self.addEventListener('fetch', (event) => {
                     });
             })
     );
+});
+
+self.addEventListener('push', (event) => {
+    let payload = {};
+
+    try {
+        payload = event.data ? event.data.json() : {};
+    } catch (error) {
+        payload = { body: event.data?.text() || 'Ada pembaruan Tugas PKG.' };
+    }
+
+    const title = payload.title || 'PKG Panunggangan';
+    const data = payload.data && typeof payload.data === 'object' ? payload.data : {};
+    const badgeCount = Math.max(0, Number(data.badge_count) || 0);
+    const notificationOptions = {
+        body: payload.body || 'Ada pembaruan yang perlu diperiksa.',
+        icon: payload.icon || '/images/icons/pkg-pwa-2026-192.png',
+        badge: payload.badge || '/images/icons/pkg-pwa-2026-192.png',
+        tag: payload.tag || 'pkg-update',
+        renotify: Boolean(payload.renotify),
+        requireInteraction: Boolean(payload.requireInteraction),
+        vibrate: Array.isArray(payload.vibrate) ? payload.vibrate : [180, 80, 180],
+        data: {
+            url: data.url || '/',
+            badge_count: badgeCount,
+        },
+    };
+
+    event.waitUntil((async () => {
+        await self.registration.showNotification(title, notificationOptions);
+
+        if ('setAppBadge' in self.navigator) {
+            if (badgeCount > 0) {
+                await self.navigator.setAppBadge(badgeCount);
+            } else if ('clearAppBadge' in self.navigator) {
+                await self.navigator.clearAppBadge();
+            }
+        }
+    })());
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    let targetUrl = new URL(event.notification.data?.url || '/', self.location.origin);
+    if (targetUrl.origin !== self.location.origin) {
+        targetUrl = new URL('/', self.location.origin);
+    }
+
+    event.waitUntil((async () => {
+        const windows = await self.clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true,
+        });
+
+        for (const client of windows) {
+            if ('navigate' in client) {
+                await client.navigate(targetUrl.href);
+            }
+
+            if ('focus' in client) {
+                return client.focus();
+            }
+        }
+
+        return self.clients.openWindow(targetUrl.href);
+    })());
 });

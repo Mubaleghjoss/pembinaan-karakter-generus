@@ -241,6 +241,49 @@ git pull origin main
 bash deploy/cpanel/deploy_ssh.sh
 ```
 
+## Aktivasi Notifikasi PWA Tugas PKG
+
+Rilis yang menambahkan notifikasi Tugas PKG membutuhkan tabel langganan Push, kunci VAPID permanen, dan cron Laravel.
+
+Jalankan migrasi dari folder aplikasi:
+
+```bash
+/opt/alt/php82/usr/bin/php artisan migrate --force
+```
+
+Jika deployment memakai SQL manual, file yang setara adalah:
+
+```bash
+mysql -u pkgj2934_app -p pkgj2934_app < database/manual_sql/manual_migration_2026_07_18_pwa_push_notifications.sql
+```
+
+Buat kunci VAPID satu kali saja. Jangan menjalankan ulang perintah ini setelah perangkat pengguna mulai berlangganan, karena pergantian kunci memutus langganan lama.
+
+```bash
+/opt/alt/php82/usr/bin/php artisan webpush:vapid --force
+```
+
+Pastikan `.env` juga berisi subject HTTPS situs:
+
+```dotenv
+VAPID_SUBJECT=https://pkgenerus.my.id
+```
+
+Tambahkan cron berikut satu kali melalui menu Cron Jobs cPanel. Scheduler akan memeriksa badge tugas siswa setiap lima menit, sedangkan deduplikasi aplikasi memastikan pengingat hanya dikirim sekali per siswa per hari.
+
+```cron
+* * * * * cd /home/pkgj2934/pembinaan-karakter-generus && /opt/alt/php82/usr/bin/php artisan schedule:run >> /dev/null 2>&1
+```
+
+Setelah VAPID atau cron diatur, segarkan cache konfigurasi:
+
+```bash
+/opt/alt/php82/usr/bin/php artisan optimize:clear
+/opt/alt/php82/usr/bin/php artisan config:cache
+/opt/alt/php82/usr/bin/php artisan route:cache
+/opt/alt/php82/usr/bin/php artisan view:cache
+```
+
 Script deploy terbaru akan mempertahankan block handler PHP cPanel di `public_html/.htaccess`.
 
 Jika `cat ~/public_html/.htaccess` tidak menampilkan block handler sama sekali, tambahkan fallback alt-php82:

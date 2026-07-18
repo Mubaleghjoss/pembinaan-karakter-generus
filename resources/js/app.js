@@ -1,6 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 import './biometric';
+import './pwa-push';
 import Alpine from 'alpinejs';
 
 let rpg3dModulePromise;

@@ -510,6 +510,12 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
                 
                 <!-- Right: User Menu -->
                 <div class="flex items-center space-x-3">
+                    <x-pwa-push-control
+                        :subscribe-url="route('pwa.push-subscriptions.store')"
+                        :unsubscribe-url="route('pwa.push-subscriptions.destroy')"
+                        :badge-count="$pendingPkgVerificationCount ?? 0"
+                    />
+
                     <!-- Dark Mode Toggle -->
                     <button @click="toggleDarkMode()" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" title="Toggle Dark Mode">
                         <svg x-show="!darkMode" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>

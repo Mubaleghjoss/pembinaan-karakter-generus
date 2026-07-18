@@ -10,6 +10,7 @@ use App\Http\Controllers\MateriTargetController;
 use App\Http\Controllers\PamongController;
 use App\Http\Controllers\PresensiController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SiswaController;
 use Illuminate\Support\Facades\Route;
@@ -110,6 +111,11 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
     
     // Protected siswa routes
     Route::middleware('auth.siswa')->group(function () {
+        Route::post('/push-subscriptions', [PushSubscriptionController::class, 'storeSiswa'])
+            ->name('pwa.push-subscriptions.store');
+        Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroySiswa'])
+            ->name('pwa.push-subscriptions.destroy');
+
         // WebAuthn protected routes (registration & management)
         Route::get('/webauthn/register-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'registerOptions'])->name('webauthn.register-options');
         Route::post('/webauthn/register', [App\Http\Controllers\Auth\WebAuthnController::class, 'register'])->name('webauthn.register');
@@ -269,6 +275,11 @@ Route::prefix('ortu')->name('ortu.')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'storeWeb'])
+        ->name('pwa.push-subscriptions.store');
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroyWeb'])
+        ->name('pwa.push-subscriptions.destroy');
+
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     // WebAuthn biometric routes (admin/pamong)

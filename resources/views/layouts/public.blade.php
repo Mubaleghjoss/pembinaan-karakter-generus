@@ -359,10 +359,14 @@
                 </div>
                 
                 <!-- Mobile menu button -->
-                <button id="mobile-menu-toggle" class="md:hidden rounded-full border border-slate-200/70 bg-white/80 p-2.5 text-slate-700 shadow-lg backdrop-blur-sm transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100" onclick="toggleMobileMenu()" aria-expanded="false" aria-controls="mobile-menu">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="mobile-menu-toggle" type="button" class="pkg-mobile-menu-toggle md:hidden" aria-expanded="false" aria-controls="mobile-menu" aria-label="Buka menu navigasi">
+                    <svg class="pkg-menu-open-icon h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
+                    <svg class="pkg-menu-close-icon h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span class="pkg-menu-label">Menu</span>
                 </button>
             </div>
         </div>
@@ -556,17 +560,34 @@
     </div>
 
     <script>
-        function toggleMobileMenu() {
+        function setMobileMenu(open) {
             const menu = document.getElementById('mobile-menu');
             const toggle = document.getElementById('mobile-menu-toggle');
-            const isHidden = menu.classList.toggle('hidden');
+            if (!menu || !toggle) return;
 
-            if (toggle) {
-                toggle.setAttribute('aria-expanded', String(!isHidden));
-            }
-
-            menu.setAttribute('aria-hidden', String(isHidden));
+            menu.classList.toggle('hidden', !open);
+            toggle.classList.toggle('is-open', open);
+            toggle.setAttribute('aria-expanded', String(open));
+            toggle.setAttribute('aria-label', open ? 'Tutup menu navigasi' : 'Buka menu navigasi');
+            menu.setAttribute('aria-hidden', String(!open));
+            document.documentElement.classList.toggle('overflow-hidden', open);
         }
+
+        function toggleMobileMenu() {
+            const toggle = document.getElementById('mobile-menu-toggle');
+            setMobileMenu(toggle?.getAttribute('aria-expanded') !== 'true');
+        }
+
+        document.getElementById('mobile-menu-toggle')?.addEventListener('click', toggleMobileMenu);
+        document.getElementById('mobile-menu')?.querySelectorAll('a[href]').forEach((link) => {
+            link.addEventListener('click', () => setMobileMenu(false));
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') setMobileMenu(false);
+        });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) setMobileMenu(false);
+        });
 
         function syncPublicThemeToggles() {
             const isDark = window.pkgTheme && window.pkgTheme.get ? window.pkgTheme.get() : document.documentElement.classList.contains('dark');
@@ -650,19 +671,6 @@
                 }
             });
         })();
-        
-        // Register Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((registration) => {
-                        console.log('SW registered:', registration.scope);
-                    })
-                    .catch((error) => {
-                        console.log('SW registration failed:', error);
-                    });
-            });
-        }
         
         // PWA Install Prompt
         let deferredPrompt;
