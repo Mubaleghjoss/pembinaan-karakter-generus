@@ -92,9 +92,13 @@ class TaskPwaNotificationService
             }
 
             try {
+                $pamongName = trim((string) $recipient->display_name) ?: 'Pamong';
+                $studentName = trim((string) $siswa->nama) ?: 'Siswa';
+                $taskName = $checklist->karakter?->nama ?? 'Tugas PKG';
+
                 Notification::sendNow($recipient, new TaskBadgeWebPushNotification(
-                    'Tugas PKG menunggu verifikasi',
-                    $siswa->nama.' mengirim tugas '.($checklist->karakter?->nama ?? 'PKG').'.',
+                    "Hai, {$pamongName}",
+                    "Ada tugas PKG dari {$studentName} yang perlu diverifikasi: {$taskName}.",
                     '/tugas-pkg/verifikasi?tab=verification',
                     'pkg-verification',
                     $count,
@@ -140,9 +144,11 @@ class TaskPwaNotificationService
                     }
 
                     try {
+                        $studentName = trim((string) $siswa->nama) ?: 'Siswa';
+
                         Notification::sendNow($siswa, new TaskBadgeWebPushNotification(
-                            'Tugas PKG hari ini',
-                            "Masih ada {$count} tugas aktif yang perlu dikerjakan.",
+                            "Hai, {$studentName}",
+                            "Ada {$count} tugas PKG hari ini yang belum dikerjakan.",
                             '/siswa/tugas-pkg',
                             'student-pkg-tasks',
                             $count,

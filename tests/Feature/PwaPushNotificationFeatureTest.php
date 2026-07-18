@@ -95,14 +95,17 @@ class PwaPushNotificationFeatureTest extends TestCase
             'permissions' => ['*'],
             'is_active' => true,
         ]);
-        $pamong = User::factory()->create(['role_id' => $adminRole->id]);
+        $pamong = User::factory()->create([
+            'name' => 'Pak Ahmad',
+            'role_id' => $adminRole->id,
+        ]);
         $pamong->updatePushSubscription(
             'https://push.example.test/pamong-notification',
             str_repeat('p', 65),
             str_repeat('a', 22),
             'aes128gcm',
         );
-        $siswa = Siswa::factory()->create();
+        $siswa = Siswa::factory()->create(['nama' => 'Rafi']);
         $task = Karakter::query()->create([
             'nama' => 'Tugas untuk Pamong',
             'kategori' => 'harian',
@@ -123,7 +126,49 @@ class PwaPushNotificationFeatureTest extends TestCase
         $this->assertSame(0, $service->notifyPamongAboutSubmission($checklist));
 
         Notification::assertSentToTimes($pamong, TaskBadgeWebPushNotification::class, 1);
+        Notification::assertSentTo(
+            $pamong,
+            TaskBadgeWebPushNotification::class,
+            function (TaskBadgeWebPushNotification $notification) use ($pamong): bool {
+                $payload = $notification->toWebPush($pamong, $notification)->toArray();
+
+                return $payload['title'] === 'Hai, Pak Ahmad'
+                    && $payload['body'] === 'Ada tugas PKG dari Rafi yang perlu diverifikasi: Tugas untuk Pamong.';
+            }
+        );
         $this->assertDatabaseCount('pwa_notification_deliveries', 1);
+    }
+
+    public function test_pending_task_reminder_greets_student_by_name(): void
+    {
+        Notification::fake();
+
+        $siswa = Siswa::factory()->create(['nama' => 'Nabila']);
+        $siswa->updatePushSubscription(
+            'https://push.example.test/student-notification',
+            str_repeat('p', 65),
+            str_repeat('a', 22),
+            'aes128gcm',
+        );
+        Karakter::query()->create([
+            'nama' => 'Tugas Harian Nabila',
+            'kategori' => 'harian',
+            'poin' => 10,
+            'is_active' => true,
+        ]);
+
+        $this->assertSame(1, app(TaskPwaNotificationService::class)->notifyStudentsWithPendingTasks());
+
+        Notification::assertSentTo(
+            $siswa,
+            TaskBadgeWebPushNotification::class,
+            function (TaskBadgeWebPushNotification $notification) use ($siswa): bool {
+                $payload = $notification->toWebPush($siswa, $notification)->toArray();
+
+                return $payload['title'] === 'Hai, Nabila'
+                    && $payload['body'] === 'Ada 1 tugas PKG hari ini yang belum dikerjakan.';
+            }
+        );
     }
 
     private function subscriptionPayload(string $endpoint): array
