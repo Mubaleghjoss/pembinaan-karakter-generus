@@ -133,7 +133,7 @@ class PwaPushNotificationFeatureTest extends TestCase
                 $payload = $notification->toWebPush($pamong, $notification)->toArray();
 
                 return $payload['title'] === 'Hai, Pak Ahmad'
-                    && $payload['body'] === 'Ada tugas PKG dari Rafi yang perlu diverifikasi: Tugas untuk Pamong.';
+                    && $payload['body'] === 'Silakan verifikasi tugas anak Generus Rafi: Tugas untuk Pamong.';
             }
         );
         $this->assertDatabaseCount('pwa_notification_deliveries', 1);
@@ -166,7 +166,7 @@ class PwaPushNotificationFeatureTest extends TestCase
                 $payload = $notification->toWebPush($siswa, $notification)->toArray();
 
                 return $payload['title'] === 'Hai, Nabila'
-                    && $payload['body'] === 'Ada 1 tugas PKG hari ini yang belum dikerjakan.';
+                    && $payload['body'] === 'Silakan kerjakan tugas PKG hari ini: Tugas Harian Nabila.';
             }
         );
     }

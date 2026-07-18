@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Notifications\TaskBadgeWebPushNotification;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -23,7 +25,12 @@ class TaskPwaNotificationService
             ? $date->toDateString()
             : Carbon::parse($date ?? now())->toDateString();
 
-        return (int) Karakter::query()
+        return (int) $this->pendingStudentTasksQuery($siswa, $targetDate)->count();
+    }
+
+    private function pendingStudentTasksQuery(Siswa $siswa, string $targetDate): Builder
+    {
+        return Karakter::query()
             ->where('is_active', true)
             ->where(function ($query) use ($targetDate) {
                 $query->whereNull('tanggal_mulai')
@@ -36,8 +43,7 @@ class TaskPwaNotificationService
             ->whereDoesntHave('checklists', function ($query) use ($siswa, $targetDate) {
                 $query->where('siswa_id', $siswa->id)
                     ->whereDate('checked_at', $targetDate);
-            })
-            ->count();
+            });
     }
 
     public function pendingVerificationCount(User $user): int
@@ -98,7 +104,7 @@ class TaskPwaNotificationService
 
                 Notification::sendNow($recipient, new TaskBadgeWebPushNotification(
                     "Hai, {$pamongName}",
-                    "Ada tugas PKG dari {$studentName} yang perlu diverifikasi: {$taskName}.",
+                    "Silakan verifikasi tugas anak Generus {$studentName}: {$taskName}.",
                     '/tugas-pkg/verifikasi?tab=verification',
                     'pkg-verification',
                     $count,
@@ -137,7 +143,10 @@ class TaskPwaNotificationService
                         continue;
                     }
 
-                    $count = $this->pendingStudentTaskCount($siswa, $targetDate);
+                    $pendingTasks = $this->pendingStudentTasksQuery($siswa, $targetDate)
+                        ->orderBy('nama')
+                        ->get(['id', 'nama']);
+                    $count = $pendingTasks->count();
 
                     if ($count < 1 || ! $this->claimDelivery($siswa, $deliveryKey)) {
                         continue;
@@ -148,7 +157,7 @@ class TaskPwaNotificationService
 
                         Notification::sendNow($siswa, new TaskBadgeWebPushNotification(
                             "Hai, {$studentName}",
-                            "Ada {$count} tugas PKG hari ini yang belum dikerjakan.",
+                            $this->studentTaskReminderBody($pendingTasks),
                             '/siswa/tugas-pkg',
                             'student-pkg-tasks',
                             $count,
@@ -166,6 +175,36 @@ class TaskPwaNotificationService
             });
 
         return $sent;
+    }
+
+    private function studentTaskReminderBody(Collection $pendingTasks): string
+    {
+        $count = $pendingTasks->count();
+        $taskNames = $pendingTasks
+            ->pluck('nama')
+            ->map(fn ($name) => trim((string) $name))
+            ->filter()
+            ->take(2)
+            ->values();
+
+        if ($taskNames->isEmpty()) {
+            return "Silakan kerjakan {$count} tugas PKG hari ini.";
+        }
+
+        if ($count === 1) {
+            return "Silakan kerjakan tugas PKG hari ini: {$taskNames->first()}.";
+        }
+
+        $listedTasks = $taskNames->count() === 2
+            ? $taskNames->join(' dan ')
+            : (string) $taskNames->first();
+        $remaining = $count - $taskNames->count();
+
+        if ($remaining > 0) {
+            $listedTasks .= ", dan {$remaining} tugas lainnya";
+        }
+
+        return "Silakan kerjakan {$count} tugas PKG hari ini: {$listedTasks}.";
     }
 
     private function claimDelivery(object $notifiable, string $key): bool
