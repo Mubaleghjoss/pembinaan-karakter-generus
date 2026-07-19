@@ -5,6 +5,7 @@
 @section('auth_accent_secondary', '#10b981')
 @section('auth_card_title', 'Login Orang Tua')
 @section('auth_card_copy', 'Gunakan akun orang tua untuk memantau progres anak secara langsung.')
+@section('auth_public_navigation', 'true')
 
 @section('content')
     @if($errors->any())

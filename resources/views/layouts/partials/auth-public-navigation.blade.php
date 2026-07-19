@@ -81,10 +81,11 @@
                 @endforeach
 
                 <div class="pkg-mobile-menu-divider space-y-2 border-t pt-3">
-                    <p class="pkg-mobile-menu-eyebrow px-2 text-xs font-bold uppercase tracking-wider">Login Lainnya</p>
-                    <div class="grid grid-cols-2 gap-2">
-                        <a href="{{ route('siswa.login') }}" class="pkg-mobile-login-link rounded-xl px-3 py-2.5 text-center text-sm font-semibold">Siswa</a>
-                        <a href="{{ route('ortu.login') }}" class="pkg-mobile-login-link rounded-xl px-3 py-2.5 text-center text-sm font-semibold">Orang Tua</a>
+                    <p class="pkg-mobile-menu-eyebrow px-2 text-xs font-bold uppercase tracking-wider">Pilih Login</p>
+                    <div class="grid grid-cols-1 gap-2">
+                        <a href="{{ route('siswa.login') }}" class="pkg-mobile-login-link rounded-xl px-3 py-2.5 text-center text-sm font-semibold {{ request()->routeIs('siswa.login') ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200' : '' }}">Siswa</a>
+                        <a href="{{ route('ortu.login') }}" class="pkg-mobile-login-link rounded-xl px-3 py-2.5 text-center text-sm font-semibold {{ request()->routeIs('ortu.login') ? 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-200' : '' }}">Orang Tua</a>
+                        <a href="{{ route('login') }}" class="pkg-mobile-login-link rounded-xl px-3 py-2.5 text-center text-sm font-semibold {{ request()->routeIs('login') ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' : '' }}">Pamong / Admin</a>
                     </div>
                 </div>
 

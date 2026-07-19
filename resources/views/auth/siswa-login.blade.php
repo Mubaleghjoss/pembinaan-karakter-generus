@@ -5,6 +5,7 @@
 @section('auth_accent_secondary', '#0f766e')
 @section('auth_card_title', 'Login Siswa')
 @section('auth_card_copy', 'Gunakan NIS dan password untuk masuk ke portal siswa.')
+@section('auth_public_navigation', 'true')
 
 @section('content')
     @if($errors->any())
