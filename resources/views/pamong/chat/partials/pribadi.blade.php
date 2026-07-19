@@ -1,7 +1,7 @@
 {{-- Chat Pribadi Tab Content --}}
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+<div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
     <!-- Contact List -->
-    <div class="lg:col-span-1 pkg-card overflow-hidden">
+    <div class="pkg-card min-w-0 overflow-hidden lg:col-span-1" :class="selectedSiswa ? 'hidden lg:block' : 'block'">
         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 class="font-semibold text-gray-900 dark:text-white">Daftar Siswa</h2>
         </div>
@@ -64,9 +64,12 @@
     </div>
 
     <!-- Chat Area -->
-    <div class="lg:col-span-3 pkg-card flex flex-col" style="height: 500px;">
+    <div class="pkg-card min-w-0 flex-col lg:col-span-3 lg:h-[500px]" :class="selectedSiswa ? 'flex h-[calc(100dvh-10rem)] min-h-[28rem]' : 'hidden lg:flex'">
         <!-- Chat Header -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+            <button type="button" @click="closePribadiConversation()" class="btn-secondary !h-10 !w-10 !p-0 lg:hidden" aria-label="Kembali ke daftar siswa">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
             <template x-if="selectedSiswa">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold">

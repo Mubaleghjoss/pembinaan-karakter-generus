@@ -108,43 +108,58 @@ class SettingsController extends Controller
             return view('settings.backup', compact('backups', 'tab'));
         }
         
-        $generalSettings = Setting::getByGroup('general');
-        $idCardSettings = Setting::getByGroup('id_card');
-        if (strcasecmp(trim((string) ($idCardSettings['card_title'] ?? '')), 'KARTU PESERTA') === 0) {
-            $idCardSettings['card_title'] = 'KARTU IDENTITAS';
+        $validTabs = ['general', 'id_card', 'theme', 'kelas', 'permissions', 'share_info', 'face_attendance', 'popup', 'registration'];
+        $tab = in_array($tab, $validTabs, true) ? $tab : 'general';
+        $viewData = ['tab' => $tab];
+
+        switch ($tab) {
+            case 'general':
+                $viewData['generalSettings'] = Setting::getByGroup('general');
+                $viewData['themeSettings'] = ThemeSetting::first() ?? new ThemeSetting;
+                break;
+
+            case 'id_card':
+                $viewData['idCardSettings'] = Setting::getByGroup('id_card');
+                if (strcasecmp(trim((string) ($viewData['idCardSettings']['card_title'] ?? '')), 'KARTU PESERTA') === 0) {
+                    $viewData['idCardSettings']['card_title'] = 'KARTU IDENTITAS';
+                }
+                break;
+
+            case 'theme':
+                $viewData['themeSettings'] = ThemeSetting::first() ?? new ThemeSetting;
+                break;
+
+            case 'kelas':
+                $kelasSettings = Setting::getByGroup('kelas');
+                $viewData['tingkatList'] = $kelasSettings['tingkat_list'] ?? 'X,XI,XII';
+                break;
+
+            case 'permissions':
+                $viewData['defaultPermissions'] = self::getDefaultPamongPermissions();
+                $viewData['permissionPresets'] = OperationalPermissionPreset::all();
+                $viewData['availableMenus'] = PamongPermission::getAvailableMenus();
+                $viewData['availableCrud'] = PamongPermission::getAvailableCrudOperations();
+                $viewData['crudOperationLabels'] = PamongPermission::getCrudOperationLabels();
+                break;
+
+            case 'share_info':
+                $viewData['shareInfos'] = \App\Models\ShareInfo::with('creator')->orderByDesc('created_at')->get();
+                break;
+
+            case 'face_attendance':
+                $viewData['faceAttendanceSettings'] = FaceAttendanceConfig::all();
+                break;
+
+            case 'popup':
+                $viewData['popupSettings'] = PopupManager::all();
+                break;
+
+            case 'registration':
+                $viewData['registrationInvite'] = GenerusRegistrationInvite::query()->latest('id')->first();
+                break;
         }
-        $themeSettings = ThemeSetting::first() ?? new ThemeSetting;
-        $defaultPermissions = self::getDefaultPamongPermissions();
-        $permissionPresets = OperationalPermissionPreset::all();
-        $availableMenus = \App\Models\PamongPermission::getAvailableMenus();
-        $availableCrud = \App\Models\PamongPermission::getAvailableCrudOperations();
-        $crudOperationLabels = \App\Models\PamongPermission::getCrudOperationLabels();
-        $kelasSettings = Setting::getByGroup('kelas');
-        $tingkatList = $kelasSettings['tingkat_list'] ?? 'X,XI,XII';
 
-        // Load all tab data once so settings tabs can switch without a page refresh.
-        $shareInfos = \App\Models\ShareInfo::with('creator')->orderByDesc('created_at')->get();
-        $popupSettings = PopupManager::all();
-        $faceAttendanceSettings = FaceAttendanceConfig::all();
-        $registrationInvite = GenerusRegistrationInvite::query()->latest('id')->first();
-
-        return view('settings.index', compact(
-            'tab',
-            'generalSettings',
-            'idCardSettings',
-            'themeSettings',
-            'defaultPermissions',
-            'permissionPresets',
-            'availableMenus',
-            'availableCrud',
-            'crudOperationLabels',
-            'kelasSettings',
-            'tingkatList',
-            'shareInfos',
-            'popupSettings',
-            'faceAttendanceSettings',
-            'registrationInvite'
-        ));
+        return view('settings.index', $viewData);
     }
 
     /**

@@ -3,7 +3,7 @@
 @section('title', 'Materi Pembelajaran')
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
     <div class="pkg-page-header">
         <div>
             <h1 class="pkg-page-heading">Materi Pembelajaran</h1>

@@ -65,7 +65,7 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-CqMrWhjn.js",
+    "file": "assets/app-CNLbwKIj.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -86,7 +86,7 @@
       "_browser-C8KFpyF2.js"
     ],
     "css": [
-      "assets/app-k_bDNHqG.css"
+      "assets/app-DxReH1-4.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -112,7 +112,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-DKUyq_Rn.js",
+    "file": "assets/QRScanner-CFBaO8v9.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,

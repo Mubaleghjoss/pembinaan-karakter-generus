@@ -3,7 +3,7 @@
 @section('title', $materi->judul)
 
 @section('content')
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
     <div class="mb-6">
         <a href="{{ route('siswa.materi.index') }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 flex items-center gap-1 mb-4">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,7 +35,7 @@
 
         <!-- PDF Files -->
         @if($materi->hasPdfFiles())
-        <div class="p-6" x-data="{ pdfModal: false, pdfUrl: '', pdfName: '' }">
+        <div class="p-4 sm:p-6" x-data="{ pdfModal: false, pdfUrl: '', pdfName: '' }" x-effect="document.documentElement.classList.toggle('overflow-hidden', pdfModal)">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M10.92,12.31C10.68,11.54 10.15,9.08 11.55,9.04C12.95,9 12.03,12.16 12.03,12.16C12.42,13.65 14.05,14.72 14.05,14.72C14.55,14.57 17.4,14.24 17,15.72C16.57,17.2 13.5,15.81 13.5,15.81C11.55,15.95 10.09,16.47 10.09,16.47C8.96,18.58 7.64,19.5 7.1,18.61C6.43,17.5 9.23,16.07 9.23,16.07C10.68,13.72 10.9,12.35 10.92,12.31Z"/>
@@ -88,10 +88,10 @@
 
             <!-- PDF Modal Viewer -->
             <div x-show="pdfModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-0 backdrop-blur-sm sm:p-4"
                  @keydown.escape.window="pdfModal = false" @click.self="pdfModal = false" style="display: none;">
                 <div x-show="pdfModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-                     class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden w-full max-w-5xl" style="height: 85vh;">
+                     class="flex h-[100dvh] w-screen flex-col overflow-hidden bg-white shadow-2xl dark:bg-gray-900 sm:h-[90vh] sm:w-full sm:max-w-5xl sm:rounded-2xl">
                     <!-- Modal Header -->
                     <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                         <div class="flex items-center gap-3 min-w-0">
@@ -119,8 +119,8 @@
                         </div>
                     </div>
                     <!-- PDF Content -->
-                    <div class="h-full" style="height: calc(85vh - 56px);">
-                        <iframe :src="pdfUrl" class="w-full h-full border-0" x-show="pdfModal"></iframe>
+                    <div class="min-h-0 flex-1">
+                        <iframe :src="pdfUrl" class="h-full w-full border-0" x-show="pdfModal" loading="lazy" :title="pdfName"></iframe>
                     </div>
                 </div>
             </div>

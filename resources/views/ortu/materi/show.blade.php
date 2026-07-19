@@ -3,7 +3,7 @@
 @section('title', $materi->judul)
 
 @section('content')
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
     <div class="mb-6">
         <a href="{{ route('ortu.materi.index') }}" class="mb-4 flex items-center gap-1 text-teal-600 hover:text-teal-800 dark:text-teal-400">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,7 +32,7 @@
         @include('materi.partials.video-list', ['materi' => $materi, 'withBorder' => true])
 
         @if($materi->hasPdfFiles())
-        <div class="p-6" x-data="{ pdfModal: false, pdfUrl: '', pdfName: '' }">
+        <div class="p-4 sm:p-6" x-data="{ pdfModal: false, pdfUrl: '', pdfName: '' }" x-effect="document.documentElement.classList.toggle('overflow-hidden', pdfModal)">
             <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
                 <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
@@ -74,11 +74,11 @@
 
             <div x-show="pdfModal"
                  x-transition
-                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-0 sm:p-4"
                  @keydown.escape.window="pdfModal = false"
                  @click.self="pdfModal = false"
                  style="display: none;">
-                <div class="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
+                <div class="flex h-[100dvh] w-screen flex-col overflow-hidden bg-white shadow-2xl dark:bg-gray-900 sm:h-[90vh] sm:w-full sm:max-w-5xl sm:rounded-2xl">
                     <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-3 dark:border-gray-700 dark:bg-gray-800">
                         <p class="truncate font-semibold text-gray-900 dark:text-white" x-text="pdfName"></p>
                         <div class="flex items-center gap-2">
@@ -91,7 +91,7 @@
                         </div>
                     </div>
                     <div class="min-h-0 flex-1">
-                        <iframe :src="pdfUrl" class="h-full w-full border-0" x-show="pdfModal"></iframe>
+                        <iframe :src="pdfUrl" class="h-full w-full border-0" x-show="pdfModal" loading="lazy" :title="pdfName"></iframe>
                     </div>
                 </div>
             </div>

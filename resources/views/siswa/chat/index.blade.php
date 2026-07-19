@@ -3,17 +3,17 @@
 @section('title', 'Chat')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="chatApp()">
-    <div class="pkg-page-header">
+<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8" x-data="chatApp()" @keydown.escape.window="closeConversation()">
+    <div class="pkg-page-header" :class="selectedId ? 'hidden lg:flex' : ''">
         <div>
             <h1 class="pkg-page-heading">Chat</h1>
             <p class="pkg-page-subheading">Berkomunikasi dengan pamong, admin, dan teman sekelas.</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
         <!-- Contact List -->
-        <div class="lg:col-span-1 pkg-card overflow-hidden">
+        <div class="pkg-card min-w-0 overflow-hidden lg:col-span-1" :class="selectedId ? 'hidden lg:block' : 'block'">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 class="font-semibold text-gray-900 dark:text-white">Kontak</h2>
             </div>
@@ -99,9 +99,12 @@
         </div>
 
         <!-- Chat Area -->
-        <div class="lg:col-span-3 pkg-card flex flex-col" style="height: 600px;">
+        <div class="pkg-card min-w-0 flex-col lg:col-span-3 lg:h-[600px]" :class="selectedId ? 'flex h-[calc(100dvh-6rem)] min-h-[28rem]' : 'hidden lg:flex'">
             <!-- Chat Header -->
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                <button type="button" @click="closeConversation()" class="btn-secondary !h-10 !w-10 !p-0 lg:hidden" aria-label="Kembali ke daftar kontak">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
                 <template x-if="selectedName">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
@@ -207,13 +210,16 @@ function chatApp() {
         newMessage: '',
         loading: false,
         refreshInterval: null,
+        unreadInterval: null,
         selectedImage: null,
         imagePreview: null,
         unreadCounts: {},
 
         init() {
             this.loadUnreadCounts();
-            setInterval(() => this.loadUnreadCounts(), 10000);
+            this.startUnreadPolling();
+            document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+            window.addEventListener('pagehide', () => this.stopPolling());
 
             // Auto-select pamong if pamong_id is in URL params
             const urlParams = new URLSearchParams(window.location.search);
@@ -238,6 +244,7 @@ function chatApp() {
         },
 
         async loadUnreadCounts() {
+            if (document.hidden) return;
             try {
                 const res = await fetch('/siswa/chat/unread-counts', {
                     headers: { 'Accept': 'application/json' }
@@ -287,13 +294,59 @@ function chatApp() {
             // Refresh unread counts after opening chat (messages are marked as read)
             setTimeout(() => this.loadUnreadCounts(), 500);
             
-            if (this.refreshInterval) clearInterval(this.refreshInterval);
-            this.refreshInterval = setInterval(() => this.loadMessages(), 5000);
+            this.startMessagePolling();
         },
 
-        async loadMessages() {
-            if (!this.selectedId) return;
-            this.loading = this.messages.length === 0;
+        closeConversation() {
+            this.selectedType = null;
+            this.selectedId = null;
+            this.selectedName = null;
+            this.selectedLabel = null;
+            this.messages = [];
+            this.stopMessagePolling();
+        },
+
+        startMessagePolling() {
+            this.stopMessagePolling();
+            if (this.selectedId && !document.hidden) {
+                this.refreshInterval = setInterval(() => this.loadMessages(false), 5000);
+            }
+        },
+
+        stopMessagePolling() {
+            if (this.refreshInterval) clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
+        },
+
+        startUnreadPolling() {
+            if (this.unreadInterval) clearInterval(this.unreadInterval);
+            if (!document.hidden) this.unreadInterval = setInterval(() => this.loadUnreadCounts(), 10000);
+        },
+
+        stopPolling() {
+            this.stopMessagePolling();
+            if (this.unreadInterval) clearInterval(this.unreadInterval);
+            this.unreadInterval = null;
+        },
+
+        handleVisibilityChange() {
+            if (document.hidden) {
+                this.stopPolling();
+                return;
+            }
+            this.loadUnreadCounts();
+            this.startUnreadPolling();
+            if (this.selectedId) {
+                this.loadMessages(false);
+                this.startMessagePolling();
+            }
+        },
+
+        async loadMessages(showLoading = true) {
+            if (!this.selectedId || document.hidden) return;
+            const container = document.getElementById('messages-container');
+            const shouldStickToBottom = showLoading || !container || (container.scrollHeight - container.scrollTop - container.clientHeight < 100);
+            this.loading = showLoading && this.messages.length === 0;
             
             try {
                 const res = await fetch(`/siswa/chat/messages?type=${this.selectedType}&target_id=${this.selectedId}`, {
@@ -303,8 +356,8 @@ function chatApp() {
                 if (data.success) {
                     this.messages = data.messages;
                     this.$nextTick(() => {
-                        const container = document.getElementById('messages-container');
-                        container.scrollTop = container.scrollHeight;
+                        const messagesContainer = document.getElementById('messages-container');
+                        if (messagesContainer && shouldStickToBottom) messagesContainer.scrollTop = messagesContainer.scrollHeight;
                     });
                 }
             } catch (e) {

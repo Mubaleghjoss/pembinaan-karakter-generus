@@ -1,7 +1,7 @@
 {{-- Grup Chat Tab Content --}}
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+<div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
     <!-- Group List -->
-    <div class="lg:col-span-1 pkg-card overflow-hidden">
+    <div class="pkg-card min-w-0 overflow-hidden lg:col-span-1" :class="selectedGroup ? 'hidden lg:block' : 'block'">
         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between gap-3">
                 <h2 class="font-semibold text-gray-900 dark:text-white">{{ auth()->user()->isAdmin() ? 'Semua Grup' : 'Grup Anda' }}</h2>
@@ -41,9 +41,12 @@
     </div>
 
     <!-- Chat Area -->
-    <div class="lg:col-span-3 pkg-card flex flex-col" style="height: 500px;">
+    <div class="pkg-card min-w-0 flex-col lg:col-span-3 lg:h-[500px]" :class="selectedGroup ? 'flex h-[calc(100dvh-10rem)] min-h-[28rem]' : 'hidden lg:flex'">
         <!-- Chat Header -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+            <button type="button" @click="closeGrupConversation()" class="btn-secondary !h-10 !w-10 !p-0 lg:hidden" aria-label="Kembali ke daftar grup">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
             <template x-if="selectedGroup">
                 <div class="flex flex-1 items-center justify-between gap-3">
                     <div class="flex min-w-0 items-center gap-3">

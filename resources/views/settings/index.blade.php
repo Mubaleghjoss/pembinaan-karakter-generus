@@ -3,7 +3,7 @@
 @section('title', 'Pengaturan Website')
 
 @section('content')
-<div class="w-full px-4 sm:px-6 lg:px-8 py-8" x-data="settingsTabs('{{ $tab }}')">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
     <div class="pkg-page-header">
         <div>
             <h1 class="pkg-page-heading">Pengaturan Website</h1>
@@ -20,65 +20,40 @@
     </div>
     @endif
 
-    @include('settings.partials.admin-tabs', ['settingsTabClient' => true])
+    @include('settings.partials.admin-tabs')
 
-    <div x-show="activeSettingsTab === 'general'" x-cloak>
-        @include('settings.partials.general')
-    </div>
-    <div x-show="activeSettingsTab === 'id_card'" x-cloak>
-        @include('settings.partials.id-card')
-    </div>
-    <div x-show="activeSettingsTab === 'theme'" x-cloak>
-        @include('settings.partials.theme')
-    </div>
-    <div x-show="activeSettingsTab === 'kelas'" x-cloak>
-        @include('settings.partials.kelas')
-    </div>
-    <div x-show="activeSettingsTab === 'permissions'" x-cloak>
-        @include('settings.partials.permissions')
-    </div>
-    <div x-show="activeSettingsTab === 'share_info'" x-cloak>
-        @include('settings.partials.share-info')
-    </div>
-    <div x-show="activeSettingsTab === 'face_attendance'" x-cloak>
-        @include('settings.partials.face-attendance')
-    </div>
-    <div x-show="activeSettingsTab === 'popup'" x-cloak>
-        @include('settings.partials.popup')
-    </div>
-    <div x-show="activeSettingsTab === 'registration'" x-cloak>
-        @include('settings.partials.registration-access')
-    </div>
+    @switch($tab)
+        @case('id_card')
+            @include('settings.partials.id-card')
+            @break
+        @case('theme')
+            @include('settings.partials.theme')
+            @break
+        @case('kelas')
+            @include('settings.partials.kelas')
+            @break
+        @case('permissions')
+            @include('settings.partials.permissions')
+            @break
+        @case('share_info')
+            @include('settings.partials.share-info')
+            @break
+        @case('face_attendance')
+            @include('settings.partials.face-attendance')
+            @break
+        @case('popup')
+            @include('settings.partials.popup')
+            @break
+        @case('registration')
+            @include('settings.partials.registration-access')
+            @break
+        @default
+            @include('settings.partials.general')
+    @endswitch
 </div>
 
 @push('scripts')
 <script>
-    function settingsTabs(initialTab) {
-        const validTabs = ['general', 'id_card', 'theme', 'kelas', 'permissions', 'share_info', 'face_attendance', 'popup', 'registration'];
-
-        return {
-            activeSettingsTab: validTabs.includes(initialTab) ? initialTab : 'general',
-
-            switchSettingsTab(tab) {
-                if (!validTabs.includes(tab)) {
-                    return;
-                }
-
-                this.activeSettingsTab = tab;
-                const url = new URL(window.location.href);
-                url.searchParams.set('tab', tab);
-                window.history.pushState({ settingsTab: tab }, '', url);
-            },
-
-            init() {
-                window.addEventListener('popstate', () => {
-                    const tab = new URLSearchParams(window.location.search).get('tab') || 'general';
-                    this.activeSettingsTab = validTabs.includes(tab) ? tab : 'general';
-                });
-            }
-        };
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         const themePreview = document.getElementById('theme-live-preview');
         const idCardPreview = document.getElementById('id-card-live-preview');

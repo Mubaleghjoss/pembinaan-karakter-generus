@@ -3,16 +3,16 @@
 @section('title', 'Chat Pamong')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="ortuChat()">
-    <div class="pkg-page-header">
+<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8" x-data="ortuChat()" @keydown.escape.window="closeConversation()">
+    <div class="pkg-page-header" :class="selectedPamong ? 'hidden lg:flex' : ''">
         <div>
             <h1 class="pkg-page-heading">Chat Pamong</h1>
             <p class="pkg-page-subheading">Komunikasikan perkembangan atau kendala {{ $siswa->nama }}.</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div class="lg:col-span-1 pkg-card overflow-hidden">
+    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
+        <div class="pkg-card min-w-0 overflow-hidden lg:col-span-1" :class="selectedPamong ? 'hidden lg:block' : 'block'">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 class="font-semibold text-gray-900 dark:text-white">Daftar Pamong</h2>
             </div>
@@ -50,8 +50,11 @@
             </div>
         </div>
 
-        <div class="lg:col-span-3 pkg-card flex flex-col" style="height: 600px;">
+        <div class="pkg-card min-w-0 flex-col lg:col-span-3 lg:h-[600px]" :class="selectedPamong ? 'flex h-[calc(100dvh-6rem)] min-h-[28rem]' : 'hidden lg:flex'">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                <button type="button" @click="closeConversation()" class="btn-secondary !h-10 !w-10 !p-0 lg:hidden" aria-label="Kembali ke daftar pamong">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
                 <template x-if="selectedPamong">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-semibold">
@@ -137,13 +140,45 @@ function ortuChat() {
         loading: false,
         refreshInterval: null,
 
+        init() {
+            document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+            window.addEventListener('pagehide', () => this.stopPolling());
+        },
+
         selectPamong(id, name) {
             this.selectedPamong = id;
             this.pamongName = name;
             this.loadMessages();
 
+            this.startPolling();
+        },
+
+        closeConversation() {
+            this.selectedPamong = null;
+            this.pamongName = '';
+            this.messages = [];
+            this.stopPolling();
+        },
+
+        startPolling() {
+            this.stopPolling();
+            if (this.selectedPamong && !document.hidden) {
+                this.refreshInterval = setInterval(() => this.loadMessages(false), 5000);
+            }
+        },
+
+        stopPolling() {
             if (this.refreshInterval) clearInterval(this.refreshInterval);
-            this.refreshInterval = setInterval(() => this.loadMessages(false), 5000);
+            this.refreshInterval = null;
+        },
+
+        handleVisibilityChange() {
+            if (document.hidden) {
+                this.stopPolling();
+            } else if (this.selectedPamong) {
+                this.loadMessages(false);
+                this.startPolling();
+            }
         },
 
         autoResize(event) {
@@ -153,7 +188,7 @@ function ortuChat() {
         },
 
         async loadMessages(showLoading = true) {
-            if (!this.selectedPamong) return;
+            if (!this.selectedPamong || document.hidden) return;
             if (showLoading) this.loading = true;
 
             try {

@@ -3,9 +3,7 @@
 @section('title', 'Chat - PKG Presensi')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" 
-     x-data="chatManager()"
-     x-init="init()">
+<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8" x-data="chatManager()">
     
     <!-- Page Header -->
     <div class="sm:flex sm:items-center sm:justify-between mb-6">
@@ -54,6 +52,8 @@ function chatManager() {
         recipientScopeLabel: @json($recipientScopeLabel ?? 'siswa yang tersedia'),
         groups: @json($groups ?? []),
         unreadCounts: {},
+        unreadRefreshInterval: null,
+        activeChatMode: null,
         pribadiSearch: '',
         pribadiKelas: '',
         
@@ -105,10 +105,13 @@ function chatManager() {
         async init() {
             await this.loadUnreadCounts();
             this.restoreSelectedSiswaFromQuery();
-            setInterval(() => this.loadUnreadCounts(), 10000);
+            this.startUnreadPolling();
+            document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+            window.addEventListener('pagehide', () => this.stopAllPolling());
         },
         
         async loadUnreadCounts() {
+            if (document.hidden) return;
             try {
                 const res = await fetch('/pamong-chat/unread-counts', {
                     headers: { 'Accept': 'application/json' }
@@ -184,17 +187,37 @@ function chatManager() {
         
         // ========== PRIBADI CHAT FUNCTIONS ==========
         selectSiswa(siswa) {
+            this.activeChatMode = 'pribadi';
             this.selectedSiswa = siswa;
             this.loadPribadiMessages();
             setTimeout(() => this.loadUnreadCounts(), 500);
-            
+            this.stopGrupPolling();
+            this.startPribadiPolling();
+        },
+
+        closePribadiConversation() {
+            this.selectedSiswa = null;
+            this.pribadiMessages = [];
+            this.stopPribadiPolling();
+        },
+
+        startPribadiPolling() {
+            this.stopPribadiPolling();
+            if (this.selectedSiswa && !document.hidden) {
+                this.pribadiRefreshInterval = setInterval(() => this.loadPribadiMessages(false), 5000);
+            }
+        },
+
+        stopPribadiPolling() {
             if (this.pribadiRefreshInterval) clearInterval(this.pribadiRefreshInterval);
-            this.pribadiRefreshInterval = setInterval(() => this.loadPribadiMessages(), 5000);
+            this.pribadiRefreshInterval = null;
         },
         
-        async loadPribadiMessages() {
-            if (!this.selectedSiswa) return;
-            this.pribadiLoading = this.pribadiMessages.length === 0;
+        async loadPribadiMessages(showLoading = true) {
+            if (!this.selectedSiswa || document.hidden) return;
+            const currentContainer = document.getElementById('pribadi-messages-container');
+            const shouldStickToBottom = showLoading || !currentContainer || (currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < 100);
+            this.pribadiLoading = showLoading && this.pribadiMessages.length === 0;
             
             try {
                 const res = await fetch(`/pamong-chat/messages?siswa_id=${this.selectedSiswa.id}`, {
@@ -205,7 +228,7 @@ function chatManager() {
                     this.pribadiMessages = data.messages;
                     this.$nextTick(() => {
                         const container = document.getElementById('pribadi-messages-container');
-                        if (container) container.scrollTop = container.scrollHeight;
+                        if (container && shouldStickToBottom) container.scrollTop = container.scrollHeight;
                     });
                 }
             } catch (e) {
@@ -462,16 +485,36 @@ function chatManager() {
         },
 
         selectGroup(group) {
+            this.activeChatMode = 'grup';
             this.selectedGroup = group;
             this.loadGrupMessages();
-            
+            this.stopPribadiPolling();
+            this.startGrupPolling();
+        },
+
+        closeGrupConversation() {
+            this.selectedGroup = null;
+            this.grupMessages = [];
+            this.stopGrupPolling();
+        },
+
+        startGrupPolling() {
+            this.stopGrupPolling();
+            if (this.selectedGroup && !document.hidden) {
+                this.grupRefreshInterval = setInterval(() => this.loadGrupMessages(false), 5000);
+            }
+        },
+
+        stopGrupPolling() {
             if (this.grupRefreshInterval) clearInterval(this.grupRefreshInterval);
-            this.grupRefreshInterval = setInterval(() => this.loadGrupMessages(), 5000);
+            this.grupRefreshInterval = null;
         },
         
-        async loadGrupMessages() {
-            if (!this.selectedGroup) return;
-            this.grupLoading = this.grupMessages.length === 0;
+        async loadGrupMessages(showLoading = true) {
+            if (!this.selectedGroup || document.hidden) return;
+            const currentContainer = document.getElementById('grup-messages-container');
+            const shouldStickToBottom = showLoading || !currentContainer || (currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < 100);
+            this.grupLoading = showLoading && this.grupMessages.length === 0;
             
             try {
                 const res = await fetch(`/group-chat/${this.selectedGroup.id}/messages`, {
@@ -482,7 +525,7 @@ function chatManager() {
                     this.grupMessages = data.messages;
                     this.$nextTick(() => {
                         const container = document.getElementById('grup-messages-container');
-                        if (container) container.scrollTop = container.scrollHeight;
+                        if (container && shouldStickToBottom) container.scrollTop = container.scrollHeight;
                     });
                 }
             } catch (e) {
@@ -535,6 +578,37 @@ function chatManager() {
             } catch (e) {
                 console.error(e);
                 window.showNotification('Gagal mengirim pesan', 'error');
+            }
+        },
+
+        startUnreadPolling() {
+            if (this.unreadRefreshInterval) clearInterval(this.unreadRefreshInterval);
+            if (!document.hidden) {
+                this.unreadRefreshInterval = setInterval(() => this.loadUnreadCounts(), 10000);
+            }
+        },
+
+        stopAllPolling() {
+            this.stopPribadiPolling();
+            this.stopGrupPolling();
+            if (this.unreadRefreshInterval) clearInterval(this.unreadRefreshInterval);
+            this.unreadRefreshInterval = null;
+        },
+
+        handleVisibilityChange() {
+            if (document.hidden) {
+                this.stopAllPolling();
+                return;
+            }
+
+            this.loadUnreadCounts();
+            this.startUnreadPolling();
+            if (this.activeChatMode === 'pribadi' && this.selectedSiswa) {
+                this.loadPribadiMessages(false);
+                this.startPribadiPolling();
+            } else if (this.activeChatMode === 'grup' && this.selectedGroup) {
+                this.loadGrupMessages(false);
+                this.startGrupPolling();
             }
         },
         

@@ -96,23 +96,24 @@
 }" 
 :class="{ 'dark': darkMode }" 
 x-init="document.documentElement.classList.remove('sidebar-preload-closed')"
-x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
+x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', !sidebarCollapsed && window.innerWidth < 1024)"
+@resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true">
     
     @auth
     <div class="flex h-screen overflow-hidden">
         <!-- Mobile Overlay -->
-        <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 bg-black/50 z-40 lg:hidden" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+        <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 bg-black/50 z-40 lg:hidden" x-transition:enter="transition-opacity ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
         
         <!-- Sidebar -->
         <aside 
             x-show="!sidebarCollapsed"
-            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter="transition-transform ease-out duration-200"
             x-transition:enter-start="-translate-x-full"
             x-transition:enter-end="translate-x-0"
-            x-transition:leave="transition ease-in duration-300"
+            x-transition:leave="transition-transform ease-in duration-150"
             x-transition:leave-start="translate-x-0"
             x-transition:leave-end="-translate-x-full"
-            class="pkg-sidebar fixed lg:relative inset-y-0 left-0 z-50 w-64 flex flex-col border-r">
+            class="pkg-sidebar fixed lg:relative inset-y-0 left-0 z-50 w-64 flex flex-col border-r will-change-transform">
             <!-- Logo -->
             <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
                 <a href="{{ route('dashboard') }}" class="flex items-center">
@@ -126,7 +127,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
                     <span class="logo-text ml-3 text-lg font-bold text-gray-900 dark:text-white truncate">{{ $siteSettings['site_title'] ?? 'PKG' }}</span>
                 </a>
                 <!-- Collapse/Hide button - same icon for mobile & desktop -->
-                <button @click="sidebarOpen = false; sidebarCollapsed = true" class="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button @click="sidebarCollapsed = true" class="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <svg class="w-5 h-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
                 </button>
             </div>
@@ -142,6 +143,9 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
                             || auth()->user()->hasPamongMenuAccess('calendar');
                         $canAccessManualAttendanceMenu = auth()->user()->isAdmin()
                             || auth()->user()->hasPamongMenuAccess('manual_attendance');
+                        $canAccessGeneralPresensi = auth()->user()->isAdmin()
+                            || auth()->user()->isPengurusPkg()
+                            || auth()->user()->hasPamongMenuAccess('presensi');
                         $presensiGroupVisible = auth()->user()->hasPamongMenuAccess('presensi')
                             || $canAccessManualAttendanceMenu
                             || auth()->user()->hasPamongMenuAccess('cek_kehadiran')
@@ -263,8 +267,8 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
                         <div x-show="open" x-transition x-cloak class="space-y-1 pl-3">
-                            @if(auth()->user()->isAdmin() || auth()->user()->isPengurusPkg() || auth()->user()->hasPamongMenuAccess('presensi'))
-                            <a href="{{ route('presensi.index', ['tab' => 'rekap']) }}" class="nav-item @if(request()->routeIs('presensi.index') && request('tab', 'rekap') !== 'input') bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                            @if($canAccessGeneralPresensi)
+                            <a href="{{ route('presensi.index') }}" class="nav-item @if(request()->routeIs('presensi.index')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Presensi Siswa</span>
                             </a>
                             @endif
@@ -278,7 +282,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
                                 <span class="nav-text">Rekap Generus</span>
                             </a>
                             @endif
-                            @if($canAccessManualAttendanceMenu)
+                            @if($canAccessManualAttendanceMenu && ! $canAccessGeneralPresensi)
                             <a href="{{ route('presensi.index', ['tab' => 'input']) }}#input" class="nav-item @if(request()->routeIs('manual-attendance.*') || (request()->routeIs('presensi.index') && request('tab') === 'input')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Input Manual</span>
                             </a>
@@ -293,7 +297,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
                                 <span class="nav-text">Presensi Pamong</span>
                             </a>
                             @endif
-                            @if($canAccessScheduleMenu)
+                            @if($canAccessScheduleMenu && ! $canAccessGeneralPresensi)
                             <a href="{{ route('attendance-schedule.index') }}" class="nav-item @if(request()->routeIs('attendance-schedule.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Jadwal Presensi</span>
                             </a>
@@ -498,7 +502,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
         </aside>
         
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
             <!-- Top Header -->
             <header class="pkg-topbar relative z-[80] h-16 shrink-0 border-b flex items-center justify-between px-4 lg:px-6">
                 <!-- Left: Menu Button -->
@@ -551,7 +555,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
             </header>
             
             <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto">
+            <main class="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
                 @if(session('success'))
                 <div class="mx-4 mt-4 lg:mx-6">
                     <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-4">
@@ -644,7 +648,8 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
     </script>
     
     <!-- CSRF Token Handler -->
-    <script src="/js/csrf-handler.js?v={{ time() }}"></script>
+    @php($csrfHandlerVersion = is_file(public_path('js/csrf-handler.js')) ? filemtime(public_path('js/csrf-handler.js')) : 1)
+    <script src="{{ asset('js/csrf-handler.js') }}?v={{ $csrfHandlerVersion }}"></script>
     
     @include('components.profile-assignment-prompt')
     @include('components.face-enrollment-prompt')

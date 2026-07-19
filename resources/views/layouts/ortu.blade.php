@@ -20,7 +20,7 @@
     <script>
         (function () {
             try {
-                var shouldCollapse = window.innerWidth < 1024 || localStorage.getItem('sidebarCollapsed') === 'true';
+                var shouldCollapse = window.innerWidth < 1024 || localStorage.getItem('ortuSidebarCollapsed') === 'true';
                 document.documentElement.classList.toggle('sidebar-preload-closed', shouldCollapse);
             } catch (error) {
                 document.documentElement.classList.remove('sidebar-preload-closed');
@@ -51,8 +51,7 @@
 </head>
 <body class="h-full font-sans antialiased" x-data="{ 
     darkMode: localStorage.getItem('darkMode') !== null ? localStorage.getItem('darkMode') === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches,
-    sidebarCollapsed: window.innerWidth < 1024 ? true : (localStorage.getItem('sidebarCollapsed') === 'true'),
-    sidebarOpen: false,
+    sidebarCollapsed: window.innerWidth < 1024 ? true : (localStorage.getItem('ortuSidebarCollapsed') === 'true'),
     toggleDarkMode() {
         this.darkMode = !this.darkMode;
         localStorage.setItem('darkMode', this.darkMode);
@@ -65,21 +64,22 @@
 }" 
 :class="{ 'dark': darkMode }" 
 x-init="document.documentElement.classList.remove('sidebar-preload-closed')"
-x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
+x-effect="localStorage.setItem('ortuSidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', !sidebarCollapsed && window.innerWidth < 1024)"
+@resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true">
     <div class="flex h-screen overflow-hidden">
         <!-- Mobile Overlay -->
-        <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 bg-black/50 z-40 lg:hidden" x-transition></div>
+        <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 bg-black/50 z-40 lg:hidden" x-transition:enter="transition-opacity ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
         
         <!-- Sidebar -->
         <aside 
             x-show="!sidebarCollapsed"
-            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter="transition-transform ease-out duration-200"
             x-transition:enter-start="-translate-x-full"
             x-transition:enter-end="translate-x-0"
-            x-transition:leave="transition ease-in duration-300"
+            x-transition:leave="transition-transform ease-in duration-150"
             x-transition:leave-start="translate-x-0"
             x-transition:leave-end="-translate-x-full"
-            class="pkg-sidebar fixed lg:relative inset-y-0 left-0 z-50 w-64 flex flex-col border-r">
+            class="pkg-sidebar fixed lg:relative inset-y-0 left-0 z-50 w-64 flex flex-col border-r will-change-transform">
             <!-- Logo -->
             <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
                 <a href="{{ route('ortu.dashboard') }}" class="flex items-center">
@@ -92,7 +92,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
                     @endif
                     <span class="logo-text ml-3 text-lg font-bold text-gray-900 dark:text-white truncate">Portal Ortu</span>
                 </a>
-                <button @click="sidebarOpen = false; sidebarCollapsed = true" class="p-2 rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
+                <button @click="sidebarCollapsed = true" class="p-2 rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
                 </button>
             </div>
@@ -209,7 +209,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed)">
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto">
+            <main class="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
                 @if(session('success'))
                 <div class="mx-4 sm:mx-6 mt-4">
                     <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg text-sm" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">

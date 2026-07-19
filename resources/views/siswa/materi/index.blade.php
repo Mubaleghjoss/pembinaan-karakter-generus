@@ -3,7 +3,7 @@
 @section('title', 'Materi Pembelajaran')
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
     <div class="pkg-page-header">
         <div>
             <h1 class="pkg-page-heading">Materi Pembelajaran</h1>
@@ -62,7 +62,7 @@
                     <p class="pkg-empty-copy">Target untuk kategori ini belum disiapkan admin.</p>
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="pkg-mobile-table overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-800">
                             <tr>
@@ -78,14 +78,14 @@
                                     $completed = (bool) ($progress?->is_completed);
                                 @endphp
                                 <tr>
-                                    <td class="px-4 py-3">
+                                    <td class="pkg-mobile-main px-4 py-3" data-label="Target">
                                         <p class="font-semibold text-gray-900 dark:text-white">{{ $target->title }}</p>
                                         @if($target->description)
                                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $target->description }}</p>
                                         @endif
                                         <p class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{{ $target->semester_label }} - {{ $target->category_label }}</p>
                                     </td>
-                                    <td class="px-4 py-3 text-center">
+                                    <td class="px-4 py-3 text-center" data-label="Status">
                                         <span class="pkg-status-badge {{ $completed ? 'pkg-status-success' : 'pkg-status-neutral' }}">
                                             {{ $completed ? 'Selesai' : 'Belum' }}
                                         </span>
@@ -93,7 +93,7 @@
                                             <p class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{{ $progress->completed_at->format('d M Y') }}</p>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-right">
+                                    <td class="pkg-mobile-actions px-4 py-3 text-right" data-label="Ceklis">
                                         <form method="POST" action="{{ route('siswa.materi-targets.toggle', $target) }}" class="inline-flex justify-end">
                                             @csrf
                                             <input type="hidden" name="completed" value="0">

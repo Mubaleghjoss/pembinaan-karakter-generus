@@ -61,20 +61,21 @@
       }"
       :class="{ 'dark': darkMode }"
       x-init="document.documentElement.classList.remove('sidebar-preload-closed')"
-      x-effect="localStorage.setItem('siswaSidebarCollapsed', sidebarCollapsed)">
+      x-effect="localStorage.setItem('siswaSidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', !sidebarCollapsed && window.innerWidth < 1024)"
+      @resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true">
 @php($currentSiswa = Auth::guard('siswa')->user())
 
 <div class="flex h-screen overflow-hidden">
-    <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 z-40 bg-black/50 lg:hidden" x-transition></div>
+    <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 z-40 bg-black/50 lg:hidden" x-transition:enter="transition-opacity ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
 
     <aside x-show="!sidebarCollapsed"
-           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter="transition-transform ease-out duration-200"
            x-transition:enter-start="-translate-x-full"
            x-transition:enter-end="translate-x-0"
-           x-transition:leave="transition ease-in duration-300"
+           x-transition:leave="transition-transform ease-in duration-150"
            x-transition:leave-start="translate-x-0"
            x-transition:leave-end="-translate-x-full"
-           class="pkg-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r lg:relative">
+           class="pkg-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r will-change-transform lg:relative">
         <div class="flex h-16 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
             <a href="{{ route('siswa.dashboard') }}" class="flex min-w-0 items-center">
                 @if(!empty($siteSettings['site_logo']))
@@ -234,7 +235,7 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto">
+        <main class="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
             @if(session('success'))
                 <div class="mx-4 mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300 sm:mx-6">
                     {{ session('success') }}

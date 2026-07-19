@@ -3,7 +3,7 @@
 @section('title', 'Verifikasi Tugas PKG')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="karakterManager()">
+<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8" x-data="karakterManager()">
     <!-- Header -->
     <div class="pkg-page-header">
         <div>
@@ -71,7 +71,7 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="pkg-mobile-table overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -87,21 +87,21 @@
                     <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($pamongAnalyticsRows as $row)
                         <tr>
-                            <td class="px-4 py-4">
+                            <td class="pkg-mobile-main px-4 py-4" data-label="Pamong">
                                 <div class="font-semibold text-gray-900 dark:text-white">{{ $row['name'] }}</div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ $row['username'] }} | {{ strtoupper($row['role_name']) }}</div>
                             </td>
-                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white">{{ $row['total_verifications'] }}</td>
-                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white">{{ $row['siswa_verified'] }}</td>
-                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white" data-label="Verifikasi">{{ $row['total_verifications'] }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white" data-label="Siswa">{{ $row['siswa_verified'] }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white" data-label="Rata-rata respon">
                                 {{ is_null($row['avg_verification_minutes']) ? '-' : $row['avg_verification_minutes'] . ' menit' }}
                             </td>
-                            <td class="px-4 py-4 text-sm {{ $row['pending_backlog'] > 0 ? 'text-amber-600' : 'text-emerald-600' }}">{{ $row['pending_backlog'] }}</td>
-                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                            <td class="px-4 py-4 text-sm {{ $row['pending_backlog'] > 0 ? 'text-amber-600' : 'text-emerald-600' }}" data-label="Backlog">{{ $row['pending_backlog'] }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white" data-label="Presensi">
                                 {{ $row['attendance_total'] }} total
                                 <div class="text-xs text-gray-500 dark:text-gray-400">Hadir {{ $row['attendance_hadir'] }} | Terlambat {{ $row['attendance_terlambat'] }}</div>
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-4" data-label="Status">
                                 <span class="pkg-status-badge {{ $row['activity_status'] === 'tinggi' ? 'pkg-status-success' : ($row['activity_status'] === 'sedang' ? 'pkg-status-info' : ($row['activity_status'] === 'rendah' ? 'pkg-status-warning' : 'pkg-status-neutral')) }}">
                                     {{ strtoupper($row['activity_status']) }}
                                 </span>
@@ -109,7 +109,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-8">
+                            <td colspan="7" class="pkg-mobile-empty px-4 py-8">
                                 <div class="pkg-empty-state">
                                     <h3 class="pkg-empty-title">Belum ada data analitik pamong</h3>
                                     <p class="pkg-empty-copy">Ubah rentang tanggal atau mulai gunakan verifikasi dan presensi pamong agar analitik bisa dihitung.</p>
@@ -124,14 +124,14 @@
     </div>
 
     <!-- Tab Navigation - Button Style -->
-    <div class="pkg-filter-bar mb-6 flex flex-wrap gap-2">
-        <button @click="activeTab = 'siswa'" :class="activeTab === 'siswa' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2">
+    <div class="pkg-filter-bar mb-6 flex flex-nowrap gap-2 overflow-x-auto">
+        <button @click="activeTab = 'siswa'" :class="activeTab === 'siswa' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             Ceklis Siswa
         </button>
-        <button @click="activeTab = 'verification'" :class="activeTab === 'verification' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2">
+        <button @click="activeTab = 'verification'" :class="activeTab === 'verification' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
@@ -141,13 +141,13 @@
             @endif
         </button>
         @if(auth()->user()->hasPamongCrudPermission('tracer_karakter', 'create'))
-        <button @click="activeTab = 'import'" :class="activeTab === 'import' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2">
+        <button @click="activeTab = 'import'" :class="activeTab === 'import' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
             </svg>
             Impor Excel
         </button>
-        <button @click="activeTab = 'karakter'; loadKarakter()" :class="activeTab === 'karakter' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2">
+        <button @click="activeTab = 'karakter'; loadKarakter()" :class="activeTab === 'karakter' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -173,7 +173,7 @@
 
     <div x-show="activeTab === 'siswa'" x-cloak>
     <!-- Filters -->
-    <div class="pkg-filter-bar mb-6">
+    <x-collapsible-section title="Filter siswa" description="Cari berdasarkan nama, NIS, atau kelas." :open="request()->filled('search') || request()->filled('kelas_id')" :compact="true" class="mb-6">
         <form method="GET" class="pkg-filter-grid md:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama/NIS..."
                 class="flex-1 min-w-[200px] px-3 py-2 pkg-field text-sm">
@@ -186,11 +186,11 @@
             <button type="submit" class="pkg-btn-primary px-4 py-2 text-sm">Filter</button>
             <a href="{{ route('tugas-pkg.verification') }}" class="pkg-btn-secondary px-4 py-2 text-sm">Reset</a>
         </form>
-    </div>
+    </x-collapsible-section>
 
     <!-- Student List -->
     <div class="pkg-card">
-        <div class="overflow-x-auto">
+        <div class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -203,8 +203,8 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($siswaList as $siswa)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $siswa->nis }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-label="NIS">{{ $siswa->nis }}</td>
+                        <td class="pkg-mobile-main px-6 py-4 whitespace-nowrap" data-label="Nama">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
                                     @if($siswa->foto)
@@ -220,8 +220,8 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $siswa->kelas->nama ?? '-' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-label="Kelas">{{ $siswa->kelas->nama ?? '-' }}</td>
+                        <td class="pkg-mobile-actions px-6 py-4 whitespace-nowrap text-center" data-label="Aksi">
                             <div class="flex items-center justify-center gap-2">
                                 <a href="{{ route('tugas-pkg.check', $siswa) }}" class="pkg-btn-primary px-3 py-1 text-sm">
                                     Pamong Bantu Ceklis
@@ -234,7 +234,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="px-6 py-0">
+                        <td colspan="4" class="pkg-mobile-empty px-6 py-0">
                             <div class="pkg-empty-state">
                                 <svg class="pkg-empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -363,7 +363,7 @@
                 </button>
             </div>
             
-            <div class="overflow-x-auto">
+            <div class="pkg-mobile-table overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -379,9 +379,9 @@
                     <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                         <template x-for="item in karakterList" :key="item.id">
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white" x-text="item.nama"></td>
-                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400" x-text="item.deskripsi || '-'"></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <td class="pkg-mobile-main px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white" data-label="Nama" x-text="item.nama"></td>
+                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400" data-label="Deskripsi" x-text="item.deskripsi || '-'"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center" data-label="Kategori">
                                     <span :class="{
                                         'bg-blue-100 text-blue-800': item.kategori === 'harian',
                                         'bg-purple-100 text-purple-800': item.kategori === 'mingguan',
@@ -389,15 +389,15 @@
                                         'bg-gray-100 text-gray-800': !item.kategori
                                     }" class="pkg-status-badge" x-text="item.kategori === 'harian' ? 'Harian' : item.kategori === 'mingguan' ? 'Mingguan' : item.kategori === 'bulanan' ? 'Bulanan' : '-'"></span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-green-600" x-text="'+' + (item.poin || 10)"></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-xs text-gray-500">
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-green-600" data-label="Poin" x-text="'+' + (item.poin || 10)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-xs text-gray-500" data-label="Periode">
                                     <span x-show="item.tanggal_mulai || item.tanggal_selesai" x-text="(item.tanggal_mulai || '?') + ' - ' + (item.tanggal_selesai || '?')"></span>
                                     <span x-show="!item.tanggal_mulai && !item.tanggal_selesai">-</span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <td class="px-6 py-4 whitespace-nowrap text-center" data-label="Status">
                                     <span :class="item.is_active ? 'pkg-status-success' : 'pkg-status-danger'" class="pkg-status-badge" x-text="item.is_active ? 'Aktif' : 'Nonaktif'"></span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <td class="pkg-mobile-actions px-6 py-4 whitespace-nowrap text-center" data-label="Aksi">
                                     <div class="flex items-center justify-center gap-2">
                                         <button @click="openEditModal(item)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,7 +422,7 @@
                             </tr>
                         </template>
                         <tr x-show="karakterList.length === 0">
-                            <td colspan="7" class="px-6 py-0">
+                            <td colspan="7" class="pkg-mobile-empty px-6 py-0">
                                 <div class="pkg-empty-state">
                                     <h3 class="pkg-empty-title">Belum ada data karakter</h3>
                                     <p class="pkg-empty-copy">Klik Tambah Karakter untuk membuat daftar karakter yang nanti dipakai pada tugas PKG.</p>

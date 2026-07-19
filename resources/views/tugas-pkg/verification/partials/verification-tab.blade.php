@@ -48,7 +48,7 @@
     @endif
 
     <!-- Filters -->
-    <div class="pkg-filter-bar mb-6">
+    <x-collapsible-section title="Filter verifikasi" description="Saring tugas berdasarkan status, siswa, bukti, dan tanggal." :open="request()->filled('siswa_id') || request()->filled('karakter_id') || request()->filled('proof_status') || request()->filled('date_from') || request()->filled('date_to') || request('status', 'unverified') !== 'unverified'" :compact="true" class="mb-6">
         <form id="filterForm" method="GET" action="{{ route('tugas-pkg.verification') }}" class="pkg-filter-grid grid-cols-1 md:grid-cols-6 gap-4">
             <input type="hidden" name="tab" value="verification">
             <div>
@@ -363,7 +363,7 @@
     @if($checklists instanceof \Illuminate\Contracts\Pagination\Paginator)
     <div class="mt-6">
         {{ $checklists->appends(request()->query())->links() }}
-    </div>
+    </x-collapsible-section>
     @endif
 
     <!-- Bulk Action Toolbar -->
