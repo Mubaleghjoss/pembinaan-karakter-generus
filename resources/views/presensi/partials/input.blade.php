@@ -1,29 +1,24 @@
 {{-- Input Manual Presensi Tab Content --}}
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="pkg-panel p-6" data-manual-input-panel>
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Input Presensi Manual</h3>
-                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Input presensi siswa secara manual untuk izin, sakit, atau koreksi data. Pamong mengikuti siswa binaan, kecuali diberi izin Semua Siswa.</p>
-                <p class="mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ ($canAccessAllManualAttendanceStudents ?? false) ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200' }}">
-                    {{ ($canAccessAllManualAttendanceStudents ?? false) ? 'Scope aktif: semua siswa' : 'Scope aktif: siswa binaan' }}
-                </p>
-            </div>
-            <div class="flex gap-2">
-                <button @click="openQrScanner()" 
-                        class="pkg-btn-primary inline-flex items-center px-4 py-2 text-sm font-medium">
+    <x-collapsible-section
+        title="Input Presensi Manual"
+        description="Input izin, sakit, kehadiran, atau koreksi data siswa."
+        section-id="manual-attendance"
+        data-manual-input-panel
+    >
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <p class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ ($canAccessAllManualAttendanceStudents ?? false) ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200' }}">
+                {{ ($canAccessAllManualAttendanceStudents ?? false) ? 'Cakupan: semua siswa' : 'Cakupan: siswa binaan' }}
+            </p>
+            <button type="button" @click="openQrScanner()"
+                    class="pkg-btn-primary inline-flex items-center px-4 py-2 text-sm font-medium">
                     <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
                     Scan QR
-                </button>
-            </div>
+            </button>
         </div>
-    </div>
 
-    <!-- Input Form -->
-    <div class="pkg-panel p-6">
         <form @submit.prevent="submitManualPresensi()">
             <div class="pkg-filter-grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Pilih Siswa -->
@@ -136,14 +131,10 @@
                 </button>
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 
     @if($canAccessAllManualAttendanceStudents ?? false)
-    <!-- Bulk Input Section -->
-    <div class="pkg-panel p-6">
-        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Input Presensi Massal</h4>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Input presensi untuk seluruh kelas sekaligus</p>
-        
+    <x-collapsible-section title="Input Presensi Massal" description="Catat presensi seluruh siswa dalam satu kelas sekaligus.">
         <div class="pkg-filter-grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pilih Kelas</label>
@@ -177,13 +168,9 @@
                 Input Presensi Kelas
             </button>
         </div>
-    </div>
+    </x-collapsible-section>
 
-    <!-- Impor Excel Section -->
-    <div class="pkg-card p-6">
-        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Impor dari Excel</h4>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Upload file Excel untuk import data presensi siswa dan pamong secara massal.</p>
-        
+    <x-collapsible-section title="Impor dari Excel" description="Impor data presensi siswa dan pamong secara massal.">
         @if(session('warning'))
             <div class="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                 <div class="flex items-start">
@@ -284,6 +271,6 @@
             </ul>
             <p class="mt-3 text-xs text-blue-700 dark:text-blue-300">Jika Anda mengimpor presensi lama, pilih periode poin agar monitoring bulanan tetap rapi. Jika hanya ingin memindahkan data tanpa mengubah poin, biarkan opsi tambah poin tidak dicentang.</p>
         </div>
-    </div>
+    </x-collapsible-section>
     @endif
 </div>

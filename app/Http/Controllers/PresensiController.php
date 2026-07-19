@@ -47,6 +47,7 @@ class PresensiController extends Controller
         $this->middleware('auth')->except(['scan']);
         $this->middleware('pamong.permission:manual_attendance,view')->only(['students']);
         $this->middleware('pamong.permission:manual_attendance,create')->only(['store', 'bulkStore', 'import', 'downloadTemplate']);
+        $this->middleware('pamong.permission:presensi,edit')->only(['update']);
     }
 
     /**
@@ -67,6 +68,7 @@ class PresensiController extends Controller
         $isOpen = $schedule ? $schedule->isOpen() : false;
         $canCreateManualAttendance = $request->user()->canCreateManualAttendance();
         $canAccessAllManualAttendanceStudents = $request->user()->canAccessAllManualAttendanceStudents();
+        $canEditPresensi = $request->user()->hasPamongCrudPermission('presensi', 'edit');
 
         return view('presensi.index', compact(
             'presensi',
@@ -75,7 +77,8 @@ class PresensiController extends Controller
             'isOpen',
             'autoAlphaCount',
             'canCreateManualAttendance',
-            'canAccessAllManualAttendanceStudents'
+            'canAccessAllManualAttendanceStudents',
+            'canEditPresensi'
         ));
     }
 

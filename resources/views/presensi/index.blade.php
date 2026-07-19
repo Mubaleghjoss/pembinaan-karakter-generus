@@ -73,6 +73,8 @@
             @include('presensi.partials.jadwal')
         </x-tab-panel>
     </x-tabs>
+
+    @include('presensi.partials.edit-modal')
 </div>
 
 <!-- QR Scanner Modal -->
@@ -111,6 +113,7 @@ function presensiManager() {
         presensiBulkStore: @json(route('presensi.bulk')),
         presensiBulkVerify: @json(route('presensi.bulk-verify')),
         presensiVerify: @json(route('presensi.verify', ['presensi' => '__ID__'])),
+        presensiUpdate: @json(route('presensi.update', ['presensi' => '__ID__'])),
     };
 
     return {
@@ -118,6 +121,17 @@ function presensiManager() {
         classes: [],
         loading: false,
         bulkVerifying: false,
+        editModal: {
+            open: false,
+            saving: false,
+            id: null,
+            siswa_nama: '',
+            tanggal: '',
+            status: '',
+            jam_masuk: '',
+            jam_keluar: '',
+            keterangan: ''
+        },
         
         // Rekap tab state
         presensi: [],
@@ -325,8 +339,71 @@ function presensiManager() {
         },
         
         editPresensi(item) {
-            // Open edit modal - implement as needed
-            console.log('Edit presensi:', item);
+            this.editModal = {
+                open: true,
+                saving: false,
+                id: item.id,
+                siswa_nama: item.siswa?.nama || 'Siswa',
+                tanggal: item.tanggal || '',
+                status: item.status || '',
+                jam_masuk: item.jam_masuk ? item.jam_masuk.slice(0, 5) : '',
+                jam_keluar: item.jam_keluar ? item.jam_keluar.slice(0, 5) : '',
+                keterangan: item.keterangan || ''
+            };
+
+            this.$nextTick(() => document.querySelector('[data-edit-presensi-status]')?.focus());
+        },
+
+        closeEditPresensi() {
+            if (this.editModal.saving) return;
+            this.editModal.open = false;
+        },
+
+        async updatePresensi() {
+            if (!this.editModal.id || !this.editModal.status) {
+                window.showNotification('Status kehadiran wajib dipilih', 'warning');
+                return;
+            }
+
+            this.editModal.saving = true;
+
+            try {
+                const response = await fetch(endpoints.presensiUpdate.replace('__ID__', this.editModal.id), {
+                    method: 'PUT',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify({
+                        tanggal: this.editModal.tanggal,
+                        status: this.editModal.status,
+                        jam_masuk: this.editModal.jam_masuk || null,
+                        jam_keluar: this.editModal.jam_keluar || null,
+                        keterangan: this.editModal.keterangan || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    const validationMessage = data.errors
+                        ? Object.values(data.errors).flat()[0]
+                        : null;
+                    window.showNotification(validationMessage || data.message || 'Gagal memperbarui presensi', 'error');
+                    return;
+                }
+
+                this.editModal.open = false;
+                await this.loadPresensi();
+                await this.loadStats();
+                window.showNotification('Presensi berhasil diperbarui', 'success');
+            } catch (error) {
+                console.error('Error updating presensi:', error);
+                window.showNotification('Terjadi kesalahan saat memperbarui presensi', 'error');
+            } finally {
+                this.editModal.saving = false;
+            }
         },
         
         // Manual Input Functions
@@ -388,6 +465,10 @@ function presensiManager() {
             } else {
                 window.location.hash = 'input';
             }
+
+            window.dispatchEvent(new CustomEvent('pkg:open-section', {
+                detail: { id: 'manual-attendance' }
+            }));
 
             this.$nextTick(() => {
                 const manualPanel = document.querySelector('[data-manual-input-panel]');

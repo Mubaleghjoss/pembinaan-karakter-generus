@@ -683,6 +683,17 @@ html.reveal-ready [data-reveal].is-visible {
     min-height: calc(100svh - 4.5rem);
 }
 
+.pkg-signature-canvas {
+    display: block;
+    width: 100%;
+    height: 11rem;
+    border: 1px dashed color-mix(in srgb, var(--pkg-brand, #0f766e) 44%, var(--pkg-border, #cbd5e1));
+    border-radius: 1rem;
+    background: var(--pkg-surface-muted, #f8fafc);
+    cursor: crosshair;
+    touch-action: none;
+}
+
 .pkg-pwa-push-button {
     position: relative;
     display: inline-flex;

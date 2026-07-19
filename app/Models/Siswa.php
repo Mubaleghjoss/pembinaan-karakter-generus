@@ -34,6 +34,7 @@ class Siswa extends Authenticatable
         'password',
         'nama',
         'jenis_kelamin',
+        'tempat_lahir',
         'tanggal_lahir',
         'alamat',
         'kelompok',

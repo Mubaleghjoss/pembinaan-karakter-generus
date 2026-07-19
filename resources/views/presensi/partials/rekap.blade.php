@@ -1,6 +1,6 @@
 {{-- Rekap Presensi Tab Content --}}
 <div class="space-y-6">
-    <!-- Statistics Cards -->
+    <x-collapsible-section title="Ringkasan Kehadiran" description="Jumlah kehadiran berdasarkan filter aktif.">
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
         <div class="pkg-card-soft rounded-2xl p-3 sm:p-4">
             <div class="flex items-center">
@@ -72,10 +72,10 @@
             </div>
         </div>
     </div>
+    </x-collapsible-section>
 
-    <!-- Filters -->
-    <div class="pkg-filter-bar">
-        <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+    <x-collapsible-section title="Filter Rekap" description="Atur tanggal, kelas, status, dan verifikasi.">
+    <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tanggal</label>
                 <input type="date" x-model="filters.tanggal" @change="loadPresensi(); loadStats()"
@@ -121,9 +121,10 @@
                     Filter
                 </button>
             </div>
-        </div>
     </div>
+    </x-collapsible-section>
 
+    <x-collapsible-section title="Ringkasan Kelompok" description="Siswa yang sudah dan belum hadir pada setiap kelompok.">
     <div class="space-y-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -229,10 +230,10 @@
             </template>
         </div>
     </div>
+    </x-collapsible-section>
 
-    <!-- Attendance Table -->
-    <div class="pkg-panel overflow-hidden">
-        <div class="flex flex-col gap-3 border-b border-gray-200 px-6 py-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+    <x-collapsible-section title="Data Presensi" description="Daftar presensi dan aksi verifikasi atau koreksi status.">
+        <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Data Presensi</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Aksi mengikuti filter tanggal, kelas, status, dan verifikasi yang aktif.</p>
@@ -346,11 +347,13 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </button>
-                                    <button @click="editPresensi(item)" class="rounded-lg p-1.5 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700" title="Edit">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    @if($canEditPresensi ?? false)
+                                    <button type="button" @click="editPresensi(item)" class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700" title="Koreksi presensi" aria-label="Koreksi presensi">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -358,5 +361,5 @@
                 </tbody>
             </table>
         </div>
-    </div>
+    </x-collapsible-section>
 </div>

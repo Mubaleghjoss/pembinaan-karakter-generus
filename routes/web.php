@@ -52,6 +52,18 @@ Route::post('/face-presensi/scan', [App\Http\Controllers\FaceAttendanceControlle
     ->middleware('throttle:qr-scan')
     ->name('face-presensi.scan');
 
+// Tautan privat pendaftaran Generus. Sengaja tidak ditampilkan pada navigasi publik.
+Route::get('/pendaftaran-generus/hasil/{registration}/{downloadToken}', [App\Http\Controllers\GenerusRegistrationController::class, 'result'])
+    ->name('public.generus-registration.result');
+Route::get('/pendaftaran-generus/hasil/{registration}/{downloadToken}/pdf', [App\Http\Controllers\GenerusRegistrationController::class, 'pdf'])
+    ->name('public.generus-registration.pdf');
+Route::get('/pendaftaran-generus/{token}', [App\Http\Controllers\GenerusRegistrationController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('public.generus-registration.show');
+Route::post('/pendaftaran-generus/{token}', [App\Http\Controllers\GenerusRegistrationController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('public.generus-registration.store');
+
 // Laporan Penyaksian - Public Form (like Google Form)
 Route::get('/lapor-pkg', [App\Http\Controllers\LaporanPenyaksianController::class, 'create'])->name('laporan-penyaksian.create');
 Route::post('/lapor-pkg', [App\Http\Controllers\LaporanPenyaksianController::class, 'store'])->name('laporan-penyaksian.store');
