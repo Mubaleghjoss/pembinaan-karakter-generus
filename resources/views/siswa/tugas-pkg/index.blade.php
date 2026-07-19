@@ -3,7 +3,7 @@
 @section('title', 'Tugas PKG')
 
 @section('content')
-<div class="max-w-5xl mx-auto px-4 py-6" x-data="window.tugasPkgPage()" x-init="initMediaPermissionGate()">
+<div class="max-w-5xl mx-auto px-4 py-6" x-data="window.tugasPkgPage()">
     <div class="mb-4">
         <div class="flex items-center justify-between">
             <div>
@@ -48,37 +48,6 @@
     @if(session('error'))
         <div class="mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg text-sm">{{ session('error') }}</div>
     @endif
-
-    <div x-show="mediaPermissionStatus !== 'granted' && !mediaPermissionDismissed" x-cloak
-         class="mb-5 rounded-2xl border px-4 py-4 text-sm shadow-sm"
-         :class="mediaPermissionStatus === 'blocked'
-            ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200'
-            : 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200'">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-                <div class="font-semibold">Izin mikrofon untuk voice note</div>
-                <p class="mt-1" x-text="mediaPermissionMessage"></p>
-                <div x-show="showMediaPermissionHelp" class="mt-3 rounded-xl border border-current/20 bg-white/60 px-3 py-2 text-xs dark:bg-black/10">
-                    <p>Jika izin sudah diblokir, buka ikon gembok atau pengaturan situs di browser, lalu izinkan Mikrofon untuk halaman ini. Setelah itu muat ulang halaman.</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap gap-2 sm:justify-end">
-                <button type="button" @click="requestMicrophonePermission(true)"
-                        class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                        :disabled="mediaPermissionStatus === 'checking'">
-                    <span x-text="mediaPermissionStatus === 'checking' ? 'Memeriksa...' : 'Aktifkan Mikrofon'"></span>
-                </button>
-                <button type="button" @click="showMediaPermissionHelp = !showMediaPermissionHelp"
-                        class="inline-flex items-center rounded-lg border border-current/30 bg-white px-3 py-2 text-xs font-semibold text-current hover:bg-white/80 dark:bg-slate-900/40 dark:hover:bg-slate-900/70">
-                    <span x-text="showMediaPermissionHelp ? 'Tutup Cara' : 'Cara Mengaktifkan'"></span>
-                </button>
-                <button type="button" @click="mediaPermissionDismissed = true"
-                        class="inline-flex items-center rounded-lg px-3 py-2 text-xs font-semibold text-current hover:bg-white/50 dark:hover:bg-black/10">
-                    Nanti
-                </button>
-            </div>
-        </div>
-    </div>
 
     @php
         $categories = [
@@ -694,65 +663,9 @@ window.tugasPkgPage = function () {
         voiceNoteMaxSeconds: 0,
         mediaPermissionStatus: 'checking',
         mediaPermissionMessage: 'Memeriksa izin kamera dan mikrofon...',
-        mediaPermissionDismissed: false,
         showMediaPermissionHelp: false,
         cameraPermissionState: 'unknown',
         microphonePermissionState: 'unknown',
-        async initMediaPermissionGate() {
-            await this.refreshMediaPermissionState();
-
-            if (this.mediaPermissionStatus === 'prompt') {
-                window.setTimeout(() => this.requestMicrophonePermission(false), 350);
-            }
-        },
-        async queryBrowserPermission(name) {
-            if (!navigator.permissions || typeof navigator.permissions.query !== 'function') {
-                return 'unknown';
-            }
-
-            try {
-                const status = await navigator.permissions.query({ name });
-                if (status && typeof status.onchange !== 'undefined') {
-                    status.onchange = () => this.refreshMediaPermissionState();
-                }
-
-                return status.state || 'unknown';
-            } catch (error) {
-                return 'unknown';
-            }
-        },
-        async refreshMediaPermissionState() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.isSecureContext) {
-                this.mediaPermissionStatus = 'blocked';
-                this.mediaPermissionMessage = 'Browser belum bisa meminta akses kamera dan mikrofon dari halaman ini. Buka lewat HTTPS atau gunakan browser terbaru.';
-                return;
-            }
-
-            const [camera, microphone] = await Promise.all([
-                this.queryBrowserPermission('camera'),
-                this.queryBrowserPermission('microphone'),
-            ]);
-
-            this.cameraPermissionState = camera;
-            this.microphonePermissionState = microphone;
-
-            if (microphone === 'granted') {
-                this.mediaPermissionStatus = 'granted';
-                this.mediaPermissionMessage = camera === 'granted'
-                    ? 'Kamera dan mikrofon sudah aktif.'
-                    : 'Mikrofon sudah aktif. Kamera akan diminta saat kamu memakai Ambil Foto.';
-                return;
-            }
-
-            if (microphone === 'denied') {
-                this.mediaPermissionStatus = 'blocked';
-                this.mediaPermissionMessage = 'Izin mikrofon masih diblokir. Ubah izin situs di browser, lalu coba lagi.';
-                return;
-            }
-
-            this.mediaPermissionStatus = 'prompt';
-            this.mediaPermissionMessage = 'Klik Aktifkan Mikrofon atau tombol Rekam agar browser menampilkan permintaan izin voice note.';
-        },
         setMediaPermissionError(error, scope = 'media') {
             const errorName = error && typeof error === 'object' ? error.name : '';
             const permissionLabel = scope === 'camera'
@@ -786,78 +699,6 @@ window.tugasPkgPage = function () {
 
             this.mediaPermissionStatus = 'prompt';
             this.mediaPermissionMessage = `${settingsLabel} belum bisa dibuka. Coba aktifkan ulang atau gunakan pilihan unggah file.`;
-        },
-        async requestMicrophonePermission(manual = true) {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.isSecureContext) {
-                await this.refreshMediaPermissionState();
-                return;
-            }
-
-            this.mediaPermissionStatus = 'checking';
-            this.mediaPermissionMessage = 'Meminta izin mikrofon...';
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                stream.getTracks().forEach((track) => track.stop());
-
-                this.microphonePermissionState = 'granted';
-                this.mediaPermissionStatus = 'granted';
-                this.mediaPermissionMessage = 'Mikrofon sudah aktif. Kamu bisa merekam voice note dari tombol Rekam.';
-                this.showMediaPermissionHelp = false;
-
-                if (manual) {
-                    this.notify('Mikrofon sudah aktif.', 'success');
-                }
-            } catch (error) {
-                console.error('Microphone permission error:', error);
-                const errorName = error && typeof error === 'object' ? error.name : '';
-
-                if (!manual && (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError' || errorName === 'SecurityError')) {
-                    this.mediaPermissionStatus = 'prompt';
-                    this.mediaPermissionMessage = 'Browser belum menampilkan izin otomatis. Klik Aktifkan Mikrofon atau Rekam agar permintaan izin muncul.';
-                    return;
-                }
-
-                this.setMediaPermissionError(error, 'microphone');
-
-                if (manual) {
-                    this.notify(this.mediaPermissionMessage, 'warning');
-                }
-            }
-        },
-        async requestMediaPermissions(manual = true) {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.isSecureContext) {
-                await this.refreshMediaPermissionState();
-                return;
-            }
-
-            this.mediaPermissionStatus = 'checking';
-            this.mediaPermissionMessage = 'Meminta izin kamera dan mikrofon...';
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: true,
-                });
-
-                stream.getTracks().forEach((track) => track.stop());
-                this.mediaPermissionStatus = 'granted';
-                this.mediaPermissionMessage = 'Kamera dan mikrofon sudah aktif.';
-                this.cameraPermissionState = 'granted';
-                this.microphonePermissionState = 'granted';
-                this.showMediaPermissionHelp = false;
-
-                if (manual) {
-                    this.notify('Kamera dan mikrofon sudah aktif.', 'success');
-                }
-            } catch (error) {
-                console.error('Media permission error:', error);
-                this.setMediaPermissionError(error, 'media');
-
-                if (manual) {
-                    this.notify(this.mediaPermissionMessage, 'warning');
-                }
-            }
         },
         resetProofSelections() {
             this.stopVoiceRecordingSession(true);
