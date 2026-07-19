@@ -37,6 +37,27 @@ class PwaFrontendConfigTest extends TestCase
         }
     }
 
+    public function test_pamong_login_exposes_the_public_navigation_without_changing_other_login_pages(): void
+    {
+        $layout = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/auth.blade.php');
+        $navigation = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/partials/auth-public-navigation.blade.php');
+        $pamongLogin = file_get_contents(dirname(__DIR__, 2).'/resources/views/auth/login.blade.php');
+        $siswaLogin = file_get_contents(dirname(__DIR__, 2).'/resources/views/auth/siswa-login.blade.php');
+        $ortuLogin = file_get_contents(dirname(__DIR__, 2).'/resources/views/auth/ortu-login.blade.php');
+
+        $this->assertStringContainsString("@include('layouts.partials.auth-public-navigation')", $layout);
+        $this->assertStringContainsString("@section('auth_public_navigation', 'true')", $pamongLogin);
+        $this->assertStringNotContainsString('auth_public_navigation', $siswaLogin);
+        $this->assertStringNotContainsString('auth_public_navigation', $ortuLogin);
+
+        foreach (['Beranda', 'Game 29 Karakter', 'Kalender', 'Materi', 'Scan Presensi', 'Lapor PKG'] as $label) {
+            $this->assertStringContainsString($label, $navigation);
+        }
+
+        $this->assertStringContainsString('id="auth-mobile-menu-toggle"', $navigation);
+        $this->assertStringContainsString('menu.inert = !open', $navigation);
+    }
+
     public function test_public_mobile_navigation_uses_accessible_off_canvas_panel(): void
     {
         $layout = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/public.blade.php');

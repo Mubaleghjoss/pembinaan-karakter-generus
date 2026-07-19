@@ -5,6 +5,7 @@
 @section('auth_accent_secondary', '#0369a1')
 @section('auth_card_title', 'Login Pamong')
 @section('auth_card_copy', 'Gunakan username, nomor HP, atau email yang terdaftar untuk masuk ke dashboard.')
+@section('auth_public_navigation', 'true')
 
 @section('content')
     @if ($errors->any())

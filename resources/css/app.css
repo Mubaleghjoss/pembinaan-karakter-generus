@@ -678,6 +678,11 @@ html.reveal-ready [data-reveal].is-visible {
     overflow: hidden;
 }
 
+.pkg-auth-page-with-nav {
+    height: calc(100svh - 4.5rem);
+    min-height: calc(100svh - 4.5rem);
+}
+
 .pkg-pwa-push-button {
     position: relative;
     display: inline-flex;

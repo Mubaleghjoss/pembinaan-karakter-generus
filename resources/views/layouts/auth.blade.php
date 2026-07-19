@@ -3,6 +3,7 @@
     $authAccentSecondary = trim($__env->yieldContent('auth_accent_secondary', '#0369a1'));
     $authCardTitle = trim($__env->yieldContent('auth_card_title', 'Masuk'));
     $authCardCopy = trim($__env->yieldContent('auth_card_copy', 'Gunakan akun Anda untuk melanjutkan.'));
+    $showPublicNavigation = trim($__env->yieldContent('auth_public_navigation', 'false')) === 'true';
 @endphp
 <!DOCTYPE html>
 <html lang="id" class="h-full">
@@ -26,8 +27,12 @@
     @include('layouts.partials.theme-styles')
     @stack('styles')
 </head>
-<body class="min-h-screen text-slate-900 dark:text-slate-100" style="--auth-accent: {{ $authAccent }}; --auth-accent-secondary: {{ $authAccentSecondary }};">
-    <div class="pkg-auth-page">
+<body class="min-h-screen overflow-x-hidden text-slate-900 dark:text-slate-100" style="--auth-accent: {{ $authAccent }}; --auth-accent-secondary: {{ $authAccentSecondary }};">
+    @if($showPublicNavigation)
+        @include('layouts.partials.auth-public-navigation')
+    @endif
+
+    <div class="pkg-auth-page {{ $showPublicNavigation ? 'pkg-auth-page-with-nav' : '' }}">
         <div class="pkg-auth-backdrop"></div>
 
         <div class="pkg-auth-shell" data-reveal="right">
