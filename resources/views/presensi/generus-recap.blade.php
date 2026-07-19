@@ -3,7 +3,7 @@
 @section('title', 'Rekap Generus PKG')
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-7xl space-y-3 px-4 py-5 sm:space-y-4 sm:px-6 lg:px-8">
     <x-breadcrumb :items="[
         ['title' => 'Presensi', 'url' => route('presensi.index', ['tab' => 'rekap'])],
         ['title' => 'Rekap Generus PKG'],
@@ -23,7 +23,7 @@
         </div>
     </div>
 
-    <div class="pkg-filter-bar">
+    <x-collapsible-section title="Filter Rekap Generus" description="Atur periode, semester target RPP, dan kelompok." compact>
         <form action="{{ route('presensi.generus-recap') }}" method="GET" class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             <div>
                 <label for="start_date" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Mulai</label>
@@ -55,27 +55,27 @@
                 <a href="{{ route('presensi.generus-recap') }}" class="btn-secondary px-4 py-2">Reset</a>
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="pkg-card p-5">
+    <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div class="pkg-card p-4">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Generus</p>
-            <p class="mt-2 text-3xl font-black text-gray-900 dark:text-white">{{ $totals['total_students'] }}</p>
+            <p class="mt-1 text-2xl font-black text-gray-900 dark:text-white">{{ $totals['total_students'] }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Generus aktif dalam scope</p>
         </div>
-        <div class="pkg-card p-5">
+        <div class="pkg-card p-4">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tugas PKG Terverifikasi</p>
-            <p class="mt-2 text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ $totals['task']['verified'] }}</p>
+            <p class="mt-1 text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ $totals['task']['verified'] }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $totals['task']['student_count'] }} Generus, {{ $totals['task']['pending'] }} menunggu verifikasi</p>
         </div>
-        <div class="pkg-card p-5">
+        <div class="pkg-card p-4">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Catatan Kehadiran</p>
-            <p class="mt-2 text-3xl font-black text-blue-600 dark:text-blue-400">{{ $totals['attendance']['present'] }}</p>
+            <p class="mt-1 text-2xl font-black text-blue-600 dark:text-blue-400">{{ $totals['attendance']['present'] }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $totals['attendance']['percentage'] }}% dari {{ $totals['attendance']['records'] }} catatan periode</p>
         </div>
-        <div class="pkg-card p-5">
+        <div class="pkg-card p-4">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Target RPP Selesai</p>
-            <p class="mt-2 text-3xl font-black text-violet-600 dark:text-violet-400">{{ $totals['rpp']['completed'] }}</p>
+            <p class="mt-1 text-2xl font-black text-violet-600 dark:text-violet-400">{{ $totals['rpp']['completed'] }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $totals['rpp']['completed'] }} dari {{ $totals['rpp']['expected'] }} target semester</p>
         </div>
     </div>
@@ -94,12 +94,7 @@
             <p class="pkg-empty-copy">Periksa pembagian kelompok, status aktif siswa, atau penugasan siswa binaan.</p>
         </div>
     @else
-        <div class="pkg-panel-lg overflow-hidden">
-            <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Rekap per Kelompok</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Angka persentase memakai pembagi yang tercatat pada masing-masing indikator.</p>
-            </div>
-
+        <x-collapsible-section title="Rekap per Kelompok" description="Persentase memakai pembagi pada masing-masing indikator." compact>
             <div class="overflow-x-auto pkg-mobile-table">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-gray-700">
@@ -162,7 +157,7 @@
                     @endif
                 </table>
             </div>
-        </div>
+        </x-collapsible-section>
     @endif
 </div>
 @endsection

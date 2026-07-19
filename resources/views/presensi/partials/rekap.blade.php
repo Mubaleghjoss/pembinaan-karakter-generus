@@ -1,6 +1,6 @@
 {{-- Rekap Presensi Tab Content --}}
-<div class="space-y-6">
-    <x-collapsible-section title="Ringkasan Kehadiran" description="Jumlah kehadiran berdasarkan filter aktif.">
+<div class="space-y-3 sm:space-y-4">
+    <x-collapsible-section title="Ringkasan Kehadiran" description="Jumlah kehadiran berdasarkan filter aktif." compact>
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
         <div class="pkg-card-soft rounded-2xl p-3 sm:p-4">
             <div class="flex items-center">
@@ -74,7 +74,7 @@
     </div>
     </x-collapsible-section>
 
-    <x-collapsible-section title="Filter Rekap" description="Atur tanggal, kelas, status, dan verifikasi.">
+    <x-collapsible-section title="Filter Rekap" description="Atur tanggal, kelas, status, dan verifikasi." compact>
     <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tanggal</label>
@@ -124,7 +124,7 @@
     </div>
     </x-collapsible-section>
 
-    <x-collapsible-section title="Ringkasan Kelompok" description="Siswa yang sudah dan belum hadir pada setiap kelompok.">
+    <x-collapsible-section title="Ringkasan Kelompok" description="Siswa yang sudah dan belum hadir pada setiap kelompok." compact>
     <div class="space-y-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -232,7 +232,7 @@
     </div>
     </x-collapsible-section>
 
-    <x-collapsible-section title="Data Presensi" description="Daftar presensi dan aksi verifikasi atau koreksi status.">
+    <x-collapsible-section title="Data Presensi" description="Daftar presensi dan aksi verifikasi atau koreksi status." compact>
         <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Data Presensi</h3>
@@ -273,7 +273,7 @@
         </div>
 
         <!-- Table -->
-        <div x-show="!loading && presensi.length > 0" class="overflow-x-auto">
+        <div x-show="!loading && presensi.length > 0" class="overflow-x-auto pkg-mobile-table">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -289,7 +289,7 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="item in presensi" :key="item.id">
                         <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-4 py-4">
+                            <td data-label="Siswa" class="px-4 py-4 pkg-mobile-main">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
                                         <template x-if="item.siswa?.foto_url">
@@ -307,14 +307,14 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="item.tanggal"></td>
-                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="item.jam_masuk || '-'"></td>
-                            <td class="px-4 py-4">
+                            <td data-label="Tanggal" class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="item.tanggal"></td>
+                            <td data-label="Jam Masuk" class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="item.jam_masuk || '-'"></td>
+                            <td data-label="Status" class="px-4 py-4">
                                 <span class="pkg-status-badge"
                                       :class="statusBadgeClass(item.status)"
                                       x-text="statusLabel(item.status)"></span>
                             </td>
-                            <td class="px-4 py-4">
+                            <td data-label="Bukti" class="px-4 py-4">
                                 <template x-if="item.face_proof">
                                     <div class="flex min-w-[190px] items-center gap-3">
                                         <a :href="item.face_proof.proof_url" target="_blank" rel="noopener" class="block h-12 w-12 overflow-hidden rounded-xl border border-emerald-200 dark:border-emerald-900">
@@ -334,12 +334,12 @@
                                 </template>
                                 <span x-show="!item.face_proof" class="text-sm text-gray-400 dark:text-gray-500">-</span>
                             </td>
-                            <td class="px-4 py-4">
+                            <td data-label="Verifikasi" class="px-4 py-4">
                                 <span class="pkg-status-badge"
                                       :class="item.is_verified ? 'pkg-status-success' : 'pkg-status-neutral'"
                                       x-text="item.is_verified ? 'Terverifikasi' : 'Belum'"></span>
                             </td>
-                            <td class="px-4 py-4 text-right">
+                            <td data-label="Aksi" class="px-4 py-4 text-right pkg-mobile-actions">
                                 <div class="flex items-center justify-end space-x-2">
                                     <button x-show="!item.is_verified" @click="verifyAttendance(item)" 
                                             class="rounded-lg p-1.5 text-blue-600 transition hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20" title="Verifikasi">

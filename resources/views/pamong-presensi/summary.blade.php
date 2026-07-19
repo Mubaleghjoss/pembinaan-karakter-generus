@@ -26,7 +26,7 @@
     ];
 @endphp
 
-<div class="w-full px-4 sm:px-6 lg:px-8 space-y-6">
+<div class="mx-auto w-full max-w-7xl space-y-3 px-4 py-5 sm:space-y-4 sm:px-6 lg:px-8">
     <div class="pkg-page-header">
         <div>
             <h1 class="pkg-page-heading">Ringkasan Presensi Aktif</h1>
@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    <div class="pkg-filter-bar">
+    <x-collapsible-section title="Pilih Tanggal" description="Tampilkan ringkasan presensi pada tanggal tertentu." compact>
         <form method="GET" action="{{ route('pamong-presensi.summary') }}" class="pkg-filter-grid items-end">
             <div>
                 <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal</label>
@@ -58,35 +58,29 @@
                 <a href="{{ route('pamong-presensi.summary') }}" class="btn-secondary px-4 py-2 text-sm">Hari Ini</a>
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div class="pkg-card p-5">
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div class="pkg-card p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Target Presensi</p>
-            <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ $totalTarget }}</p>
+            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ $totalTarget }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $targetLabel }}</p>
         </div>
-        <div class="pkg-card p-5">
+        <div class="pkg-card p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Sudah Presensi</p>
-            <p class="mt-2 text-3xl font-bold text-green-600">{{ $filledCount }}</p>
+            <p class="mt-1 text-2xl font-bold text-green-600">{{ $filledCount }}</p>
         </div>
-        <div class="pkg-card p-5">
+        <div class="pkg-card p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Belum Presensi</p>
-            <p class="mt-2 text-3xl font-bold text-red-600">{{ $missingCount }}</p>
+            <p class="mt-1 text-2xl font-bold text-red-600">{{ $missingCount }}</p>
         </div>
-        <div class="pkg-card p-5">
+        <div class="pkg-card p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Capaian</p>
-            <p class="mt-2 text-3xl font-bold text-blue-600">{{ $filledPercent }}%</p>
+            <p class="mt-1 text-2xl font-bold text-blue-600">{{ $filledPercent }}%</p>
         </div>
     </div>
 
-    <div class="pkg-card p-5">
-        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Kegiatan Aktif</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Jadwal aktif menentukan siapa yang wajib mengisi presensi.</p>
-            </div>
-        </div>
+    <x-collapsible-section title="Kegiatan Aktif" description="Jadwal aktif menentukan peserta yang wajib presensi." compact>
 
         @forelse($activeSchedules as $schedule)
             <div class="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-4 last:mb-0 dark:border-slate-800 dark:bg-slate-900/70">
@@ -118,7 +112,7 @@
                 <p class="pkg-empty-copy">Aktifkan jadwal presensi agar target ringkasan bisa dihitung.</p>
             </div>
         @endforelse
-    </div>
+    </x-collapsible-section>
 
     <div class="grid grid-cols-2 gap-3 md:grid-cols-6">
         @foreach($statusLabels as $status => $label)
@@ -130,11 +124,7 @@
     </div>
 
     @if($includePamong)
-        <div class="pkg-card p-5">
-            <div class="mb-4">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Ringkasan Kelompok Pamong</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Total target pamong dan capaian presensi per kelompok.</p>
-            </div>
+        <x-collapsible-section title="Ringkasan Kelompok Pamong" description="Total target dan capaian presensi pamong per kelompok." compact>
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach($pamongGroupSummary as $group)
                     <div class="pkg-card-soft p-4">
@@ -168,15 +158,11 @@
                     </div>
                 @endforeach
             </div>
-        </div>
+        </x-collapsible-section>
     @endif
 
     @if($includeSiswa)
-        <div class="pkg-card p-5">
-            <div class="mb-4">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Ringkasan Kelompok Siswa</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Total target siswa dan capaian presensi per kelompok.</p>
-            </div>
+        <x-collapsible-section title="Ringkasan Kelompok Siswa" description="Total target dan capaian presensi siswa per kelompok." compact>
 
             @if($studentGroupSummary->isEmpty())
                 <div class="pkg-empty-state">
@@ -218,10 +204,11 @@
                     @endforeach
                 </div>
             @endif
-        </div>
+        </x-collapsible-section>
     @endif
 
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <x-collapsible-section title="Daftar Peserta" description="Peserta yang sudah dan belum mengisi presensi." compact>
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div class="pkg-card overflow-hidden">
             <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                 <h2 class="text-lg font-bold text-gray-900 dark:text-white">Sudah Presensi</h2>
@@ -322,5 +309,6 @@
             </div>
         </div>
     </div>
+    </x-collapsible-section>
 </div>
 @endsection

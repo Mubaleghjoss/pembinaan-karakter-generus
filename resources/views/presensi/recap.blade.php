@@ -12,20 +12,23 @@
     );
 @endphp
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+<div class="mx-auto max-w-7xl space-y-3 px-4 py-5 sm:space-y-4 sm:px-6 lg:px-8">
     <div class="pkg-page-header">
         <div>
             <h1 class="pkg-page-heading text-3xl">Laporan Presensi</h1>
             <p class="pkg-page-subheading">Rekapitulasi presensi siswa, pamong, dan pengurus PKG per periode.</p>
         </div>
         <div class="pkg-page-actions">
+            <a href="{{ route('presensi.index', ['tab' => 'rekap']) }}#rekap" class="btn-secondary px-4 py-2">
+                Kembali
+            </a>
             <button type="button" onclick="window.print()" class="btn-secondary px-4 py-2">
                 Cetak
             </button>
         </div>
     </div>
 
-    <div class="pkg-filter-bar">
+    <x-collapsible-section title="Filter Laporan" description="Atur periode, jenis data, kelompok, bidang, dan status." compact>
         <form action="{{ route('presensi.recap') }}" method="GET" class="pkg-filter-grid grid-cols-1 md:grid-cols-4 xl:grid-cols-8">
             <div>
                 <label for="start_date" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Mulai</label>
@@ -106,7 +109,7 @@
                 <a href="{{ route('presensi.recap') }}" class="btn-secondary px-4 py-2">Reset</a>
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <a href="{{ $cardFilterUrl() }}" class="pkg-card block p-4 transition hover:-translate-y-0.5 {{ $statusFilter ? '' : 'ring-2 ring-gray-400 dark:ring-gray-500' }}">
@@ -135,7 +138,8 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <x-collapsible-section title="Ringkasan Siswa dan Pamong" description="Perbandingan capaian berdasarkan jenis peserta." compact>
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div class="pkg-card-soft p-4">
             <div class="text-sm font-semibold text-gray-900 dark:text-white">Siswa</div>
             <div class="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
@@ -180,12 +184,9 @@
             </div>
         </div>
     </div>
+    </x-collapsible-section>
 
-    <div class="pkg-panel-lg overflow-hidden">
-        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Detail Presensi</h2>
-        </div>
-
+    <x-collapsible-section title="Detail Presensi" description="Daftar data sesuai filter beserta bukti dan keterangannya." compact>
         <div class="overflow-x-auto pkg-mobile-table">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
@@ -275,9 +276,9 @@
             </table>
         </div>
 
-        <div class="border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+        <div class="border-t border-gray-200 pt-4 dark:border-gray-700">
             {{ $records->links() }}
         </div>
-    </div>
+    </x-collapsible-section>
 </div>
 @endsection

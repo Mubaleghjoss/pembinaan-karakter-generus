@@ -82,6 +82,14 @@ class PresensiController extends Controller
         ));
     }
 
+    /**
+     * Keep the legacy create URL on the single, compact manual-input flow.
+     */
+    public function create()
+    {
+        return redirect(route('presensi.index', ['tab' => 'input']) . '#input');
+    }
+
     public function students(Request $request): JsonResponse
     {
         $user = $request->user();

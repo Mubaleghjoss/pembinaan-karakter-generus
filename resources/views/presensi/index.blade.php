@@ -3,7 +3,7 @@
 @section('title', 'Data Presensi - PKG Presensi')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" 
+<div class="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8"
      x-data="presensiManager()"
      x-init="init()">
     
@@ -12,7 +12,7 @@
         ['title' => 'Presensi', 'url' => route('presensi.index')]
     ]" />
     
-    <!-- Page Header with Realtime Clock -->
+    <!-- Page Header -->
     <div class="pkg-page-header">
         <div>
             <h1 class="pkg-page-heading">Presensi Siswa</h1>
@@ -21,7 +21,6 @@
             </p>
         </div>
         <div class="pkg-page-actions mt-4 sm:mt-0">
-            <!-- Realtime Clock Badge -->
             <div class="hidden sm:flex items-center gap-2 rounded-2xl pkg-card-soft px-3 py-2 {{ $isOpen ? 'text-green-700 dark:text-green-300' : '' }}">
                 <div class="w-2 h-2 rounded-full {{ $isOpen ? 'bg-green-500 animate-pulse' : 'bg-gray-400' }}"></div>
                 <span id="realtime-clock" class="text-sm font-mono {{ $isOpen ? 'text-green-700 dark:text-green-300' : 'text-gray-600 dark:text-gray-300' }}">--:--:--</span>
@@ -36,18 +35,17 @@
     @endif
 
     @php
-        $presensiTabs = [
-            ['id' => 'rekap', 'label' => 'Rekap Presensi', 'icon' => ''],
-        ];
+        $presensiTabs = [];
 
         if ($canCreateManualAttendance ?? false) {
             $presensiTabs[] = ['id' => 'input', 'label' => 'Input Manual', 'icon' => ''];
         }
 
+        $presensiTabs[] = ['id' => 'rekap', 'label' => 'Rekap Presensi', 'icon' => ''];
         $presensiTabs[] = ['id' => 'jadwal', 'label' => 'Jadwal', 'icon' => ''];
-        $presensiDefaultTab = request('tab', 'rekap');
+        $presensiDefaultTab = request('tab') ?: (($canCreateManualAttendance ?? false) ? 'input' : 'rekap');
 
-        if ($presensiDefaultTab === 'input' && ! ($canCreateManualAttendance ?? false)) {
+        if (! collect($presensiTabs)->pluck('id')->contains($presensiDefaultTab)) {
             $presensiDefaultTab = 'rekap';
         }
     @endphp
@@ -56,7 +54,6 @@
     <x-tabs 
         :tabs="$presensiTabs"
         :default-tab="$presensiDefaultTab"
-        persist-key="presensi-tab"
     >
         <!-- Tab: Rekap Presensi -->
         <x-tab-panel id="rekap">

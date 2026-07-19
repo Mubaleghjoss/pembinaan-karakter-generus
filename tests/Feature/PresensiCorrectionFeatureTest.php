@@ -13,6 +13,23 @@ class PresensiCorrectionFeatureTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_manual_input_is_the_default_presensi_tab_for_admin(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('presensi.index'))
+            ->assertOk()
+            ->assertSee("activeTab: 'input'", false)
+            ->assertSee('Input Presensi Manual')
+            ->assertDontSee("persistKey: 'presensi-tab'", false);
+    }
+
+    public function test_legacy_create_page_redirects_to_compact_manual_input(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('presensi.create'))
+            ->assertRedirect(route('presensi.index', ['tab' => 'input']) . '#input');
+    }
+
     public function test_presensi_sections_are_collapsed_by_default_and_edit_modal_is_available(): void
     {
         $admin = $this->admin();
@@ -26,6 +43,7 @@ class PresensiCorrectionFeatureTest extends TestCase
 
         $component = file_get_contents(resource_path('views/components/collapsible-section.blade.php'));
         $this->assertStringContainsString("'open' => false", $component);
+        $this->assertStringContainsString("'compact' => false", $component);
     }
 
     public function test_admin_can_correct_manual_attendance_status(): void

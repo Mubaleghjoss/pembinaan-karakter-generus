@@ -1,9 +1,10 @@
 {{-- Input Manual Presensi Tab Content --}}
-<div class="space-y-6">
+<div class="space-y-3 sm:space-y-4">
     <x-collapsible-section
         title="Input Presensi Manual"
         description="Input izin, sakit, kehadiran, atau koreksi data siswa."
         section-id="manual-attendance"
+        compact
         data-manual-input-panel
     >
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -20,7 +21,7 @@
         </div>
 
         <form @submit.prevent="submitManualPresensi()">
-            <div class="pkg-filter-grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="pkg-filter-grid grid-cols-1 gap-4 md:grid-cols-2">
                 <!-- Pilih Siswa -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pilih Siswa</label>
@@ -119,7 +120,7 @@
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-end gap-3">
+            <div class="mt-4 flex flex-wrap justify-end gap-2">
                 <button type="button" @click="resetManualInput()" 
                         class="pkg-btn-secondary px-4 py-2">
                     Reset
@@ -134,7 +135,7 @@
     </x-collapsible-section>
 
     @if($canAccessAllManualAttendanceStudents ?? false)
-    <x-collapsible-section title="Input Presensi Massal" description="Catat presensi seluruh siswa dalam satu kelas sekaligus.">
+    <x-collapsible-section title="Input Presensi Massal" description="Catat presensi seluruh siswa dalam satu kelas sekaligus." compact>
         <div class="pkg-filter-grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pilih Kelas</label>
@@ -170,7 +171,7 @@
         </div>
     </x-collapsible-section>
 
-    <x-collapsible-section title="Impor dari Excel" description="Impor data presensi siswa dan pamong secara massal.">
+    <x-collapsible-section title="Impor dari Excel" description="Impor data presensi siswa dan pamong secara massal." compact>
         @if(session('warning'))
             <div class="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                 <div class="flex items-start">

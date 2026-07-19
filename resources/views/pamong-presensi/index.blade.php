@@ -12,7 +12,7 @@
         array_merge($cardBaseQuery, $status ? ['status' => $status] : [])
     );
 @endphp
-<div class="w-full px-4 sm:px-6 lg:px-8 space-y-6">
+<div class="mx-auto w-full max-w-7xl space-y-3 px-4 py-5 sm:space-y-4 sm:px-6 lg:px-8">
     @if(session('success'))
     <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
         {{ session('success') }}
@@ -32,21 +32,21 @@
     @endif
 
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="pkg-page-header">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Presensi Pamong</h1>
-            <p class="text-gray-600 dark:text-gray-400">Rekap kehadiran pamong/guru</p>
+            <h1 class="pkg-page-heading">Presensi Pamong</h1>
+            <p class="pkg-page-subheading">Rekap, koreksi, dan input kehadiran pamong.</p>
         </div>
-        <div class="flex gap-2">
+        <div class="pkg-page-actions">
             <a href="{{ route('pamong.index') }}" 
-               class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+               class="btn-secondary inline-flex items-center px-4 py-2">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
                 </svg>
                 Kelola Kartu QR
             </a>
             <a href="{{ route('pamong-presensi.export', request()->query()) }}" 
-               class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+               class="btn-success inline-flex items-center px-4 py-2">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -56,7 +56,7 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
         <a href="{{ $cardFilterUrl() }}" class="pkg-card block p-4 transition hover:-translate-y-0.5 {{ $statusFilter ? '' : 'ring-2 ring-gray-400 dark:ring-gray-500' }}" aria-current="{{ $statusFilter ? 'false' : 'true' }}">
             <div class="text-sm text-gray-500 dark:text-gray-400">Total</div>
             <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total'] }}</div>
@@ -79,13 +79,7 @@
         </a>
     </div>
 
-    <section class="pkg-card p-5">
-        <div class="mb-4">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Ringkasan Kelompok Pamong</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                Kehadiran periode {{ $startDate->format('d M Y') }} sampai {{ $endDate->format('d M Y') }}.
-            </p>
-        </div>
+    <x-collapsible-section title="Ringkasan Kelompok Pamong" description="Kehadiran periode {{ $startDate->format('d M Y') }} sampai {{ $endDate->format('d M Y') }}." compact>
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             @foreach($pamongGroupSummary as $group)
                 <article class="pkg-card-soft p-4">
@@ -119,10 +113,10 @@
                 </article>
             @endforeach
         </div>
-    </section>
+    </x-collapsible-section>
 
     <!-- Filters -->
-    <div class="pkg-card p-4">
+    <x-collapsible-section title="Filter Presensi Pamong" description="Atur periode, pamong, dan status kehadiran." compact>
         <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal Mulai</label>
@@ -158,15 +152,15 @@
                 </select>
             </div>
             <div class="flex items-end">
-                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <button type="submit" class="btn-primary w-full px-4 py-2">
                     Filter
                 </button>
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 
     <!-- Data Table -->
-    <div class="pkg-card overflow-hidden">
+    <x-collapsible-section title="Data Presensi Pamong" description="Lihat, verifikasi, koreksi, atau hapus data sesuai filter." compact>
         <div class="overflow-x-auto pkg-mobile-table">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
@@ -360,17 +354,11 @@
                 {{ $presensi->links() }}
             </div>
         @endif
-    </div>
+    </x-collapsible-section>
 
-    <div class="pkg-card p-6">
-        <div class="pkg-page-header">
-            <div>
-                <h2 class="pkg-page-heading text-xl">Import Historis Presensi Pamong</h2>
-                <p class="pkg-page-subheading">Masukkan data presensi pamong sebelum aplikasi berjalan. Setiap impor diberi label sumber agar tetap mudah dilacak.</p>
-            </div>
-            <div class="pkg-page-actions">
-                <a href="{{ route('pamong-presensi.import.template') }}" class="btn-secondary px-4 py-2">Unduh Template</a>
-            </div>
+    <x-collapsible-section title="Impor Historis Presensi Pamong" description="Masukkan data lama dengan label sumber agar mudah dilacak." compact>
+        <div class="mb-4 flex justify-end">
+            <a href="{{ route('pamong-presensi.import.template') }}" class="btn-secondary px-4 py-2">Unduh Template</a>
         </div>
 
         @if(session('warning'))
@@ -415,14 +403,10 @@
                 </div>
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 
     <!-- Manual Input -->
-    <div id="manual-pamong" class="pkg-card p-4">
-        <div class="mb-4">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Absen Manual Pamong</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Gunakan form ini jika presensi pamong perlu dicatat tanpa scan QR.</p>
-        </div>
+    <x-collapsible-section id="manual-pamong" title="Input Manual Pamong" description="Catat presensi pamong tanpa scan QR." compact>
         <form action="{{ route('pamong-presensi.store') }}" method="POST" class="grid grid-cols-1 gap-4 md:grid-cols-5">
             @csrf
             <div>
@@ -457,7 +441,7 @@
                 <button type="submit" class="btn-primary w-full px-4 py-2">Simpan Manual</button>
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 </div>
 @endsection
 
