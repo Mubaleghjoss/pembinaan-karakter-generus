@@ -19,10 +19,22 @@ class PwaFrontendConfigTest extends TestCase
     public function test_auth_layout_prioritizes_compact_mobile_login(): void
     {
         $layout = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/auth.blade.php');
+        $styles = file_get_contents(dirname(__DIR__, 2).'/resources/css/app.css');
 
-        $this->assertStringContainsString('hidden space-y-6 lg:block', $layout);
-        $this->assertStringContainsString('lg:hidden', $layout);
+        $this->assertStringContainsString('pkg-auth-panel-content', $layout);
         $this->assertStringContainsString('rel="manifest"', $layout);
+        $this->assertStringNotContainsString('authQuickStats', $layout);
+        $this->assertStringNotContainsString('auth-theme-toggle', $layout);
+        $this->assertStringNotContainsString("@yield('auth_footer')", $layout);
+        $this->assertStringContainsString('height: 100svh', $styles);
+        $this->assertStringContainsString('max-width: 28rem', $styles);
+
+        foreach (['login.blade.php', 'siswa-login.blade.php', 'ortu-login.blade.php'] as $view) {
+            $login = file_get_contents(dirname(__DIR__, 2).'/resources/views/auth/'.$view);
+
+            $this->assertStringNotContainsString("@section('auth_footer')", $login);
+            $this->assertStringNotContainsString("@section('auth_mark')", $login);
+        }
     }
 
     public function test_public_mobile_navigation_uses_accessible_off_canvas_panel(): void

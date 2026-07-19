@@ -3,32 +3,23 @@
 @section('title', 'Login Pamong - ' . ($siteSettings['site_title'] ?? 'PKG Presensi'))
 @section('auth_accent', '#0f766e')
 @section('auth_accent_secondary', '#0369a1')
-@section('auth_badge', 'Portal Pamong')
-@section('auth_heading', $siteSettings['site_title'] ?? 'PKG Presensi')
-@section('auth_subheading', 'Masuk untuk mengelola presensi, siswa, laporan, dan pengaturan dalam satu panel yang sama.')
 @section('auth_card_title', 'Login Pamong')
 @section('auth_card_copy', 'Gunakan username, nomor HP, atau email yang terdaftar untuk masuk ke dashboard.')
 
-@section('auth_mark')
-    <svg class="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8"/>
-    </svg>
-@endsection
-
 @section('content')
     @if ($errors->any())
-        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
             {{ $errors->first() }}
         </div>
     @endif
 
     @if(session('error') || request('error'))
-        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
             {{ session('error') ?? request('error') }}
         </div>
     @endif
 
-    <form method="POST" action="{{ route('login.post') }}" class="space-y-4 sm:space-y-5">
+    <form method="POST" action="{{ route('login.post') }}" class="space-y-3.5 sm:space-y-4">
         @csrf
 
         <div>
@@ -39,7 +30,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
                 </div>
-                <input id="login" name="login" type="text" required value="{{ old('login') }}" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus class="form-input pkg-field-icon-left py-3" placeholder="Username, nomor HP, atau email">
+                <input id="login" name="login" type="text" required value="{{ old('login') }}" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus class="form-input pkg-field-icon-left py-2.5" placeholder="Username, nomor HP, atau email">
             </div>
         </div>
 
@@ -51,7 +42,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8"/>
                     </svg>
                 </div>
-                <input id="password" name="password" type="password" required autocomplete="current-password" class="form-input pkg-field-icon-left pkg-field-icon-right py-3" placeholder="Masukkan password">
+                <input id="password" name="password" type="password" required autocomplete="current-password" class="form-input pkg-field-icon-left pkg-field-icon-right py-2.5" placeholder="Masukkan password">
                 <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                     <svg id="eye-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -66,19 +57,19 @@
             <span>Ingat saya</span>
         </label>
 
-        <button type="submit" class="pkg-btn-primary w-full rounded-xl px-4 py-3 text-base font-bold">
+        <button type="submit" class="pkg-btn-primary w-full rounded-xl px-4 py-2.5 text-base font-bold">
             Masuk
         </button>
     </form>
 
-    <div id="biometricSection" class="mt-5" data-biometric-login-section>
+    <div id="biometricSection" class="mt-4" data-biometric-login-section>
         <div class="pkg-auth-divider">
             <span>atau</span>
         </div>
         <button
             type="button"
             id="biometricLoginBtn"
-            class="mt-4 flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-700"
+            class="mt-3 flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-600 px-4 py-2.5 font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-700"
             data-biometric-login
             data-options-url="{{ route('webauthn.login-options') }}"
             data-login-url="{{ route('webauthn.login') }}"
@@ -92,24 +83,6 @@
             </svg>
             <span>Login dengan Sidik Jari</span>
         </button>
-    </div>
-@endsection
-
-@section('auth_footer')
-    <div class="space-y-2 text-sm">
-        <p class="pkg-page-copy">
-            <a href="{{ route('siswa.login') }}" class="pkg-link-accent font-semibold">Login Siswa</a>
-            <span class="mx-2 text-slate-300 dark:text-slate-600">|</span>
-            <a href="{{ route('ortu.login') }}" class="pkg-link-accent font-semibold">Login Orang Tua</a>
-        </p>
-        <p>
-            <a href="{{ route('public.index') }}" class="inline-flex items-center gap-1 text-sm text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                Beranda
-            </a>
-        </p>
     </div>
 @endsection
 

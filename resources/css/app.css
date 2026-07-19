@@ -668,12 +668,13 @@ html.reveal-ready [data-reveal].is-visible {
 }
 
 .pkg-auth-page {
+    height: 100svh;
     min-height: 100svh;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2.5rem 1rem;
+    padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
     overflow: hidden;
 }
 
@@ -736,13 +737,13 @@ html.reveal-ready [data-reveal].is-visible {
 .pkg-auth-shell {
     position: relative;
     width: 100%;
-    max-width: 32rem;
+    max-width: 28rem;
 }
 
 .pkg-auth-panel {
     background: var(--pkg-surface, #ffffff);
     border: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
-    border-radius: 1.5rem;
+    border-radius: 1.25rem;
     box-shadow: var(--pkg-shadow-lg, 0 32px 90px rgba(15, 23, 42, 0.16));
     overflow: hidden;
 }
@@ -784,17 +785,13 @@ html.reveal-ready [data-reveal].is-visible {
 
 @media (max-width: 1023px) {
     .pkg-auth-page {
-        align-items: flex-start;
-        padding:
-            max(1rem, env(safe-area-inset-top))
-            max(0.75rem, env(safe-area-inset-right))
-            max(1.25rem, env(safe-area-inset-bottom))
-            max(0.75rem, env(safe-area-inset-left));
-        overflow-y: auto;
+        align-items: center;
+        padding: max(0.6rem, env(safe-area-inset-top)) max(0.6rem, env(safe-area-inset-right)) max(0.6rem, env(safe-area-inset-bottom)) max(0.6rem, env(safe-area-inset-left));
+        overflow: hidden;
     }
 
     .pkg-auth-shell {
-        max-width: 34rem;
+        max-width: 28rem;
     }
 
     .pkg-auth-panel {
@@ -813,11 +810,39 @@ html.reveal-ready [data-reveal].is-visible {
 
 @media (max-width: 420px) {
     .pkg-auth-page {
-        padding-inline: 0.6rem;
+        padding-left: max(0.45rem, env(safe-area-inset-left));
+        padding-right: max(0.45rem, env(safe-area-inset-right));
     }
 
     .pkg-auth-panel {
-        border-radius: 1rem;
+        border-radius: 0.9rem;
+    }
+
+    .pkg-auth-panel-heading {
+        padding: 0.65rem 0.9rem;
+    }
+
+    .pkg-auth-panel-content {
+        padding: 0.8rem 0.9rem;
+    }
+}
+
+@media (max-height: 600px) {
+    .pkg-auth-page {
+        padding-block: 0.35rem;
+    }
+
+    .pkg-auth-panel-heading {
+        padding-block: 0.55rem;
+    }
+
+    .pkg-auth-panel-content {
+        padding-block: 0.7rem;
+    }
+
+    .pkg-auth-panel-content .form-label {
+        margin-bottom: 0.2rem;
+        font-size: 0.8rem;
     }
 }
 

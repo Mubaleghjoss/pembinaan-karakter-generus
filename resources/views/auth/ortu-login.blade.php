@@ -3,32 +3,23 @@
 @section('title', 'Login Orang Tua - ' . ($siteSettings['site_title'] ?? 'PKG Presensi'))
 @section('auth_accent', '#0d9488')
 @section('auth_accent_secondary', '#10b981')
-@section('auth_badge', 'Portal Orang Tua')
-@section('auth_heading', $siteSettings['site_title'] ?? 'PKG Presensi')
-@section('auth_subheading', 'Masuk untuk memantau kehadiran, tugas, dan aktivitas anak dari portal yang seragam dengan sistem utama.')
 @section('auth_card_title', 'Login Orang Tua')
 @section('auth_card_copy', 'Gunakan akun orang tua untuk memantau progres anak secara langsung.')
 
-@section('auth_mark')
-    <svg class="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-    </svg>
-@endsection
-
 @section('content')
     @if($errors->any())
-        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
             {{ $errors->first() }}
         </div>
     @endif
 
     @if(session('error') || request('error'))
-        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
             {{ session('error') ?? request('error') }}
         </div>
     @endif
 
-    <form method="POST" action="{{ route('ortu.login.post') }}" class="space-y-4 sm:space-y-5">
+    <form method="POST" action="{{ route('ortu.login.post') }}" class="space-y-3.5 sm:space-y-4">
         @csrf
 
         <div>
@@ -39,7 +30,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
                 </div>
-                <input type="text" name="username" id="username" value="{{ old('username') }}" inputmode="numeric" autocomplete="username" autocapitalize="none" spellcheck="false" class="form-input pkg-field-icon-left py-3" placeholder="Default: NIS anak" required autofocus>
+                <input type="text" name="username" id="username" value="{{ old('username') }}" inputmode="numeric" autocomplete="username" autocapitalize="none" spellcheck="false" class="form-input pkg-field-icon-left py-2.5" placeholder="Default: NIS anak" required autofocus>
             </div>
         </div>
 
@@ -51,7 +42,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8"/>
                     </svg>
                 </div>
-                <input type="password" name="password" id="password" autocomplete="current-password" class="form-input pkg-field-icon-left pkg-field-icon-right py-3" placeholder="Masukkan password" required>
+                <input type="password" name="password" id="password" autocomplete="current-password" class="form-input pkg-field-icon-left pkg-field-icon-right py-2.5" placeholder="Masukkan password" required>
                 <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                     <svg id="eye-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -66,19 +57,19 @@
             <span>Ingat saya</span>
         </label>
 
-        <button type="submit" class="pkg-btn-primary w-full rounded-xl px-4 py-3 text-base font-bold">
+        <button type="submit" class="pkg-btn-primary w-full rounded-xl px-4 py-2.5 text-base font-bold">
             Masuk
         </button>
     </form>
 
-    <div id="biometricSection" class="mt-5" data-biometric-login-section>
+    <div id="biometricSection" class="mt-4" data-biometric-login-section>
         <div class="pkg-auth-divider">
             <span>atau</span>
         </div>
         <button
             type="button"
             id="biometricLoginBtn"
-            class="mt-4 flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-700"
+            class="mt-3 flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-600 px-4 py-2.5 font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-700"
             data-biometric-login
             data-options-url="{{ route('ortu.webauthn.login-options') }}"
             data-login-url="{{ route('ortu.webauthn.login') }}"
@@ -94,25 +85,4 @@
         </button>
     </div>
 
-    <div class="mt-4 rounded-2xl border border-teal-200/70 bg-teal-50 px-4 py-3 text-center text-xs text-teal-800 dark:border-teal-900/70 dark:bg-teal-950/40 dark:text-teal-200">
-        Login pertama: gunakan NIS anak sebagai username dan password siswa. Setelah masuk, ubah kredensial di pengaturan.
-    </div>
-@endsection
-
-@section('auth_footer')
-    <div class="space-y-2 text-sm">
-        <p class="pkg-page-copy">
-            <a href="{{ route('siswa.login') }}" class="pkg-link-accent font-semibold">Login Siswa</a>
-            <span class="mx-2 text-slate-300 dark:text-slate-600">|</span>
-            <a href="{{ route('login') }}" class="pkg-link-accent font-semibold">Login Pamong</a>
-        </p>
-        <p>
-            <a href="{{ route('public.index') }}" class="inline-flex items-center gap-1 text-sm text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                Beranda
-            </a>
-        </p>
-    </div>
 @endsection
