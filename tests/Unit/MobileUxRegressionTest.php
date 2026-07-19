@@ -15,6 +15,12 @@ class MobileUxRegressionTest extends TestCase
             $this->assertStringContainsString("classList.toggle('overflow-hidden'", $source);
             $this->assertStringContainsString('transition-transform ease-out duration-200', $source);
         }
+
+        $adminLayout = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/app.blade.php');
+        $this->assertStringContainsString('$tugasPkgGroupExpanded = $tugasPkgGroupActive', $adminLayout);
+        $this->assertStringContainsString("! request()->routeIs('tugas-pkg.verification')", $adminLayout);
+        $this->assertStringContainsString("x-data=\"{ open: {{ \$tugasPkgGroupExpanded ? 'true' : 'false' }} }\"", $adminLayout);
+        $this->assertStringNotContainsString('|| $pendingLaporanPenyaksianCountForSidebar > 0;', $adminLayout);
     }
 
     public function test_chat_views_use_mobile_master_detail_and_visibility_aware_polling(): void

@@ -168,8 +168,11 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             || request()->routeIs('tracer-karakter.*')
                             || request()->routeIs('karakter.*')
                             || request()->routeIs('laporan-penyaksian.*')
-                            || request()->routeIs('pr.*')
-                            || $pendingLaporanPenyaksianCountForSidebar > 0;
+                            || request()->routeIs('pr.*');
+                        // Verifikasi memakai sidebar utama yang ringkas seperti Dashboard.
+                        // Badge tetap terlihat, tetapi tidak memaksa submenu terbuka.
+                        $tugasPkgGroupExpanded = $tugasPkgGroupActive
+                            && ! request()->routeIs('tugas-pkg.verification');
                         $gamificationGroupVisible = auth()->user()->canAccessGamificationAdmin();
                         $gamificationGroupActive = request()->routeIs('admin.gamification.*')
                             || request()->routeIs('admin.rpg.*');
@@ -375,7 +378,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                     @endif
                     
                     @if($tugasPkgGroupVisible)
-                    <div x-data="{ open: {{ $tugasPkgGroupActive ? 'true' : 'false' }} }" class="space-y-1">
+                    <div x-data="{ open: {{ $tugasPkgGroupExpanded ? 'true' : 'false' }} }" class="space-y-1">
                         <button type="button" @click="open = !open" class="nav-item {{ $tugasPkgGroupActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
                             <span class="flex items-center">
                                 <svg class="nav-icon w-5 h-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
