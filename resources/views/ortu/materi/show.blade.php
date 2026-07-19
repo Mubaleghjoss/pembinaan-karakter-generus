@@ -60,7 +60,7 @@
                     </div>
                     <div class="mt-4 flex gap-2">
                         <button type="button"
-                            @click="pdfUrl = '{{ Storage::url($pdf['path']) }}'; pdfName = '{{ addslashes($materi->pdfFileName($index)) }}'; pdfModal = true"
+                            @click="pdfUrl = '{{ route('public.materi.pdf.view', [$materi, $index]) }}'; pdfName = '{{ addslashes($materi->pdfFileName($index)) }}'; pdfModal = true"
                             class="btn-primary flex-1 text-sm !px-3 !py-2">
                             Lihat
                         </button>

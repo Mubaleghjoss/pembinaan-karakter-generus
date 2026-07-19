@@ -51,6 +51,9 @@
                 @include('materi.partials.rpp-summary', ['materi' => $materi])
             @endif
 
+            @if(! $canAccessContent && ($materi->hasPdfFiles() || $materi->has_video_links))
+                @include('public.partials.materi-login-required')
+            @else
             <!-- PDF Files -->
             @if($materi->hasPdfFiles())
             <div class="p-6 border-b border-gray-200 dark:border-slate-800">
@@ -65,7 +68,7 @@
                     @foreach($materi->pdf_files as $index => $pdf)
                     <div class="pkg-list-card overflow-hidden dark:bg-slate-900/70"
                          data-pdf-viewer
-                         data-pdf-url="{{ Storage::url($pdf['path']) }}">
+                         data-pdf-url="{{ route('public.materi.pdf.view', [$materi, $index]) }}">
                         <div class="p-4 flex items-center justify-between flex-wrap gap-3">
                             <div class="flex min-w-0 items-center gap-4">
                                 <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -150,6 +153,7 @@
             @endif
 
             @include('materi.partials.video-list', ['materi' => $materi])
+            @endif
         </div>
     </div>
 </div>

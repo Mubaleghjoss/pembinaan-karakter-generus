@@ -182,7 +182,7 @@
             @if(auth()->user()->isAdmin())
             <div class="pkg-card p-6">
                 <h2 class="text-lg font-medium text-red-600 dark:text-red-400 mb-4">Zona Bahaya</h2>
-                <form action="{{ route('laporan-penyaksian.destroy', $laporanPenyaksian) }}" method="POST" data-confirm="Yakin ingin menghapus laporan ini?" data-confirm-title="Hapus laporan" data-confirm-button="Hapus" data-confirm-tone="danger">
+                <form action="{{ route('laporan-penyaksian.destroy', $laporanPenyaksian) }}" method="POST" data-no-csrf-handler data-confirm="Yakin ingin menghapus laporan ini?" data-confirm-title="Hapus laporan" data-confirm-button="Hapus" data-confirm-tone="danger">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn-danger w-full">Hapus Laporan</button>

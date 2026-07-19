@@ -214,7 +214,7 @@ class PublicController extends Controller
         return view('public.materi-index', compact('theme', 'materi', 'materiFolders', 'materiFolderTree'));
     }
 
-    public function materiShow(Materi $materi)
+    public function materiShow(Request $request, Materi $materi)
     {
         if (!$materi->is_active) {
             abort(404);
@@ -222,14 +222,37 @@ class PublicController extends Controller
 
         $materi->loadMissing('folder.parent');
         $theme = ThemeSetting::current();
+        $canAccessContent = $this->canAccessMateriContent();
 
-        return view('public.materi-detail', compact('materi', 'theme'));
+        if (! $canAccessContent) {
+            $request->session()->put('url.intended', route('public.materi.show', $materi));
+        }
+
+        return view('public.materi-detail', compact('materi', 'theme', 'canAccessContent'));
     }
 
-    public function materiPdfDownload(Materi $materi, int $index)
+    public function materiPdfDownload(Request $request, Materi $materi, int $index)
+    {
+        return $this->materiPdfResponse($request, $materi, $index, true);
+    }
+
+    public function materiPdfView(Request $request, Materi $materi, int $index)
+    {
+        return $this->materiPdfResponse($request, $materi, $index, false);
+    }
+
+    private function materiPdfResponse(Request $request, Materi $materi, int $index, bool $download)
     {
         if (! $materi->is_active && ! auth()->guard('web')->check()) {
             abort(404);
+        }
+
+        if (! $this->canAccessMateriContent()) {
+            $detailUrl = route('public.materi.show', $materi);
+            $request->session()->put('url.intended', $detailUrl);
+
+            return redirect($detailUrl)
+                ->with('warning', 'Silakan login terlebih dahulu untuk membuka atau mengunduh materi.');
         }
 
         $pdf = $materi->pdf_files[$index] ?? null;
@@ -239,11 +262,20 @@ class PublicController extends Controller
             abort(404);
         }
 
-        return Storage::disk('public')->download(
-            $path,
-            $materi->pdfFileName($index),
-            ['Content-Type' => 'application/pdf']
-        );
+        $name = $materi->pdfFileName($index);
+
+        if ($download) {
+            return Storage::disk('public')->download($path, $name, ['Content-Type' => 'application/pdf']);
+        }
+
+        return Storage::disk('public')->response($path, $name, ['Content-Type' => 'application/pdf'], 'inline');
+    }
+
+    private function canAccessMateriContent(): bool
+    {
+        return auth()->guard('web')->check()
+            || auth()->guard('siswa')->check()
+            || auth()->guard('ortu')->check();
     }
 
     private function publicMateriBaseQuery()

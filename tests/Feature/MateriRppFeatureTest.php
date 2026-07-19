@@ -278,7 +278,7 @@ class MateriRppFeatureTest extends TestCase
             ->assertSee(route('public.materi.show', $materi), false);
     }
 
-    public function test_public_materi_uses_mobile_safe_pdf_viewer(): void
+    public function test_guest_must_choose_a_login_before_opening_pdf_materi(): void
     {
         Storage::fake('public');
         Storage::disk('public')->put('materi/pdf/materi-uji.pdf', '%PDF-1.4 test');
@@ -299,14 +299,57 @@ class MateriRppFeatureTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertSee('Login untuk membuka isi materi')
+            ->assertSee(route('siswa.login'), false)
+            ->assertSee(route('ortu.login'), false)
+            ->assertSee(route('login'), false)
+            ->assertDontSee('data-pdf-viewer', false)
+            ->assertDontSee('data-pdf-canvas', false)
+            ->assertDontSee(Storage::url('materi/pdf/materi-uji.pdf'), false)
+            ->assertDontSee(route('public.materi.pdf.view', [$materi, 0]), false)
+            ->assertDontSee(route('public.materi.pdf.download', [$materi, 0]), false)
+            ->assertDontSee('<iframe', false);
+
+        $response->assertSessionHas('url.intended', route('public.materi.show', $materi));
+
+        $this->get(route('public.materi.pdf.download', [$materi, 0]))
+            ->assertRedirect(route('public.materi.show', $materi));
+
+        $this->get(route('public.materi.pdf.view', [$materi, 0]))
+            ->assertRedirect(route('public.materi.show', $materi));
+    }
+
+    public function test_authenticated_siswa_can_use_mobile_safe_pdf_viewer(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('materi/pdf/materi-uji.pdf', '%PDF-1.4 test');
+
+        $materi = Materi::create([
+            'judul' => 'Materi PDF Siswa',
+            'deskripsi' => 'Materi untuk menguji pembaca PDF.',
+            'bulan' => '2026-06-01',
+            'pdf_path' => [[
+                'name' => 'Materi Uji.pdf',
+                'path' => 'materi/pdf/materi-uji.pdf',
+                'size' => 1024,
+            ]],
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('public.materi.show', $materi));
+
+        $response
+            ->assertOk()
             ->assertSee('data-pdf-viewer', false)
             ->assertSee('data-pdf-canvas', false)
             ->assertSee('data-pdf-page-count', false)
             ->assertSee('Buka PDF')
-            ->assertSee('Materi PDF Publik.pdf')
+            ->assertSee('Materi PDF Siswa.pdf')
             ->assertDontSee('Materi Uji.pdf')
+            ->assertSee(route('public.materi.pdf.view', [$materi, 0]), false)
             ->assertSee(route('public.materi.pdf.download', [$materi, 0]), false)
-            ->assertDontSee('<iframe', false);
+            ->assertDontSee('Login untuk membuka isi materi');
 
         $contentSecurityPolicy = $response->headers->get('Content-Security-Policy-Report-Only')
             ?? $response->headers->get('Content-Security-Policy');
@@ -316,7 +359,11 @@ class MateriRppFeatureTest extends TestCase
 
         $this->get(route('public.materi.pdf.download', [$materi, 0]))
             ->assertOk()
-            ->assertDownload('Materi PDF Publik.pdf');
+            ->assertDownload('Materi PDF Siswa.pdf');
+
+        $this->get(route('public.materi.pdf.view', [$materi, 0]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_public_materi_embeds_youtube_and_google_drive_videos(): void
@@ -333,7 +380,17 @@ class MateriRppFeatureTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->get(route('public.materi.show', $materi));
+        $guestResponse = $this->get(route('public.materi.show', $materi));
+
+        $guestResponse
+            ->assertOk()
+            ->assertSee('Login untuk membuka isi materi')
+            ->assertDontSee('https://www.youtube.com/embed/dQw4w9WgXcQ', false)
+            ->assertDontSee('https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUv/preview', false)
+            ->assertDontSee('<iframe', false);
+
+        $response = $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('public.materi.show', $materi));
 
         $response
             ->assertOk()

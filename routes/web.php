@@ -40,6 +40,9 @@ Route::get('/', [App\Http\Controllers\PublicController::class, 'index'])->name('
 Route::get('/berita-publik/{slug}', [App\Http\Controllers\PublicController::class, 'berita'])->name('public.berita');
 Route::get('/scan-presensi', [App\Http\Controllers\PublicController::class, 'scanner'])->name('public.scanner');
 Route::get('/materi', [App\Http\Controllers\PublicController::class, 'materiIndex'])->name('materi.index');
+Route::get('/materi-publik/{materi}/pdf/{index}', [App\Http\Controllers\PublicController::class, 'materiPdfView'])
+    ->whereNumber('index')
+    ->name('public.materi.pdf.view');
 Route::get('/materi-publik/{materi}/pdf/{index}/download', [App\Http\Controllers\PublicController::class, 'materiPdfDownload'])
     ->whereNumber('index')
     ->name('public.materi.pdf.download');

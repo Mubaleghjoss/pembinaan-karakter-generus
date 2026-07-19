@@ -13,7 +13,7 @@
                     <div>
                         <span class="pkg-glass-badge text-sm font-semibold">Pusat materi pembelajaran</span>
                         <h1 class="pkg-page-heading mt-5">Materi PKG</h1>
-                        <p class="pkg-page-subheading">Materi aktif yang tersedia untuk siswa, orang tua, dan pengunjung.</p>
+                        <p class="pkg-page-subheading">Daftar materi dapat dilihat semua pengunjung. Login diperlukan untuk membuka PDF dan video.</p>
                     </div>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -32,7 +32,7 @@
                     <div class="pkg-inline-stat">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Akses</p>
-                            <p class="text-lg font-black text-slate-950 dark:text-white">Publik</p>
+                            <p class="text-lg font-black text-slate-950 dark:text-white">Perlu Login</p>
                         </div>
                     </div>
                 </div>
@@ -149,7 +149,7 @@
 
                             <div class="mt-auto pt-5">
                                 <a href="{{ route('public.materi.show', $item) }}" class="btn-primary w-full justify-center text-sm">
-                                    Buka Materi
+                                    Lihat Materi
                                 </a>
                             </div>
                         </div>
