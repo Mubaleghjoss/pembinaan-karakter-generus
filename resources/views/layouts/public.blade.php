@@ -255,7 +255,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="pkg-public-nav shadow-lg sticky top-0 z-50">
+    <nav id="public-navigation" class="pkg-public-nav sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex min-h-[4.5rem] items-center justify-between gap-3 py-3 sm:h-20 sm:py-0">
                 <div class="pkg-nav-brand flex min-w-0 items-center gap-3 sm:gap-4">
@@ -372,40 +372,57 @@
         </div>
         
         <!-- Mobile menu -->
-        <div id="mobile-menu" class="pkg-mobile-menu-shell hidden md:hidden" aria-hidden="true">
-            <div class="px-4 py-4">
+        <button id="mobile-menu-overlay" type="button" class="pkg-mobile-menu-overlay md:hidden" aria-label="Tutup menu navigasi" aria-hidden="true" tabindex="-1"></button>
+        <aside id="mobile-menu" class="pkg-mobile-menu-shell md:hidden" aria-hidden="true" aria-label="Navigasi mobile" tabindex="-1" inert>
+            <div class="pkg-mobile-menu-panel-header">
+                <div class="pkg-mobile-menu-panel-brand">
+                    @if($theme->logo_path)
+                        <img src="{{ asset('storage/' . $theme->logo_path) }}" alt="" width="44" height="44" class="pkg-mobile-menu-panel-logo">
+                    @endif
+                    <div class="min-w-0">
+                        <p class="pkg-mobile-menu-eyebrow text-[10px] font-bold uppercase tracking-[0.2em]">Menu Utama</p>
+                        <h2 class="truncate text-base font-extrabold text-slate-900 dark:text-white">{{ $theme->app_name }}</h2>
+                    </div>
+                </div>
+                <button id="mobile-menu-close" type="button" class="pkg-mobile-menu-close" aria-label="Tutup menu navigasi">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="pkg-mobile-menu-scroll">
                 <div class="pkg-mobile-menu-card space-y-3 p-3">
-                    <a href="{{ route('public.index') }}" class="pkg-mobile-menu-link">
+                    <a href="{{ route('public.index') }}" class="pkg-mobile-menu-link {{ request()->routeIs('public.index') ? 'is-active' : '' }}" @if(request()->routeIs('public.index')) aria-current="page" @endif>
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"/></svg>
                         </span>
                         <span class="pkg-mobile-menu-text">Beranda</span>
                     </a>
-                    <a href="{{ route('public.rpg.index') }}" class="pkg-mobile-menu-link">
+                    <a href="{{ route('public.rpg.index') }}" class="pkg-mobile-menu-link {{ request()->routeIs('public.rpg.*') ? 'is-active' : '' }}" @if(request()->routeIs('public.rpg.*')) aria-current="page" @endif>
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 3.75h4.5l1.5 3H18a2.25 2.25 0 012.25 2.25v6A2.25 2.25 0 0118 17.25h-1.5l-1.5 3h-6l-1.5-3H6A2.25 2.25 0 013.75 15v-6A2.25 2.25 0 016 6.75h2.25l1.5-3z"/></svg>
                         </span>
                         <span class="pkg-mobile-menu-text">Game 29 Karakter</span>
                     </a>
-                    <a href="{{ route('public.calendar.index') }}" class="pkg-mobile-menu-link">
+                    <a href="{{ route('public.calendar.index') }}" class="pkg-mobile-menu-link {{ request()->routeIs('public.calendar.*') ? 'is-active' : '' }}" @if(request()->routeIs('public.calendar.*')) aria-current="page" @endif>
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </span>
                         <span class="pkg-mobile-menu-text">Kalender</span>
                     </a>
-                    <a href="{{ route('materi.index') }}" class="pkg-mobile-menu-link">
+                    <a href="{{ route('materi.index') }}" class="pkg-mobile-menu-link {{ request()->routeIs('materi.*') ? 'is-active' : '' }}" @if(request()->routeIs('materi.*')) aria-current="page" @endif>
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/></svg>
                         </span>
                         <span class="pkg-mobile-menu-text">Materi</span>
                     </a>
-                    <a href="{{ route('public.scanner') }}" class="pkg-mobile-menu-link">
+                    <a href="{{ route('public.scanner') }}" class="pkg-mobile-menu-link {{ request()->routeIs('public.scanner') ? 'is-active' : '' }}" @if(request()->routeIs('public.scanner')) aria-current="page" @endif>
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
                         </span>
                         <span class="pkg-mobile-menu-text">Scan Presensi</span>
                     </a>
-                    <a href="{{ route('laporan-penyaksian.create') }}" class="pkg-mobile-menu-link">
+                    <a href="{{ route('laporan-penyaksian.create') }}" class="pkg-mobile-menu-link {{ request()->routeIs('laporan-penyaksian.*') ? 'is-active' : '' }}" @if(request()->routeIs('laporan-penyaksian.*')) aria-current="page" @endif>
                         <span class="pkg-mobile-menu-icon">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         </span>
@@ -463,7 +480,7 @@
                 </button>
                 </div>
             </div>
-        </div>
+        </aside>
     </nav>
 
     <!-- Main Content -->
@@ -563,14 +580,22 @@
         function setMobileMenu(open) {
             const menu = document.getElementById('mobile-menu');
             const toggle = document.getElementById('mobile-menu-toggle');
-            if (!menu || !toggle) return;
+            const overlay = document.getElementById('mobile-menu-overlay');
+            if (!menu || !toggle || !overlay) return;
 
-            menu.classList.toggle('hidden', !open);
+            menu.classList.toggle('is-open', open);
+            overlay.classList.toggle('is-open', open);
             toggle.classList.toggle('is-open', open);
             toggle.setAttribute('aria-expanded', String(open));
             toggle.setAttribute('aria-label', open ? 'Tutup menu navigasi' : 'Buka menu navigasi');
             menu.setAttribute('aria-hidden', String(!open));
+            overlay.setAttribute('aria-hidden', String(!open));
+            menu.inert = !open;
             document.documentElement.classList.toggle('overflow-hidden', open);
+
+            if (open) {
+                window.requestAnimationFrame(() => document.getElementById('mobile-menu-close')?.focus());
+            }
         }
 
         function toggleMobileMenu() {
@@ -579,6 +604,11 @@
         }
 
         document.getElementById('mobile-menu-toggle')?.addEventListener('click', toggleMobileMenu);
+        document.getElementById('mobile-menu-close')?.addEventListener('click', () => {
+            setMobileMenu(false);
+            document.getElementById('mobile-menu-toggle')?.focus();
+        });
+        document.getElementById('mobile-menu-overlay')?.addEventListener('click', () => setMobileMenu(false));
         document.getElementById('mobile-menu')?.querySelectorAll('a[href]').forEach((link) => {
             link.addEventListener('click', () => setMobileMenu(false));
         });
@@ -588,6 +618,11 @@
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 768) setMobileMenu(false);
         });
+
+        const publicNavigation = document.getElementById('public-navigation');
+        const syncPublicNavigation = () => publicNavigation?.classList.toggle('is-scrolled', window.scrollY > 12);
+        window.addEventListener('scroll', syncPublicNavigation, { passive: true });
+        syncPublicNavigation();
 
         function syncPublicThemeToggles() {
             const isDark = window.pkgTheme && window.pkgTheme.get ? window.pkgTheme.get() : document.documentElement.classList.contains('dark');

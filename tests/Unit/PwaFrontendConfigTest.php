@@ -24,4 +24,17 @@ class PwaFrontendConfigTest extends TestCase
         $this->assertStringContainsString('lg:hidden', $layout);
         $this->assertStringContainsString('rel="manifest"', $layout);
     }
+
+    public function test_public_mobile_navigation_uses_accessible_off_canvas_panel(): void
+    {
+        $layout = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/public.blade.php');
+        $styles = file_get_contents(dirname(__DIR__, 2).'/resources/css/app.css');
+
+        $this->assertStringContainsString('id="mobile-menu-overlay"', $layout);
+        $this->assertStringContainsString('id="mobile-menu-close"', $layout);
+        $this->assertStringContainsString("menu.classList.toggle('is-open', open)", $layout);
+        $this->assertStringContainsString('menu.inert = !open', $layout);
+        $this->assertStringContainsString('.pkg-mobile-menu-shell.is-open', $styles);
+        $this->assertStringContainsString('cubic-bezier(0.785, 0.135, 0.15, 0.86)', $styles);
+    }
 }
