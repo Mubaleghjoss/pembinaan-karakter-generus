@@ -46,12 +46,15 @@
     <div x-show="activeSettingsTab === 'popup'" x-cloak>
         @include('settings.partials.popup')
     </div>
+    <div x-show="activeSettingsTab === 'registration'" x-cloak>
+        @include('settings.partials.registration-access')
+    </div>
 </div>
 
 @push('scripts')
 <script>
     function settingsTabs(initialTab) {
-        const validTabs = ['general', 'id_card', 'theme', 'kelas', 'permissions', 'share_info', 'face_attendance', 'popup'];
+        const validTabs = ['general', 'id_card', 'theme', 'kelas', 'permissions', 'share_info', 'face_attendance', 'popup', 'registration'];
 
         return {
             activeSettingsTab: validTabs.includes(initialTab) ? initialTab : 'general',

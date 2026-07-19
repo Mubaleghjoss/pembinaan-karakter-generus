@@ -11,8 +11,8 @@
         $faviconUrl = asset('storage/' . $faviconStoragePath) . '?v=' . $publicDisk->lastModified($faviconStoragePath);
         $faviconPath = $faviconStoragePath;
     } else {
-        $faviconUrl = asset('images/icons/pkg-pwa-2026-192.png');
-        $faviconPath = 'pkg-pwa-2026-192.png';
+        $faviconUrl = asset('images/icons/pkg-logo-192.png');
+        $faviconPath = 'pkg-logo-192.png';
     }
 
     $faviconType = match (strtolower(pathinfo($faviconPath, PATHINFO_EXTENSION))) {

@@ -90,7 +90,9 @@
 
         .pkg-public-shell {
             position: relative;
-            overflow-x: clip;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
             background:
                 radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary, #0f766e) 16%, transparent), transparent 26%),
                 radial-gradient(circle at top right, color-mix(in srgb, var(--color-secondary, #0369a1) 14%, transparent), transparent 22%),
@@ -189,17 +191,18 @@
             gap: 18px;
             padding: 24px;
             text-align: center;
+            width: min(100%, 22rem);
         }
 
         .pkg-pwa-launch-logo {
             animation: pkgSplashLogo 1.35s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
             background: #f8f6e8;
-            border-radius: 34px;
+            border-radius: 9999px;
             box-shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
-            height: 132px;
+            height: 124px;
             object-fit: contain;
-            padding: 8px;
-            width: 132px;
+            padding: 0;
+            width: 124px;
         }
 
         .pkg-pwa-launch-title {
@@ -249,7 +252,7 @@
 <body class="pkg-public-shell h-full text-slate-900 dark:text-slate-100">
     <div id="pkg-pwa-launch-splash" class="pkg-pwa-launch-splash" aria-hidden="true">
         <div class="pkg-pwa-launch-card">
-            <img class="pkg-pwa-launch-logo" src="{{ asset('images/icons/pkg-pwa-2026-192.png') }}" alt="Logo PKG" width="132" height="132">
+            <img class="pkg-pwa-launch-logo" src="{{ asset('images/icons/pkg-logo-192.png') }}" alt="Logo PKG" width="124" height="124">
             <div class="pkg-pwa-launch-title">Pembinaan Karakter Generus Panunggangan</div>
         </div>
     </div>
@@ -484,7 +487,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="relative z-10 min-h-screen">
+    <main class="relative z-10 min-h-screen min-w-0 w-full max-w-full">
         @yield('content')
     </main>
 

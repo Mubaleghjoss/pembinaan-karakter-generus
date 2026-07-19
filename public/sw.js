@@ -1,10 +1,10 @@
 // PKG Presensi Service Worker
-const CACHE_NAME = 'pkg-presensi-v11';
+const CACHE_NAME = 'pkg-presensi-v12';
 const urlsToCache = [
     '/',
     '/manifest.json',
-    '/images/icons/pkg-pwa-2026-192.png',
-    '/images/icons/pkg-pwa-2026-512.png'
+    '/images/icons/pkg-logo-192.png',
+    '/images/icons/pkg-logo-512.png'
 ];
 
 // Install event - cache essential files
@@ -114,8 +114,8 @@ self.addEventListener('push', (event) => {
     const badgeCount = Math.max(0, Number(data.badge_count) || 0);
     const notificationOptions = {
         body: payload.body || 'Ada pembaruan yang perlu diperiksa.',
-        icon: payload.icon || '/images/icons/pkg-pwa-2026-192.png',
-        badge: payload.badge || '/images/icons/pkg-pwa-2026-192.png',
+        icon: payload.icon || '/images/icons/pkg-logo-192.png',
+        badge: payload.badge || '/images/icons/pkg-logo-192.png',
         tag: payload.tag || 'pkg-update',
         renotify: Boolean(payload.renotify),
         requireInteraction: Boolean(payload.requireInteraction),

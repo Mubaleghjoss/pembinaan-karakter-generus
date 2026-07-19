@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\GenerusRegistrationInvite;
 use App\Models\PamongPermission;
 use App\Models\ThemeSetting;
 use App\Models\User;
@@ -13,6 +14,8 @@ use App\Services\BackupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
 {
@@ -123,6 +126,7 @@ class SettingsController extends Controller
         $shareInfos = \App\Models\ShareInfo::with('creator')->orderByDesc('created_at')->get();
         $popupSettings = PopupManager::all();
         $faceAttendanceSettings = FaceAttendanceConfig::all();
+        $registrationInvite = GenerusRegistrationInvite::query()->latest('id')->first();
 
         return view('settings.index', compact(
             'tab',
@@ -138,8 +142,71 @@ class SettingsController extends Controller
             'tingkatList',
             'shareInfos',
             'popupSettings',
-            'faceAttendanceSettings'
+            'faceAttendanceSettings',
+            'registrationInvite'
         ));
+    }
+
+    /**
+     * Update the private registration access code and its limits.
+     */
+    public function updateRegistrationAccess(Request $request)
+    {
+        $registrationInvite = GenerusRegistrationInvite::query()->latest('id')->first();
+        $validated = $request->validate([
+            'label' => ['required', 'string', 'max:120'],
+            'access_code' => [
+                $registrationInvite ? 'nullable' : 'required',
+                'string',
+                'min:6',
+                'max:32',
+                'regex:/^[A-Za-z0-9]+$/',
+            ],
+            'valid_days' => ['required', 'integer', 'min:1', 'max:3650'],
+            'max_uses' => ['required', 'integer', 'min:1', 'max:100000'],
+            'is_active' => ['nullable', 'boolean'],
+        ], [
+            'access_code.regex' => 'Kode akses hanya boleh berisi huruf dan angka.',
+        ]);
+
+        if ($registrationInvite && (int) $validated['max_uses'] < $registrationInvite->used_count) {
+            throw ValidationException::withMessages([
+                'max_uses' => "Kuota maksimal tidak boleh kurang dari jumlah penggunaan saat ini ({$registrationInvite->used_count}).",
+            ]);
+        }
+
+        $plainCode = null;
+        if (! empty($validated['access_code'])) {
+            $plainCode = Str::upper($validated['access_code']);
+            $tokenHash = hash('sha256', $plainCode);
+            $duplicateCode = GenerusRegistrationInvite::query()
+                ->where('token_hash', $tokenHash)
+                ->when($registrationInvite, fn ($query) => $query->where('id', '!=', $registrationInvite->id))
+                ->exists();
+
+            if ($duplicateCode) {
+                throw ValidationException::withMessages([
+                    'access_code' => 'Kode akses tersebut sudah digunakan oleh undangan lain.',
+                ]);
+            }
+        }
+
+        $registrationInvite ??= new GenerusRegistrationInvite(['used_count' => 0]);
+        $registrationInvite->label = trim($validated['label']);
+        $registrationInvite->max_uses = (int) $validated['max_uses'];
+        $registrationInvite->expires_at = now()->addDays((int) $validated['valid_days']);
+        $registrationInvite->is_active = $request->boolean('is_active');
+        if ($plainCode !== null) {
+            $registrationInvite->token_hash = hash('sha256', $plainCode);
+        }
+        $registrationInvite->save();
+
+        $redirect = redirect()->route('settings.index', ['tab' => 'registration'])
+            ->with('success', 'Pengaturan akses pendaftaran PKG berhasil disimpan.');
+
+        return $plainCode === null
+            ? $redirect
+            : $redirect->with('registration_access_code', $plainCode);
     }
 
     /**

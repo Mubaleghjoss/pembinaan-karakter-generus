@@ -554,6 +554,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/settings/permissions', [App\Http\Controllers\SettingsController::class, 'updateDefaultPermissions'])->name('settings.update.permissions');
         Route::put('/settings/popup', [App\Http\Controllers\SettingsController::class, 'updatePopups'])->name('settings.update.popup');
         Route::put('/settings/face-attendance', [App\Http\Controllers\SettingsController::class, 'updateFaceAttendance'])->name('settings.update.face-attendance');
+        Route::put('/settings/registration-access', [App\Http\Controllers\SettingsController::class, 'updateRegistrationAccess'])->name('settings.update.registration-access');
 
         // Backup & Restore
         Route::get('/settings/backup', [App\Http\Controllers\BackupController::class, 'index'])->name('settings.backup');
