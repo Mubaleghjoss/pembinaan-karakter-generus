@@ -36,23 +36,26 @@ fi
 
 echo "Memakai PHP CLI: $php_cmd ($("$php_cmd" -r 'echo PHP_VERSION;'))"
 
-composer_cmd=""
+composer_cmd=()
 if command -v composer >/dev/null 2>&1; then
-  composer_cmd="composer"
+  composer_cmd=("composer")
 elif command -v composer2 >/dev/null 2>&1; then
-  composer_cmd="composer2"
+  composer_cmd=("composer2")
 elif [ -x "/opt/cpanel/composer/bin/composer" ]; then
-  composer_cmd="/opt/cpanel/composer/bin/composer"
+  composer_cmd=("/opt/cpanel/composer/bin/composer")
 elif [ -x "$HOME/bin/composer" ]; then
-  composer_cmd="$HOME/bin/composer"
+  composer_cmd=("$HOME/bin/composer")
+elif [ -f "$HOME/bin/composer.phar" ]; then
+  composer_cmd=("$php_cmd" "$HOME/bin/composer.phar")
 fi
 
 echo "Pull source terbaru..."
 git pull --ff-only origin main
 
-if [ -n "$composer_cmd" ]; then
+if [ "${#composer_cmd[@]}" -gt 0 ]; then
   echo "Install dependency PHP production..."
-  "$composer_cmd" install --no-dev --optimize-autoloader
+  "${composer_cmd[@]}" install --no-dev --optimize-autoloader --no-scripts --no-interaction
+  "$php_cmd" artisan package:discover --ansi
 elif [ -f "$APP_ROOT/vendor/autoload.php" ]; then
   echo "Composer tidak tersedia; memakai vendor yang sudah ada."
 else
