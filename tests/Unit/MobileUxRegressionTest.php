@@ -51,4 +51,16 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('pkg-mobile-table', $materi);
         $this->assertStringContainsString('data-label="Target"', $materi);
     }
+
+    public function test_attendance_schedule_cards_stay_inside_the_mobile_viewport(): void
+    {
+        $index = file_get_contents(dirname(__DIR__, 2).'/resources/views/attendance-schedule/index.blade.php');
+        $form = file_get_contents(dirname(__DIR__, 2).'/resources/views/attendance-schedule/form.blade.php');
+
+        $this->assertStringContainsString('w-full min-w-0 max-w-7xl', $index);
+        $this->assertStringContainsString('min-w-0 max-w-full overflow-hidden', $index);
+        $this->assertStringContainsString('grid w-full grid-cols-1', $index);
+        $this->assertStringContainsString('w-full min-w-0 max-w-4xl', $form);
+        $this->assertStringContainsString('pkg-panel-lg min-w-0 p-4', $form);
+    }
 }

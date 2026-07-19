@@ -3,19 +3,19 @@
 @section('title', isset($attendanceSchedule) ? 'Edit Jadwal Presensi' : 'Buat Jadwal Presensi')
 
 @section('content')
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="mx-auto w-full min-w-0 max-w-4xl py-4 sm:py-6">
     <!-- Header -->
-    <div class="mb-8">
+    <div class="mb-6">
         <a href="{{ route('attendance-schedule.index') }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium inline-flex items-center gap-2 mb-4">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
             Kembali
         </a>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 class="pkg-page-heading">
             {{ isset($attendanceSchedule) ? 'Edit Jadwal Presensi' : 'Buat Jadwal Presensi' }}
         </h1>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">Atur waktu scan QR code dan target peserta presensi.</p>
+        <p class="pkg-page-subheading">Atur waktu scan QR code dan target peserta presensi.</p>
     </div>
 
     <form action="{{ isset($attendanceSchedule) ? route('attendance-schedule.update', $attendanceSchedule) : route('attendance-schedule.store') }}" 
@@ -26,7 +26,7 @@
         @endif
 
         <!-- Card Form -->
-        <div class="pkg-panel-lg p-8">
+        <div class="pkg-panel-lg min-w-0 p-4 sm:p-6 lg:p-8">
             
             <!-- Nama Jadwal -->
             <div class="mb-6">
@@ -69,16 +69,16 @@
                     $selectedTarget = old('target_audience', $attendanceSchedule->target_audience ?? \App\Models\AttendanceSchedule::TARGET_ALL);
                     $targetOptions = $targetOptions ?? \App\Models\AttendanceSchedule::targetOptions();
                 @endphp
-                <div class="grid gap-3 md:grid-cols-3">
+                <div class="grid min-w-0 gap-3 md:grid-cols-3">
                     @foreach($targetOptions as $value => $label)
-                        <label class="relative flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors {{ $selectedTarget === $value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 hover:border-blue-500 dark:border-gray-600' }}">
+                        <label class="relative flex min-w-0 cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors {{ $selectedTarget === $value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 hover:border-blue-500 dark:border-gray-600' }}">
                             <input type="radio"
                                    name="target_audience"
                                    value="{{ $value }}"
                                    {{ $selectedTarget === $value ? 'checked' : '' }}
                                    class="mt-0.5 h-5 w-5 pkg-check"
                                    required>
-                            <span>
+                            <span class="min-w-0">
                                 <span class="block text-sm font-bold text-gray-900 dark:text-white">{{ $label }}</span>
                                 <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">
                                     @if($value === \App\Models\AttendanceSchedule::TARGET_ALL)
@@ -99,8 +99,8 @@
             </div>
 
             <!-- Periode Tanggal -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
+            <div class="mb-6 grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+                <div class="min-w-0">
                     <label for="start_date" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         Tanggal Mulai <span class="text-red-500">*</span>
                     </label>
@@ -115,7 +115,7 @@
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
-                <div>
+                <div class="min-w-0">
                     <label for="end_date" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         Tanggal Selesai <span class="text-red-500">*</span>
                     </label>
@@ -133,7 +133,7 @@
             </div>
 
             <!-- Waktu -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="mb-6 grid min-w-0 grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
                 <!-- Jam Buka -->
                 <div>
                     <label for="open_time" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
@@ -191,7 +191,7 @@
                 <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                     Hari Aktif <span class="text-red-500">*</span>
                 </label>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                     @php
                         $days = [
                             'monday' => 'Senin',
@@ -255,13 +255,13 @@
             </div>
 
             <!-- Buttons -->
-            <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col-reverse gap-2 border-t border-gray-200 pt-6 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-end sm:gap-4">
                 <a href="{{ route('attendance-schedule.index') }}" 
-                   class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
+                   class="btn-secondary w-full justify-center sm:w-auto">
                     Batal
                 </a>
                 <button type="submit" 
-                        class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg hover:shadow-xl transition-all">
+                        class="btn-primary w-full justify-center sm:w-auto">
                     {{ isset($attendanceSchedule) ? 'Perbarui Jadwal' : 'Simpan Jadwal' }}
                 </button>
             </div>

@@ -8,23 +8,23 @@
     $canEditSchedule = auth()->user()->hasPamongCrudPermission('jadwal', 'edit');
     $canDeleteSchedule = auth()->user()->hasPamongCrudPermission('jadwal', 'delete');
 @endphp
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="mx-auto w-full min-w-0 max-w-7xl py-4 sm:py-6">
     <!-- Header -->
-    <div class="mb-8 flex justify-between items-center">
+    <div class="pkg-page-header">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Jadwal Presensi</h1>
-            <p class="mt-2 text-gray-600 dark:text-gray-400">Kelola waktu scan QR code dan target peserta presensi.</p>
+            <h1 class="pkg-page-heading">Jadwal Presensi</h1>
+            <p class="pkg-page-subheading">Kelola waktu scan QR code dan target peserta presensi.</p>
         </div>
-        <div class="flex gap-3">
+        <div class="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
             <a href="{{ route('pamong-presensi.summary') }}"
-               class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2">
+               class="btn-success w-full justify-center text-sm sm:w-auto">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
                 Ringkasan Presensi Aktif
             </a>
             <a href="{{ route('schedule-reminder.index') }}" 
-               class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2">
+               class="btn-secondary w-full justify-center text-sm sm:w-auto">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
@@ -32,7 +32,7 @@
             </a>
             @if($canCreateSchedule)
             <a href="{{ route('attendance-schedule.create') }}" 
-               class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2">
+               class="btn-primary w-full justify-center text-sm sm:w-auto">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -67,12 +67,12 @@
 
     <!-- Active Schedule Card -->
     @if($activeSchedule)
-        <div class="mb-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-8 text-white">
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-4">
+        <div class="mb-6 min-w-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-4 text-white shadow-xl sm:p-6">
+            <div class="min-w-0">
+                <div class="min-w-0">
+                    <div class="mb-4 flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
                         <span class="px-3 py-1 bg-green-400 text-green-900 rounded-full text-sm font-bold">Aktif</span>
-                        <h2 class="text-2xl font-bold">{{ $activeSchedule->name }}</h2>
+                        <h2 class="order-first w-full min-w-0 break-words text-xl font-bold sm:order-none sm:w-auto sm:text-2xl">{{ $activeSchedule->name }}</h2>
                         <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-bold">{{ $activeSchedule->targetLabel() }}</span>
                     </div>
                     
@@ -80,7 +80,7 @@
                         <p class="text-blue-100 mb-6">{{ $activeSchedule->description }}</p>
                     @endif
 
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                             <div class="text-blue-200 text-sm mb-1">Tanggal Berlaku</div>
                             <div class="text-xl font-bold leading-snug break-words">{{ $activeSchedule->dateRangeLabel() }}</div>
@@ -117,11 +117,11 @@
                         </span>
                     </div>
 
-                    <div class="mt-6 flex flex-wrap gap-3">
-                        <a href="{{ route('pamong-presensi.summary') }}" class="inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-50">
+                    <div class="mt-6 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+                        <a href="{{ route('pamong-presensi.summary') }}" class="inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-50 sm:w-auto">
                             Lihat Ringkasan Hari Ini
                         </a>
-                        <a href="{{ route('pamong-presensi.index', ['start_date' => now()->format('Y-m-d'), 'end_date' => now()->format('Y-m-d')]) }}" class="inline-flex items-center rounded-lg bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/30 transition hover:bg-white/20">
+                        <a href="{{ route('pamong-presensi.index', ['start_date' => now()->format('Y-m-d'), 'end_date' => now()->format('Y-m-d')]) }}" class="inline-flex w-full items-center justify-center rounded-lg bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/30 transition hover:bg-white/20 sm:w-auto">
                             Lihat Data Detail
                         </a>
                     </div>
@@ -129,7 +129,7 @@
             </div>
         </div>
     @else
-        <div class="mb-8 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 rounded-xl p-6">
+        <div class="mb-6 min-w-0 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 dark:bg-yellow-900/20 sm:p-6">
             <div class="flex items-start gap-4">
                 <svg class="w-8 h-8 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
@@ -142,18 +142,18 @@
         </div>
     @endif
 
-    <div class="pkg-panel-lg overflow-hidden mb-8">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="pkg-panel-lg mb-6 min-w-0 max-w-full overflow-hidden">
+        <div class="border-b border-gray-200 px-4 py-4 dark:border-gray-700 sm:px-6">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Jadwal Pengingat Kalender</h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Data dari halaman Jadwal Pengingat. Jadwal aktif otomatis tampil di kalender sesuai target.</p>
                 </div>
-                <a href="{{ route('schedule-reminder.index') }}" class="btn-secondary text-sm">Kelola Pengingat</a>
+                <a href="{{ route('schedule-reminder.index') }}" class="btn-secondary mt-2 w-full justify-center text-sm sm:mt-0 sm:w-auto">Kelola Pengingat</a>
             </div>
         </div>
         <div class="overflow-x-auto pkg-mobile-table">
-            <table class="min-w-[760px] w-full">
+            <table class="w-full min-w-full md:min-w-[760px]">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jadwal</th>
@@ -167,7 +167,7 @@
                     @forelse($calendarReminders as $reminder)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <td data-label="Jadwal" class="px-6 py-4 pkg-mobile-main">
-                                <div class="font-medium text-gray-900 dark:text-white">{{ $reminder->title }}</div>
+                                <div class="break-words font-medium text-gray-900 dark:text-white">{{ $reminder->title }}</div>
                                 @if($reminder->location)
                                     <div class="text-sm text-gray-500 dark:text-gray-400">Lokasi: {{ $reminder->location }}</div>
                                 @endif
@@ -214,13 +214,13 @@
     </div>
 
     <!-- Schedule List -->
-    <div class="pkg-panel-lg overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="pkg-panel-lg min-w-0 max-w-full overflow-hidden">
+        <div class="border-b border-gray-200 px-4 py-4 dark:border-gray-700 sm:px-6">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Semua Jadwal</h3>
         </div>
 
         <div class="overflow-x-auto pkg-mobile-table">
-            <table class="min-w-[860px] w-full">
+            <table class="w-full min-w-full md:min-w-[860px]">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama</th>
@@ -235,7 +235,7 @@
                     @forelse($schedules as $schedule)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <td data-label="Nama" class="px-6 py-4 pkg-mobile-main">
-                                <div class="font-medium text-gray-900 dark:text-white">{{ $schedule->name }}</div>
+                                <div class="break-words font-medium text-gray-900 dark:text-white">{{ $schedule->name }}</div>
                                 @if($schedule->description)
                                     <div class="text-sm text-gray-500 dark:text-gray-400">{{ Str::limit($schedule->description, 50) }}</div>
                                 @endif
@@ -270,7 +270,7 @@
                                 @endif
                             </td>
                             <td data-label="Aksi" class="px-6 py-4 text-right text-sm font-medium pkg-mobile-actions">
-                                <div class="flex items-center justify-end gap-2">
+                                <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
                                     @if(!$schedule->is_active)
                                         @if($canEditSchedule)
                                         <form action="{{ route('attendance-schedule.activate', $schedule) }}" method="POST" class="inline">
