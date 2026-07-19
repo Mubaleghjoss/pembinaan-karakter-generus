@@ -105,7 +105,7 @@
                 <input type="date" name="date_to" value="{{ request('date_to') }}" onchange="this.form.submit()" class="w-full px-3 py-2 pkg-field">
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 
     <!-- Checklist Table -->
     @if(isset($checklists))
@@ -363,7 +363,7 @@
     @if($checklists instanceof \Illuminate\Contracts\Pagination\Paginator)
     <div class="mt-6">
         {{ $checklists->appends(request()->query())->links() }}
-    </x-collapsible-section>
+    </div>
     @endif
 
     <!-- Bulk Action Toolbar -->

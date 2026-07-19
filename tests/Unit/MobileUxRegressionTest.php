@@ -74,6 +74,7 @@ class MobileUxRegressionTest extends TestCase
     {
         $source = file_get_contents(dirname(__DIR__, 2).'/resources/views/tugas-pkg/verification/index.blade.php');
         $navigation = file_get_contents(dirname(__DIR__, 2).'/resources/views/tugas-pkg/verification/partials/navigation.blade.php');
+        $verificationTab = file_get_contents(dirname(__DIR__, 2).'/resources/views/tugas-pkg/verification/partials/verification-tab.blade.php');
 
         $headerPosition = strpos($source, '<div class="pkg-page-header">');
         $navigationPosition = strpos($source, "@include('tugas-pkg.verification.partials.navigation')");
@@ -89,5 +90,13 @@ class MobileUxRegressionTest extends TestCase
         $this->assertNotFalse($analyticsPosition);
         $this->assertLessThan($headerPosition, $navigationPosition);
         $this->assertLessThan($analyticsPosition, $navigationPosition);
+
+        $filterClosePosition = strpos($verificationTab, '</x-collapsible-section>');
+        $checklistPosition = strpos($verificationTab, '@if(isset($checklists))');
+        $this->assertSame(1, substr_count($verificationTab, '<x-collapsible-section'));
+        $this->assertSame(1, substr_count($verificationTab, '</x-collapsible-section>'));
+        $this->assertNotFalse($filterClosePosition);
+        $this->assertNotFalse($checklistPosition);
+        $this->assertLessThan($checklistPosition, $filterClosePosition);
     }
 }
