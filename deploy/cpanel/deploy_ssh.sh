@@ -213,6 +213,7 @@ fi
 
 cat > "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
 RewriteEngine On
+RewriteRule ^storage/materi/pdf(?:/|$) - [F,L,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [QSA,L]
 
