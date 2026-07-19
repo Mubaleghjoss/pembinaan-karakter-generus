@@ -63,4 +63,13 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('w-full min-w-0 max-w-4xl', $form);
         $this->assertStringContainsString('pkg-panel-lg min-w-0 p-4', $form);
     }
+
+    public function test_pkg_verification_navigation_stays_on_one_mobile_row(): void
+    {
+        $source = file_get_contents(dirname(__DIR__, 2).'/resources/views/tugas-pkg/verification/index.blade.php');
+
+        $this->assertStringContainsString('flex-nowrap gap-2 overflow-x-auto', $source);
+        $this->assertStringContainsString('role="tablist"', $source);
+        $this->assertStringNotContainsString('pkg-filter-bar mb-6 flex flex-nowrap', $source);
+    }
 }
