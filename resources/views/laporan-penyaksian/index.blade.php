@@ -57,10 +57,49 @@
     </div>
 
     <!-- Table -->
+    <div @if($canBulkDelete) x-data="{ selected: [], pageIds: @js($laporan->pluck('id')->values()->all()) }" @endif>
+        @if($canBulkDelete)
+        <form
+            action="{{ route('laporan-penyaksian.bulk-destroy') }}"
+            method="POST"
+            data-no-csrf-handler
+            data-confirm-title="Hapus laporan terpilih"
+            data-confirm-button="Hapus Semua"
+            data-confirm-tone="danger"
+            x-bind:data-confirm="`Yakin ingin menghapus ${selected.length} laporan terpilih? Tindakan ini tidak dapat dibatalkan.`"
+        >
+            @csrf
+            @method('DELETE')
+
+            <div class="pkg-card-soft mb-3 flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between" x-cloak x-show="pageIds.length > 0">
+                <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                    <input
+                        type="checkbox"
+                        class="pkg-check"
+                        aria-label="Pilih semua laporan pada halaman ini"
+                        x-bind:checked="pageIds.length > 0 && selected.length === pageIds.length"
+                        x-effect="$el.indeterminate = selected.length > 0 && selected.length < pageIds.length"
+                        x-on:change="selected = $event.target.checked ? [...pageIds] : []"
+                    >
+                    Pilih semua di halaman ini
+                </label>
+
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-slate-500 dark:text-slate-400" x-text="`${selected.length} dipilih`"></span>
+                    <button type="submit" class="btn-danger text-sm" x-bind:disabled="selected.length === 0" x-text="`Hapus Terpilih (${selected.length})`"></button>
+                </div>
+            </div>
+        @endif
+
     <div class="pkg-card overflow-x-auto pkg-mobile-table">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
+                    @if($canBulkDelete)
+                    <th class="w-12 px-4 py-3 text-left">
+                        <span class="sr-only">Pilih laporan</span>
+                    </th>
+                    @endif
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tanggal</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Pelapor</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Generus</th>
@@ -72,6 +111,18 @@
             <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($laporan as $l)
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    @if($canBulkDelete)
+                    <td data-label="Pilih" class="px-4 py-4">
+                        <input
+                            type="checkbox"
+                            name="ids[]"
+                            value="{{ $l->id }}"
+                            class="pkg-check"
+                            x-model.number="selected"
+                            aria-label="Pilih laporan {{ $l->nama_generus }}"
+                        >
+                    </td>
+                    @endif
                     <td data-label="Tanggal" class="px-4 py-4 text-sm text-gray-900 dark:text-white">
                         {{ $l->tanggal_kejadian->format('d/m/Y') }}
                     </td>
@@ -141,7 +192,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 py-8 pkg-mobile-empty">
+                    <td colspan="{{ $canBulkDelete ? 7 : 6 }}" class="px-4 py-8 pkg-mobile-empty">
                         <div class="pkg-empty-state py-8">
                             <svg class="pkg-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -154,6 +205,11 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+        @if($canBulkDelete)
+        </form>
+        @endif
     </div>
 
     <!-- Pagination -->

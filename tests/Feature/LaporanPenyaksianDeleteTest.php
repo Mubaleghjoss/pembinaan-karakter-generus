@@ -42,6 +42,44 @@ class LaporanPenyaksianDeleteTest extends TestCase
         $this->assertDatabaseHas('laporan_penyaksian', ['id' => $laporan->id]);
     }
 
+    public function test_admin_can_select_and_delete_multiple_reports(): void
+    {
+        $admin = $this->adminUser();
+        $first = $this->laporan();
+        $second = $this->laporan();
+        $kept = $this->laporan();
+
+        $this->actingAs($admin)
+            ->get(route('laporan-penyaksian.index'))
+            ->assertOk()
+            ->assertSee(route('laporan-penyaksian.bulk-destroy'), false)
+            ->assertSee('Pilih semua di halaman ini')
+            ->assertSee('name="ids[]"', false)
+            ->assertSee('data-no-csrf-handler', false);
+
+        $this->delete(route('laporan-penyaksian.bulk-destroy'), [
+            'ids' => [$first->id, $second->id],
+        ])
+            ->assertRedirect(route('laporan-penyaksian.index'))
+            ->assertSessionHas('success', '2 laporan berhasil dihapus.');
+
+        $this->assertDatabaseMissing('laporan_penyaksian', ['id' => $first->id]);
+        $this->assertDatabaseMissing('laporan_penyaksian', ['id' => $second->id]);
+        $this->assertDatabaseHas('laporan_penyaksian', ['id' => $kept->id]);
+    }
+
+    public function test_non_admin_cannot_bulk_delete_reports(): void
+    {
+        $user = User::factory()->create();
+        $laporan = $this->laporan();
+
+        $this->actingAs($user)
+            ->delete(route('laporan-penyaksian.bulk-destroy'), ['ids' => [$laporan->id]])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('laporan_penyaksian', ['id' => $laporan->id]);
+    }
+
     private function laporan(): LaporanPenyaksian
     {
         return LaporanPenyaksian::create([

@@ -22,6 +22,7 @@ class LaporanPenyaksianController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+        $canBulkDelete = $user->isAdmin();
         $query = LaporanPenyaksian::with(['siswa.kelas', 'pamong', 'penindak']);
 
         // Teacher tetap dibatasi ke siswa binaan, pengurus PKG melihat cakupan global.
@@ -80,7 +81,7 @@ class LaporanPenyaksianController extends Controller
             }
         );
 
-        return view('laporan-penyaksian.index', compact('laporan', 'stats'));
+        return view('laporan-penyaksian.index', compact('laporan', 'stats', 'canBulkDelete'));
     }
 
     /**
@@ -174,6 +175,37 @@ class LaporanPenyaksianController extends Controller
 
         return redirect()->route('laporan-penyaksian.index')
             ->with('success', 'Laporan berhasil dihapus.');
+    }
+
+    /**
+     * Delete multiple reports selected by an administrator.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*' => ['required', 'integer', 'distinct', 'exists:laporan_penyaksian,id'],
+        ], [
+            'ids.required' => 'Pilih minimal satu laporan yang akan dihapus.',
+            'ids.min' => 'Pilih minimal satu laporan yang akan dihapus.',
+        ]);
+
+        $laporan = LaporanPenyaksian::query()
+            ->whereKey($validated['ids'])
+            ->get();
+
+        DB::transaction(function () use ($laporan) {
+            foreach ($laporan as $item) {
+                $this->forgetReportStatsCache($item);
+                $item->delete();
+            }
+        });
+
+        return redirect()
+            ->route('laporan-penyaksian.index')
+            ->with('success', $laporan->count() . ' laporan berhasil dihapus.');
     }
 
     /**

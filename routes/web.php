@@ -684,6 +684,7 @@ Route::middleware('auth')->group(function () {
 
     // Laporan Penyaksian (Admin/Pamong Management)
     Route::get('/laporan-penyaksian', [App\Http\Controllers\LaporanPenyaksianController::class, 'index'])->name('laporan-penyaksian.index');
+    Route::delete('/laporan-penyaksian/bulk', [App\Http\Controllers\LaporanPenyaksianController::class, 'bulkDestroy'])->name('laporan-penyaksian.bulk-destroy');
     Route::get('/laporan-penyaksian/{laporanPenyaksian}', [App\Http\Controllers\LaporanPenyaksianController::class, 'show'])->name('laporan-penyaksian.show');
     Route::put('/laporan-penyaksian/{laporanPenyaksian}', [App\Http\Controllers\LaporanPenyaksianController::class, 'update'])->name('laporan-penyaksian.update');
     Route::delete('/laporan-penyaksian/{laporanPenyaksian}', [App\Http\Controllers\LaporanPenyaksianController::class, 'destroy'])->name('laporan-penyaksian.destroy');
