@@ -103,7 +103,7 @@ class SiswaChatController extends Controller
                 'message_type' => $m->message_type ?? 'text',
                 'attachment_url' => $m->attachment_url,
                 'caption' => $m->caption,
-                'is_mine' => $m->sender_siswa_id === $siswa->id,
+                'is_mine' => (int) $m->sender_siswa_id === (int) $siswa->id,
                 'sender_name' => $m->sender_name,
                 'created_at' => $m->created_at->format('H:i'),
                 'date' => $m->created_at->format('d M Y'),

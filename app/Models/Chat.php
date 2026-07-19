@@ -20,6 +20,10 @@ class Chat extends Model
     ];
 
     protected $casts = [
+        'sender_siswa_id' => 'integer',
+        'sender_user_id' => 'integer',
+        'receiver_siswa_id' => 'integer',
+        'receiver_user_id' => 'integer',
         'is_read' => 'boolean',
     ];
 
