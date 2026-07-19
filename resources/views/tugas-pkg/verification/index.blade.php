@@ -22,6 +22,9 @@
         @endif
     </div>
 
+    <!-- Navigasi utama halaman: mengikuti pola tab yang dipakai halaman admin lain -->
+    @include('tugas-pkg.verification.partials.navigation')
+
     <div class="pkg-panel p-6 mb-6" x-data="{ analyticsOpen: false }">
         <div class="pkg-page-header !mb-0">
             <div>
@@ -120,42 +123,6 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-
-    <!-- Tab Navigation - Button Style -->
-    <div class="pkg-panel mb-6 min-w-0 max-w-full overflow-hidden p-2 sm:p-3">
-        <div class="flex min-w-0 max-w-full flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1" role="tablist" aria-label="Menu Verifikasi Tugas PKG">
-        <button type="button" role="tab" @click="activeTab = 'siswa'" :aria-selected="activeTab === 'siswa'" :class="activeTab === 'siswa' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 sm:px-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            Ceklis Siswa
-        </button>
-        <button type="button" role="tab" @click="activeTab = 'verification'" :aria-selected="activeTab === 'verification'" :class="activeTab === 'verification' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 sm:px-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            Verifikasi Tugas PKG
-            @if(isset($stats) && $stats['unverified'] > 0)
-            <span class="pkg-status-badge pkg-status-danger !px-2 !py-0.5 text-[11px]">{{ $stats['unverified'] }}</span>
-            @endif
-        </button>
-        @if(auth()->user()->hasPamongCrudPermission('tracer_karakter', 'create'))
-        <button type="button" role="tab" @click="activeTab = 'import'" :aria-selected="activeTab === 'import'" :class="activeTab === 'import' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 sm:px-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-            </svg>
-            Impor Excel
-        </button>
-        <button type="button" role="tab" @click="activeTab = 'karakter'; loadKarakter()" :aria-selected="activeTab === 'karakter'" :class="activeTab === 'karakter' ? 'pkg-btn-primary text-white shadow-lg' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 sm:px-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-            Kelola Karakter
-        </button>
-        @endif
         </div>
     </div>
 

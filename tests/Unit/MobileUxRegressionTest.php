@@ -67,9 +67,20 @@ class MobileUxRegressionTest extends TestCase
     public function test_pkg_verification_navigation_stays_on_one_mobile_row(): void
     {
         $source = file_get_contents(dirname(__DIR__, 2).'/resources/views/tugas-pkg/verification/index.blade.php');
+        $navigation = file_get_contents(dirname(__DIR__, 2).'/resources/views/tugas-pkg/verification/partials/navigation.blade.php');
 
-        $this->assertStringContainsString('flex-nowrap gap-2 overflow-x-auto', $source);
-        $this->assertStringContainsString('role="tablist"', $source);
+        $headerPosition = strpos($source, '<div class="pkg-page-header">');
+        $navigationPosition = strpos($source, "@include('tugas-pkg.verification.partials.navigation')");
+        $analyticsPosition = strpos($source, 'Analitik Keaktifan Pamong');
+
+        $this->assertStringContainsString('flex min-w-max flex-nowrap gap-3 pb-1', $navigation);
+        $this->assertStringContainsString('role="tablist"', $navigation);
+        $this->assertStringContainsString("'pkg-tab-link pkg-tab-link-active'", $navigation);
         $this->assertStringNotContainsString('pkg-filter-bar mb-6 flex flex-nowrap', $source);
+        $this->assertNotFalse($headerPosition);
+        $this->assertNotFalse($navigationPosition);
+        $this->assertNotFalse($analyticsPosition);
+        $this->assertGreaterThan($headerPosition, $navigationPosition);
+        $this->assertLessThan($analyticsPosition, $navigationPosition);
     }
 }
