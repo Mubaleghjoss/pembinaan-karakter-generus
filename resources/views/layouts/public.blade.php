@@ -580,43 +580,84 @@
     </div>
 
     <script>
-        function setMobileMenu(open) {
+        let mobileMenuOpen = false;
+        let mobileMenuFocusFrame = null;
+        let mobileMenuFocusTimer = null;
+        const mobileMenuTransitionMs = 280;
+
+        function clearMobileMenuFocusSchedule() {
+            if (mobileMenuFocusFrame !== null) {
+                window.cancelAnimationFrame(mobileMenuFocusFrame);
+                mobileMenuFocusFrame = null;
+            }
+            if (mobileMenuFocusTimer !== null) {
+                window.clearTimeout(mobileMenuFocusTimer);
+                mobileMenuFocusTimer = null;
+            }
+        }
+
+        function focusWithoutScrolling(element) {
+            if (!element) return;
+
+            try {
+                element.focus({ preventScroll: true });
+            } catch (error) {
+                element.focus();
+            }
+        }
+
+        function setMobileMenu(open, options = {}) {
             const menu = document.getElementById('mobile-menu');
             const toggle = document.getElementById('mobile-menu-toggle');
             const overlay = document.getElementById('mobile-menu-overlay');
             if (!menu || !toggle || !overlay) return;
 
-            menu.classList.toggle('is-open', open);
-            overlay.classList.toggle('is-open', open);
-            toggle.classList.toggle('is-open', open);
-            toggle.setAttribute('aria-expanded', String(open));
-            toggle.setAttribute('aria-label', open ? 'Tutup menu navigasi' : 'Buka menu navigasi');
-            menu.setAttribute('aria-hidden', String(!open));
-            overlay.setAttribute('aria-hidden', String(!open));
-            menu.inert = !open;
-            document.documentElement.classList.toggle('overflow-hidden', open);
+            const nextOpen = Boolean(open);
+            const stateChanged = mobileMenuOpen !== nextOpen;
+            mobileMenuOpen = nextOpen;
+            clearMobileMenuFocusSchedule();
 
-            if (open) {
-                window.requestAnimationFrame(() => document.getElementById('mobile-menu-close')?.focus());
+            menu.classList.toggle('is-open', nextOpen);
+            overlay.classList.toggle('is-open', nextOpen);
+            toggle.classList.toggle('is-open', nextOpen);
+            toggle.setAttribute('aria-expanded', String(nextOpen));
+            toggle.setAttribute('aria-label', nextOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi');
+            menu.setAttribute('aria-hidden', String(!nextOpen));
+            overlay.setAttribute('aria-hidden', String(!nextOpen));
+            menu.inert = !nextOpen;
+            document.documentElement.classList.toggle('pkg-mobile-menu-open', nextOpen);
+
+            if (nextOpen && stateChanged) {
+                mobileMenuFocusTimer = window.setTimeout(() => {
+                    mobileMenuFocusTimer = null;
+                    if (mobileMenuOpen) {
+                        focusWithoutScrolling(document.getElementById('mobile-menu-close'));
+                    }
+                }, mobileMenuTransitionMs);
+            } else if (!nextOpen && options.restoreFocus) {
+                mobileMenuFocusFrame = window.requestAnimationFrame(() => {
+                    mobileMenuFocusFrame = null;
+                    if (!mobileMenuOpen) {
+                        focusWithoutScrolling(toggle);
+                    }
+                });
             }
         }
 
         function toggleMobileMenu() {
-            const toggle = document.getElementById('mobile-menu-toggle');
-            setMobileMenu(toggle?.getAttribute('aria-expanded') !== 'true');
+            setMobileMenu(!mobileMenuOpen, { restoreFocus: mobileMenuOpen });
         }
 
         document.getElementById('mobile-menu-toggle')?.addEventListener('click', toggleMobileMenu);
         document.getElementById('mobile-menu-close')?.addEventListener('click', () => {
-            setMobileMenu(false);
-            document.getElementById('mobile-menu-toggle')?.focus();
+            setMobileMenu(false, { restoreFocus: true });
         });
-        document.getElementById('mobile-menu-overlay')?.addEventListener('click', () => setMobileMenu(false));
+        document.getElementById('mobile-menu-overlay')?.addEventListener('click', () => setMobileMenu(false, { restoreFocus: true }));
         document.getElementById('mobile-menu')?.querySelectorAll('a[href]').forEach((link) => {
             link.addEventListener('click', () => setMobileMenu(false));
         });
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') setMobileMenu(false);
+            if (event.key === 'Escape' && mobileMenuOpen) setMobileMenu(false, { restoreFocus: true });
         });
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 768) setMobileMenu(false);

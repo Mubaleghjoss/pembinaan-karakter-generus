@@ -16,6 +16,19 @@ body {
     overflow-x: hidden;
 }
 
+@supports (overflow: clip) {
+    html,
+    body {
+        overflow-x: clip;
+    }
+}
+
+html.pkg-mobile-menu-open,
+html.pkg-mobile-menu-open body {
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
 ::selection {
     background: color-mix(in srgb, var(--pkg-brand, #0f766e) 22%, #ffffff);
     color: var(--pkg-heading, #020617);
@@ -213,26 +226,30 @@ body {
     right: 0;
     z-index: 100;
     width: min(88vw, 23rem);
-    max-width: 100vw;
+    width: min(88dvw, 23rem);
+    max-width: 100%;
     height: 100svh;
     overflow: hidden;
     visibility: hidden;
-    transform: translate3d(105%, 0, 0);
+    pointer-events: none;
+    transform: translate3d(calc(100% + 2px), 0, 0);
     background:
         radial-gradient(circle at top right, color-mix(in srgb, var(--pkg-brand, #0f766e) 12%, transparent), transparent 26%),
         color-mix(in srgb, var(--pkg-surface, #ffffff) 97%, transparent);
     border-left: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
     box-shadow: -20px 0 60px rgba(2, 6, 23, 0.28);
-    backdrop-filter: blur(22px);
+    backface-visibility: hidden;
     transition:
-        transform 340ms cubic-bezier(0.785, 0.135, 0.15, 0.86),
-        visibility 0s linear 340ms;
+        transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0s linear 280ms;
     will-change: transform;
     contain: layout paint;
+    isolation: isolate;
 }
 
 .pkg-mobile-menu-shell.is-open {
     visibility: visible;
+    pointer-events: auto;
     transform: translate3d(0, 0, 0);
     transition-delay: 0s;
 }
@@ -243,16 +260,18 @@ body {
     z-index: 90;
     visibility: hidden;
     opacity: 0;
+    pointer-events: none;
     background: rgba(2, 6, 23, 0.58);
-    backdrop-filter: blur(2px);
     transition:
-        opacity 280ms ease,
-        visibility 0s linear 280ms;
+        opacity 220ms ease-out,
+        visibility 0s linear 220ms;
+    touch-action: manipulation;
 }
 
 .pkg-mobile-menu-overlay.is-open {
     visibility: visible;
     opacity: 1;
+    pointer-events: auto;
     transition-delay: 0s;
 }
 
@@ -296,6 +315,7 @@ body {
     background: var(--pkg-surface-muted, #f1f5f9);
     color: var(--pkg-text, #0f172a);
     transition: transform 220ms ease, color 220ms ease, border-color 220ms ease;
+    touch-action: manipulation;
 }
 
 .pkg-mobile-menu-close:active {
@@ -325,6 +345,7 @@ body {
     font-size: 0.75rem;
     font-weight: 800;
     transition: background-color 0.22s ease, color 0.22s ease, transform 0.22s ease, border-color 0.22s ease;
+    touch-action: manipulation;
 }
 
 .pkg-mobile-menu-toggle:active {
@@ -350,7 +371,6 @@ body {
     border: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
     background: var(--pkg-surface, #ffffff);
     box-shadow: var(--pkg-shadow-md, 0 24px 60px rgba(2, 6, 23, 0.18));
-    backdrop-filter: blur(16px);
 }
 
 .pkg-mobile-menu-link {

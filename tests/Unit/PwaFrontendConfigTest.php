@@ -67,9 +67,17 @@ class PwaFrontendConfigTest extends TestCase
 
         $this->assertStringContainsString('id="mobile-menu-overlay"', $layout);
         $this->assertStringContainsString('id="mobile-menu-close"', $layout);
-        $this->assertStringContainsString("menu.classList.toggle('is-open', open)", $layout);
-        $this->assertStringContainsString('menu.inert = !open', $layout);
+        $this->assertStringContainsString("menu.classList.toggle('is-open', nextOpen)", $layout);
+        $this->assertStringContainsString('menu.inert = !nextOpen', $layout);
+        $this->assertStringContainsString("classList.toggle('pkg-mobile-menu-open', nextOpen)", $layout);
+        $this->assertStringContainsString('window.cancelAnimationFrame(mobileMenuFocusFrame)', $layout);
+        $this->assertStringContainsString('focus({ preventScroll: true })', $layout);
         $this->assertStringContainsString('.pkg-mobile-menu-shell.is-open', $styles);
-        $this->assertStringContainsString('cubic-bezier(0.785, 0.135, 0.15, 0.86)', $styles);
+        $this->assertStringContainsString('cubic-bezier(0.22, 1, 0.36, 1)', $styles);
+        $this->assertStringContainsString('html.pkg-mobile-menu-open body', $styles);
+        $this->assertStringContainsString('overflow-x: clip', $styles);
+        $this->assertStringContainsString('touch-action: manipulation', $styles);
+        $this->assertStringNotContainsString("classList.toggle('overflow-hidden', open)", $layout);
+        $this->assertStringNotContainsString('cubic-bezier(0.785, 0.135, 0.15, 0.86)', $styles);
     }
 }
