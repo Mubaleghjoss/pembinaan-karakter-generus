@@ -23,6 +23,12 @@
     </div>
     @endif
 
+    <x-registration-statement-card
+        :registration="$siswa->generusRegistration"
+        :preview-route="route('siswa.profile.statement.preview')"
+        :download-route="route('siswa.profile.statement.download')"
+    />
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-1">
             <div class="pkg-panel-lg p-6">

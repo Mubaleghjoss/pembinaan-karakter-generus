@@ -52,7 +52,27 @@ Route::post('/face-presensi/scan', [App\Http\Controllers\FaceAttendanceControlle
     ->middleware('throttle:qr-scan')
     ->name('face-presensi.scan');
 
-// Tautan privat pendaftaran Generus. Sengaja tidak ditampilkan pada navigasi publik.
+// Pendaftaran Generus privat. Sengaja tidak ditampilkan pada navigasi publik.
+Route::get('/daftarpkg', [App\Http\Controllers\GenerusRegistrationController::class, 'index'])
+    ->name('public.generus-registration.short.index');
+Route::post('/daftarpkg/akses', [App\Http\Controllers\GenerusRegistrationController::class, 'unlock'])
+    ->middleware('throttle:5,1')
+    ->name('public.generus-registration.short.unlock');
+Route::get('/daftarpkg/cari-generus', [App\Http\Controllers\GenerusRegistrationController::class, 'searchStudents'])
+    ->middleware('throttle:30,1')
+    ->name('public.generus-registration.short.search');
+Route::post('/daftarpkg/verifikasi-akun', [App\Http\Controllers\GenerusRegistrationController::class, 'verifyExisting'])
+    ->middleware('throttle:5,1')
+    ->name('public.generus-registration.short.verify');
+Route::post('/daftarpkg', [App\Http\Controllers\GenerusRegistrationController::class, 'storeShort'])
+    ->middleware('throttle:5,1')
+    ->name('public.generus-registration.short.store');
+Route::get('/daftarpkg/hasil/{registration}/{downloadToken}', [App\Http\Controllers\GenerusRegistrationController::class, 'result'])
+    ->name('public.generus-registration.short.result');
+Route::get('/daftarpkg/hasil/{registration}/{downloadToken}/pdf', [App\Http\Controllers\GenerusRegistrationController::class, 'pdf'])
+    ->name('public.generus-registration.short.pdf');
+
+// Tautan privat lama tetap diterima untuk masa transisi.
 Route::get('/pendaftaran-generus/hasil/{registration}/{downloadToken}', [App\Http\Controllers\GenerusRegistrationController::class, 'result'])
     ->name('public.generus-registration.result');
 Route::get('/pendaftaran-generus/hasil/{registration}/{downloadToken}/pdf', [App\Http\Controllers\GenerusRegistrationController::class, 'pdf'])
@@ -183,6 +203,8 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
         
         // Profile routes
         Route::get('/profile', [App\Http\Controllers\SiswaDashboardController::class, 'profile'])->name('profile');
+        Route::get('/profile/surat-pernyataan', [App\Http\Controllers\GenerusRegistrationController::class, 'siswaPreview'])->name('profile.statement.preview');
+        Route::get('/profile/surat-pernyataan/unduh', [App\Http\Controllers\GenerusRegistrationController::class, 'siswaDownload'])->name('profile.statement.download');
         Route::post('/profile/update-photo', [App\Http\Controllers\SiswaDashboardController::class, 'updatePhoto'])->name('profile.update-photo');
         Route::post('/profile/update', [App\Http\Controllers\SiswaDashboardController::class, 'updateProfile'])->name('profile.update');
         Route::post('/profile/update-account', [App\Http\Controllers\SiswaDashboardController::class, 'updateAccount'])->name('profile.update-account');
@@ -278,6 +300,8 @@ Route::prefix('ortu')->name('ortu.')->group(function () {
 
         // Settings
         Route::get('/settings', [App\Http\Controllers\OrtuDashboardController::class, 'settings'])->name('settings');
+        Route::get('/settings/surat-pernyataan', [App\Http\Controllers\GenerusRegistrationController::class, 'ortuPreview'])->name('settings.statement.preview');
+        Route::get('/settings/surat-pernyataan/unduh', [App\Http\Controllers\GenerusRegistrationController::class, 'ortuDownload'])->name('settings.statement.download');
         Route::post('/settings/update', [App\Http\Controllers\OrtuDashboardController::class, 'updateSettings'])->name('settings.update');
         Route::post('/settings/password', [App\Http\Controllers\OrtuDashboardController::class, 'updatePassword'])->name('settings.password');
 

@@ -11,7 +11,8 @@ class CreateGenerusRegistrationInvite extends Command
     protected $signature = 'registration:invite
         {--label=Pendaftaran Generus Baru : Nama undangan}
         {--uses=1 : Jumlah maksimal pendaftaran}
-        {--days=30 : Masa berlaku dalam hari}';
+        {--days=30 : Masa berlaku dalam hari}
+        {--short-code : Buat kode akses 8 karakter yang mudah dibagikan}';
 
     protected $description = 'Membuat tautan privat untuk pendaftaran Generus dan akun orang tua';
 
@@ -19,7 +20,7 @@ class CreateGenerusRegistrationInvite extends Command
     {
         $uses = max(1, (int) $this->option('uses'));
         $days = max(1, (int) $this->option('days'));
-        $token = Str::random(48);
+        $token = $this->option('short-code') ? $this->shortCode() : Str::random(48);
 
         $invite = GenerusRegistrationInvite::query()->create([
             'label' => trim((string) $this->option('label')) ?: 'Pendaftaran Generus Baru',
@@ -31,9 +32,26 @@ class CreateGenerusRegistrationInvite extends Command
         ]);
 
         $this->info("Undangan #{$invite->id} berhasil dibuat.");
-        $this->line(route('public.generus-registration.show', ['token' => $token]));
+        if ($this->option('short-code')) {
+            $this->line(route('public.generus-registration.short.index'));
+            $this->line("Kode akses: {$token}");
+        } else {
+            $this->line(route('public.generus-registration.show', ['token' => $token]));
+        }
         $this->line("Berlaku {$days} hari, maksimal {$uses} pendaftaran.");
 
         return self::SUCCESS;
+    }
+
+    private function shortCode(): string
+    {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $code = '';
+
+        for ($index = 0; $index < 8; $index++) {
+            $code .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+        }
+
+        return $code;
     }
 }

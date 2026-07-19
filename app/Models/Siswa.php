@@ -117,6 +117,11 @@ class Siswa extends Authenticatable
         return $this->hasMany(Presensi::class);
     }
 
+    public function generusRegistration(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(GenerusRegistration::class);
+    }
+
     public function materiTargetProgress(): HasMany
     {
         return $this->hasMany(SiswaMateriTargetProgress::class);

@@ -11,6 +11,12 @@
         </div>
     </div>
 
+    <x-registration-statement-card
+        :registration="$siswa->generusRegistration"
+        :preview-route="route('ortu.settings.statement.preview')"
+        :download-route="route('ortu.settings.statement.download')"
+    />
+
     <div class="pkg-panel p-6 mb-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ubah Username</h2>
         <form action="{{ route('ortu.settings.update') }}" method="POST" class="space-y-4">

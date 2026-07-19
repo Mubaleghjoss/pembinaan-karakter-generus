@@ -17,6 +17,8 @@ class StoreGenerusRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'registration_mode' => ['required', Rule::in(['new', 'existing'])],
+            'selected_student_token' => ['nullable', 'required_if:registration_mode,existing', 'string', 'max:2000'],
             'parent_name' => ['required', 'string', 'max:120'],
             'parent_phone' => ['required', 'string', 'max:30', 'regex:/^[0-9+()\-\s]{8,30}$/'],
             'student_name' => ['required', 'string', 'max:120'],
@@ -39,6 +41,14 @@ class StoreGenerusRegistrationRequest extends FormRequest
             'parent_signature.required' => 'Tanda tangan orang tua wajib diisi.',
             'student_signature.required' => 'Tanda tangan Generus wajib diisi.',
             'statement_accepted.accepted' => 'Pernyataan harus disetujui sebelum mendaftar.',
+            'selected_student_token.required_if' => 'Pilih dan verifikasi akun Generus terlebih dahulu.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'registration_mode' => $this->input('registration_mode', 'new'),
+        ]);
     }
 }

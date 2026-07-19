@@ -172,7 +172,7 @@ class SiswaDashboardController extends Controller
     public function profile()
     {
         $siswa = Auth::guard('siswa')->user();
-        $siswa->load('kelas');
+        $siswa->load(['kelas', 'generusRegistration']);
         $kelompokOptions = Siswa::kelompokOptions();
         $targetGradeOptions = TargetGrade::options();
         
