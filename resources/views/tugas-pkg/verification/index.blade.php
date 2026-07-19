@@ -4,6 +4,9 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8" x-data="karakterManager()">
+    <!-- Navigasi utama halaman ditempatkan paling atas seperti area konten Dashboard. -->
+    @include('tugas-pkg.verification.partials.navigation')
+
     <!-- Header -->
     <div class="pkg-page-header">
         <div>
@@ -21,9 +24,6 @@
         </div>
         @endif
     </div>
-
-    <!-- Navigasi utama halaman: mengikuti pola tab yang dipakai halaman admin lain -->
-    @include('tugas-pkg.verification.partials.navigation')
 
     <div class="pkg-panel p-6 mb-6" x-data="{ analyticsOpen: false }">
         <div class="pkg-page-header !mb-0">

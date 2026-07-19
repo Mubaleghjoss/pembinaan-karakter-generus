@@ -73,14 +73,15 @@ class MobileUxRegressionTest extends TestCase
         $navigationPosition = strpos($source, "@include('tugas-pkg.verification.partials.navigation')");
         $analyticsPosition = strpos($source, 'Analitik Keaktifan Pamong');
 
-        $this->assertStringContainsString('flex min-w-max flex-nowrap gap-3 pb-1', $navigation);
+        $this->assertStringContainsString('sticky top-0 z-30', $navigation);
+        $this->assertStringContainsString('flex min-w-max flex-nowrap gap-3', $navigation);
         $this->assertStringContainsString('role="tablist"', $navigation);
         $this->assertStringContainsString("'pkg-tab-link pkg-tab-link-active'", $navigation);
         $this->assertStringNotContainsString('pkg-filter-bar mb-6 flex flex-nowrap', $source);
         $this->assertNotFalse($headerPosition);
         $this->assertNotFalse($navigationPosition);
         $this->assertNotFalse($analyticsPosition);
-        $this->assertGreaterThan($headerPosition, $navigationPosition);
+        $this->assertLessThan($headerPosition, $navigationPosition);
         $this->assertLessThan($analyticsPosition, $navigationPosition);
     }
 }

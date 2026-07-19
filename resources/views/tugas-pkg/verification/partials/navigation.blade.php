@@ -1,5 +1,5 @@
-<div class="mb-6 max-w-full overflow-x-auto overscroll-x-contain">
-    <nav class="flex min-w-max flex-nowrap gap-3 pb-1" role="tablist" aria-label="Menu Verifikasi Tugas PKG">
+<div class="sticky top-0 z-30 -mx-4 mb-6 max-w-[calc(100%+2rem)] overflow-x-auto overscroll-x-contain border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-700/80 dark:bg-slate-950/95 sm:-mx-6 sm:max-w-[calc(100%+3rem)] sm:px-6 lg:-mx-8 lg:max-w-[calc(100%+4rem)] lg:px-8">
+    <nav class="flex min-w-max flex-nowrap gap-3" role="tablist" aria-label="Menu Verifikasi Tugas PKG">
         <button type="button" role="tab" @click="activeTab = 'siswa'" :aria-selected="activeTab === 'siswa'" :class="activeTab === 'siswa' ? 'pkg-tab-link pkg-tab-link-active' : 'pkg-tab-link'" class="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
