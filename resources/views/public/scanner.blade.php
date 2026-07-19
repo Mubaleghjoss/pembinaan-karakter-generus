@@ -37,37 +37,10 @@
 @endphp
 
 @section('content')
-<div class="py-12 min-h-screen">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <section class="pkg-public-hero-card p-6 sm:p-8 lg:p-10 mb-8" data-reveal="zoom">
-            <div class="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.7fr)] lg:items-center">
-                <div>
-                    <span class="pkg-glass-badge text-sm font-semibold">
-                        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.72)]"></span>
-                        Presensi digital
-                    </span>
-                    <h1 class="pkg-page-heading mt-5 text-4xl">Pindai presensi lebih cepat dan lebih jelas.</h1>
-                    <p class="pkg-page-subheading mt-3 text-base sm:text-lg">Arahkan kamera ke kode QR atau gunakan scan wajah dengan lokasi aktif untuk mencatat kehadiran secara aman.</p>
-                </div>
-                <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                    <div class="pkg-hero-kpi">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Status</p>
-                        <p class="text-lg font-black text-slate-950 dark:text-white">{{ $scheduleStatusLabel }}</p>
-                    </div>
-                    <div class="pkg-hero-kpi">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Mode</p>
-                        <p class="text-lg font-black text-slate-950 dark:text-white">QR & Wajah</p>
-                    </div>
-                    <div class="pkg-hero-kpi">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Akses</p>
-                        <p class="text-lg font-black text-slate-950 dark:text-white">Instan</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
+<div class="min-h-screen py-4 sm:py-8">
+    <div class="mx-auto flex max-w-4xl flex-col px-4 sm:px-6 lg:px-8">
         <!-- Active Attendance Activities -->
-        <div class="pkg-surface rounded-2xl p-6 mb-8 border-2 {{ $isOpen ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800' }}" data-reveal="up">
+        <div class="order-2 mt-8 pkg-surface rounded-2xl p-6 border-2 {{ $isOpen ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800' }}" data-reveal="up">
             <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <p class="text-sm font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Kegiatan Presensi Aktif</p>
@@ -156,13 +129,13 @@
         </div>
 
         <!-- Scanner Component -->
-        <div class="max-w-md mx-auto pkg-panel-lg overflow-hidden" data-reveal="up">
-            <div class="p-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center">
-                <h2 class="text-2xl font-bold mb-1">Pindai Presensi</h2>
+        <div class="order-1 mx-auto w-full max-w-md pkg-panel-lg overflow-hidden" data-reveal="up">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-center text-white sm:p-5">
+                <h1 class="mb-1 text-xl font-bold sm:text-2xl">Pindai Presensi</h1>
                 <p class="text-blue-100 text-sm">Gunakan barcode QR atau scan wajah sesuai data yang sudah terdaftar</p>
             </div>
 
-            <div class="p-6">
+            <div class="p-4 sm:p-6">
                 @unless($publicScannerAssetAvailable)
                     <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
                         <p class="text-sm font-bold uppercase tracking-wide">Asset pemindai belum tersedia</p>
@@ -180,7 +153,7 @@
                     </div>
                 @endunless
 
-                <div class="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-900">
+                <div class="mb-4 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-900">
                     <button type="button" data-scanner-mode-button="qr" onclick="showScannerMode('qr')" class="scanner-mode-button scanner-mode-button-active">
                         Pindai QR
                     </button>
@@ -221,17 +194,17 @@
 
                 <div data-scanner-panel="qr">
                     <!-- Start Button -->
-                    <div id="start-section" class="text-center py-8">
-                        <div class="mb-8 relative inline-block">
+                    <div id="start-section" class="py-4 text-center sm:py-6">
+                        <div class="relative mb-4 inline-block">
                             <div class="absolute inset-0 bg-blue-200 rounded-full animate-ping opacity-20"></div>
-                            <div class="bg-blue-50 p-6 rounded-full relative z-10">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><rect width="10" height="10" x="7" y="7" rx="2" /><path d="m16 16-.01-.01" /></svg>
+                            <div class="relative z-10 rounded-full bg-blue-50 p-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><rect width="10" height="10" x="7" y="7" rx="2" /><path d="m16 16-.01-.01" /></svg>
                             </div>
                         </div>
                         <button
                             onclick="startScanning()"
                             @disabled(!$publicScannerAssetAvailable)
-                            class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
+                            class="flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 py-3.5 text-lg font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-blue-700 hover:shadow-xl"
                         >
                             Mulai Pindai QR
                         </button>
@@ -294,7 +267,7 @@
                     <div class="mt-5 grid gap-3">
                         <button
                             type="button"
-                            class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                            class="flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-600 py-3.5 text-lg font-bold text-white shadow-lg transition-all hover:bg-emerald-700 hover:shadow-xl"
                             data-face-action="start-scan"
                             @disabled(!$faceAttendanceAssetAvailable)
                         >
@@ -317,7 +290,7 @@
         </div>
 
         <!-- Instructions -->
-        <div class="pkg-surface rounded-2xl p-8 mt-8" data-reveal="up">
+        <div class="order-3 mt-8 pkg-surface rounded-2xl p-8" data-reveal="up">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <svg class="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -350,7 +323,7 @@
         </div>
 
         <!-- Tips -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mt-6 dark:bg-amber-950/30 dark:border-amber-700" data-reveal="up">
+        <div class="order-4 mt-6 rounded-lg border-l-4 border-yellow-400 bg-yellow-50 p-6 dark:border-amber-700 dark:bg-amber-950/30" data-reveal="up">
             <div class="flex items-start">
                 <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
