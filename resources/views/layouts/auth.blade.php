@@ -15,7 +15,11 @@
     <title>@yield('title', ($siteSettings['site_title'] ?? 'PKG Presensi') . ' - Login')</title>
 
     @include('layouts.partials.favicons')
-    @php($manifestVersion = is_file(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : null)
+    @php
+        $manifestVersion = is_file(public_path('manifest.json'))
+            ? filemtime(public_path('manifest.json'))
+            : null;
+    @endphp
     <link rel="manifest" href="{{ asset('manifest.json') }}{{ $manifestVersion ? '?v=' . $manifestVersion : '' }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

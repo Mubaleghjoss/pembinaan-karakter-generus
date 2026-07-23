@@ -7,7 +7,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Portal Orang Tua') - {{ $siteSettings['site_title'] ?? 'PKG' }}</title>
     @include('layouts.partials.favicons')
-    @php($manifestVersion = is_file(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : null)
+    @php
+        $manifestVersion = is_file(public_path('manifest.json'))
+            ? filemtime(public_path('manifest.json'))
+            : null;
+    @endphp
     <link rel="manifest" href="{{ asset('manifest.json') }}{{ $manifestVersion ? '?v=' . $manifestVersion : '' }}">
     
     @viteReactRefresh

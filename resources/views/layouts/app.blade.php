@@ -651,7 +651,11 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
     </script>
     
     <!-- CSRF Token Handler -->
-    @php($csrfHandlerVersion = is_file(public_path('js/csrf-handler.js')) ? filemtime(public_path('js/csrf-handler.js')) : 1)
+    @php
+        $csrfHandlerVersion = is_file(public_path('js/csrf-handler.js'))
+            ? filemtime(public_path('js/csrf-handler.js'))
+            : 1;
+    @endphp
     <script src="{{ asset('js/csrf-handler.js') }}?v={{ $csrfHandlerVersion }}"></script>
     
     @include('components.profile-assignment-prompt')

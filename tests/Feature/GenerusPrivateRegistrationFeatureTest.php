@@ -209,6 +209,15 @@ class GenerusPrivateRegistrationFeatureTest extends TestCase
         $this->get($resultUrl)->assertOk()->assertSee($siswa->nis);
         $this->get(str($resultUrl)->before('?').'/pdf')
             ->assertOk()->assertHeader('content-type', 'application/pdf');
+
+        $this->post(route('ortu.login.post'), [
+            'username' => $siswa->ortu_username,
+            'password' => $siswa->nis,
+        ])->assertRedirect(route('ortu.dashboard'));
+
+        $this->get(route('ortu.dashboard'))
+            ->assertOk()
+            ->assertSee($siswa->nama);
     }
 
     public function test_statement_is_available_only_to_matching_student_and_parent_profiles(): void
