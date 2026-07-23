@@ -361,9 +361,57 @@ class MateriRppFeatureTest extends TestCase
             ->assertOk()
             ->assertDownload('Materi PDF Siswa.pdf');
 
-        $this->get(route('public.materi.pdf.view', [$materi, 0]))
+        $pdfResponse = $this->get(route('public.materi.pdf.view', [$materi, 0]))
             ->assertOk()
-            ->assertHeader('content-type', 'application/pdf');
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+
+        $pdfContentSecurityPolicy = $pdfResponse->headers->get('Content-Security-Policy-Report-Only')
+            ?? $pdfResponse->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("frame-ancestors 'self'", $pdfContentSecurityPolicy);
+        $this->assertStringNotContainsString("frame-ancestors 'none'", $pdfContentSecurityPolicy);
+        $this->assertSame('DENY', $response->headers->get('X-Frame-Options'));
+        $this->assertStringContainsString("frame-ancestors 'none'", $contentSecurityPolicy);
+    }
+
+    public function test_authenticated_parent_can_embed_same_origin_pdf_in_material_modal(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('materi/pdf/materi-ortu.pdf', '%PDF-1.4 test');
+
+        $materi = Materi::create([
+            'judul' => 'Materi PDF Orang Tua',
+            'deskripsi' => 'Materi untuk menguji modal PDF orang tua.',
+            'bulan' => '2026-07-01',
+            'pdf_path' => [[
+                'name' => 'Materi Orang Tua.pdf',
+                'path' => 'materi/pdf/materi-ortu.pdf',
+                'size' => 1024,
+            ]],
+            'is_active' => true,
+        ]);
+
+        $parent = Siswa::factory()->create();
+        $detailResponse = $this->actingAs($parent, 'ortu')
+            ->get(route('ortu.materi.show', $materi));
+
+        $detailResponse
+            ->assertOk()
+            ->assertSee('<iframe', false)
+            ->assertSee(route('public.materi.pdf.view', [$materi, 0]), false)
+            ->assertHeader('X-Frame-Options', 'DENY');
+
+        $pdfResponse = $this->get(route('public.materi.pdf.view', [$materi, 0]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+
+        $contentSecurityPolicy = $pdfResponse->headers->get('Content-Security-Policy-Report-Only')
+            ?? $pdfResponse->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("frame-ancestors 'self'", $contentSecurityPolicy);
+        $this->assertStringNotContainsString("frame-ancestors 'none'", $contentSecurityPolicy);
     }
 
     public function test_public_materi_embeds_youtube_and_google_drive_videos(): void
