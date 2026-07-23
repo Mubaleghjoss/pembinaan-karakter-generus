@@ -16,13 +16,19 @@
         </div>
 
         <!-- Article -->
-        <article class="pkg-surface rounded-2xl overflow-hidden" data-reveal="zoom">
+        <article class="pkg-surface rounded-2xl overflow-hidden" data-reveal="zoom" x-data="{}">
             <!-- Cover Image -->
             @if($berita->cover_path)
-                <div class="relative h-96 overflow-hidden">
+                <button type="button" onclick="openLightbox(0)" class="group relative block h-96 w-full overflow-hidden text-left" aria-label="Lihat foto sampul layar penuh">
                     <img src="{{ asset('storage/' . $berita->cover_path) }}" alt="{{ $berita->judul }}" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                </div>
+                    <span class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></span>
+                    <span class="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-black/55 px-4 py-2 text-sm font-semibold text-white opacity-90 backdrop-blur-sm transition group-hover:bg-black/70 group-focus-visible:ring-2 group-focus-visible:ring-white">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0-5 5M4 16v4m0 0h4m-4 0 5-5m11 1v4m0 0h-4m4 0-5-5"/>
+                        </svg>
+                        Lihat penuh
+                    </span>
+                </button>
             @endif
 
             <!-- Content -->
@@ -52,25 +58,45 @@
                     {!! nl2br(e($berita->isi)) !!}
                 </div>
 
+                @if(count($berita->social_links) > 0)
+                    <section class="pkg-card-soft mb-8 p-4 sm:p-5" aria-labelledby="social-links-heading">
+                        <h2 id="social-links-heading" class="text-lg font-bold text-gray-900 dark:text-white">Lihat Postingan Terkait</h2>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">Buka dokumentasi berita ini di media sosial.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            @foreach($berita->social_links as $platform => $url)
+                                <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" class="btn-secondary inline-flex items-center gap-2 text-sm">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.5 10.5 21 3m0 0h-6m6 0v6M10 6H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5"/>
+                                    </svg>
+                                    {{ $socialPlatforms[$platform] ?? 'Buka tautan' }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
                 <!-- Image Gallery -->
                 @if($berita->images && count($berita->images) > 0)
                     <div class="mb-8" data-reveal="up">
                         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Dokumentasi</h2>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                             @foreach($berita->images as $index => $image)
-                                <div class="relative aspect-square overflow-hidden rounded-lg cursor-pointer group" onclick="openLightbox({{ $index }})">
+                                <button type="button" class="relative aspect-square overflow-hidden rounded-lg cursor-pointer group" onclick="openLightbox({{ $index + $galleryLightboxOffset }})" aria-label="Lihat foto dokumentasi {{ $index + 1 }} layar penuh">
                                     <img src="{{ asset('storage/' . $image) }}" alt="Dokumentasi" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
                                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
                                         <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
                                         </svg>
                                     </div>
-                                </div>
+                                </button>
                             @endforeach
                         </div>
                     </div>
+                @endif
 
+                @if($lightboxImages->isNotEmpty())
                     <!-- Fullscreen Lightbox Modal -->
+                    <template x-teleport="body">
                     <div id="lightbox-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black">
                         <!-- Close Button (X) -->
                         <button onclick="closeLightbox()" id="lightbox-close-btn" class="absolute top-4 right-4 z-[10001] w-12 h-12 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors duration-200 backdrop-blur-sm border border-white/10" title="Tutup (Esc)">
@@ -81,11 +107,11 @@
 
                         <!-- Image Counter -->
                         <div class="absolute top-5 left-1/2 -translate-x-1/2 z-[10001] text-white/70 text-sm font-medium bg-black/40 px-4 py-1.5 rounded-full backdrop-blur-sm">
-                            <span id="lightbox-counter">1 / {{ count($berita->images) }}</span>
+                            <span id="lightbox-counter">1 / {{ $lightboxImages->count() }}</span>
                         </div>
 
                         <!-- Prev Button -->
-                        @if(count($berita->images) > 1)
+                        @if($lightboxImages->count() > 1)
                         <button onclick="lightboxPrev()" class="absolute left-0 top-0 bottom-0 z-[10000] w-24 flex items-center justify-center group outline-none focus:outline-none" title="Sebelumnya">
                             <div class="w-14 h-14 flex items-center justify-center rounded-full bg-black/50 group-hover:bg-black/70 text-white/70 group-hover:text-white transition-all duration-200 backdrop-blur-sm border border-white/10">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -109,6 +135,7 @@
                             <img id="lightbox-image" src="" alt="Preview" class="max-w-screen max-h-screen object-contain transition-opacity duration-300" onclick="event.stopPropagation()">
                         </div>
                     </div>
+                    </template>
 
                     <style>
                         #lightbox-modal.lightbox-active {
@@ -136,7 +163,7 @@
                     </style>
 
                     <script>
-                        const lightboxImages = @json(collect($berita->images)->map(fn($img) => asset('storage/' . $img))->values());
+                        const lightboxImages = @json($lightboxImages);
                         let lightboxCurrentIndex = 0;
 
                         function openLightbox(index) {

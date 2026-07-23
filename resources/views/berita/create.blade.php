@@ -82,6 +82,8 @@
                 <p class="mt-1 text-xs text-gray-500">Hanya file PDF. Maksimal 5MB.</p>
             </div>
 
+            @include('berita.partials.social-links')
+
             <!-- Isi Berita -->
             <div>
                 <label for="isi" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Isi Berita</label>

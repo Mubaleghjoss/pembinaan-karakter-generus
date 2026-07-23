@@ -11,6 +11,15 @@ class Berita extends Model
 {
     use HasFactory;
 
+    public const SOCIAL_PLATFORMS = [
+        'instagram' => 'Instagram',
+        'tiktok' => 'TikTok',
+        'youtube' => 'YouTube',
+        'facebook' => 'Facebook',
+        'x' => 'X / Twitter',
+        'other' => 'Tautan lainnya',
+    ];
+
     protected $table = 'berita';
 
     /**
@@ -98,6 +107,39 @@ class Berita extends Model
     public function excerpt(int $length = 150): string
     {
         return Str::limit(strip_tags($this->isi), $length);
+    }
+
+    /**
+     * Available optional link labels for the news form.
+     *
+     * @return array<string, string>
+     */
+    public static function socialPlatforms(): array
+    {
+        return self::SOCIAL_PLATFORMS;
+    }
+
+    /**
+     * Get only supported, non-empty social links from metadata.
+     *
+     * @return array<string, string>
+     */
+    public function getSocialLinksAttribute(): array
+    {
+        $links = data_get($this->metadata, 'social_links', []);
+
+        if (! is_array($links)) {
+            return [];
+        }
+
+        return collect(self::SOCIAL_PLATFORMS)
+            ->keys()
+            ->mapWithKeys(function (string $platform) use ($links) {
+                $url = trim((string) ($links[$platform] ?? ''));
+
+                return $url === '' ? [] : [$platform => $url];
+            })
+            ->all();
     }
 
     /**

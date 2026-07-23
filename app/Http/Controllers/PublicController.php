@@ -66,8 +66,22 @@ class PublicController extends Controller
             ->latest('published_at')
             ->take(3)
             ->get();
+        $socialPlatforms = Berita::socialPlatforms();
+        $galleryLightboxOffset = $berita->cover_path ? 1 : 0;
+        $lightboxImages = collect([$berita->cover_path])
+            ->merge($berita->images ?? [])
+            ->filter()
+            ->map(fn (string $path) => asset('storage/'.$path))
+            ->values();
 
-        return view('public.berita-detail', compact('berita', 'theme', 'relatedNews'));
+        return view('public.berita-detail', compact(
+            'berita',
+            'theme',
+            'relatedNews',
+            'socialPlatforms',
+            'galleryLightboxOffset',
+            'lightboxImages'
+        ));
     }
 
     public function scanner()

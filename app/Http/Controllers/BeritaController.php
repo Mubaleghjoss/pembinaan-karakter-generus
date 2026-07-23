@@ -44,7 +44,9 @@ class BeritaController extends Controller
 
     public function create()
     {
-        return view('berita.create');
+        $socialPlatforms = Berita::socialPlatforms();
+
+        return view('berita.create', compact('socialPlatforms'));
     }
 
     public function store(Request $request)
@@ -56,10 +58,13 @@ class BeritaController extends Controller
             'pdf_file' => 'nullable|mimes:pdf|max:5120', // 5MB
             'slider_images.*' => 'image|max:2048',
             'status' => 'required|in:draft,published,archived',
+            'social_links' => 'nullable|array',
+            'social_links.*' => 'nullable|url:http,https|max:2048',
         ]);
 
         $data = $request->only(['judul', 'isi', 'status']);
         $data['author_id'] = auth()->id();
+        $data['metadata'] = $this->metadataWithSocialLinks($request);
 
         if ($request->status === 'published') {
             $data['published_at'] = now();
@@ -102,7 +107,9 @@ class BeritaController extends Controller
 
     public function edit(Berita $berita)
     {
-        return view('berita.edit', compact('berita'));
+        $socialPlatforms = Berita::socialPlatforms();
+
+        return view('berita.edit', compact('berita', 'socialPlatforms'));
     }
 
     public function update(Request $request, Berita $berita)
@@ -114,9 +121,15 @@ class BeritaController extends Controller
             'pdf_file' => 'nullable|mimes:pdf|max:5120',
             'slider_images.*' => 'image|max:2048',
             'status' => 'required|in:draft,published,archived',
+            'social_links' => 'nullable|array',
+            'social_links.*' => 'nullable|url:http,https|max:2048',
         ]);
 
         $data = $request->only(['judul', 'isi', 'status']);
+        $data['metadata'] = $this->metadataWithSocialLinks(
+            $request,
+            is_array($berita->metadata) ? $berita->metadata : []
+        );
 
         if ($request->status === 'published' && ! $berita->published_at) {
             $data['published_at'] = now();
@@ -205,5 +218,28 @@ class BeritaController extends Controller
         } catch (\Exception $e) {
             // Log error
         }
+    }
+
+    /**
+     * Store optional social links without overwriting unrelated metadata.
+     *
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    private function metadataWithSocialLinks(Request $request, array $metadata = []): array
+    {
+        if (! $request->has('social_links')) {
+            return $metadata;
+        }
+
+        $links = collect($request->input('social_links', []))
+            ->only(array_keys(Berita::socialPlatforms()))
+            ->map(fn ($url) => trim((string) $url))
+            ->filter()
+            ->all();
+
+        $metadata['social_links'] = $links;
+
+        return $metadata;
     }
 }

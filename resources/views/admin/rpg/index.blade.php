@@ -283,7 +283,7 @@
     @endif
 
     {{-- MAP CREATE/EDIT MODAL --}}
-    <div x-show="showMapModal" x-cloak class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4" x-transition>
+    <div x-show="showMapModal" x-cloak class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4" x-transition>
         <div @click.outside="showMapModal = false" class="pkg-modal flex max-h-[calc(100vh-1.5rem)] min-h-0 w-full max-w-lg flex-col overflow-hidden sm:max-h-[92vh]">
             <div class="flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700 sm:px-6">
                 <h3 class="text-base font-bold text-gray-900 dark:text-white sm:text-lg" x-text="editingMapId ? 'Edit Peta' : 'Tambah Peta Baru'"></h3>
@@ -402,8 +402,8 @@
     </div>
 
     {{-- NPC MANAGEMENT MODAL --}}
-    <div x-show="showNpcModal" x-cloak class="fixed inset-0 z-50 bg-black/50" x-transition>
-        <div class="fixed inset-0 z-50 flex items-start justify-center p-0 sm:items-center sm:p-4">
+    <div x-show="showNpcModal" x-cloak class="fixed inset-0 z-[110] bg-black/50" x-transition>
+        <div class="fixed inset-0 z-[110] flex items-start justify-center p-0 sm:items-center sm:p-4">
             <div @click.outside="showNpcModal = false" 
                  class="pkg-modal flex h-full min-h-0 w-full flex-col overflow-hidden sm:h-auto sm:max-h-[92vh] sm:max-w-3xl sm:rounded-2xl">
                 
