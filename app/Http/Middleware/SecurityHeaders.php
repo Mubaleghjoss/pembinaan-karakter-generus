@@ -16,13 +16,10 @@ class SecurityHeaders
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
-        $contentType = strtolower((string) $response->headers->get('Content-Type'));
-        $allowsSameOriginPdfFrame = $request->routeIs('public.materi.pdf.view')
-            && str_contains($contentType, 'application/pdf');
 
         // Security headers
         $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-Frame-Options', $allowsSameOriginPdfFrame ? 'SAMEORIGIN' : 'DENY');
+        $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-XSS-Protection', '0');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(self)');
@@ -39,7 +36,7 @@ class SecurityHeaders
                "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://drive.google.com https://docs.google.com; ".
                "worker-src 'self' blob:; ".
                "connect-src 'self'; ".
-               ($allowsSameOriginPdfFrame ? "frame-ancestors 'self';" : "frame-ancestors 'none';");
+               "frame-ancestors 'none';";
 
         $cspHeader = (config('app.debug') || app()->environment('local'))
             ? 'Content-Security-Policy-Report-Only'

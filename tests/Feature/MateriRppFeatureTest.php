@@ -364,18 +364,17 @@ class MateriRppFeatureTest extends TestCase
         $pdfResponse = $this->get(route('public.materi.pdf.view', [$materi, 0]))
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf')
-            ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+            ->assertHeader('X-Frame-Options', 'DENY');
 
         $pdfContentSecurityPolicy = $pdfResponse->headers->get('Content-Security-Policy-Report-Only')
             ?? $pdfResponse->headers->get('Content-Security-Policy');
 
-        $this->assertStringContainsString("frame-ancestors 'self'", $pdfContentSecurityPolicy);
-        $this->assertStringNotContainsString("frame-ancestors 'none'", $pdfContentSecurityPolicy);
+        $this->assertStringContainsString("frame-ancestors 'none'", $pdfContentSecurityPolicy);
         $this->assertSame('DENY', $response->headers->get('X-Frame-Options'));
         $this->assertStringContainsString("frame-ancestors 'none'", $contentSecurityPolicy);
     }
 
-    public function test_authenticated_parent_can_embed_same_origin_pdf_in_material_modal(): void
+    public function test_authenticated_parent_uses_canvas_pdf_viewer_without_iframe(): void
     {
         Storage::fake('public');
         Storage::disk('public')->put('materi/pdf/materi-ortu.pdf', '%PDF-1.4 test');
@@ -398,20 +397,62 @@ class MateriRppFeatureTest extends TestCase
 
         $detailResponse
             ->assertOk()
-            ->assertSee('<iframe', false)
+            ->assertSee('data-pdf-viewer', false)
+            ->assertSee('data-pdf-canvas', false)
             ->assertSee(route('public.materi.pdf.view', [$materi, 0]), false)
+            ->assertDontSee('pdfModal', false)
+            ->assertDontSee('<iframe', false)
             ->assertHeader('X-Frame-Options', 'DENY');
 
         $pdfResponse = $this->get(route('public.materi.pdf.view', [$materi, 0]))
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf')
-            ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+            ->assertHeader('X-Frame-Options', 'DENY');
 
         $contentSecurityPolicy = $pdfResponse->headers->get('Content-Security-Policy-Report-Only')
             ?? $pdfResponse->headers->get('Content-Security-Policy');
 
-        $this->assertStringContainsString("frame-ancestors 'self'", $contentSecurityPolicy);
-        $this->assertStringNotContainsString("frame-ancestors 'none'", $contentSecurityPolicy);
+        $this->assertStringContainsString("frame-ancestors 'none'", $contentSecurityPolicy);
+    }
+
+    public function test_student_and_pamong_material_pages_use_shared_canvas_pdf_viewer(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('materi/pdf/materi-portal.pdf', '%PDF-1.4 test');
+
+        $materi = Materi::create([
+            'judul' => 'Materi PDF Portal',
+            'deskripsi' => 'Materi untuk menguji pembaca PDF di setiap portal.',
+            'bulan' => '2026-07-01',
+            'pdf_path' => [[
+                'name' => 'Materi Portal.pdf',
+                'path' => 'materi/pdf/materi-portal.pdf',
+                'size' => 1024,
+            ]],
+            'is_active' => true,
+        ]);
+
+        $studentResponse = $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.materi.show', $materi));
+
+        $studentResponse
+            ->assertOk()
+            ->assertSee('data-pdf-viewer', false)
+            ->assertSee('data-pdf-canvas', false)
+            ->assertSee(route('public.materi.pdf.view', [$materi, 0]), false)
+            ->assertDontSee('pdfModal', false)
+            ->assertDontSee('<iframe', false);
+
+        $pamongResponse = $this->actingAs($this->adminUser())
+            ->get(route('materi.show', $materi));
+
+        $pamongResponse
+            ->assertOk()
+            ->assertSee('data-pdf-viewer', false)
+            ->assertSee('data-pdf-canvas', false)
+            ->assertSee(route('public.materi.pdf.view', [$materi, 0]), false)
+            ->assertDontSee('pdfModal', false)
+            ->assertDontSee('<iframe', false);
     }
 
     public function test_public_materi_embeds_youtube_and_google_drive_videos(): void
