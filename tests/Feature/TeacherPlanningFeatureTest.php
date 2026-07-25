@@ -394,6 +394,14 @@ class TeacherPlanningFeatureTest extends TestCase
             ->assertJsonFragment(['type' => 'teacher_schedule']);
 
         $this->actingAs($admin)
+            ->get(route('teacher-planning.index', ['month' => now()->format('Y-m')]))
+            ->assertOk()
+            ->assertSee('data-delete-schedule-trigger', false)
+            ->assertSee('data-delete-schedule-confirm', false)
+            ->assertSee('data-delete-schedule-submit', false)
+            ->assertDontSee('data-confirm="Hapus jadwal', false);
+
+        $this->actingAs($admin)
             ->delete(route('teacher-planning.periods.destroy', $period))
             ->assertRedirect(route('teacher-planning.index', ['month' => now()->format('Y-m')]))
             ->assertSessionHas('success');

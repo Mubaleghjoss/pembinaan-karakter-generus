@@ -221,14 +221,79 @@
                 <a href="{{ route('teacher-planning.export.pdf', $period) }}" class="btn-secondary">PDF</a>
                 <a href="{{ route('teacher-planning.export.image', $period) }}" target="_blank" class="btn-secondary">Gambar</a>
                 @if(auth()->user()->isAdmin())
-                    <form method="POST" action="{{ route('teacher-planning.periods.destroy', $period) }}"
-                          data-confirm="Hapus jadwal {{ $period->month->translatedFormat('F Y') }} beserta seluruh sesi dan penugasannya? Data guru dan Template Slot Mingguan tidak akan dihapus."
-                          data-confirm-title="Hapus jadwal bulanan"
-                          data-confirm-button="Hapus Jadwal"
-                          data-confirm-tone="danger">
-                        @csrf @method('DELETE')
-                        <button class="btn-danger">Hapus Jadwal</button>
-                    </form>
+                    <div x-data="{ deleteScheduleConfirmOpen: false, deletingSchedule: false }">
+                        <form
+                            x-ref="deleteScheduleForm"
+                            method="POST"
+                            action="{{ route('teacher-planning.periods.destroy', $period) }}"
+                            data-delete-schedule-form
+                        >
+                            @csrf
+                            @method('DELETE')
+                            <button
+                                type="button"
+                                class="btn-danger"
+                                data-delete-schedule-trigger
+                                @click="deleteScheduleConfirmOpen = true"
+                            >
+                                Hapus Jadwal
+                            </button>
+
+                            <div
+                                x-cloak
+                                x-show="deleteScheduleConfirmOpen"
+                                x-transition.opacity
+                                class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4"
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="delete-schedule-title"
+                                data-delete-schedule-confirm
+                                @keydown.escape.window="if (!deletingSchedule) deleteScheduleConfirmOpen = false"
+                                @click.self="if (!deletingSchedule) deleteScheduleConfirmOpen = false"
+                            >
+                                <div class="pkg-modal w-full max-w-md p-6 text-left shadow-2xl">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300">
+                                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 4h.01M10.29 3.86l-7.19 12.47A2 2 0 004.81 19h14.38a2 2 0 001.71-2.67L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                            </svg>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <h3 id="delete-schedule-title" class="text-lg font-semibold text-slate-900 dark:text-white">Hapus jadwal bulanan</h3>
+                                            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                                Hapus jadwal {{ $period->month->translatedFormat('F Y') }} beserta seluruh sesi dan penugasannya? Data guru dan Template Slot Mingguan tidak akan dihapus.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                        <button
+                                            type="button"
+                                            class="btn-secondary !justify-center !px-4 !py-2 text-sm"
+                                            @click="deleteScheduleConfirmOpen = false"
+                                            :disabled="deletingSchedule"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-70 dark:focus:ring-offset-slate-900"
+                                            data-delete-schedule-submit
+                                            :disabled="deletingSchedule"
+                                            @click="
+                                                if (deletingSchedule) return;
+                                                deletingSchedule = true;
+                                                deleteScheduleConfirmOpen = false;
+                                                $nextTick(() => $refs.deleteScheduleForm.submit());
+                                            "
+                                        >
+                                            <span x-show="!deletingSchedule">Hapus Jadwal</span>
+                                            <span x-show="deletingSchedule">Menghapus...</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 @endif
             </div>
         </div>
