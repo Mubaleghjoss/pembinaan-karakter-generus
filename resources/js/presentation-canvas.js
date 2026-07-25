@@ -133,18 +133,24 @@ export function renderPresentationStage({
     });
 }
 
-export function applyPresentationCamera(viewport, stage, canvas, frame = null, animate = true) {
+export function applyPresentationCamera(viewport, stage, canvas, frame = null, animate = true, options = {}) {
     const viewportWidth = Math.max(320, viewport.clientWidth);
     const viewportHeight = Math.max(320, viewport.clientHeight);
     const bounds = frame || presentationCanvasBounds(canvas);
     const padding = frame ? 54 : 30;
+    const insetTop = clampPresentationNumber(options.insetTop, 0, viewportHeight / 2, 0);
+    const insetRight = clampPresentationNumber(options.insetRight, 0, viewportWidth / 2, 0);
+    const insetBottom = clampPresentationNumber(options.insetBottom, 0, viewportHeight / 2, 0);
+    const insetLeft = clampPresentationNumber(options.insetLeft, 0, viewportWidth / 2, 0);
+    const safeWidth = Math.max(320, viewportWidth - insetLeft - insetRight);
+    const safeHeight = Math.max(320, viewportHeight - insetTop - insetBottom);
     const scale = Math.min(
-        (viewportWidth - (padding * 2)) / bounds.width,
-        (viewportHeight - (padding * 2)) / bounds.height
+        (safeWidth - (padding * 2)) / bounds.width,
+        (safeHeight - (padding * 2)) / bounds.height
     );
     const safeScale = clampPresentationNumber(scale, frame ? 0.08 : 0.03, frame ? 2.4 : 0.9, 0.3);
-    const translateX = ((viewportWidth - (bounds.width * safeScale)) / 2) - (bounds.x * safeScale);
-    const translateY = ((viewportHeight - (bounds.height * safeScale)) / 2) - (bounds.y * safeScale);
+    const translateX = insetLeft + ((safeWidth - (bounds.width * safeScale)) / 2) - (bounds.x * safeScale);
+    const translateY = insetTop + ((safeHeight - (bounds.height * safeScale)) / 2) - (bounds.y * safeScale);
 
     setPresentationCameraTransform(stage, translateX, translateY, safeScale, animate);
 

@@ -11,7 +11,7 @@
         class="pkg-presentation-viewer"
         data-presentation-payload="{{ base64_encode(json_encode($viewerPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) }}"
     >
-        <div class="pkg-presentation-viewer-bar">
+        <div class="pkg-presentation-viewer-bar" data-viewer-bar>
             <div class="min-w-0">
                 <p class="truncate text-sm font-bold text-white">{{ $presentation->title }}</p>
                 <p class="truncate text-xs text-slate-400">{{ $presentation->description ?: 'Presentasi Materi PKG' }}</p>
@@ -31,7 +31,7 @@
             <div class="pkg-presentation-stage" data-viewer-stage></div>
         </div>
 
-        <div class="pkg-presentation-viewer-controls">
+        <div class="pkg-presentation-viewer-controls" data-viewer-controls>
             <button type="button" class="pkg-viewer-control" data-viewer-prev aria-label="Langkah sebelumnya">Sebelumnya</button>
             <button type="button" class="pkg-viewer-control pkg-viewer-control-primary" data-viewer-home>Overview</button>
             <span class="min-w-20 text-center text-xs font-semibold text-slate-300" data-viewer-progress>Overview</span>

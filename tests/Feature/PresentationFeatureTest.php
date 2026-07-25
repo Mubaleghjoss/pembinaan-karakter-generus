@@ -253,6 +253,8 @@ class PresentationFeatureTest extends TestCase
         $this->get(route('public.presentations.show', $presentation->fresh()))
             ->assertOk()
             ->assertSee('presentation-viewer', false)
+            ->assertSee('data-viewer-bar', false)
+            ->assertSee('data-viewer-controls', false)
             ->assertSee('data-viewer-fit', false)
             ->assertSee('Akhlakul Karimah')
             ->assertDontSee(route('presentations.edit', $presentation), false)

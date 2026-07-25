@@ -17,6 +17,8 @@ if (root) {
     const viewport = root.querySelector('[data-viewer-viewport]');
     const stage = root.querySelector('[data-viewer-stage]');
     const progress = root.querySelector('[data-viewer-progress]');
+    const viewerBar = root.querySelector('[data-viewer-bar]');
+    const viewerControls = root.querySelector('[data-viewer-controls]');
     const state = {
         mode: 'overview',
         currentIndex: -1,
@@ -31,7 +33,17 @@ if (root) {
 
     const updateCamera = (animate = true) => {
         const frame = state.mode === 'frame' ? presentation.canvas.frames[state.currentIndex] : null;
-        state.cameraScale = applyPresentationCamera(viewport, stage, presentation.canvas, frame, animate);
+        state.cameraScale = applyPresentationCamera(
+            viewport,
+            stage,
+            presentation.canvas,
+            frame,
+            animate,
+            {
+                insetTop: (viewerBar?.offsetHeight || 0) + 10,
+                insetBottom: (viewerControls?.offsetHeight || 0) + 28,
+            }
+        );
         if (frame) state.focusScale = state.cameraScale;
         state.manualCamera = false;
         stage.querySelectorAll('[data-frame-id]').forEach((node) => {
