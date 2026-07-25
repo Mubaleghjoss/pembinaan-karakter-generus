@@ -91,11 +91,14 @@ class PresentationController extends Controller
             'background_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'path_mode' => ['required', Rule::in(['direct', 'overview_between'])],
             'canvas_data' => ['required', 'array'],
+            'canvas_data.width' => ['required', 'numeric', 'min:1200', 'max:7000'],
+            'canvas_data.height' => ['required', 'numeric', 'min:800', 'max:12500'],
             'canvas_data.frames' => ['required', 'array', 'min:1', 'max:40'],
             'canvas_data.frames.*.elements' => ['present', 'array', 'max:60'],
         ]);
 
-        if (strlen(json_encode($validated['canvas_data'])) > 750000) {
+        $canvasData = $request->input('canvas_data', []);
+        if (strlen(json_encode($canvasData)) > 750000) {
             throw ValidationException::withMessages([
                 'canvas_data' => 'Isi presentasi terlalu besar. Kurangi jumlah frame atau elemen.',
             ]);
@@ -106,7 +109,7 @@ class PresentationController extends Controller
             'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
             'background_color' => strtolower($validated['background_color']),
             'path_mode' => $validated['path_mode'],
-            'canvas_data' => $this->normalizeCanvas($validated['canvas_data']),
+            'canvas_data' => $this->normalizeCanvas($canvasData),
         ]);
 
         return response()->json([
@@ -338,10 +341,21 @@ class PresentationController extends Controller
             $frames = $this->starterCanvas('Presentasi Baru')['frames'];
         }
 
+        $requestedWidth = (int) $number($canvas['width'] ?? null, 1200, 7000, 2400);
+        $requestedHeight = (int) $number($canvas['height'] ?? null, 800, 12500, 1400);
+        $requiredWidth = (int) min(7000, max(array_map(
+            static fn (array $frame): float => $frame['x'] + $frame['width'] + 120,
+            $frames
+        )));
+        $requiredHeight = (int) min(12500, max(array_map(
+            static fn (array $frame): float => $frame['y'] + $frame['height'] + 120,
+            $frames
+        )));
+
         return [
             'version' => 1,
-            'width' => (int) $number($canvas['width'] ?? null, 1200, 6000, 2400),
-            'height' => (int) $number($canvas['height'] ?? null, 800, 12000, 1400),
+            'width' => max($requestedWidth, $requiredWidth),
+            'height' => max($requestedHeight, $requiredHeight),
             'frames' => $frames,
         ];
     }

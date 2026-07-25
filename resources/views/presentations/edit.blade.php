@@ -24,13 +24,13 @@
         <div class="pkg-page-actions">
             <span class="text-sm text-gray-500 dark:text-gray-400" data-save-status>Semua perubahan tersimpan</span>
             <button type="button" class="btn-secondary" data-editor-overview>Overview</button>
-            <a href="{{ route('presentations.preview', $presentation) }}" target="_blank" rel="noopener" class="btn-secondary">Pratinjau</a>
+            <a href="{{ route('presentations.preview', $presentation) }}" target="_blank" rel="noopener" class="btn-secondary" data-save-before-open>Pratinjau</a>
             <a href="{{ route('presentations.export.pdf', $presentation) }}" class="btn-secondary" data-export-link>Unduh PDF</a>
             <a href="{{ route('presentations.export.pptx', $presentation) }}" class="btn-secondary" data-export-link>Unduh PPTX</a>
             @if($presentation->is_published)
-                <a href="{{ route('public.presentations.show', $presentation) }}" target="_blank" rel="noopener" class="btn-secondary">Tautan Publik</a>
+                <a href="{{ route('public.presentations.show', $presentation) }}" target="_blank" rel="noopener" class="btn-secondary" data-save-before-open>Tautan Publik</a>
             @endif
-            <form method="POST" action="{{ route('presentations.publish', $presentation) }}">
+            <form method="POST" action="{{ route('presentations.publish', $presentation) }}" data-publish-form>
                 @csrf @method('PATCH')
                 <button class="btn-secondary">{{ $presentation->is_published ? 'Tarik Publikasi' : 'Terbitkan' }}</button>
             </form>
@@ -71,6 +71,7 @@
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-text>Tambah Teks</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-image>Masukkan Gambar</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-diagram>Tambah Diagram</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames>Rapikan Frame</button>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-image-input>
         <span class="ml-auto self-center text-xs text-gray-500 dark:text-gray-400">Simpan perubahan sebelum mengunduh. Seret frame di overview dan elemen saat fokus.</span>
     </section>

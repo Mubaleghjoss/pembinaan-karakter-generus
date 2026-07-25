@@ -53,18 +53,20 @@ class PresentationFeatureTest extends TestCase
             ->assertSee('data-add-text', false)
             ->assertSee('data-add-image', false)
             ->assertSee('data-add-diagram', false)
+            ->assertSee('data-arrange-frames', false)
+            ->assertSee('data-save-before-open', false)
             ->assertSee('Unduh PDF')
             ->assertSee('Unduh PPTX');
 
         $canvas = [
             'version' => 1,
-            'width' => 2400,
-            'height' => 1400,
+            'width' => 1200,
+            'height' => 800,
             'frames' => [[
                 'id' => 'frame-pembuka',
                 'title' => 'Pembuka',
-                'x' => 120,
-                'y' => 160,
+                'x' => 1000,
+                'y' => 700,
                 'width' => 800,
                 'height' => 450,
                 'backgroundColor' => '#ffffff',
@@ -112,6 +114,9 @@ class PresentationFeatureTest extends TestCase
             'path_mode' => 'overview_between',
             'is_published' => false,
         ]);
+        $savedCanvas = $presentation->fresh()->canvas_data;
+        $this->assertSame(1920, $savedCanvas['width']);
+        $this->assertSame(1270, $savedCanvas['height']);
 
         $this->get(route('public.presentations.show', $presentation))->assertNotFound();
 

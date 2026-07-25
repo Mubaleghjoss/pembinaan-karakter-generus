@@ -20,6 +20,25 @@ export function findPresentationElement(frame, elementId) {
     return frame?.elements?.find((element) => element.id === elementId) || null;
 }
 
+export function presentationCanvasBounds(canvas, padding = 120) {
+    const frames = Array.isArray(canvas.frames) ? canvas.frames : [];
+    const maximumX = frames.reduce(
+        (maximum, frame) => Math.max(maximum, Number(frame.x || 0) + Number(frame.width || 0)),
+        Number(canvas.width || 2400)
+    );
+    const maximumY = frames.reduce(
+        (maximum, frame) => Math.max(maximum, Number(frame.y || 0) + Number(frame.height || 0)),
+        Number(canvas.height || 1400)
+    );
+
+    return {
+        x: 0,
+        y: 0,
+        width: Math.max(1200, maximumX + padding),
+        height: Math.max(800, maximumY + padding),
+    };
+}
+
 export function renderPresentationStage({
     stage,
     presentation,
@@ -28,9 +47,10 @@ export function renderPresentationStage({
     overview = true,
 }) {
     const canvas = presentation.canvas;
+    const canvasBounds = presentationCanvasBounds(canvas);
     stage.replaceChildren();
-    stage.style.width = `${canvas.width}px`;
-    stage.style.height = `${canvas.height}px`;
+    stage.style.width = `${canvasBounds.width}px`;
+    stage.style.height = `${canvasBounds.height}px`;
     stage.style.backgroundColor = presentation.backgroundColor || '#0f172a';
 
     canvas.frames.forEach((frame, frameIndex) => {
@@ -44,6 +64,15 @@ export function renderPresentationStage({
         frameElement.style.backgroundColor = frame.backgroundColor || '#ffffff';
         frameElement.classList.toggle('is-selected', frame.id === selectedFrameId);
         frameElement.classList.toggle('is-overview', overview);
+
+        if (overview && frame.id === selectedFrameId) {
+            const resizeHandle = document.createElement('button');
+            resizeHandle.type = 'button';
+            resizeHandle.className = 'pkg-presentation-frame-resize';
+            resizeHandle.dataset.frameResize = frame.id;
+            resizeHandle.setAttribute('aria-label', 'Ubah ukuran frame');
+            frameElement.appendChild(resizeHandle);
+        }
 
         const pathBadge = document.createElement('span');
         pathBadge.className = 'pkg-presentation-path-badge';
@@ -69,13 +98,13 @@ export function renderPresentationStage({
 export function applyPresentationCamera(viewport, stage, canvas, frame = null, animate = true) {
     const viewportWidth = Math.max(320, viewport.clientWidth);
     const viewportHeight = Math.max(320, viewport.clientHeight);
-    const bounds = frame || { x: 0, y: 0, width: canvas.width, height: canvas.height };
+    const bounds = frame || presentationCanvasBounds(canvas);
     const padding = frame ? 54 : 30;
     const scale = Math.min(
         (viewportWidth - (padding * 2)) / bounds.width,
         (viewportHeight - (padding * 2)) / bounds.height
     );
-    const safeScale = clampPresentationNumber(scale, 0.08, frame ? 2.4 : 0.9, 0.3);
+    const safeScale = clampPresentationNumber(scale, frame ? 0.08 : 0.03, frame ? 2.4 : 0.9, 0.3);
     const translateX = ((viewportWidth - (bounds.width * safeScale)) / 2) - (bounds.x * safeScale);
     const translateY = ((viewportHeight - (bounds.height * safeScale)) / 2) - (bounds.y * safeScale);
 
