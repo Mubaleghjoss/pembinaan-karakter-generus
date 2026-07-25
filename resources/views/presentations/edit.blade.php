@@ -81,11 +81,12 @@
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-canvas-text>Tambah Teks Luar Frame</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-canvas-line>Tambah Garis Luar Frame</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-diagram>Tambah Diagram</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-editor-block>Blok Pilihan</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames>Rapikan Frame</button>
         <button type="button" class="btn-primary !px-3 !py-2 text-sm" data-save-layout>Simpan Tata Letak</button>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-image-input>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-logo-input>
-        <span class="ml-auto max-w-xl self-center text-xs text-gray-500 dark:text-gray-400">Pada Overview, seret tanda silang hijau untuk memindahkan frame. Klik elemen lalu seret penanda hijau di sisi atau sudut untuk mengubah ukuran. Cubit dua jari untuk zoom.</span>
+        <span class="ml-auto max-w-xl self-center text-xs text-gray-500 dark:text-gray-400">Aktifkan Blok Pilihan lalu seret area kosong untuk memilih beberapa objek. Drag objek terpilih untuk memindahkan bersama, atau klik kanan untuk Duplikat dan Hapus. Gunakan penanda hijau untuk mengubah ukuran.</span>
     </section>
 
     <section class="mt-4 grid min-h-[680px] gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
@@ -110,6 +111,12 @@
             <div class="max-h-[620px] overflow-y-auto p-4" data-editor-inspector></div>
         </aside>
     </section>
+
+    <div class="pkg-presentation-block-menu hidden" data-block-context-menu role="menu" aria-label="Aksi blok pilihan">
+        <div class="pkg-presentation-block-menu-title" data-block-menu-title>Objek terpilih</div>
+        <button type="button" data-block-duplicate role="menuitem">Duplikat Pilihan</button>
+        <button type="button" class="is-danger" data-block-delete role="menuitem">Hapus Pilihan</button>
+    </div>
 </div>
 
 @vite('resources/js/presentation-editor.js')

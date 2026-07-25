@@ -35,6 +35,8 @@ if (root) {
         overviewCandidate: false,
         manualCamera: false,
         drag: null,
+        blockMode: false,
+        blockSelection: new Set(),
         history: {
             current: null,
             undo: [],
@@ -59,6 +61,9 @@ if (root) {
         undo: root.querySelector('[data-editor-undo]'),
         redo: root.querySelector('[data-editor-redo]'),
         layoutSave: root.querySelector('[data-save-layout]'),
+        blockToggle: root.querySelector('[data-editor-block]'),
+        blockMenu: root.querySelector('[data-block-context-menu]'),
+        blockMenuTitle: root.querySelector('[data-block-menu-title]'),
     };
     let touchGesture = null;
 
@@ -123,6 +128,69 @@ if (root) {
     const selectedCanvasElement = () => state.presentation.canvas.elements
         .find((element) => element.id === state.selectedCanvasElementId) || null;
 
+    const blockKeyFromTarget = (target) => {
+        const canvasElementNode = target.closest?.('[data-canvas-element-id]');
+        if (canvasElementNode?.dataset.canvasElementId) {
+            return `canvas:${canvasElementNode.dataset.canvasElementId}`;
+        }
+        const frameNode = target.closest?.('[data-frame-id]');
+        return frameNode?.dataset.frameId ? `frame:${frameNode.dataset.frameId}` : null;
+    };
+
+    const selectedBlockItems = () => {
+        const items = [];
+        state.presentation.canvas.frames.forEach((frame) => {
+            const key = `frame:${frame.id}`;
+            if (state.blockSelection.has(key)) items.push({ key, item: frame, type: 'frame' });
+        });
+        state.presentation.canvas.elements.forEach((element) => {
+            const key = `canvas:${element.id}`;
+            if (state.blockSelection.has(key)) items.push({ key, item: element, type: 'canvas' });
+        });
+        return items;
+    };
+
+    const updateBlockUi = () => {
+        const count = state.blockSelection.size;
+        elements.blockToggle?.classList.toggle('is-active', state.blockMode);
+        if (elements.blockToggle) {
+            elements.blockToggle.textContent = state.blockMode
+                ? `Blok Aktif (${count})`
+                : 'Blok Pilihan';
+            elements.blockToggle.setAttribute('aria-pressed', state.blockMode ? 'true' : 'false');
+        }
+        updateCameraHint();
+    };
+
+    const applyBlockSelectionStyles = () => {
+        elements.stage.querySelectorAll('.is-block-selected').forEach((node) => {
+            node.classList.remove('is-block-selected');
+        });
+        selectedBlockItems().forEach(({ key }) => {
+            const [type, id] = key.split(':');
+            const selector = type === 'frame'
+                ? `[data-frame-id="${CSS.escape(id)}"]`
+                : `.pkg-presentation-element[data-canvas-element-id="${CSS.escape(id)}"]`;
+            elements.stage.querySelector(selector)?.classList.add('is-block-selected');
+        });
+        updateBlockUi();
+    };
+
+    const stagePointFromEvent = (event) => {
+        const bounds = elements.viewport.getBoundingClientRect();
+        const scale = Number(elements.stage.dataset.cameraScale || state.cameraScale || 1);
+        const cameraX = Number(elements.stage.dataset.cameraX || 0);
+        const cameraY = Number(elements.stage.dataset.cameraY || 0);
+        return {
+            x: (event.clientX - bounds.left - cameraX) / scale,
+            y: (event.clientY - bounds.top - cameraY) / scale,
+        };
+    };
+
+    const hideBlockMenu = () => {
+        elements.blockMenu?.classList.add('hidden');
+    };
+
     const ensureCanvasContainsFrames = () => {
         const frames = state.presentation.canvas.frames;
         const requiredWidth = frames.reduce(
@@ -182,6 +250,9 @@ if (root) {
         const frame = state.mode === 'focus' ? selectedFrame() : null;
         const label = frame ? `Fokus: ${frame.title}` : 'Mode Overview';
         elements.hint.textContent = `${label} · ${Math.round(state.cameraScale * 100)}%`;
+        if (state.blockMode) {
+            elements.hint.textContent += ` · Blok ${state.blockSelection.size} objek`;
+        }
     };
 
     const applyCamera = (animate = true) => {
@@ -210,6 +281,7 @@ if (root) {
         });
         renderFrameList();
         renderInspector();
+        applyBlockSelectionStyles();
         requestAnimationFrame(() => {
             if (state.manualCamera) {
                 updateCameraHint();
@@ -499,6 +571,8 @@ if (root) {
         if (!selectedCanvasElement()) {
             state.selectedCanvasElementId = null;
         }
+        state.blockSelection.clear();
+        hideBlockMenu();
         ensureCanvasContainsFrames();
         state.dirty = true;
         state.changeVersion += 1;
@@ -530,6 +604,9 @@ if (root) {
         state.selectedFrameId = frameId;
         state.selectedElementId = null;
         state.selectedCanvasElementId = null;
+        state.blockMode = false;
+        state.blockSelection.clear();
+        hideBlockMenu();
         state.mode = 'focus';
         state.manualCamera = false;
         render();
@@ -545,6 +622,16 @@ if (root) {
     root.querySelector('[data-editor-fit]').addEventListener('click', () => {
         state.manualCamera = false;
         applyCamera();
+    });
+    elements.blockToggle?.addEventListener('click', () => {
+        hideBlockMenu();
+        state.blockMode = !state.blockMode;
+        state.blockSelection.clear();
+        state.mode = 'overview';
+        state.selectedElementId = null;
+        state.selectedCanvasElementId = null;
+        state.manualCamera = true;
+        render(false);
     });
 
     root.querySelector('[data-add-frame]').addEventListener('click', () => {
@@ -931,6 +1018,7 @@ if (root) {
             overview: state.mode === 'overview',
             editable: true,
         });
+        applyBlockSelectionStyles();
         if (state.manualCamera) updateCameraHint();
         else applyCamera(false);
         if (scope === 'frame' && input.dataset.inspectorProp === 'title') renderFrameList();
@@ -1049,7 +1137,14 @@ if (root) {
         const drag = state.drag;
         if (!drag) return;
 
-        if (drag.kind === 'frame-resize') {
+        if (drag.kind === 'marquee') {
+            drag.marqueeNode?.remove();
+        } else if (drag.kind === 'block') {
+            drag.snapshots.forEach((snapshot) => {
+                snapshot.item.x = snapshot.x;
+                snapshot.item.y = snapshot.y;
+            });
+        } else if (drag.kind === 'frame-resize') {
             drag.target.width = drag.originWidth;
             drag.target.height = drag.originHeight;
             drag.frameElements.forEach((snapshot) => {
@@ -1099,6 +1194,13 @@ if (root) {
         },
         onTap: (tap) => {
             if (state.mode !== 'overview' || state.drag?.moved) return false;
+            if (state.blockMode) {
+                const key = blockKeyFromTarget(tap.target);
+                if (!key) return false;
+                state.blockSelection = new Set([key]);
+                applyBlockSelectionStyles();
+                return true;
+            }
             const canvasElementNode = tap.target.closest?.('[data-canvas-element-id]');
             if (canvasElementNode) {
                 state.selectedCanvasElementId = canvasElementNode.dataset.canvasElementId;
@@ -1114,10 +1216,89 @@ if (root) {
         },
     });
 
+    const blockNodeForItem = ({ key }) => {
+        const [type, id] = key.split(':');
+        return type === 'frame'
+            ? elements.stage.querySelector(`[data-frame-id="${CSS.escape(id)}"]`)
+            : elements.stage.querySelector(
+                `.pkg-presentation-element[data-canvas-element-id="${CSS.escape(id)}"]`
+            );
+    };
+
+    const startBlockDrag = (event, clickedKey) => {
+        if (!state.blockSelection.has(clickedKey)) {
+            if (!event.shiftKey && !event.ctrlKey && !event.metaKey) state.blockSelection.clear();
+            state.blockSelection.add(clickedKey);
+        }
+        const snapshots = selectedBlockItems().map((entry) => ({
+            ...entry,
+            x: Number(entry.item.x || 0),
+            y: Number(entry.item.y || 0),
+            width: Number(entry.item.width || 100),
+            height: Number(entry.item.height || 80),
+            node: blockNodeForItem(entry),
+        }));
+        if (!snapshots.length) return false;
+
+        applyBlockSelectionStyles();
+        state.drag = {
+            kind: 'block',
+            target: snapshots[0].item,
+            snapshots,
+            startX: event.clientX,
+            startY: event.clientY,
+            moved: false,
+        };
+        elements.viewport.setPointerCapture(event.pointerId);
+        return true;
+    };
+
+    const startBlockMarquee = (event) => {
+        const startPoint = stagePointFromEvent(event);
+        const marqueeNode = document.createElement('div');
+        marqueeNode.className = 'pkg-presentation-selection-marquee';
+        marqueeNode.style.left = `${startPoint.x}px`;
+        marqueeNode.style.top = `${startPoint.y}px`;
+        marqueeNode.style.width = '0px';
+        marqueeNode.style.height = '0px';
+        elements.stage.appendChild(marqueeNode);
+
+        state.drag = {
+            kind: 'marquee',
+            target: state.presentation.canvas,
+            startPoint,
+            baseSelection: event.shiftKey || event.ctrlKey || event.metaKey
+                ? new Set(state.blockSelection)
+                : new Set(),
+            marqueeNode,
+            moved: false,
+        };
+        if (!event.shiftKey && !event.ctrlKey && !event.metaKey) state.blockSelection.clear();
+        applyBlockSelectionStyles();
+        elements.viewport.setPointerCapture(event.pointerId);
+    };
+
     elements.viewport.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return;
         if (touchGesture?.isActive()) return;
+        hideBlockMenu();
         state.cameraScale = syncPresentationCamera(elements.stage);
+        const blockKey = state.mode === 'overview' ? blockKeyFromTarget(event.target) : null;
+        const isResizeHandle = event.target.closest(
+            '[data-frame-resize], [data-canvas-element-resize], [data-element-resize]'
+        );
+        if (state.blockMode && state.mode === 'overview' && blockKey && !isResizeHandle) {
+            if (startBlockDrag(event, blockKey)) return;
+        }
+        if (state.blockMode && state.mode === 'overview' && !blockKey) {
+            startBlockMarquee(event);
+            return;
+        }
+        if (isResizeHandle && state.blockSelection.size) {
+            state.blockSelection.clear();
+            applyBlockSelectionStyles();
+        }
+
         const canvasResizeHandle = event.target.closest('[data-canvas-element-resize]');
         const canvasElementNode = event.target.closest('.pkg-presentation-element[data-canvas-element-id]');
         const canvasElementId = canvasResizeHandle?.dataset.canvasElementId
@@ -1210,6 +1391,38 @@ if (root) {
     elements.viewport.addEventListener('pointermove', (event) => {
         if (touchGesture?.isActive()) return;
         if (!state.drag?.kind || !state.drag.target) return;
+        if (state.drag.kind === 'marquee') {
+            const currentPoint = stagePointFromEvent(event);
+            const x = Math.min(state.drag.startPoint.x, currentPoint.x);
+            const y = Math.min(state.drag.startPoint.y, currentPoint.y);
+            const width = Math.abs(currentPoint.x - state.drag.startPoint.x);
+            const height = Math.abs(currentPoint.y - state.drag.startPoint.y);
+            state.drag.moved = width > 5 || height > 5;
+            Object.assign(state.drag.marqueeNode.style, {
+                left: `${x}px`,
+                top: `${y}px`,
+                width: `${width}px`,
+                height: `${height}px`,
+            });
+
+            const selection = new Set(state.drag.baseSelection);
+            const intersects = (item) => (
+                x < Number(item.x || 0) + Number(item.width || 0)
+                && x + width > Number(item.x || 0)
+                && y < Number(item.y || 0) + Number(item.height || 0)
+                && y + height > Number(item.y || 0)
+            );
+            state.presentation.canvas.frames.forEach((frame) => {
+                if (intersects(frame)) selection.add(`frame:${frame.id}`);
+            });
+            state.presentation.canvas.elements.forEach((element) => {
+                if (intersects(element)) selection.add(`canvas:${element.id}`);
+            });
+            state.blockSelection = selection;
+            applyBlockSelectionStyles();
+            return;
+        }
+
         const screenDeltaX = event.clientX - state.drag.startX;
         const screenDeltaY = event.clientY - state.drag.startY;
         const movementThreshold = state.drag.kind.includes('resize') ? 3 : 7;
@@ -1217,7 +1430,26 @@ if (root) {
         state.drag.moved = true;
         const deltaX = screenDeltaX / state.cameraScale;
         const deltaY = screenDeltaY / state.cameraScale;
-        if (state.drag.kind === 'frame-resize') {
+        if (state.drag.kind === 'block') {
+            const minimumDeltaX = Math.max(...state.drag.snapshots.map((snapshot) => -snapshot.x));
+            const maximumDeltaX = Math.min(...state.drag.snapshots.map(
+                (snapshot) => state.presentation.canvas.width - snapshot.x - snapshot.width
+            ));
+            const minimumDeltaY = Math.max(...state.drag.snapshots.map((snapshot) => -snapshot.y));
+            const maximumDeltaY = Math.min(...state.drag.snapshots.map(
+                (snapshot) => state.presentation.canvas.height - snapshot.y - snapshot.height
+            ));
+            const safeDeltaX = clampPresentationNumber(deltaX, minimumDeltaX, maximumDeltaX, 0);
+            const safeDeltaY = clampPresentationNumber(deltaY, minimumDeltaY, maximumDeltaY, 0);
+            state.drag.snapshots.forEach((snapshot) => {
+                snapshot.item.x = snapshot.x + safeDeltaX;
+                snapshot.item.y = snapshot.y + safeDeltaY;
+                if (snapshot.node) {
+                    snapshot.node.style.left = `${snapshot.item.x}px`;
+                    snapshot.node.style.top = `${snapshot.item.y}px`;
+                }
+            });
+        } else if (state.drag.kind === 'frame-resize') {
             const width = clampPresentationNumber(state.drag.originWidth + deltaX, 320, 1600, state.drag.originWidth);
             const height = clampPresentationNumber(state.drag.originHeight + deltaY, 180, 900, state.drag.originHeight);
             const scaleX = width / state.drag.originWidth;
@@ -1321,6 +1553,11 @@ if (root) {
         const drag = state.drag;
         state.drag = null;
         if (elements.viewport.hasPointerCapture(event.pointerId)) elements.viewport.releasePointerCapture(event.pointerId);
+        if (drag.kind === 'marquee') {
+            drag.marqueeNode?.remove();
+            applyBlockSelectionStyles();
+            return;
+        }
         if (drag.moved) {
             ensureCanvasContainsFrames();
             markDirty();
@@ -1341,6 +1578,146 @@ if (root) {
     };
     elements.viewport.addEventListener('pointerup', finishPointer);
     elements.viewport.addEventListener('pointercancel', finishPointer);
+
+    const duplicateBlockSelection = () => {
+        const selectedItems = selectedBlockItems();
+        if (!selectedItems.length) return;
+
+        const nextSelection = new Set();
+        let lastFrameId = null;
+        let remainingFrameSlots = Math.max(0, 40 - state.presentation.canvas.frames.length);
+        let remainingCanvasSlots = Math.max(0, 80 - state.presentation.canvas.elements.length);
+
+        selectedItems.forEach(({ item, type }) => {
+            if (type === 'frame' && remainingFrameSlots > 0) {
+                const clone = JSON.parse(JSON.stringify(item));
+                clone.id = presentationId('frame');
+                clone.title = `Salinan ${item.title || 'Frame'}`.slice(0, 120);
+                clone.x = clampPresentationNumber(
+                    Number(item.x || 0) + 60,
+                    0,
+                    Math.max(0, state.presentation.canvas.width - Number(item.width || 0)),
+                    Number(item.x || 0)
+                );
+                clone.y = clampPresentationNumber(
+                    Number(item.y || 0) + 60,
+                    0,
+                    Math.max(0, state.presentation.canvas.height - Number(item.height || 0)),
+                    Number(item.y || 0)
+                );
+                clone.elements = (clone.elements || []).map((element) => ({
+                    ...element,
+                    id: presentationId('element'),
+                }));
+                state.presentation.canvas.frames.push(clone);
+                nextSelection.add(`frame:${clone.id}`);
+                lastFrameId = clone.id;
+                remainingFrameSlots -= 1;
+            } else if (type === 'canvas' && remainingCanvasSlots > 0) {
+                const clone = JSON.parse(JSON.stringify(item));
+                clone.id = presentationId('canvas-element');
+                clone.x = clampPresentationNumber(
+                    Number(item.x || 0) + 45,
+                    0,
+                    Math.max(0, state.presentation.canvas.width - Number(item.width || 0)),
+                    Number(item.x || 0)
+                );
+                clone.y = clampPresentationNumber(
+                    Number(item.y || 0) + 45,
+                    0,
+                    Math.max(0, state.presentation.canvas.height - Number(item.height || 0)),
+                    Number(item.y || 0)
+                );
+                state.presentation.canvas.elements.push(clone);
+                nextSelection.add(`canvas:${clone.id}`);
+                remainingCanvasSlots -= 1;
+            }
+        });
+
+        if (!nextSelection.size) return;
+        state.blockSelection = nextSelection;
+        if (lastFrameId) state.selectedFrameId = lastFrameId;
+        state.selectedElementId = null;
+        state.selectedCanvasElementId = null;
+        state.manualCamera = true;
+        ensureCanvasContainsFrames();
+        hideBlockMenu();
+        markDirty();
+        render(false);
+    };
+
+    const deleteBlockSelection = () => {
+        if (!state.blockSelection.size) return;
+        const selectedFrameIds = new Set(
+            [...state.blockSelection]
+                .filter((key) => key.startsWith('frame:'))
+                .map((key) => key.slice(6))
+        );
+        const selectedCanvasIds = new Set(
+            [...state.blockSelection]
+                .filter((key) => key.startsWith('canvas:'))
+                .map((key) => key.slice(7))
+        );
+        const frames = state.presentation.canvas.frames;
+        if (selectedFrameIds.size >= frames.length && frames[0]) {
+            selectedFrameIds.delete(frames[0].id);
+        }
+
+        const previousFrameCount = frames.length;
+        const previousCanvasCount = state.presentation.canvas.elements.length;
+        state.presentation.canvas.frames = frames.filter((frame) => !selectedFrameIds.has(frame.id));
+        state.presentation.canvas.elements = state.presentation.canvas.elements
+            .filter((element) => !selectedCanvasIds.has(element.id));
+        const changed = previousFrameCount !== state.presentation.canvas.frames.length
+            || previousCanvasCount !== state.presentation.canvas.elements.length;
+
+        hideBlockMenu();
+        if (!changed) {
+            elements.saveStatus.textContent = 'Minimal satu frame harus tetap tersedia.';
+            return;
+        }
+
+        if (!findPresentationFrame(state.presentation, state.selectedFrameId)) {
+            state.selectedFrameId = state.presentation.canvas.frames[0]?.id || null;
+        }
+        state.blockSelection.clear();
+        state.selectedElementId = null;
+        state.selectedCanvasElementId = null;
+        state.manualCamera = true;
+        ensureCanvasContainsFrames();
+        markDirty();
+        render(false);
+    };
+
+    elements.viewport.addEventListener('contextmenu', (event) => {
+        if (state.mode !== 'overview') return;
+        const key = blockKeyFromTarget(event.target);
+        if (!key && !state.blockSelection.size) return;
+        event.preventDefault();
+
+        if (key && !state.blockSelection.has(key)) {
+            state.blockSelection = new Set([key]);
+        }
+        if (!state.blockSelection.size) return;
+        state.blockMode = true;
+        applyBlockSelectionStyles();
+        elements.blockMenuTitle.textContent = `${state.blockSelection.size} objek terpilih`;
+        elements.blockMenu.classList.remove('hidden');
+        const menuWidth = 220;
+        const menuHeight = 120;
+        elements.blockMenu.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth - 12))}px`;
+        elements.blockMenu.style.top = `${Math.max(8, Math.min(event.clientY, window.innerHeight - menuHeight - 12))}px`;
+    });
+    elements.blockMenu?.querySelector('[data-block-duplicate]')
+        ?.addEventListener('click', duplicateBlockSelection);
+    elements.blockMenu?.querySelector('[data-block-delete]')
+        ?.addEventListener('click', deleteBlockSelection);
+    document.addEventListener('pointerdown', (event) => {
+        if (!elements.blockMenu?.contains(event.target)) hideBlockMenu();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') hideBlockMenu();
+    });
 
     async function save() {
         window.clearTimeout(state.saveTimer);

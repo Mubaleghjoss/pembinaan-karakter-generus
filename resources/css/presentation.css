@@ -182,6 +182,73 @@
     cursor: move;
 }
 
+.pkg-presentation-frame.is-block-selected,
+.pkg-presentation-element.is-block-selected {
+    outline: 6px dashed #fbbf24;
+    outline-offset: 5px;
+    box-shadow: 0 0 0 10px rgba(251, 191, 36, 0.2), 0 18px 45px rgba(2, 6, 23, 0.34);
+    cursor: move;
+}
+
+.pkg-presentation-selection-marquee {
+    position: absolute;
+    z-index: 30;
+    border: 4px dashed #fbbf24;
+    border-radius: 14px;
+    background: rgba(251, 191, 36, 0.16);
+    box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.4);
+    pointer-events: none;
+}
+
+[data-editor-block].is-active {
+    border-color: #f59e0b;
+    background: #f59e0b;
+    color: #111827;
+    box-shadow: 0 8px 22px rgba(245, 158, 11, 0.25);
+}
+
+.pkg-presentation-block-menu {
+    position: fixed;
+    z-index: 100;
+    min-width: 210px;
+    overflow: hidden;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    background: #0f172a;
+    padding: 6px;
+    color: #f8fafc;
+    box-shadow: 0 20px 50px rgba(2, 6, 23, 0.48);
+}
+
+.pkg-presentation-block-menu-title {
+    padding: 8px 10px 6px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.pkg-presentation-block-menu button {
+    display: block;
+    width: 100%;
+    border-radius: 9px;
+    padding: 9px 10px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.pkg-presentation-block-menu button:hover {
+    background: #1e293b;
+}
+
+.pkg-presentation-block-menu button.is-danger {
+    color: #fca5a5;
+}
+
+.pkg-presentation-block-menu button.is-danger:hover {
+    background: rgba(127, 29, 29, 0.55);
+}
+
 .pkg-presentation-editor .pkg-presentation-frame:not(.is-overview) .pkg-presentation-element {
     cursor: move;
 }
