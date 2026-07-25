@@ -29,34 +29,79 @@
         </div>
     @endif
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Ringkasan pengisi formulir guru">
         @foreach([
-            ['Total Pengisi', $stats['total']],
-            ['Siap Dijadwalkan', $stats['eligible']],
-            ['Senin', $stats['monday']],
-            ['Selasa', $stats['tuesday']],
-            ['Jumat', $stats['friday']],
-        ] as [$label, $value])
-            <div class="pkg-card p-4"><p class="text-sm text-gray-500 dark:text-gray-400">{{ $label }}</p><p class="mt-2 text-2xl font-black text-gray-900 dark:text-white">{{ $value }}</p></div>
+            ['Total Pengisi', $stats['total'], null, null],
+            ['Siap Dijadwalkan', $stats['eligible'], 'status', 'eligible'],
+            ['Senin', $stats['monday'], 'night', 'monday'],
+            ['Selasa', $stats['tuesday'], 'night', 'tuesday'],
+            ['Jumat', $stats['friday'], 'night', 'friday'],
+        ] as [$label, $value, $filterType, $filterValue])
+            @php
+                $isActiveStat = $filterType
+                    ? (($activeProfileFilter['type'] ?? null) === $filterType && ($activeProfileFilter['value'] ?? null) === $filterValue)
+                    : ! $activeProfileFilter;
+                $statUrl = route('teacher-planning.index', array_filter([
+                    'month' => $selectedMonth->format('Y-m'),
+                    'profile_filter' => $filterType,
+                    'profile_value' => $filterValue,
+                ]));
+            @endphp
+            <a href="{{ $statUrl }}#data-kesediaan"
+               class="pkg-card group p-4 transition hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md {{ $isActiveStat ? 'ring-2 ring-emerald-500/60' : '' }}">
+                <p class="text-sm text-gray-500 group-hover:text-emerald-700 dark:text-gray-400 dark:group-hover:text-emerald-300">{{ $label }}</p>
+                <div class="mt-2 flex items-end justify-between gap-3">
+                    <p class="text-2xl font-black text-gray-900 dark:text-white">{{ $value }}</p>
+                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Lihat nama</span>
+                </div>
+            </a>
         @endforeach
     </section>
 
-    <section class="grid gap-4 lg:grid-cols-3">
-        <div class="pkg-card p-5">
-            <h2 class="font-bold text-gray-900 dark:text-white">Kesediaan Peran</h2>
-            <dl class="mt-4 space-y-2">@foreach($roleStats as $item)<div class="flex justify-between gap-3 text-sm"><dt class="text-gray-500">{{ $item['label'] }}</dt><dd class="font-bold text-gray-900 dark:text-white">{{ $item['count'] }}</dd></div>@endforeach</dl>
+    <section class="pkg-panel p-5">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-black text-gray-900 dark:text-white">Analisis Pengisi Formulir</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Klik kategori untuk melihat siapa saja yang termasuk di dalamnya.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs">
+                <span class="rounded-full bg-amber-100 px-3 py-1.5 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Konfirmasi H-3: {{ $confirmationDue }}</span>
+                <span class="rounded-full bg-emerald-100 px-3 py-1.5 font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Pengingat H-1: {{ $reminderDue }}</span>
+            </div>
         </div>
-        <div class="pkg-card p-5">
-            <h2 class="font-bold text-gray-900 dark:text-white">Kesediaan Rombel</h2>
-            <dl class="mt-4 space-y-2">@foreach($rombelStats as $item)<div class="flex justify-between gap-3 text-sm"><dt class="text-gray-500">{{ $item['label'] }}</dt><dd class="font-bold text-gray-900 dark:text-white">{{ $item['count'] }}</dd></div>@endforeach</dl>
-        </div>
-        <div class="pkg-card p-5">
-            <h2 class="font-bold text-gray-900 dark:text-white">Tindakan Hari Ini</h2>
-            <dl class="mt-4 space-y-2">
-                <div class="flex justify-between gap-3 text-sm"><dt class="text-gray-500">Konfirmasi H-3 menunggu</dt><dd class="font-bold text-amber-600">{{ $confirmationDue }}</dd></div>
-                <div class="flex justify-between gap-3 text-sm"><dt class="text-gray-500">Pengingat H-1</dt><dd class="font-bold text-emerald-600">{{ $reminderDue }}</dd></div>
-            </dl>
-            <p class="mt-4 text-xs leading-5 text-gray-500">Buka jadwal tanggal terkait lalu gunakan tombol WhatsApp. Sistem hanya mencatat tombol dibuka sampai admin menandai pesan terkirim.</p>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            @foreach([
+                ['title' => 'Berdasarkan Kelompok', 'type' => 'group', 'items' => $groupStats],
+                ['title' => 'Jenis Kesediaan', 'type' => 'role', 'items' => $roleStats],
+                ['title' => 'Rombel Pilihan', 'type' => 'rombel', 'items' => $rombelStats],
+                ['title' => 'Malam Tersedia', 'type' => 'night', 'items' => $nightStats],
+                ['title' => 'Kemampuan Materi', 'type' => 'competency', 'items' => $competencyStats],
+            ] as $analysis)
+                <article class="pkg-card-soft p-4">
+                    <h3 class="text-sm font-black text-gray-900 dark:text-white">{{ $analysis['title'] }}</h3>
+                    <div class="mt-3 space-y-1.5">
+                        @foreach($analysis['items'] as $item)
+                            @php
+                                $isActiveItem = ($activeProfileFilter['type'] ?? null) === $analysis['type']
+                                    && ($activeProfileFilter['value'] ?? null) === $item['value'];
+                            @endphp
+                            <a href="{{ route('teacher-planning.index', [
+                                    'month' => $selectedMonth->format('Y-m'),
+                                    'profile_filter' => $analysis['type'],
+                                    'profile_value' => $item['value'],
+                                ]) }}#data-kesediaan"
+                               class="flex min-h-10 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm transition
+                                      {{ $isActiveItem
+                                          ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
+                                          : 'border-transparent text-gray-600 hover:border-emerald-300 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-800' }}">
+                                <span class="min-w-0 leading-5">{{ $item['label'] }}</span>
+                                <span class="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 font-black text-gray-900 dark:bg-gray-700 dark:text-white">{{ $item['count'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </article>
+            @endforeach
         </div>
     </section>
 
@@ -372,8 +417,25 @@
         <section class="pkg-empty-state"><div class="pkg-empty-icon"></div><h2 class="pkg-empty-title">Belum ada jadwal bulan ini</h2><p class="pkg-empty-copy">Atur template lalu pilih “Buat Jadwal Bulanan”.</p></section>
     @endif
 
-    <section class="pkg-panel overflow-hidden">
-        <div class="border-b border-gray-200 p-5 dark:border-gray-700"><h2 class="text-xl font-black text-gray-900 dark:text-white">Data Kesediaan Guru</h2><p class="mt-1 text-sm text-gray-500">Nama diisi manual. Periksa ejaan sebelum menautkan akun.</p></div>
+    <section id="data-kesediaan" class="pkg-panel scroll-mt-24 overflow-hidden">
+        <div class="border-b border-gray-200 p-5 dark:border-gray-700">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-black text-gray-900 dark:text-white">Data Kesediaan Guru</h2>
+                    @if($activeProfileFilter)
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Menampilkan {{ $profiles->total() }} nama untuk kategori
+                            <span class="font-bold text-emerald-700 dark:text-emerald-300">{{ $activeProfileFilter['label'] }}</span>.
+                        </p>
+                    @else
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Semua pengisi formulir. Klik analitik di atas untuk menyaring daftar nama.</p>
+                    @endif
+                </div>
+                @if($activeProfileFilter)
+                    <a href="{{ route('teacher-planning.index', ['month' => $selectedMonth->format('Y-m')]) }}#data-kesediaan" class="btn-secondary">Tampilkan Semua</a>
+                @endif
+            </div>
+        </div>
         <div class="divide-y divide-gray-200 dark:divide-gray-700">
             @forelse($profiles as $profile)
                 <details class="p-4 sm:p-5">
@@ -441,7 +503,15 @@
                     @endif
                 </details>
             @empty
-                <div class="pkg-empty-state"><h3 class="pkg-empty-title">Belum ada pengisi</h3><p class="pkg-empty-copy">Bagikan tautan `/pendataanguru` beserta kode akses.</p></div>
+                <div class="pkg-empty-state">
+                    <h3 class="pkg-empty-title">{{ $activeProfileFilter ? 'Tidak ada nama pada kategori ini' : 'Belum ada pengisi' }}</h3>
+                    <p class="pkg-empty-copy">
+                        {{ $activeProfileFilter ? 'Pilih kategori analitik lain atau tampilkan kembali semua pengisi.' : 'Bagikan tautan `/pendataanguru` beserta kode akses.' }}
+                    </p>
+                    @if($activeProfileFilter)
+                        <a href="{{ route('teacher-planning.index', ['month' => $selectedMonth->format('Y-m')]) }}#data-kesediaan" class="btn-secondary mt-4">Tampilkan Semua</a>
+                    @endif
+                </div>
             @endforelse
         </div>
         @if($profiles->hasPages())<div class="border-t border-gray-200 p-4 dark:border-gray-700">{{ $profiles->links() }}</div>@endif

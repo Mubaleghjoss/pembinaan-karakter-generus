@@ -39,12 +39,40 @@ class TeacherPlanningController extends Controller
     {
         $this->authorizeModule('view');
         $selectedMonth = Carbon::createFromFormat('Y-m', $request->get('month', now()->format('Y-m')))->startOfMonth();
+        $groups = ParticipantProfileOptions::groups();
+        $profileFilterType = trim((string) $request->get('profile_filter', ''));
+        $profileFilterValue = trim((string) $request->get('profile_value', ''));
+        $profileFilterOptions = [
+            'status' => ['eligible' => 'Siap dijadwalkan'],
+            'group' => $groups,
+            'role' => TeacherProfile::PARTICIPATION_ROLES,
+            'rombel' => TeacherProfile::ROMBELS,
+            'night' => TeacherProfile::NIGHTS,
+            'competency' => TeacherProfile::COMPETENCIES,
+        ];
+        $activeProfileFilter = isset($profileFilterOptions[$profileFilterType][$profileFilterValue])
+            ? [
+                'type' => $profileFilterType,
+                'value' => $profileFilterValue,
+                'label' => $profileFilterOptions[$profileFilterType][$profileFilterValue],
+            ]
+            : null;
         $period = TeacherSchedulePeriod::query()
             ->whereDate('month', $selectedMonth)
             ->with(['sessions.assignments.teacher.user'])
             ->first();
         $profilesQuery = TeacherProfile::query()
             ->with('user:id,name,username');
+        if ($activeProfileFilter) {
+            match ($activeProfileFilter['type']) {
+                'status' => $profilesQuery->eligible(),
+                'group' => $profilesQuery->where('kelompok', $activeProfileFilter['value']),
+                'role' => $profilesQuery->where('participation_role', $activeProfileFilter['value']),
+                'rombel' => $profilesQuery->whereJsonContains('rombels', $activeProfileFilter['value']),
+                'night' => $profilesQuery->whereJsonContains('available_nights', $activeProfileFilter['value']),
+                'competency' => $profilesQuery->whereJsonContains('competencies', $activeProfileFilter['value']),
+            };
+        }
         if ($period) {
             $profilesQuery
                 ->withCount(['assignments as current_assignments_count' => fn ($query) => $query->whereHas(
@@ -82,26 +110,62 @@ class TeacherPlanningController extends Controller
             ),
         ];
         $warnings = $period ? $this->planner->warnings($period) : [];
+        $analyticsProfiles = TeacherProfile::query()->get([
+            'id', 'kelompok', 'participation_role', 'rombels', 'available_nights',
+            'competencies', 'is_active',
+        ]);
+        $eligibleAnalyticsProfiles = $analyticsProfiles->filter(
+            fn (TeacherProfile $profile) => $profile->is_active
+                && in_array($profile->participation_role, [
+                    TeacherProfile::ROLE_BOTH,
+                    TeacherProfile::ROLE_MAIN,
+                    TeacherProfile::ROLE_BACKUP,
+                    TeacherProfile::ROLE_AS_NEEDED,
+                ], true)
+        );
         $stats = [
-            'total' => TeacherProfile::count(),
-            'eligible' => TeacherProfile::eligible()->count(),
-            'monday' => TeacherProfile::eligible()->whereJsonContains('available_nights', 'monday')->count(),
-            'tuesday' => TeacherProfile::eligible()->whereJsonContains('available_nights', 'tuesday')->count(),
-            'friday' => TeacherProfile::eligible()->whereJsonContains('available_nights', 'friday')->count(),
+            'total' => $analyticsProfiles->count(),
+            'eligible' => $eligibleAnalyticsProfiles->count(),
+            'monday' => $eligibleAnalyticsProfiles->filter(
+                fn (TeacherProfile $profile) => in_array('monday', $profile->available_nights ?? [], true)
+            )->count(),
+            'tuesday' => $eligibleAnalyticsProfiles->filter(
+                fn (TeacherProfile $profile) => in_array('tuesday', $profile->available_nights ?? [], true)
+            )->count(),
+            'friday' => $eligibleAnalyticsProfiles->filter(
+                fn (TeacherProfile $profile) => in_array('friday', $profile->available_nights ?? [], true)
+            )->count(),
         ];
-        $roleStats = collect([
-            TeacherProfile::ROLE_BOTH => 'Utama & cadangan',
-            TeacherProfile::ROLE_MAIN => 'Utama',
-            TeacherProfile::ROLE_BACKUP => 'Cadangan',
-            TeacherProfile::ROLE_AS_NEEDED => 'Sesuai kebutuhan',
-            TeacherProfile::ROLE_UNAVAILABLE => 'Belum memungkinkan',
-        ])->map(fn ($label, $role) => [
+        $groupStats = collect($groups)->map(fn ($label, $group) => [
             'label' => $label,
-            'count' => TeacherProfile::query()->where('participation_role', $role)->count(),
+            'value' => $group,
+            'count' => $analyticsProfiles->where('kelompok', $group)->count(),
+        ])->values();
+        $roleStats = collect(TeacherProfile::PARTICIPATION_ROLES)->map(fn ($label, $role) => [
+            'label' => $label,
+            'value' => $role,
+            'count' => $analyticsProfiles->where('participation_role', $role)->count(),
         ])->values();
         $rombelStats = collect(TeacherProfile::ROMBELS)->map(fn ($label, $rombel) => [
             'label' => $label,
-            'count' => TeacherProfile::eligible()->whereJsonContains('rombels', $rombel)->count(),
+            'value' => $rombel,
+            'count' => $eligibleAnalyticsProfiles->filter(
+                fn (TeacherProfile $profile) => in_array($rombel, $profile->rombels ?? [], true)
+            )->count(),
+        ])->values();
+        $nightStats = collect(TeacherProfile::NIGHTS)->map(fn ($label, $night) => [
+            'label' => $label,
+            'value' => $night,
+            'count' => $eligibleAnalyticsProfiles->filter(
+                fn (TeacherProfile $profile) => in_array($night, $profile->available_nights ?? [], true)
+            )->count(),
+        ])->values();
+        $competencyStats = collect(TeacherProfile::COMPETENCIES)->map(fn ($label, $competency) => [
+            'label' => $label,
+            'value' => $competency,
+            'count' => $eligibleAnalyticsProfiles->filter(
+                fn (TeacherProfile $profile) => in_array($competency, $profile->competencies ?? [], true)
+            )->count(),
         ])->values();
         $confirmationDue = TeacherScheduleAssignment::query()
             ->where('confirmation_status', 'pending')
@@ -119,12 +183,14 @@ class TeacherPlanningController extends Controller
 
         return view('teacher-planning.index', compact(
             'selectedMonth', 'period', 'profiles', 'eligibleProfiles', 'templates',
-            'invite', 'warnings', 'stats', 'linkableUsers', 'roleStats', 'rombelStats',
-            'confirmationDue', 'reminderDue', 'successMessageSettings', 'hasActiveTemplates'
+            'invite', 'warnings', 'stats', 'linkableUsers', 'groupStats', 'roleStats',
+            'rombelStats', 'nightStats', 'competencyStats', 'activeProfileFilter',
+            'confirmationDue', 'reminderDue', 'successMessageSettings', 'hasActiveTemplates',
+            'groups'
         ) + [
-            'groups' => ParticipantProfileOptions::groups(),
             'rombels' => TeacherProfile::ROMBELS,
             'nights' => TeacherProfile::NIGHTS,
+            'competencies' => TeacherProfile::COMPETENCIES,
         ]);
     }
 

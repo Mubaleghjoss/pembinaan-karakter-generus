@@ -16,8 +16,24 @@ class TeacherProfile extends Model
     public const ROLE_AS_NEEDED = 'as_needed';
     public const ROLE_UNAVAILABLE = 'unavailable';
 
+    public const PARTICIPATION_ROLES = [
+        self::ROLE_BOTH => 'Utama & cadangan',
+        self::ROLE_MAIN => 'Utama',
+        self::ROLE_BACKUP => 'Cadangan',
+        self::ROLE_AS_NEEDED => 'Sesuai kebutuhan',
+        self::ROLE_UNAVAILABLE => 'Belum memungkinkan',
+    ];
+
     public const ROMBELS = ['smp' => 'SMP', 'sma' => 'SMA', 'pranikah' => 'Pranikah'];
     public const NIGHTS = ['monday' => 'Senin malam', 'tuesday' => 'Selasa malam', 'friday' => 'Jumat malam'];
+    public const COMPETENCIES = [
+        'quran' => "Makna Al-Qur'an",
+        'hadith' => 'Makna Al-Hadits',
+        'memorization' => 'Hafalan',
+        'practice' => 'Praktik',
+        'class_support' => 'Pendampingan kelas',
+        'all_materials' => 'Bersedia seluruh materi',
+    ];
 
     protected $fillable = [
         'invite_id', 'user_id', 'name', 'public_name', 'kelompok', 'whatsapp',

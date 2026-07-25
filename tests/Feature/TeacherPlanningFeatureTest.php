@@ -273,6 +273,63 @@ class TeacherPlanningFeatureTest extends TestCase
         $this->assertStringNotContainsString('pendataanguru', $navigation);
     }
 
+    public function test_admin_can_filter_teacher_names_from_clickable_profile_analytics(): void
+    {
+        $admin = $this->admin();
+        TeacherProfile::create($this->profileAttributes());
+        TeacherProfile::create([
+            ...$this->profileAttributes(),
+            'name' => 'Siti Pakulonan',
+            'public_name' => 'Siti',
+            'kelompok' => ParticipantProfileOptions::PAKULONAN,
+            'whatsapp' => '081234567891',
+            'whatsapp_normalized' => '6281234567891',
+            'participation_role' => TeacherProfile::ROLE_BACKUP,
+            'rombels' => ['sma'],
+            'available_nights' => ['friday'],
+            'night_priorities' => ['friday' => 1],
+            'competencies' => ['practice'],
+        ]);
+
+        $overview = $this->actingAs($admin)
+            ->get(route('teacher-planning.index'))
+            ->assertOk()
+            ->assertSee('Analisis Pengisi Formulir')
+            ->assertSee('Berdasarkan Kelompok')
+            ->assertSee('Kemampuan Materi')
+            ->assertSee('Lihat nama');
+
+        $this->assertSame(
+            1,
+            $overview->viewData('groupStats')->firstWhere('value', ParticipantProfileOptions::PAKULONAN)['count']
+        );
+        $this->assertSame(
+            1,
+            $overview->viewData('competencyStats')->firstWhere('value', 'practice')['count']
+        );
+
+        $groupResponse = $this->actingAs($admin)->get(route('teacher-planning.index', [
+            'profile_filter' => 'group',
+            'profile_value' => ParticipantProfileOptions::PAKULONAN,
+        ]))->assertOk()->assertSee('Menampilkan 1 nama untuk kategori');
+
+        $this->assertSame(
+            ['Siti Pakulonan'],
+            $groupResponse->viewData('profiles')->getCollection()->pluck('name')->all()
+        );
+        $this->assertSame('Pakulonan', $groupResponse->viewData('activeProfileFilter')['label']);
+
+        $nightResponse = $this->actingAs($admin)->get(route('teacher-planning.index', [
+            'profile_filter' => 'night',
+            'profile_value' => 'monday',
+        ]))->assertOk();
+
+        $this->assertSame(
+            ['Ahmad Fulan'],
+            $nightResponse->viewData('profiles')->getCollection()->pluck('name')->all()
+        );
+    }
+
     public function test_admin_can_customize_teacher_form_success_message(): void
     {
         $admin = $this->admin();
