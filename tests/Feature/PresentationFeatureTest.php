@@ -57,6 +57,8 @@ class PresentationFeatureTest extends TestCase
             ->assertSee('data-add-link', false)
             ->assertSee('data-add-shape', false)
             ->assertSee('data-add-line', false)
+            ->assertSee('data-add-canvas-text', false)
+            ->assertSee('data-add-canvas-line', false)
             ->assertSee('data-add-diagram', false)
             ->assertSee('data-arrange-frames', false)
             ->assertSee('data-editor-fit', false)
@@ -71,6 +73,34 @@ class PresentationFeatureTest extends TestCase
             'version' => 1,
             'width' => 1200,
             'height' => 800,
+            'elements' => [[
+                'id' => 'canvas-text-1',
+                'type' => 'text',
+                'x' => 120,
+                'y' => 40,
+                'width' => 520,
+                'height' => 90,
+                'rotation' => 0,
+                'text' => 'Alur Pembinaan Generus',
+                'fontSize' => 36,
+                'color' => '#ffffff',
+                'backgroundColor' => 'transparent',
+                'align' => 'center',
+                'bold' => true,
+            ], [
+                'id' => 'canvas-line-1',
+                'type' => 'line',
+                'x' => 150,
+                'y' => 150,
+                'width' => 420,
+                'height' => 40,
+                'rotation' => 10,
+                'strokeWidth' => 5,
+                'lineStyle' => 'dotted',
+                'arrow' => 'end',
+                'color' => '#34d399',
+                'backgroundColor' => 'transparent',
+            ]],
             'frames' => [[
                 'id' => 'frame-pembuka',
                 'title' => 'Pembuka',
@@ -185,6 +215,10 @@ class PresentationFeatureTest extends TestCase
         $this->assertSame('hexagon', $savedCanvas['frames'][0]['elements'][4]['shapeType']);
         $this->assertSame('dashed', $savedCanvas['frames'][0]['elements'][5]['lineStyle']);
         $this->assertSame('both', $savedCanvas['frames'][0]['elements'][5]['arrow']);
+        $this->assertCount(2, $savedCanvas['elements']);
+        $this->assertSame('Alur Pembinaan Generus', $savedCanvas['elements'][0]['text']);
+        $this->assertSame('dotted', $savedCanvas['elements'][1]['lineStyle']);
+        $this->assertSame('end', $savedCanvas['elements'][1]['arrow']);
 
         $this->get(route('public.presentations.show', $presentation))->assertNotFound();
 

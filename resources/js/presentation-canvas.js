@@ -22,6 +22,7 @@ export function findPresentationElement(frame, elementId) {
 
 export function presentationCanvasBounds(canvas, padding = 120) {
     const frames = Array.isArray(canvas.frames) ? canvas.frames : [];
+    const canvasElements = Array.isArray(canvas.elements) ? canvas.elements : [];
     const maximumX = frames.reduce(
         (maximum, frame) => Math.max(maximum, Number(frame.x || 0) + Number(frame.width || 0)),
         Number(canvas.width || 2400)
@@ -30,12 +31,20 @@ export function presentationCanvasBounds(canvas, padding = 120) {
         (maximum, frame) => Math.max(maximum, Number(frame.y || 0) + Number(frame.height || 0)),
         Number(canvas.height || 1400)
     );
+    const elementMaximumX = canvasElements.reduce(
+        (maximum, element) => Math.max(maximum, Number(element.x || 0) + Number(element.width || 0)),
+        maximumX
+    );
+    const elementMaximumY = canvasElements.reduce(
+        (maximum, element) => Math.max(maximum, Number(element.y || 0) + Number(element.height || 0)),
+        maximumY
+    );
 
     return {
         x: 0,
         y: 0,
-        width: Math.max(1200, maximumX + padding),
-        height: Math.max(800, maximumY + padding),
+        width: Math.max(1200, elementMaximumX + padding),
+        height: Math.max(800, elementMaximumY + padding),
     };
 }
 
@@ -44,8 +53,10 @@ export function renderPresentationStage({
     presentation,
     selectedFrameId = null,
     selectedElementId = null,
+    selectedCanvasElementId = null,
     overview = true,
     interactive = false,
+    editable = false,
 }) {
     const canvas = presentation.canvas;
     const canvasBounds = presentationCanvasBounds(canvas);
@@ -67,13 +78,22 @@ export function renderPresentationStage({
         frameElement.classList.toggle('is-selected', frame.id === selectedFrameId);
         frameElement.classList.toggle('is-overview', overview);
 
-        if (overview && frame.id === selectedFrameId) {
+        if (editable && overview && frame.id === selectedFrameId) {
             const resizeHandle = document.createElement('button');
             resizeHandle.type = 'button';
             resizeHandle.className = 'pkg-presentation-frame-resize';
             resizeHandle.dataset.frameResize = frame.id;
             resizeHandle.setAttribute('aria-label', 'Ubah ukuran frame');
             frameElement.appendChild(resizeHandle);
+        }
+        if (editable && overview) {
+            const dragHandle = document.createElement('button');
+            dragHandle.type = 'button';
+            dragHandle.className = 'pkg-presentation-frame-drag';
+            dragHandle.dataset.frameDrag = frame.id;
+            dragHandle.setAttribute('aria-label', `Geser ${frame.title || `Frame ${frameIndex + 1}`}`);
+            dragHandle.title = 'Geser Frame';
+            frameElement.appendChild(dragHandle);
         }
 
         const pathBadge = document.createElement('span');
@@ -92,12 +112,24 @@ export function renderPresentationStage({
             const isSelected = frame.id === selectedFrameId && element.id === selectedElementId;
             elementNode.classList.toggle('is-selected', isSelected);
             frameElement.appendChild(elementNode);
-            if (!overview && isSelected) {
+            if (editable && !overview && isSelected) {
                 frameElement.appendChild(createPresentationElementControls(element));
             }
         });
 
         stage.appendChild(frameElement);
+    });
+
+    (canvas.elements || []).forEach((element) => {
+        const elementNode = renderPresentationElement(element, presentation.assets || {}, interactive);
+        elementNode.classList.add('is-canvas-decoration');
+        elementNode.dataset.canvasElementId = element.id;
+        const isSelected = overview && element.id === selectedCanvasElementId;
+        elementNode.classList.toggle('is-selected', isSelected);
+        stage.appendChild(elementNode);
+        if (editable && isSelected) {
+            stage.appendChild(createPresentationElementControls(element, true));
+        }
     });
 }
 
@@ -456,10 +488,11 @@ function createPresentationElementShell(element) {
     return node;
 }
 
-function createPresentationElementControls(element) {
+function createPresentationElementControls(element, isCanvasElement = false) {
     const controls = document.createElement('div');
     controls.className = 'pkg-presentation-element-controls';
-    controls.dataset.elementId = element.id;
+    if (isCanvasElement) controls.dataset.canvasElementId = element.id;
+    else controls.dataset.elementId = element.id;
     controls.style.left = `${element.x}px`;
     controls.style.top = `${element.y}px`;
     controls.style.width = `${element.width}px`;
@@ -470,8 +503,13 @@ function createPresentationElementControls(element) {
         const handle = document.createElement('button');
         handle.type = 'button';
         handle.className = `pkg-presentation-element-resize-handle is-${direction}`;
-        handle.dataset.elementResize = direction;
-        handle.dataset.elementId = element.id;
+        if (isCanvasElement) {
+            handle.dataset.canvasElementResize = direction;
+            handle.dataset.canvasElementId = element.id;
+        } else {
+            handle.dataset.elementResize = direction;
+            handle.dataset.elementId = element.id;
+        }
         handle.setAttribute('aria-label', `Ubah ukuran elemen dari sisi ${direction}`);
         controls.appendChild(handle);
     });

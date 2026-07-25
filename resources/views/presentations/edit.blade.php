@@ -78,11 +78,13 @@
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-link>Tambah Tautan</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-shape>Tambah Bentuk</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-line>Tambah Garis</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-canvas-text>Tambah Teks Luar Frame</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-canvas-line>Tambah Garis Luar Frame</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-diagram>Tambah Diagram</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames>Rapikan Frame</button>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-image-input>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-logo-input>
-        <span class="ml-auto max-w-xl self-center text-xs text-gray-500 dark:text-gray-400">Klik elemen lalu seret penanda hijau di sisi atau sudut untuk mengubah ukuran. Seret bagian tengah untuk memindahkan. Cubit dua jari untuk zoom.</span>
+        <span class="ml-auto max-w-xl self-center text-xs text-gray-500 dark:text-gray-400">Pada Overview, seret tanda silang hijau untuk memindahkan frame. Klik elemen lalu seret penanda hijau di sisi atau sudut untuk mengubah ukuran. Cubit dua jari untuk zoom.</span>
     </section>
 
     <section class="mt-4 grid min-h-[680px] gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">

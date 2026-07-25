@@ -18,10 +18,12 @@ const root = document.getElementById('presentation-editor');
 
 if (root) {
     const payload = decodePresentationPayload(root.dataset.presentationPayload);
+    payload.canvas.elements = Array.isArray(payload.canvas.elements) ? payload.canvas.elements : [];
     const state = {
         presentation: payload,
         selectedFrameId: payload.canvas.frames[0]?.id || null,
         selectedElementId: null,
+        selectedCanvasElementId: null,
         mode: 'overview',
         dirty: false,
         saving: false,
@@ -117,6 +119,8 @@ if (root) {
 
     const selectedFrame = () => findPresentationFrame(state.presentation, state.selectedFrameId);
     const selectedElement = () => findPresentationElement(selectedFrame(), state.selectedElementId);
+    const selectedCanvasElement = () => state.presentation.canvas.elements
+        .find((element) => element.id === state.selectedCanvasElementId) || null;
 
     const ensureCanvasContainsFrames = () => {
         const frames = state.presentation.canvas.frames;
@@ -128,8 +132,16 @@ if (root) {
             (maximum, frame) => Math.max(maximum, Number(frame.y || 0) + Number(frame.height || 0) + 120),
             800
         );
-        state.presentation.canvas.width = clampPresentationNumber(requiredWidth, 1200, 7000, 2400);
-        state.presentation.canvas.height = clampPresentationNumber(requiredHeight, 800, 12500, 1400);
+        const elementRequiredWidth = state.presentation.canvas.elements.reduce(
+            (maximum, element) => Math.max(maximum, Number(element.x || 0) + Number(element.width || 0) + 120),
+            requiredWidth
+        );
+        const elementRequiredHeight = state.presentation.canvas.elements.reduce(
+            (maximum, element) => Math.max(maximum, Number(element.y || 0) + Number(element.height || 0) + 120),
+            requiredHeight
+        );
+        state.presentation.canvas.width = clampPresentationNumber(elementRequiredWidth, 1200, 7000, 2400);
+        state.presentation.canvas.height = clampPresentationNumber(elementRequiredHeight, 800, 12500, 1400);
     };
 
     const resizeFrame = (frame, width, height) => {
@@ -191,7 +203,9 @@ if (root) {
             presentation: state.presentation,
             selectedFrameId: state.selectedFrameId,
             selectedElementId: state.selectedElementId,
+            selectedCanvasElementId: state.selectedCanvasElementId,
             overview: state.mode === 'overview',
+            editable: true,
         });
         renderFrameList();
         renderInspector();
@@ -232,10 +246,10 @@ if (root) {
         });
     };
 
-    const commonPositionFields = (item, isFrame = false) => `
+    const commonPositionFields = (item, isFrame = false, isCanvasElement = false) => `
         <div class="grid grid-cols-2 gap-3">
-            ${numberField('X', 'x', item.x, 0, 5000)}
-            ${numberField('Y', 'y', item.y, 0, isFrame ? 11000 : 1100)}
+            ${numberField('X', 'x', item.x, 0, isCanvasElement ? 6800 : 5000)}
+            ${numberField('Y', 'y', item.y, 0, isCanvasElement || isFrame ? 12300 : 1100)}
             ${numberField('Lebar', 'width', item.width, isFrame ? 320 : 40, 1600)}
             ${numberField('Tinggi', 'height', item.height, isFrame ? 180 : 30, 900)}
         </div>
@@ -243,14 +257,16 @@ if (root) {
 
     const renderInspector = () => {
         const frame = selectedFrame();
-        const element = selectedElement();
+        const canvasElement = selectedCanvasElement();
+        const element = canvasElement || selectedElement();
+        const isCanvasElement = Boolean(canvasElement);
 
-        if (!frame) {
+        if (!frame && !canvasElement) {
             elements.inspector.innerHTML = '<p class="pkg-empty-copy">Tambahkan atau pilih frame untuk mulai menyunting.</p>';
             return;
         }
 
-        if (!element) {
+        if (!element && frame) {
             elements.inspector.innerHTML = `
                 <div class="space-y-4" data-inspector-scope="frame">
                     <div>
@@ -446,13 +462,13 @@ if (root) {
         }
 
         elements.inspector.innerHTML = `
-            <div class="space-y-4" data-inspector-scope="element">
+            <div class="space-y-4" data-inspector-scope="${isCanvasElement ? 'canvas-element' : 'element'}">
                 <div class="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
-                    ${elementTypeLabel(element.type)}
+                    ${elementTypeLabel(element.type)}${isCanvasElement ? ' di Luar Frame' : ''}
                 </div>
-                <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">Seret bagian tengah elemen untuk memindahkan. Gunakan penanda hijau pada sisi dan sudut untuk mengubah ukuran langsung.</p>
+                <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">Seret bagian tengah elemen untuk memindahkan. Gunakan penanda hijau pada sisi dan sudut untuk mengubah ukuran langsung.${isCanvasElement ? ' Elemen ini tampil pada Overview dan berada di luar isi frame.' : ''}</p>
                 ${typeFields}
-                ${commonPositionFields(element)}
+                ${commonPositionFields(element, false, isCanvasElement)}
                 <button type="button" class="btn-danger w-full justify-center" data-delete-selected-element>Hapus Elemen</button>
             </div>
         `;
@@ -461,6 +477,9 @@ if (root) {
     const restoreHistorySnapshot = (snapshot) => {
         const restored = JSON.parse(snapshot);
         state.presentation.canvas = restored.canvas;
+        state.presentation.canvas.elements = Array.isArray(state.presentation.canvas.elements)
+            ? state.presentation.canvas.elements
+            : [];
         state.presentation.title = restored.title;
         state.presentation.description = restored.description;
         state.presentation.backgroundColor = restored.backgroundColor;
@@ -475,6 +494,9 @@ if (root) {
         }
         if (!findPresentationElement(selectedFrame(), state.selectedElementId)) {
             state.selectedElementId = null;
+        }
+        if (!selectedCanvasElement()) {
+            state.selectedCanvasElementId = null;
         }
         ensureCanvasContainsFrames();
         state.dirty = true;
@@ -506,6 +528,7 @@ if (root) {
     const focusFrame = (frameId) => {
         state.selectedFrameId = frameId;
         state.selectedElementId = null;
+        state.selectedCanvasElementId = null;
         state.mode = 'focus';
         state.manualCamera = false;
         render();
@@ -514,6 +537,7 @@ if (root) {
     root.querySelector('[data-editor-overview]').addEventListener('click', () => {
         state.mode = 'overview';
         state.selectedElementId = null;
+        state.selectedCanvasElementId = null;
         state.manualCamera = false;
         render();
     });
@@ -542,6 +566,7 @@ if (root) {
         ensureCanvasContainsFrames();
         state.selectedFrameId = frame.id;
         state.selectedElementId = null;
+        state.selectedCanvasElementId = null;
         state.mode = 'overview';
         state.manualCamera = false;
         markDirty();
@@ -561,6 +586,7 @@ if (root) {
         });
         state.mode = 'overview';
         state.selectedElementId = null;
+        state.selectedCanvasElementId = null;
         state.manualCamera = false;
         ensureCanvasContainsFrames();
         markDirty();
@@ -587,6 +613,7 @@ if (root) {
         };
         frame.elements.push(element);
         state.selectedElementId = element.id;
+        state.selectedCanvasElementId = null;
         state.mode = 'focus';
         state.manualCamera = false;
         markDirty();
@@ -611,6 +638,7 @@ if (root) {
         };
         frame.elements.push(element);
         state.selectedElementId = element.id;
+        state.selectedCanvasElementId = null;
         state.mode = 'focus';
         state.manualCamera = false;
         markDirty();
@@ -636,6 +664,7 @@ if (root) {
         };
         frame.elements.push(element);
         state.selectedElementId = element.id;
+        state.selectedCanvasElementId = null;
         state.mode = 'focus';
         state.manualCamera = false;
         markDirty();
@@ -661,6 +690,7 @@ if (root) {
         };
         frame.elements.push(element);
         state.selectedElementId = element.id;
+        state.selectedCanvasElementId = null;
         state.mode = 'focus';
         state.manualCamera = false;
         markDirty();
@@ -687,6 +717,7 @@ if (root) {
         };
         frame.elements.push(element);
         state.selectedElementId = element.id;
+        state.selectedCanvasElementId = null;
         state.mode = 'focus';
         state.manualCamera = false;
         markDirty();
@@ -712,8 +743,76 @@ if (root) {
         };
         frame.elements.push(element);
         state.selectedElementId = element.id;
+        state.selectedCanvasElementId = null;
         state.mode = 'focus';
         state.manualCamera = false;
+        markDirty();
+        render();
+    });
+
+    const canvasDecorationPosition = (width, height, offsetY = 0) => {
+        const frame = selectedFrame();
+        const canvas = state.presentation.canvas;
+        const preferredX = frame
+            ? Number(frame.x || 0) + ((Number(frame.width || 800) - width) / 2)
+            : 160;
+        const preferredY = frame
+            ? Number(frame.y || 0) - height - 70 + offsetY
+            : 120 + offsetY;
+
+        return {
+            x: clampPresentationNumber(preferredX, 30, Math.max(30, Number(canvas.width || 2400) - width - 30), 160),
+            y: clampPresentationNumber(preferredY, 30, Math.max(30, Number(canvas.height || 1400) - height - 30), 120),
+        };
+    };
+
+    root.querySelector('[data-add-canvas-text]').addEventListener('click', () => {
+        const position = canvasDecorationPosition(520, 90);
+        const element = {
+            id: presentationId('canvas-element'),
+            type: 'text',
+            ...position,
+            width: 520,
+            height: 90,
+            rotation: 0,
+            text: 'Tulis judul atau keterangan Overview',
+            fontSize: 36,
+            color: '#ffffff',
+            backgroundColor: 'transparent',
+            align: 'center',
+            bold: true,
+        };
+        state.presentation.canvas.elements.push(element);
+        state.selectedCanvasElementId = element.id;
+        state.selectedElementId = null;
+        state.mode = 'overview';
+        state.manualCamera = false;
+        ensureCanvasContainsFrames();
+        markDirty();
+        render();
+    });
+
+    root.querySelector('[data-add-canvas-line]').addEventListener('click', () => {
+        const position = canvasDecorationPosition(440, 40, 125);
+        const element = {
+            id: presentationId('canvas-element'),
+            type: 'line',
+            ...position,
+            width: 440,
+            height: 40,
+            rotation: 0,
+            color: '#34d399',
+            backgroundColor: 'transparent',
+            strokeWidth: 5,
+            lineStyle: 'solid',
+            arrow: 'none',
+        };
+        state.presentation.canvas.elements.push(element);
+        state.selectedCanvasElementId = element.id;
+        state.selectedElementId = null;
+        state.mode = 'overview';
+        state.manualCamera = false;
+        ensureCanvasContainsFrames();
         markDirty();
         render();
     });
@@ -764,6 +863,7 @@ if (root) {
             };
             frame.elements.push(element);
             state.selectedElementId = element.id;
+            state.selectedCanvasElementId = null;
             state.mode = 'focus';
             state.manualCamera = false;
             markDirty();
@@ -800,7 +900,11 @@ if (root) {
         const input = event.target.closest('[data-inspector-prop]');
         if (!input) return;
         const scope = input.closest('[data-inspector-scope]')?.dataset.inspectorScope;
-        const target = scope === 'frame' ? selectedFrame() : selectedElement();
+        const target = scope === 'frame'
+            ? selectedFrame()
+            : scope === 'canvas-element'
+                ? selectedCanvasElement()
+                : selectedElement();
         if (!target) return;
         if (scope === 'frame' && ['width', 'height'].includes(input.dataset.inspectorProp)) return;
 
@@ -815,14 +919,16 @@ if (root) {
         if (input.dataset.inspectorProp === 'youtubeUrl') {
             target.youtubeId = extractYouTubeId(value);
         }
-        if (scope === 'frame') ensureCanvasContainsFrames();
+        if (scope === 'frame' || scope === 'canvas-element') ensureCanvasContainsFrames();
         markDirty(`inspector:${scope}:${target.id}:${input.dataset.inspectorProp}`);
         renderPresentationStage({
             stage: elements.stage,
             presentation: state.presentation,
             selectedFrameId: state.selectedFrameId,
             selectedElementId: state.selectedElementId,
+            selectedCanvasElementId: state.selectedCanvasElementId,
             overview: state.mode === 'overview',
+            editable: true,
         });
         if (state.manualCamera) updateCameraHint();
         else applyCamera(false);
@@ -863,11 +969,19 @@ if (root) {
             return;
         }
         if (event.target.closest('[data-delete-selected-element]')) {
-            const frame = selectedFrame();
-            frame.elements = frame.elements.filter((element) => element.id !== state.selectedElementId);
-            state.selectedElementId = null;
+            const scope = event.target.closest('[data-inspector-scope]')?.dataset.inspectorScope;
+            if (scope === 'canvas-element') {
+                state.presentation.canvas.elements = state.presentation.canvas.elements
+                    .filter((element) => element.id !== state.selectedCanvasElementId);
+                state.selectedCanvasElementId = null;
+            } else {
+                const frame = selectedFrame();
+                frame.elements = frame.elements.filter((element) => element.id !== state.selectedElementId);
+                state.selectedElementId = null;
+            }
+            ensureCanvasContainsFrames();
             markDirty();
-            render();
+            render(false);
             return;
         }
         if (event.target.closest('[data-delete-selected-frame]') && state.presentation.canvas.frames.length > 1) {
@@ -876,6 +990,7 @@ if (root) {
             frames.splice(index, 1);
             state.selectedFrameId = frames[Math.max(0, index - 1)]?.id || frames[0]?.id;
             state.selectedElementId = null;
+            state.selectedCanvasElementId = null;
             state.mode = 'overview';
             state.manualCamera = false;
             ensureCanvasContainsFrames();
@@ -943,7 +1058,7 @@ if (root) {
                 snapshot.item.height = snapshot.height;
                 if (snapshot.item.type === 'text') snapshot.item.fontSize = snapshot.fontSize;
             });
-        } else if (drag.kind === 'element-resize' && drag.target) {
+        } else if (['element-resize', 'canvas-element-resize'].includes(drag.kind) && drag.target) {
             drag.target.x = drag.originX;
             drag.target.y = drag.originY;
             drag.target.width = drag.originWidth;
@@ -983,6 +1098,14 @@ if (root) {
         },
         onTap: (tap) => {
             if (state.mode !== 'overview' || state.drag?.moved) return false;
+            const canvasElementNode = tap.target.closest?.('[data-canvas-element-id]');
+            if (canvasElementNode) {
+                state.selectedCanvasElementId = canvasElementNode.dataset.canvasElementId;
+                state.selectedElementId = null;
+                state.manualCamera = true;
+                render(false);
+                return true;
+            }
             const frameNode = tap.target.closest?.('[data-frame-id]');
             if (!frameNode) return false;
             focusFrame(frameNode.dataset.frameId);
@@ -994,8 +1117,47 @@ if (root) {
         if (event.button !== 0) return;
         if (touchGesture?.isActive()) return;
         state.cameraScale = syncPresentationCamera(elements.stage);
+        const canvasResizeHandle = event.target.closest('[data-canvas-element-resize]');
+        const canvasElementNode = event.target.closest('.pkg-presentation-element[data-canvas-element-id]');
+        const canvasElementId = canvasResizeHandle?.dataset.canvasElementId
+            || canvasElementNode?.dataset.canvasElementId;
+        const canvasElement = state.mode === 'overview'
+            ? state.presentation.canvas.elements.find((element) => element.id === canvasElementId)
+            : null;
+        if (canvasElement) {
+            const elementNode = elements.stage.querySelector(
+                `.pkg-presentation-element[data-canvas-element-id="${CSS.escape(canvasElement.id)}"]`
+            );
+            const controlsNode = canvasResizeHandle?.closest('.pkg-presentation-element-controls')
+                || elements.stage.querySelector(
+                    `.pkg-presentation-element-controls[data-canvas-element-id="${CSS.escape(canvasElement.id)}"]`
+                );
+            state.selectedCanvasElementId = canvasElement.id;
+            state.selectedElementId = null;
+            state.drag = {
+                kind: canvasResizeHandle ? 'canvas-element-resize' : 'canvas-element',
+                target: canvasElement,
+                node: elementNode,
+                controlsNode,
+                frame: state.presentation.canvas,
+                resizeDirection: canvasResizeHandle?.dataset.canvasElementResize || null,
+                startX: event.clientX,
+                startY: event.clientY,
+                originX: Number(canvasElement.x || 0),
+                originY: Number(canvasElement.y || 0),
+                originWidth: Number(canvasElement.width || 100),
+                originHeight: Number(canvasElement.height || 80),
+                frameElements: [],
+                moved: false,
+            };
+            elements.viewport.setPointerCapture(event.pointerId);
+            renderInspector();
+            return;
+        }
+
         const frameNode = event.target.closest('[data-frame-id]');
         const frameResizeHandle = event.target.closest('[data-frame-resize]');
+        const frameDragHandle = event.target.closest('[data-frame-drag]');
         const elementResizeHandle = event.target.closest('[data-element-resize]');
         if (!frameNode) return;
 
@@ -1012,6 +1174,7 @@ if (root) {
                 : null);
         state.selectedFrameId = frame.id;
         state.selectedElementId = state.mode === 'focus' && element ? element.id : null;
+        state.selectedCanvasElementId = null;
         const frameElements = (frame.elements || []).map((item) => ({
             item,
             x: Number(item.x || 0),
@@ -1027,7 +1190,8 @@ if (root) {
             target: state.mode === 'overview' ? frame : element,
             node: state.mode === 'overview' ? frameNode : elementNode,
             controlsNode,
-            frame,
+            frame: state.mode === 'overview' ? state.presentation.canvas : frame,
+            explicitFrameDrag: Boolean(frameDragHandle),
             resizeDirection: elementResizeHandle?.dataset.elementResize || null,
             startX: event.clientX,
             startY: event.clientY,
@@ -1078,7 +1242,7 @@ if (root) {
                 node.style.height = `${snapshot.item.height}px`;
                 if (snapshot.item.type === 'text') node.style.fontSize = `${snapshot.item.fontSize}px`;
             });
-        } else if (state.drag.kind === 'element-resize') {
+        } else if (['element-resize', 'canvas-element-resize'].includes(state.drag.kind)) {
             const direction = state.drag.resizeDirection || 'se';
             const minimumWidth = 40;
             const minimumHeight = 30;
@@ -1160,10 +1324,13 @@ if (root) {
             ensureCanvasContainsFrames();
             markDirty();
             render(false);
-        } else if (state.mode === 'overview' && drag.kind === 'frame') {
+        } else if (state.mode === 'overview' && drag.kind === 'frame' && !drag.explicitFrameDrag) {
             state.mode = 'focus';
             state.manualCamera = false;
             render();
+            return;
+        } else if (state.mode === 'overview' && ['frame', 'canvas-element'].includes(drag.kind)) {
+            render(false);
             return;
         } else if (state.mode === 'focus' && drag.kind === 'element') {
             render(false);

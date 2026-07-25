@@ -95,6 +95,7 @@ class PresentationController extends Controller
             'canvas_data.height' => ['required', 'numeric', 'min:800', 'max:12500'],
             'canvas_data.frames' => ['required', 'array', 'min:1', 'max:40'],
             'canvas_data.frames.*.elements' => ['present', 'array', 'max:60'],
+            'canvas_data.elements' => ['sometimes', 'array', 'max:80'],
         ]);
 
         $canvasData = $request->input('canvas_data', []);
@@ -235,6 +236,7 @@ class PresentationController extends Controller
             'version' => 1,
             'width' => 2400,
             'height' => 1400,
+            'elements' => [],
             'frames' => [[
                 'id' => 'frame-'.Str::lower(Str::random(8)),
                 'title' => 'Pembuka',
@@ -273,6 +275,7 @@ class PresentationController extends Controller
                 : $fallback;
         $allowedTypes = ['text', 'image', 'logo', 'youtube', 'link', 'shape', 'line', 'diagram'];
         $frames = [];
+        $canvasElements = [];
 
         foreach (array_slice($canvas['frames'] ?? [], 0, 40) as $frameIndex => $frame) {
             if (! is_array($frame)) {
@@ -384,6 +387,46 @@ class PresentationController extends Controller
             ];
         }
 
+        foreach (array_slice($canvas['elements'] ?? [], 0, 80) as $elementIndex => $element) {
+            if (! is_array($element) || ! in_array($element['type'] ?? null, ['text', 'line'], true)) {
+                continue;
+            }
+
+            $type = $element['type'];
+            $normalized = [
+                'id' => Str::limit((string) ($element['id'] ?? "canvas-element-{$elementIndex}"), 80, ''),
+                'type' => $type,
+                'x' => $number($element['x'] ?? null, 0, 6800, 120),
+                'y' => $number($element['y'] ?? null, 0, 12300, 120),
+                'width' => $number($element['width'] ?? null, 40, 1600, 320),
+                'height' => $number($element['height'] ?? null, 30, 900, 80),
+                'rotation' => $number($element['rotation'] ?? null, -180, 180, 0),
+                'color' => $color($element['color'] ?? null, '#f8fafc'),
+                'backgroundColor' => $color($element['backgroundColor'] ?? null, 'transparent'),
+            ];
+
+            if ($type === 'text') {
+                $normalized += [
+                    'text' => Str::limit((string) ($element['text'] ?? 'Teks overview'), 5000, ''),
+                    'fontSize' => $number($element['fontSize'] ?? null, 10, 160, 32),
+                    'align' => in_array($element['align'] ?? null, ['left', 'center', 'right'], true) ? $element['align'] : 'center',
+                    'bold' => (bool) ($element['bold'] ?? false),
+                ];
+            } else {
+                $normalized += [
+                    'strokeWidth' => $number($element['strokeWidth'] ?? null, 1, 20, 4),
+                    'lineStyle' => in_array($element['lineStyle'] ?? null, ['solid', 'dashed', 'dotted'], true)
+                        ? $element['lineStyle']
+                        : 'solid',
+                    'arrow' => in_array($element['arrow'] ?? null, ['none', 'start', 'end', 'both'], true)
+                        ? $element['arrow']
+                        : 'none',
+                ];
+            }
+
+            $canvasElements[] = $normalized;
+        }
+
         if (! $frames) {
             $frames = $this->starterCanvas('Presentasi Baru')['frames'];
         }
@@ -398,12 +441,17 @@ class PresentationController extends Controller
             static fn (array $frame): float => $frame['y'] + $frame['height'] + 120,
             $frames
         )));
+        foreach ($canvasElements as $element) {
+            $requiredWidth = (int) min(7000, max($requiredWidth, $element['x'] + $element['width'] + 120));
+            $requiredHeight = (int) min(12500, max($requiredHeight, $element['y'] + $element['height'] + 120));
+        }
 
         return [
             'version' => 1,
             'width' => max($requestedWidth, $requiredWidth),
             'height' => max($requestedHeight, $requiredHeight),
             'frames' => $frames,
+            'elements' => $canvasElements,
         ];
     }
 
