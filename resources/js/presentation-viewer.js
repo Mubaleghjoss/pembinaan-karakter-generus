@@ -1,8 +1,10 @@
 import '../css/presentation.css';
 import {
     applyPresentationCamera,
+    bindPresentationTouchGestures,
     decodePresentationPayload,
     findPresentationFrame,
+    panPresentationCamera,
     presentationPinchFactor,
     renderPresentationStage,
     zoomPresentationAtPoint,
@@ -93,7 +95,18 @@ if (root) {
         }
     };
 
+    const touchGesture = bindPresentationTouchGestures(viewport, stage, {
+        minimumScale: 0.03,
+        maximumScale: 4,
+        onUpdate: (scale) => {
+            state.cameraScale = scale;
+            state.manualCamera = true;
+            updateZoomProgress();
+        },
+    });
+
     stage.addEventListener('click', (event) => {
+        if (touchGesture.shouldSuppressTap()) return;
         if (state.mode !== 'overview') return;
         const frameNode = event.target.closest('[data-frame-id]');
         if (!frameNode) return;
@@ -114,17 +127,19 @@ if (root) {
     });
 
     viewport.addEventListener('wheel', (event) => {
-        if (!event.ctrlKey && !event.metaKey) return;
-
         event.preventDefault();
-        state.cameraScale = zoomPresentationAtPoint(
-            viewport,
-            stage,
-            presentationPinchFactor(event.deltaY),
-            event.clientX,
-            event.clientY,
-            { minimumScale: 0.03, maximumScale: 4 }
-        );
+        if (event.ctrlKey || event.metaKey) {
+            state.cameraScale = zoomPresentationAtPoint(
+                viewport,
+                stage,
+                presentationPinchFactor(event.deltaY),
+                event.clientX,
+                event.clientY,
+                { minimumScale: 0.03, maximumScale: 4 }
+            );
+        } else {
+            state.cameraScale = panPresentationCamera(stage, -event.deltaX, -event.deltaY);
+        }
         state.manualCamera = true;
         updateZoomProgress();
     }, { passive: false });

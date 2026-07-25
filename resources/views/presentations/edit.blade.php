@@ -74,7 +74,7 @@
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-diagram>Tambah Diagram</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames>Rapikan Frame</button>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-image-input>
-        <span class="ml-auto self-center text-xs text-gray-500 dark:text-gray-400">Cubit dua jari di touchpad untuk zoom. Seret frame di overview dan elemen saat fokus.</span>
+        <span class="ml-auto self-center text-xs text-gray-500 dark:text-gray-400">Cubit dua jari untuk zoom, geser dua jari untuk memindahkan kanvas, lalu tap frame untuk fokus.</span>
     </section>
 
     <section class="mt-4 grid min-h-[680px] gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">

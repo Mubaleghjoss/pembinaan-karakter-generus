@@ -134,8 +134,107 @@ export function zoomPresentationAtPoint(viewport, stage, factor, clientX, client
     return nextScale;
 }
 
+export function panPresentationCamera(stage, deltaX, deltaY) {
+    const currentScale = cameraNumber(stage.dataset.cameraScale, 1);
+    const nextX = cameraNumber(stage.dataset.cameraX, 0) + cameraNumber(deltaX, 0);
+    const nextY = cameraNumber(stage.dataset.cameraY, 0) + cameraNumber(deltaY, 0);
+
+    setPresentationCameraTransform(stage, nextX, nextY, currentScale, false);
+
+    return currentScale;
+}
+
 export function presentationPinchFactor(deltaY) {
     return Math.exp(-clampPresentationNumber(deltaY, -40, 40, 0) * 0.012);
+}
+
+export function bindPresentationTouchGestures(viewport, stage, options = {}) {
+    const pointers = new Map();
+    let active = false;
+    let previousGesture = null;
+    let suppressTapUntil = 0;
+
+    const gestureMetrics = () => {
+        const [first, second] = Array.from(pointers.values()).slice(0, 2);
+        if (!first || !second) return null;
+        const deltaX = second.x - first.x;
+        const deltaY = second.y - first.y;
+
+        return {
+            x: (first.x + second.x) / 2,
+            y: (first.y + second.y) / 2,
+            distance: Math.max(1, Math.hypot(deltaX, deltaY)),
+        };
+    };
+
+    const pointerDown = (event) => {
+        if (event.pointerType !== 'touch') return;
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+        if (pointers.size >= 2 && !active) {
+            active = true;
+            previousGesture = gestureMetrics();
+            options.onStart?.();
+            event.preventDefault();
+        }
+    };
+
+    const pointerMove = (event) => {
+        if (!pointers.has(event.pointerId)) return;
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (!active || pointers.size < 2) return;
+
+        const currentGesture = gestureMetrics();
+        if (!currentGesture || !previousGesture) return;
+        const factor = currentGesture.distance / previousGesture.distance;
+        const scale = zoomPresentationAtPoint(
+            viewport,
+            stage,
+            factor,
+            previousGesture.x,
+            previousGesture.y,
+            {
+                minimumScale: options.minimumScale ?? 0.03,
+                maximumScale: options.maximumScale ?? 4,
+            }
+        );
+        panPresentationCamera(
+            stage,
+            currentGesture.x - previousGesture.x,
+            currentGesture.y - previousGesture.y
+        );
+        previousGesture = currentGesture;
+        options.onUpdate?.(scale);
+        event.preventDefault();
+    };
+
+    const pointerEnd = (event) => {
+        if (!pointers.has(event.pointerId)) return;
+        pointers.delete(event.pointerId);
+        if (active && pointers.size < 2) {
+            active = false;
+            previousGesture = null;
+            suppressTapUntil = performance.now() + 320;
+            options.onEnd?.();
+            event.preventDefault();
+        }
+    };
+
+    viewport.addEventListener('pointerdown', pointerDown, { capture: true });
+    viewport.addEventListener('pointermove', pointerMove, { capture: true });
+    viewport.addEventListener('pointerup', pointerEnd, { capture: true });
+    viewport.addEventListener('pointercancel', pointerEnd, { capture: true });
+
+    return {
+        isActive: () => active,
+        shouldSuppressTap: () => performance.now() < suppressTapUntil,
+        destroy: () => {
+            viewport.removeEventListener('pointerdown', pointerDown, { capture: true });
+            viewport.removeEventListener('pointermove', pointerMove, { capture: true });
+            viewport.removeEventListener('pointerup', pointerEnd, { capture: true });
+            viewport.removeEventListener('pointercancel', pointerEnd, { capture: true });
+        },
+    };
 }
 
 function setPresentationCameraTransform(stage, translateX, translateY, scale, animate) {

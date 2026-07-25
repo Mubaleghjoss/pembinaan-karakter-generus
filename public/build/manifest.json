@@ -41,8 +41,8 @@
     "file": "assets/presentation-canvas-B7RzdAnb.css",
     "src": "_presentation-canvas-B7RzdAnb.css"
   },
-  "_presentation-canvas-BWMorcPg.js": {
-    "file": "assets/presentation-canvas-BWMorcPg.js",
+  "_presentation-canvas-usyKgWde.js": {
+    "file": "assets/presentation-canvas-usyKgWde.js",
     "name": "presentation-canvas",
     "css": [
       "assets/presentation-canvas-B7RzdAnb.css"
@@ -154,21 +154,21 @@
     ]
   },
   "resources/js/presentation-editor.js": {
-    "file": "assets/presentation-editor-qegf2KbF.js",
+    "file": "assets/presentation-editor-y5S53Bx_.js",
     "name": "presentation-editor",
     "src": "resources/js/presentation-editor.js",
     "isEntry": true,
     "imports": [
-      "_presentation-canvas-BWMorcPg.js"
+      "_presentation-canvas-usyKgWde.js"
     ]
   },
   "resources/js/presentation-viewer.js": {
-    "file": "assets/presentation-viewer-v-q2H4Gs.js",
+    "file": "assets/presentation-viewer-C9TH8skV.js",
     "name": "presentation-viewer",
     "src": "resources/js/presentation-viewer.js",
     "isEntry": true,
     "imports": [
-      "_presentation-canvas-BWMorcPg.js"
+      "_presentation-canvas-usyKgWde.js"
     ]
   },
   "resources/js/public-scanner.js": {

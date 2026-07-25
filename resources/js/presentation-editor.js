@@ -1,10 +1,12 @@
 import '../css/presentation.css';
 import {
     applyPresentationCamera,
+    bindPresentationTouchGestures,
     clampPresentationNumber,
     decodePresentationPayload,
     findPresentationElement,
     findPresentationFrame,
+    panPresentationCamera,
     presentationPinchFactor,
     presentationId,
     renderPresentationStage,
@@ -42,6 +44,7 @@ if (root) {
         pathMode: root.querySelector('[data-editor-path-mode]'),
         imageInput: root.querySelector('[data-image-input]'),
     };
+    let touchGesture = null;
 
     elements.title.value = payload.title || '';
     elements.description.value = payload.description || '';
@@ -572,23 +575,61 @@ if (root) {
     });
 
     elements.viewport.addEventListener('wheel', (event) => {
-        if (!event.ctrlKey && !event.metaKey) return;
-
         event.preventDefault();
-        state.cameraScale = zoomPresentationAtPoint(
-            elements.viewport,
-            elements.stage,
-            presentationPinchFactor(event.deltaY),
-            event.clientX,
-            event.clientY,
-            { minimumScale: 0.03, maximumScale: 4 }
-        );
+        if (event.ctrlKey || event.metaKey) {
+            state.cameraScale = zoomPresentationAtPoint(
+                elements.viewport,
+                elements.stage,
+                presentationPinchFactor(event.deltaY),
+                event.clientX,
+                event.clientY,
+                { minimumScale: 0.03, maximumScale: 4 }
+            );
+        } else {
+            state.cameraScale = panPresentationCamera(elements.stage, -event.deltaX, -event.deltaY);
+        }
         state.manualCamera = true;
         updateCameraHint();
     }, { passive: false });
 
+    const cancelActiveDragForGesture = () => {
+        const drag = state.drag;
+        if (!drag) return;
+
+        if (drag.kind === 'frame-resize') {
+            drag.target.width = drag.originWidth;
+            drag.target.height = drag.originHeight;
+            drag.frameElements.forEach((snapshot) => {
+                snapshot.item.x = snapshot.x;
+                snapshot.item.y = snapshot.y;
+                snapshot.item.width = snapshot.width;
+                snapshot.item.height = snapshot.height;
+                if (snapshot.item.type === 'text') snapshot.item.fontSize = snapshot.fontSize;
+            });
+        } else if (drag.target) {
+            drag.target.x = drag.originX;
+            drag.target.y = drag.originY;
+        }
+
+        state.drag = null;
+        state.manualCamera = true;
+        render(false);
+    };
+
+    touchGesture = bindPresentationTouchGestures(elements.viewport, elements.stage, {
+        minimumScale: 0.03,
+        maximumScale: 4,
+        onStart: cancelActiveDragForGesture,
+        onUpdate: (scale) => {
+            state.cameraScale = scale;
+            state.manualCamera = true;
+            updateCameraHint();
+        },
+    });
+
     elements.viewport.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return;
+        if (touchGesture?.isActive()) return;
         const frameNode = event.target.closest('[data-frame-id]');
         const elementNode = event.target.closest('[data-element-id]');
         const resizeHandle = event.target.closest('[data-frame-resize]');
@@ -626,6 +667,7 @@ if (root) {
     });
 
     elements.viewport.addEventListener('pointermove', (event) => {
+        if (touchGesture?.isActive()) return;
         if (!state.drag?.kind || !state.drag.target) return;
         const deltaX = (event.clientX - state.drag.startX) / state.cameraScale;
         const deltaY = (event.clientY - state.drag.startY) / state.cameraScale;
@@ -665,6 +707,10 @@ if (root) {
     });
 
     const finishPointer = (event) => {
+        if (touchGesture?.shouldSuppressTap()) {
+            state.drag = null;
+            return;
+        }
         if (!state.drag) return;
         const drag = state.drag;
         state.drag = null;

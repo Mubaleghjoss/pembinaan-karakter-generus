@@ -22,7 +22,7 @@
                     <a href="{{ route('presentations.export.pptx', $presentation) }}" class="pkg-viewer-control">PPTX</a>
                     <a href="{{ route('presentations.edit', $presentation) }}" class="pkg-viewer-control">Edit</a>
                 @endif
-                <button type="button" class="pkg-viewer-control" data-viewer-fit>Pas</button>
+                <button type="button" class="pkg-viewer-control" data-viewer-fit title="Kembalikan posisi dan ukuran kanvas">Pas</button>
                 <button type="button" class="pkg-viewer-control" data-viewer-fullscreen>Layar Penuh</button>
             </div>
         </div>
