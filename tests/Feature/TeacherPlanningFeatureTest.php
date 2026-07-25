@@ -1,0 +1,285 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Role;
+use App\Models\TeacherAvailabilityInvite;
+use App\Models\TeacherProfile;
+use App\Models\TeacherSchedulePeriod;
+use App\Models\TeacherScheduleSession;
+use App\Models\TeacherScheduleTemplate;
+use App\Models\User;
+use App\Services\TeacherSchedulePlanner;
+use App\Support\ParticipantProfileOptions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
+
+class TeacherPlanningFeatureTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_private_teacher_form_requires_code_and_stores_normalized_profile(): void
+    {
+        TeacherAvailabilityInvite::create([
+            'label' => 'Pendataan Guru',
+            'token_hash' => hash('sha256', 'GURU2026'),
+            'max_uses' => 100,
+            'used_count' => 0,
+            'expires_at' => now()->addDays(30),
+            'is_active' => true,
+        ]);
+
+        $this->get('/pendataanguru')
+            ->assertOk()
+            ->assertSee('Kode Akses')
+            ->assertDontSee('Nama lengkap');
+
+        $this->post('/pendataanguru/akses', ['access_code' => 'guru2026'])
+            ->assertRedirect('/pendataanguru');
+
+        $this->get('/pendataanguru')
+            ->assertOk()
+            ->assertSee('Formulir Kesediaan MT/MS')
+            ->assertSee('Pastikan tidak typo');
+
+        $this->post('/pendataanguru', $this->profilePayload())
+            ->assertRedirect(route('public.teacher-availability.success'));
+
+        $this->assertDatabaseHas('teacher_profiles', [
+            'name' => 'Ahmad Fulan',
+            'whatsapp_normalized' => '6281234567890',
+            'participation_role' => TeacherProfile::ROLE_BOTH,
+            'monthly_limit' => 2,
+        ]);
+        $this->assertSame(1, TeacherAvailabilityInvite::firstOrFail()->used_count);
+    }
+
+    public function test_duplicate_whatsapp_cannot_create_second_profile(): void
+    {
+        $invite = TeacherAvailabilityInvite::create([
+            'label' => 'Pendataan Guru',
+            'token_hash' => hash('sha256', 'GURU2026'),
+            'max_uses' => 100,
+            'used_count' => 0,
+            'expires_at' => now()->addDays(30),
+            'is_active' => true,
+        ]);
+        TeacherProfile::create($this->profileAttributes($invite->id));
+
+        $this->post('/pendataanguru/akses', ['access_code' => 'GURU2026']);
+        $this->post('/pendataanguru', $this->profilePayload())
+            ->assertSessionHasErrors('whatsapp');
+
+        $this->assertSame(1, TeacherProfile::count());
+    }
+
+    public function test_monthly_generator_balances_main_and_backup_within_limits(): void
+    {
+        $admin = $this->admin();
+        $profiles = collect(range(1, 5))->map(fn (int $index) => TeacherProfile::create([
+            ...$this->profileAttributes(),
+            'name' => "Guru {$index}",
+            'public_name' => "Guru {$index}",
+            'whatsapp' => "08123456789{$index}",
+            'whatsapp_normalized' => "628123456789{$index}",
+        ]));
+        TeacherScheduleTemplate::create([
+            'weekday' => 'monday',
+            'rombel' => 'smp',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'is_active' => true,
+        ]);
+        $period = TeacherSchedulePeriod::create([
+            'month' => '2026-08-01',
+            'status' => 'draft',
+            'created_by' => $admin->id,
+        ]);
+
+        $period = app(TeacherSchedulePlanner::class)->generate($period, $admin->id);
+
+        $this->assertCount(5, $period->sessions);
+        $this->assertSame(10, $period->sessions->flatMap->assignments->count());
+        foreach ($period->sessions as $session) {
+            $this->assertCount(2, $session->assignments);
+            $this->assertNotSame(
+                $session->assignments->firstWhere('role', 'main')->teacher_profile_id,
+                $session->assignments->firstWhere('role', 'backup')->teacher_profile_id
+            );
+        }
+        foreach ($profiles as $profile) {
+            $this->assertLessThanOrEqual(2, app(TeacherSchedulePlanner::class)->monthlyLoad($profile, $period));
+        }
+    }
+
+    public function test_confirmation_and_public_calendar_use_private_token_and_public_name(): void
+    {
+        $admin = $this->admin();
+        $profile = TeacherProfile::create([
+            ...$this->profileAttributes(),
+            'name' => 'Ahmad Fulan Panunggangan',
+            'public_name' => 'Ahmad',
+        ]);
+        $period = TeacherSchedulePeriod::create([
+            'month' => now()->startOfMonth()->toDateString(),
+            'status' => 'published',
+            'created_by' => $admin->id,
+            'published_by' => $admin->id,
+            'published_at' => now(),
+        ]);
+        $session = TeacherScheduleSession::create([
+            'period_id' => $period->id,
+            'session_date' => now()->addDays(5)->toDateString(),
+            'rombel' => 'smp',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'status' => 'scheduled',
+        ]);
+        $assignment = app(TeacherSchedulePlanner::class)
+            ->createAssignment($session, $profile, 'main', 'manual', true, $admin->id);
+        $token = Crypt::decryptString($assignment->confirmation_token_encrypted);
+
+        $this->get(route('public.teacher-confirmation.show', $token))
+            ->assertOk()
+            ->assertSee('Ahmad Fulan Panunggangan')
+            ->assertSee('Pengajar Utama');
+
+        $this->post(route('public.teacher-confirmation.store', $token), [
+            'status' => 'confirmed',
+            'note' => 'Insyaallah hadir.',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('teacher_schedule_assignments', [
+            'id' => $assignment->id,
+            'confirmation_status' => 'confirmed',
+            'confirmation_note' => 'Insyaallah hadir.',
+        ]);
+
+        $response = $this->getJson(route('public.calendar.events', [
+            'start' => now()->startOfMonth()->toDateString(),
+            'end' => now()->endOfMonth()->toDateString(),
+        ]))->assertOk();
+        $event = collect($response->json())->firstWhere('type', 'teacher_schedule');
+
+        $this->assertNotNull($event);
+        $this->assertStringContainsString('Ahmad', $event['title']);
+        $this->assertStringNotContainsString('Fulan Panunggangan', $event['title']);
+        $this->assertArrayNotHasKey('whatsapp', $event['extendedProps']);
+    }
+
+    public function test_admin_can_open_management_page_and_form_link_is_not_in_public_navigation(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('teacher-planning.index'))
+            ->assertOk()
+            ->assertSee('Pendataan &amp; Jadwal Guru', false)
+            ->assertSee('Kode Akses Formulir');
+
+        $navigation = file_get_contents(resource_path('views/layouts/public.blade.php'));
+        $this->assertStringNotContainsString('pendataanguru', $navigation);
+    }
+
+    public function test_admin_can_publish_incomplete_schedule_with_acknowledgement_and_export_it(): void
+    {
+        $admin = $this->admin();
+        $period = TeacherSchedulePeriod::create([
+            'month' => '2026-09-01',
+            'status' => 'draft',
+            'created_by' => $admin->id,
+        ]);
+        TeacherScheduleSession::create([
+            'period_id' => $period->id,
+            'session_date' => '2026-09-07',
+            'rombel' => 'smp',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'status' => 'scheduled',
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('teacher-planning.periods.publish', $period))
+            ->assertSessionHasErrors('warning_acknowledgement');
+
+        $this->actingAs($admin)
+            ->patch(route('teacher-planning.periods.publish', $period), [
+                'warning_acknowledgement' => 'Tetap diterbitkan sambil mencari pengajar.',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('teacher_schedule_periods', [
+            'id' => $period->id,
+            'status' => 'published',
+            'publish_warning_acknowledgement' => 'Tetap diterbitkan sambil mencari pengajar.',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('teacher-planning.export.pdf', $period))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->actingAs($admin)
+            ->get(route('teacher-planning.export.image', $period))
+            ->assertOk()
+            ->assertSee('scheduleCanvas', false);
+    }
+
+    private function profilePayload(): array
+    {
+        return [
+            'name' => 'Ahmad Fulan',
+            'kelompok' => ParticipantProfileOptions::SAWAH_DALAM_1,
+            'whatsapp' => '0812-3456-7890',
+            'participation_role' => TeacherProfile::ROLE_BOTH,
+            'rombels' => ['smp', 'sma'],
+            'available_nights' => ['monday', 'friday'],
+            'night_priorities' => ['monday' => '1', 'friday' => '2'],
+            'monthly_limit' => '2',
+            'competencies' => ['quran', 'class_support'],
+            'material_readiness' => 'ready',
+            'backup_contact_preference' => 'ready',
+            'constraints' => 'Tidak bisa tanggal merah.',
+            'consent' => '1',
+        ];
+    }
+
+    private function profileAttributes(?int $inviteId = null): array
+    {
+        return [
+            'invite_id' => $inviteId,
+            'name' => 'Ahmad Fulan',
+            'public_name' => 'Ahmad',
+            'kelompok' => ParticipantProfileOptions::SAWAH_DALAM_1,
+            'whatsapp' => '081234567890',
+            'whatsapp_normalized' => '6281234567890',
+            'participation_role' => TeacherProfile::ROLE_BOTH,
+            'rombels' => ['smp'],
+            'available_nights' => ['monday'],
+            'night_priorities' => ['monday' => 1],
+            'monthly_limit' => 2,
+            'competencies' => ['quran'],
+            'material_readiness' => 'ready',
+            'backup_contact_preference' => 'ready',
+            'constraints' => null,
+            'consent_version' => 'v1',
+            'consented_at' => now(),
+            'submitted_at' => now(),
+            'is_active' => true,
+        ];
+    }
+
+    private function admin(): User
+    {
+        $role = Role::firstOrCreate(
+            ['name' => User::ROLE_ADMIN],
+            ['display_name' => 'Administrator', 'description' => 'Administrator']
+        );
+
+        return User::factory()->create([
+            'role_id' => $role->id,
+            'status' => 'active',
+            'password' => Hash::make('password'),
+        ]);
+    }
+}

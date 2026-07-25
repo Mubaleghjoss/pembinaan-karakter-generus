@@ -1,0 +1,121 @@
+CREATE TABLE IF NOT EXISTS teacher_availability_invites (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    label VARCHAR(120) NOT NULL,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    max_uses INT UNSIGNED NOT NULL DEFAULT 100,
+    used_count INT UNSIGNED NOT NULL DEFAULT 0,
+    expires_at TIMESTAMP NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX teacher_invites_expires_index (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS teacher_profiles (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    invite_id BIGINT UNSIGNED NULL,
+    user_id BIGINT UNSIGNED NULL UNIQUE,
+    name VARCHAR(160) NOT NULL,
+    public_name VARCHAR(80) NULL,
+    kelompok VARCHAR(60) NOT NULL,
+    whatsapp VARCHAR(24) NOT NULL,
+    whatsapp_normalized VARCHAR(20) NOT NULL UNIQUE,
+    participation_role VARCHAR(40) NOT NULL,
+    rombels JSON NULL,
+    available_nights JSON NULL,
+    night_priorities JSON NULL,
+    monthly_limit TINYINT UNSIGNED NULL,
+    competencies JSON NULL,
+    material_readiness VARCHAR(30) NULL,
+    backup_contact_preference VARCHAR(40) NULL,
+    constraints TEXT NULL,
+    consent_version VARCHAR(20) NOT NULL DEFAULT 'v1',
+    consented_at TIMESTAMP NOT NULL,
+    submitted_at TIMESTAMP NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    CONSTRAINT teacher_profiles_invite_fk FOREIGN KEY (invite_id) REFERENCES teacher_availability_invites(id) ON DELETE SET NULL,
+    CONSTRAINT teacher_profiles_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX teacher_profiles_kelompok_index (kelompok),
+    INDEX teacher_profiles_role_index (participation_role),
+    INDEX teacher_profiles_active_index (is_active),
+    INDEX teacher_profiles_filter_index (kelompok, participation_role, is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS teacher_schedule_templates (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    weekday VARCHAR(12) NOT NULL,
+    rombel VARCHAR(30) NOT NULL,
+    start_time TIME NOT NULL DEFAULT '20:00:00',
+    end_time TIME NOT NULL DEFAULT '21:30:00',
+    location VARCHAR(120) NULL,
+    sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY teacher_template_day_rombel_unique (weekday, rombel)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS teacher_schedule_periods (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    month DATE NOT NULL UNIQUE,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+    created_by BIGINT UNSIGNED NOT NULL,
+    published_by BIGINT UNSIGNED NULL,
+    published_at TIMESTAMP NULL,
+    publish_warning_acknowledgement TEXT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    CONSTRAINT teacher_period_created_by_fk FOREIGN KEY (created_by) REFERENCES users(id),
+    CONSTRAINT teacher_period_published_by_fk FOREIGN KEY (published_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX teacher_period_status_index (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS teacher_schedule_sessions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    period_id BIGINT UNSIGNED NOT NULL,
+    template_id BIGINT UNSIGNED NULL,
+    session_date DATE NOT NULL,
+    rombel VARCHAR(30) NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    location VARCHAR(120) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+    notes TEXT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    CONSTRAINT teacher_sessions_period_fk FOREIGN KEY (period_id) REFERENCES teacher_schedule_periods(id) ON DELETE CASCADE,
+    CONSTRAINT teacher_sessions_template_fk FOREIGN KEY (template_id) REFERENCES teacher_schedule_templates(id) ON DELETE SET NULL,
+    INDEX teacher_sessions_date_index (session_date),
+    UNIQUE KEY teacher_session_slot_unique (period_id, session_date, rombel, start_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS teacher_schedule_assignments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT UNSIGNED NOT NULL,
+    teacher_profile_id BIGINT UNSIGNED NOT NULL,
+    role VARCHAR(12) NOT NULL,
+    source VARCHAR(12) NOT NULL DEFAULT 'auto',
+    is_locked TINYINT(1) NOT NULL DEFAULT 0,
+    confirmation_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    confirmation_token_hash VARCHAR(64) NOT NULL UNIQUE,
+    confirmation_token_encrypted TEXT NOT NULL,
+    confirmation_requested_at TIMESTAMP NULL,
+    confirmed_at TIMESTAMP NULL,
+    confirmation_note TEXT NULL,
+    h3_whatsapp_opened_at TIMESTAMP NULL,
+    h3_whatsapp_sent_at TIMESTAMP NULL,
+    h1_whatsapp_opened_at TIMESTAMP NULL,
+    h1_whatsapp_sent_at TIMESTAMP NULL,
+    overload_reason TEXT NULL,
+    assigned_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    CONSTRAINT teacher_assignments_session_fk FOREIGN KEY (session_id) REFERENCES teacher_schedule_sessions(id) ON DELETE CASCADE,
+    CONSTRAINT teacher_assignments_profile_fk FOREIGN KEY (teacher_profile_id) REFERENCES teacher_profiles(id),
+    CONSTRAINT teacher_assignments_actor_fk FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX teacher_assignments_confirmation_index (confirmation_status),
+    UNIQUE KEY teacher_assignment_session_role_unique (session_id, role),
+    UNIQUE KEY teacher_assignment_session_teacher_unique (session_id, teacher_profile_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -12,6 +12,9 @@ use App\Models\ScheduleReminder;
 use App\Models\Siswa;
 use App\Models\SiswaKarakterChecklist;
 use App\Models\ThemeSetting;
+use App\Models\TeacherScheduleAssignment;
+use App\Models\TeacherSchedulePeriod;
+use App\Models\TeacherScheduleSession;
 use App\Models\TracerKarakter;
 use App\Services\MateriRppJournalWorkflowService;
 use Carbon\Carbon;
@@ -45,13 +48,14 @@ class CalendarController extends Controller
         $end = Carbon::parse(substr($endStr, 0, 10))->endOfDay();
 
         $cacheKey = sprintf(
-            'calendar:public:%s:%s:%s:%s:%s:%s',
+            'calendar:public:%s:%s:%s:%s:%s:%s:%s',
             $start->format('Y-m-d'),
             $end->format('Y-m-d'),
             Karakter::max('updated_at') ?: 'no-karakter',
             $this->scheduleReminderCacheVersion(),
             AttendanceSchedule::max('updated_at') ?: 'no-schedules',
-            $this->materiCalendarCacheVersion()
+            $this->materiCalendarCacheVersion(),
+            $this->teacherScheduleCacheVersion()
         );
 
         $events = Cache::remember($cacheKey, now()->addSeconds(90), function () use ($start, $end) {
@@ -223,7 +227,7 @@ class CalendarController extends Controller
         $end = Carbon::parse(substr($endStr, 0, 10))->endOfDay();
 
         $cacheKey = sprintf(
-            'calendar:admin:%d:%s:%s:%s:%s:%s:%s:%s:%s:%s',
+            'calendar:admin:%d:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s',
             $user->id,
             $user->role_id,
             $start->format('Y-m-d'),
@@ -233,7 +237,8 @@ class CalendarController extends Controller
             $this->scheduleReminderCacheVersion(),
             AttendanceSchedule::max('updated_at') ?: 'no-schedules',
             MateriRppJournal::max('updated_at') ?: 'no-rpp-journals',
-            $this->materiCalendarCacheVersion()
+            $this->materiCalendarCacheVersion(),
+            $this->teacherScheduleCacheVersion()
         );
 
         $events = Cache::remember($cacheKey, now()->addSeconds(90), function () use ($user, $start, $end, $siswaIds) {
@@ -389,6 +394,10 @@ class CalendarController extends Controller
             $events[] = $event;
         }
 
+        foreach ($this->buildTeacherScheduleEvents($start, $end, $user) as $event) {
+            $events[] = $event;
+        }
+
         return $this->attachRppJournalState($events, $user);
     }
 
@@ -504,7 +513,69 @@ class CalendarController extends Controller
             $events[] = $event;
         }
 
+        foreach ($this->buildTeacherScheduleEvents($start, $end) as $event) {
+            $events[] = $event;
+        }
+
         return $events;
+    }
+
+    protected function buildTeacherScheduleEvents(Carbon $start, Carbon $end, $viewer = null): array
+    {
+        if (! Schema::hasTable('teacher_schedule_sessions')
+            || ! Schema::hasTable('teacher_schedule_periods')
+            || ! Schema::hasTable('teacher_schedule_assignments')) {
+            return [];
+        }
+
+        $query = TeacherScheduleSession::query()
+            ->whereBetween('session_date', [$start->toDateString(), $end->toDateString()])
+            ->where('status', 'scheduled')
+            ->whereHas('period', fn ($period) => $period->where('status', 'published'))
+            ->with(['assignments.teacher']);
+
+        if ($viewer && ! ($viewer->isAdmin() || $viewer->hasPamongMenuAccess('teacher_scheduling'))) {
+            $query->whereHas('assignments.teacher', fn ($teacher) => $teacher->where('user_id', $viewer->id));
+        }
+
+        return $query
+            ->orderBy('session_date')
+            ->orderBy('start_time')
+            ->get()
+            ->map(function (TeacherScheduleSession $session) use ($viewer) {
+                $main = $session->assignments->firstWhere('role', 'main')?->teacher;
+                $backup = $session->assignments->firstWhere('role', 'backup')?->teacher;
+                $public = $viewer === null;
+                $mainName = $main ? ($public ? $main->publicDisplayName() : $main->name) : 'Belum diisi';
+                $backupName = $backup ? ($public ? $backup->publicDisplayName() : $backup->name) : 'Belum diisi';
+                $props = [
+                    'type' => 'teacher_schedule',
+                    'title' => 'Program Tambahan Keilmuan '.strtoupper($session->rombel),
+                    'rombel' => strtoupper($session->rombel),
+                    'main_teacher' => $mainName,
+                    'backup_teacher' => $backupName,
+                    'start_time' => substr($session->start_time, 0, 5),
+                    'end_time' => substr($session->end_time, 0, 5),
+                    'location' => $session->location,
+                    'description' => "Utama: {$mainName}; Cadangan: {$backupName}",
+                ];
+
+                if ($viewer && ($viewer->isAdmin() || $viewer->hasPamongMenuAccess('teacher_scheduling'))) {
+                    $props['url'] = route('teacher-planning.index', ['month' => $session->session_date->format('Y-m')]);
+                }
+
+                return [
+                    'id' => ($public ? 'public-' : '').'teacher-schedule-'.$session->id,
+                    'title' => 'MT/MS '.strtoupper($session->rombel).": {$mainName} / {$backupName}",
+                    'start' => $session->session_date->format('Y-m-d').'T'.substr($session->start_time, 0, 8),
+                    'end' => $session->session_date->format('Y-m-d').'T'.substr($session->end_time, 0, 8),
+                    'allDay' => false,
+                    'color' => '#047857',
+                    'type' => 'teacher_schedule',
+                    'extendedProps' => $props,
+                ];
+            })
+            ->all();
     }
 
     protected function buildMateriCalendarEvents(Carbon $start, Carbon $end, bool $includeAdminUrl = false): array
@@ -627,6 +698,7 @@ class CalendarController extends Controller
             'materi' => 'Materi',
             'schedule-reminder' => 'Jadwal Pengingat',
             'attendance-schedule' => 'Jadwal Presensi',
+            'teacher_schedule' => 'Jadwal MT/MS',
             default => 'Agenda',
         };
     }
@@ -666,6 +738,11 @@ class CalendarController extends Controller
                 $props['late_threshold'] ?? '-',
                 $props['close_time'] ?? '-'
             ),
+            'teacher_schedule' => trim(implode('; ', array_filter([
+                filled($props['rombel'] ?? null) ? 'Rombel '.$props['rombel'] : null,
+                filled($props['main_teacher'] ?? null) ? 'Utama '.$props['main_teacher'] : null,
+                filled($props['backup_teacher'] ?? null) ? 'Cadangan '.$props['backup_teacher'] : null,
+            ]))),
             default => $props['description'] ?? '-',
         };
     }
@@ -677,6 +754,7 @@ class CalendarController extends Controller
             'attendance-schedule' => filled($props['target_label'] ?? null) ? 'Target: ' . $props['target_label'] : '-',
             'schedule-reminder' => filled($props['target_audience'] ?? null) ? 'Target: ' . $this->calendarAudienceLabel($props['target_audience']) : '-',
             'materi' => filled($props['folder'] ?? null) ? 'Folder: ' . $props['folder'] : '-',
+            'teacher_schedule' => filled($props['rombel'] ?? null) ? 'Rombel: '.$props['rombel'] : '-',
             default => '-',
         };
     }
@@ -688,6 +766,7 @@ class CalendarController extends Controller
             'attendance-schedule' => $props['action_label'] ?? '-',
             ScheduleReminder::SOURCE_MATERI_RPP => '-',
             'materi' => $props['url'] ?? '-',
+            'teacher_schedule' => $props['location'] ?? '-',
             default => $props['url'] ?? '-',
         };
     }
@@ -909,6 +988,20 @@ class CalendarController extends Controller
             ScheduleReminder::count(),
             ScheduleReminder::max('id') ?: 0,
             ScheduleReminder::max('updated_at') ?: 'no-reminders',
+        ]);
+    }
+
+    private function teacherScheduleCacheVersion(): string
+    {
+        if (! Schema::hasTable('teacher_schedule_periods')) {
+            return 'no-teacher-schedules';
+        }
+
+        return implode(':', [
+            TeacherSchedulePeriod::count(),
+            TeacherSchedulePeriod::max('updated_at') ?: 'no-periods',
+            TeacherScheduleSession::max('updated_at') ?: 'no-sessions',
+            TeacherScheduleAssignment::max('updated_at') ?: 'no-assignments',
         ]);
     }
 }

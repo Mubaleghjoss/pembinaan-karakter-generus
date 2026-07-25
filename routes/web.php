@@ -49,6 +49,23 @@ Route::get('/materi-publik/{materi}/pdf/{index}/download', [App\Http\Controllers
 Route::get('/materi-publik/{materi}', [App\Http\Controllers\PublicController::class, 'materiShow'])->name('public.materi.show');
 Route::get('/kalender', [App\Http\Controllers\CalendarController::class, 'publicIndex'])->name('public.calendar.index');
 Route::get('/kalender/events', [App\Http\Controllers\CalendarController::class, 'publicEvents'])->name('public.calendar.events');
+// Pendataan guru privat. Sengaja tidak ditampilkan pada navigasi publik.
+Route::get('/pendataanguru', [App\Http\Controllers\TeacherAvailabilityController::class, 'index'])
+    ->name('public.teacher-availability.index');
+Route::post('/pendataanguru/akses', [App\Http\Controllers\TeacherAvailabilityController::class, 'unlock'])
+    ->middleware('throttle:5,1')
+    ->name('public.teacher-availability.unlock');
+Route::post('/pendataanguru', [App\Http\Controllers\TeacherAvailabilityController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('public.teacher-availability.store');
+Route::get('/pendataanguru/selesai', [App\Http\Controllers\TeacherAvailabilityController::class, 'success'])
+    ->name('public.teacher-availability.success');
+Route::get('/konfirmasi-pengajar/{token}', [App\Http\Controllers\TeacherConfirmationController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('public.teacher-confirmation.show');
+Route::post('/konfirmasi-pengajar/{token}', [App\Http\Controllers\TeacherConfirmationController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('public.teacher-confirmation.store');
 // Public QR Scan endpoint (no auth required for public scanner)
 Route::post('/qr/scan', [PresensiController::class, 'scan'])->name('qr.scan.post');
 Route::post('/face-presensi/scan', [App\Http\Controllers\FaceAttendanceController::class, 'scan'])
@@ -344,6 +361,22 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update.post');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    // Pendataan dan penjadwalan guru MT/MS.
+    Route::get('/pendataan-guru', [App\Http\Controllers\TeacherPlanningController::class, 'index'])->name('teacher-planning.index');
+    Route::put('/pendataan-guru/akses', [App\Http\Controllers\TeacherPlanningController::class, 'updateInvite'])->name('teacher-planning.invite.update');
+    Route::put('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'updateProfile'])->name('teacher-planning.profiles.update');
+    Route::post('/pendataan-guru/template', [App\Http\Controllers\TeacherPlanningController::class, 'storeTemplate'])->name('teacher-planning.templates.store');
+    Route::patch('/pendataan-guru/template/{teacherScheduleTemplate}/toggle', [App\Http\Controllers\TeacherPlanningController::class, 'toggleTemplate'])->name('teacher-planning.templates.toggle');
+    Route::post('/pendataan-guru/jadwal/generate', [App\Http\Controllers\TeacherPlanningController::class, 'generate'])->name('teacher-planning.generate');
+    Route::put('/pendataan-guru/sesi/{teacherScheduleSession}/{role}', [App\Http\Controllers\TeacherPlanningController::class, 'assign'])->name('teacher-planning.sessions.assign');
+    Route::patch('/pendataan-guru/sesi/{teacherScheduleSession}/swap', [App\Http\Controllers\TeacherPlanningController::class, 'swap'])->name('teacher-planning.sessions.swap');
+    Route::patch('/pendataan-guru/periode/{teacherSchedulePeriod}/publish', [App\Http\Controllers\TeacherPlanningController::class, 'publish'])->name('teacher-planning.periods.publish');
+    Route::post('/pendataan-guru/penugasan/{assignment}/whatsapp/{stage}', [App\Http\Controllers\TeacherPlanningController::class, 'whatsapp'])->name('teacher-planning.assignments.whatsapp');
+    Route::patch('/pendataan-guru/penugasan/{assignment}/terkirim/{stage}', [App\Http\Controllers\TeacherPlanningController::class, 'markWhatsappSent'])->name('teacher-planning.assignments.sent');
+    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/excel', [App\Http\Controllers\TeacherPlanningController::class, 'exportExcel'])->name('teacher-planning.export.excel');
+    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/pdf', [App\Http\Controllers\TeacherPlanningController::class, 'exportPdf'])->name('teacher-planning.export.pdf');
+    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/gambar', [App\Http\Controllers\TeacherPlanningController::class, 'exportImage'])->name('teacher-planning.export.image');
 
     // Student management - Import/Export (harus sebelum resource agar tidak bentrok)
     Route::get('/siswa/template-import', [SiswaController::class, 'downloadTemplate'])->name('siswa.import.template');

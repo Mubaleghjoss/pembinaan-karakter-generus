@@ -176,10 +176,12 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                         $gamificationGroupVisible = auth()->user()->canAccessGamificationAdmin();
                         $gamificationGroupActive = request()->routeIs('admin.gamification.*')
                             || request()->routeIs('admin.rpg.*');
-                        $adminToolsGroupVisible = auth()->user()->isAdmin();
+                        $adminToolsGroupVisible = auth()->user()->isAdmin()
+                            || auth()->user()->hasPamongMenuAccess('teacher_scheduling');
                         $adminToolsGroupActive = request()->routeIs('settings.*')
                             || request()->routeIs('users.*')
                             || request()->routeIs('pamong.*')
+                            || request()->routeIs('teacher-planning.*')
                             || request()->routeIs('admin.data-pull.*')
                             || request()->routeIs('admin.certificate.*');
                         $contentGroupVisible = auth()->user()->hasPamongMenuAccess('berita')
@@ -474,6 +476,12 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
                         <div x-show="open" x-transition x-cloak class="space-y-1 pl-3">
+                            @if(auth()->user()->hasPamongMenuAccess('teacher_scheduling'))
+                            <a href="{{ route('teacher-planning.index') }}" class="nav-item @if(request()->routeIs('teacher-planning.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Pendataan & Jadwal Guru</span>
+                            </a>
+                            @endif
+                            @if(auth()->user()->isAdmin())
                             <a href="{{ route('settings.index') }}" class="nav-item @if(request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('pamong.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Pengaturan</span>
                             </a>
@@ -483,6 +491,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             <a href="{{ route('admin.certificate.settings', 1) }}" class="nav-item @if(request()->routeIs('admin.certificate.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Sertifikat Level</span>
                             </a>
+                            @endif
                         </div>
                     </div>
                     @endif
