@@ -18,6 +18,8 @@
             </div>
             <div class="flex items-center gap-2">
                 @if(! $isPublicViewer)
+                    <a href="{{ route('presentations.export.pdf', $presentation) }}" class="pkg-viewer-control">PDF</a>
+                    <a href="{{ route('presentations.export.pptx', $presentation) }}" class="pkg-viewer-control">PPTX</a>
                     <a href="{{ route('presentations.edit', $presentation) }}" class="pkg-viewer-control">Edit</a>
                 @endif
                 <button type="button" class="pkg-viewer-control" data-viewer-fullscreen>Layar Penuh</button>

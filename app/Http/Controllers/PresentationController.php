@@ -6,6 +6,7 @@ use App\Models\Materi;
 use App\Models\Presentation;
 use App\Models\PresentationAsset;
 use App\Models\ThemeSetting;
+use App\Services\PresentationExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,12 +15,14 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class PresentationController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('pamong.permission:materi')->only(['index', 'preview']);
+        $this->middleware('pamong.permission:materi')->only(['index', 'preview', 'exportPdf', 'exportPptx']);
         $this->middleware('pamong.permission:materi,create')->only(['store']);
         $this->middleware('pamong.permission:materi,edit')->only(['edit', 'update', 'uploadAsset', 'togglePublish']);
         $this->middleware('pamong.permission:materi,delete')->only(['destroy']);
@@ -148,6 +151,20 @@ class PresentationController extends Controller
             'isPublicViewer' => false,
             'theme' => ThemeSetting::current(),
         ]);
+    }
+
+    public function exportPdf(
+        Presentation $presentation,
+        PresentationExportService $exportService
+    ): Response {
+        return $exportService->pdf($presentation);
+    }
+
+    public function exportPptx(
+        Presentation $presentation,
+        PresentationExportService $exportService
+    ): BinaryFileResponse {
+        return $exportService->pptx($presentation);
     }
 
     public function publicShow(Presentation $presentation): View

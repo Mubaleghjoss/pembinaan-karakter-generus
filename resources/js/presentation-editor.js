@@ -485,7 +485,7 @@ if (root) {
     elements.viewport.addEventListener('pointercancel', finishPointer);
 
     const save = async () => {
-        if (state.saving) return;
+        if (state.saving) return false;
         state.saving = true;
         elements.saveStatus.textContent = 'Menyimpan...';
 
@@ -510,15 +510,26 @@ if (root) {
             state.dirty = false;
             elements.saveStatus.textContent = 'Semua perubahan tersimpan';
             elements.saveStatus.classList.remove('text-amber-600', 'dark:text-amber-300', 'text-red-600');
+            return true;
         } catch (error) {
             elements.saveStatus.textContent = error.message;
             elements.saveStatus.classList.add('text-red-600');
+            return false;
         } finally {
             state.saving = false;
         }
     };
 
     root.querySelector('[data-editor-save]').addEventListener('click', save);
+    root.querySelectorAll('[data-export-link]').forEach((link) => {
+        link.addEventListener('click', async (event) => {
+            if (!state.dirty) return;
+
+            event.preventDefault();
+            const saved = await save();
+            if (saved) window.location.assign(link.href);
+        });
+    });
     window.addEventListener('beforeunload', (event) => {
         if (!state.dirty) return;
         event.preventDefault();

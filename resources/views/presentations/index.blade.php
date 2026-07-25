@@ -93,6 +93,8 @@
                                 <a href="{{ route('presentations.edit', $presentation) }}" class="btn-primary !px-3 !py-2 text-sm">Buka Editor</a>
                             @endif
                             <a href="{{ route('presentations.preview', $presentation) }}" target="_blank" rel="noopener" class="btn-secondary !px-3 !py-2 text-sm">Pratinjau</a>
+                            <a href="{{ route('presentations.export.pdf', $presentation) }}" class="btn-secondary !px-3 !py-2 text-sm">Unduh PDF</a>
+                            <a href="{{ route('presentations.export.pptx', $presentation) }}" class="btn-secondary !px-3 !py-2 text-sm">Unduh PPTX</a>
                             @if($canEdit)
                                 <form method="POST" action="{{ route('presentations.publish', $presentation) }}">
                                     @csrf @method('PATCH')

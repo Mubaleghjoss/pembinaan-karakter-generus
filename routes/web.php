@@ -501,6 +501,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/presentasi/{presentation:slug}', [App\Http\Controllers\PresentationController::class, 'update'])->name('presentations.update');
     Route::post('/presentasi/{presentation:slug}/gambar', [App\Http\Controllers\PresentationController::class, 'uploadAsset'])->name('presentations.assets.store');
     Route::get('/presentasi/{presentation:slug}/tayang', [App\Http\Controllers\PresentationController::class, 'preview'])->name('presentations.preview');
+    Route::get('/presentasi/{presentation:slug}/unduh/pdf', [App\Http\Controllers\PresentationController::class, 'exportPdf'])->name('presentations.export.pdf');
+    Route::get('/presentasi/{presentation:slug}/unduh/pptx', [App\Http\Controllers\PresentationController::class, 'exportPptx'])->name('presentations.export.pptx');
     Route::patch('/presentasi/{presentation:slug}/publikasi', [App\Http\Controllers\PresentationController::class, 'togglePublish'])->name('presentations.publish');
     Route::delete('/presentasi/{presentation:slug}', [App\Http\Controllers\PresentationController::class, 'destroy'])->name('presentations.destroy');
     Route::get('/materi-targets', [MateriTargetController::class, 'index'])->name('materi-targets.index');
