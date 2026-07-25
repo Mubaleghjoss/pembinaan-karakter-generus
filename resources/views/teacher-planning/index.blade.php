@@ -155,6 +155,16 @@
                 <a href="{{ route('teacher-planning.export.excel', $period) }}" class="btn-secondary">Excel</a>
                 <a href="{{ route('teacher-planning.export.pdf', $period) }}" class="btn-secondary">PDF</a>
                 <a href="{{ route('teacher-planning.export.image', $period) }}" target="_blank" class="btn-secondary">Gambar</a>
+                @if(auth()->user()->isAdmin())
+                    <form method="POST" action="{{ route('teacher-planning.periods.destroy', $period) }}"
+                          data-confirm="Hapus jadwal {{ $period->month->translatedFormat('F Y') }} beserta seluruh sesi dan penugasannya? Data guru dan Template Slot Mingguan tidak akan dihapus."
+                          data-confirm-title="Hapus jadwal bulanan"
+                          data-confirm-button="Hapus Jadwal"
+                          data-confirm-tone="danger">
+                        @csrf @method('DELETE')
+                        <button class="btn-danger">Hapus Jadwal</button>
+                    </form>
+                @endif
             </div>
         </div>
 

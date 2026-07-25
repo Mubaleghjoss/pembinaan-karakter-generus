@@ -424,6 +424,19 @@ class TeacherPlanningController extends Controller
         return back()->with('success', 'Jadwal berhasil diterbitkan ke kalender.');
     }
 
+    public function destroyPeriod(
+        Request $request,
+        TeacherSchedulePeriod $teacherSchedulePeriod
+    ): RedirectResponse {
+        abort_unless($request->user()->isAdmin(), 403);
+        $month = $teacherSchedulePeriod->month->format('Y-m');
+
+        $teacherSchedulePeriod->delete();
+
+        return redirect()->route('teacher-planning.index', ['month' => $month])
+            ->with('success', 'Jadwal bulanan beserta seluruh sesi dan penugasannya berhasil dihapus.');
+    }
+
     public function whatsapp(Request $request, TeacherScheduleAssignment $assignment, string $stage): RedirectResponse
     {
         $this->authorizeModule('edit');

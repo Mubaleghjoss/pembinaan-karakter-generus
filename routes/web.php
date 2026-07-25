@@ -379,6 +379,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/pendataan-guru/sesi/{teacherScheduleSession}/{role}', [App\Http\Controllers\TeacherPlanningController::class, 'assign'])->name('teacher-planning.sessions.assign');
     Route::patch('/pendataan-guru/sesi/{teacherScheduleSession}/swap', [App\Http\Controllers\TeacherPlanningController::class, 'swap'])->name('teacher-planning.sessions.swap');
     Route::patch('/pendataan-guru/periode/{teacherSchedulePeriod}/publish', [App\Http\Controllers\TeacherPlanningController::class, 'publish'])->name('teacher-planning.periods.publish');
+    Route::delete('/pendataan-guru/periode/{teacherSchedulePeriod}', [App\Http\Controllers\TeacherPlanningController::class, 'destroyPeriod'])->name('teacher-planning.periods.destroy');
     Route::post('/pendataan-guru/penugasan/{assignment}/whatsapp/{stage}', [App\Http\Controllers\TeacherPlanningController::class, 'whatsapp'])->name('teacher-planning.assignments.whatsapp');
     Route::patch('/pendataan-guru/penugasan/{assignment}/terkirim/{stage}', [App\Http\Controllers\TeacherPlanningController::class, 'markWhatsappSent'])->name('teacher-planning.assignments.sent');
     Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/excel', [App\Http\Controllers\TeacherPlanningController::class, 'exportExcel'])->name('teacher-planning.export.excel');

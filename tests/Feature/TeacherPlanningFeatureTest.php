@@ -326,6 +326,61 @@ class TeacherPlanningFeatureTest extends TestCase
         $this->assertDatabaseHas('teacher_profiles', ['id' => $teacherProfile->id]);
     }
 
+    public function test_admin_can_delete_monthly_schedule_without_deleting_teacher_or_template(): void
+    {
+        $admin = $this->admin();
+        $teacherProfile = TeacherProfile::create($this->profileAttributes());
+        $template = TeacherScheduleTemplate::create([
+            'weekday' => 'monday',
+            'rombel' => 'smp',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'is_active' => true,
+        ]);
+        $period = TeacherSchedulePeriod::create([
+            'month' => now()->startOfMonth()->toDateString(),
+            'status' => 'published',
+            'created_by' => $admin->id,
+            'published_by' => $admin->id,
+            'published_at' => now(),
+        ]);
+        $session = TeacherScheduleSession::create([
+            'period_id' => $period->id,
+            'template_id' => $template->id,
+            'session_date' => now()->addDays(5)->toDateString(),
+            'rombel' => 'smp',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'status' => 'scheduled',
+        ]);
+        $assignment = app(TeacherSchedulePlanner::class)
+            ->createAssignment($session, $teacherProfile, 'main', 'manual', true, $admin->id);
+
+        $calendarParameters = [
+            'start' => now()->startOfMonth()->toDateString(),
+            'end' => now()->endOfMonth()->toDateString(),
+        ];
+        $this->getJson(route('public.calendar.events', $calendarParameters))
+            ->assertOk()
+            ->assertJsonFragment(['type' => 'teacher_schedule']);
+
+        $this->actingAs($admin)
+            ->delete(route('teacher-planning.periods.destroy', $period))
+            ->assertRedirect(route('teacher-planning.index', ['month' => now()->format('Y-m')]))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('teacher_schedule_periods', ['id' => $period->id]);
+        $this->assertDatabaseMissing('teacher_schedule_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('teacher_schedule_assignments', ['id' => $assignment->id]);
+        $this->assertDatabaseHas('teacher_profiles', ['id' => $teacherProfile->id]);
+        $this->assertDatabaseHas('teacher_schedule_templates', ['id' => $template->id]);
+
+        $eventsAfterDelete = $this->getJson(route('public.calendar.events', $calendarParameters))
+            ->assertOk()
+            ->json();
+        $this->assertNull(collect($eventsAfterDelete)->firstWhere('type', 'teacher_schedule'));
+    }
+
     public function test_admin_can_publish_incomplete_schedule_with_acknowledgement_and_export_it(): void
     {
         $admin = $this->admin();
