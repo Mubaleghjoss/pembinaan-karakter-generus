@@ -39,6 +39,27 @@
     transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.pkg-presentation-frame.is-shape-rectangle,
+.pkg-presentation-frame.is-shape-square,
+.pkg-presentation-element.is-shape-rectangle,
+.pkg-presentation-element.is-shape-square,
+.pkg-presentation-diagram-node.is-shape-square {
+    border-radius: 0;
+}
+
+.pkg-presentation-frame.is-shape-circle,
+.pkg-presentation-element.is-shape-circle,
+.pkg-presentation-diagram-node.is-shape-circle,
+.pkg-presentation-diagram-center.is-shape-circle {
+    border-radius: 50%;
+}
+
+.pkg-presentation-frame.is-shape-rounded,
+.pkg-presentation-element.is-shape-rounded,
+.pkg-presentation-diagram-node.is-shape-rounded {
+    border-radius: 22px;
+}
+
 .pkg-presentation-frame.is-overview {
     cursor: grab;
 }
@@ -122,11 +143,102 @@
     overflow-wrap: anywhere;
 }
 
-.pkg-presentation-element.is-image img {
+.pkg-presentation-element.is-image img,
+.pkg-presentation-element.is-logo img {
     width: 100%;
     height: 100%;
     border-radius: inherit;
     user-select: none;
+}
+
+.pkg-presentation-youtube {
+    border-radius: 16px;
+    background: #0f172a;
+}
+
+.pkg-presentation-youtube-placeholder,
+.pkg-presentation-youtube iframe {
+    width: 100%;
+    height: 100%;
+}
+
+.pkg-presentation-youtube-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #fff;
+    background: radial-gradient(circle at 50% 40%, #334155, #020617);
+}
+
+.pkg-presentation-youtube-placeholder span {
+    width: 0;
+    height: 0;
+    border-top: 22px solid transparent;
+    border-bottom: 22px solid transparent;
+    border-left: 34px solid #ef4444;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+}
+
+.pkg-presentation-youtube iframe {
+    display: block;
+    border: 0;
+}
+
+.pkg-presentation-youtube.is-interactive .pkg-presentation-youtube-placeholder {
+    display: none;
+}
+
+.pkg-presentation-frame.is-overview .pkg-presentation-youtube iframe {
+    pointer-events: none;
+}
+
+.pkg-presentation-frame.is-overview .pkg-presentation-link {
+    pointer-events: none;
+}
+
+.pkg-presentation-link {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 18px;
+    color: inherit;
+    font-size: 20px;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+    text-align: center;
+    text-decoration: none;
+}
+
+.pkg-presentation-link.is-button {
+    border-radius: 14px;
+}
+
+.pkg-presentation-link.is-card {
+    border: 2px solid currentColor;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.18);
+}
+
+.pkg-presentation-link.is-text {
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-decoration: underline;
+}
+
+.pkg-presentation-shape {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 .pkg-presentation-diagram {
@@ -156,8 +268,13 @@
 
 .pkg-presentation-diagram-connector {
     flex: 0 0 auto;
-    font-size: 28px;
+    font-size: 0;
     font-weight: 900;
+}
+
+.pkg-presentation-diagram-connector::before {
+    content: "\2192";
+    font-size: 28px;
 }
 
 .pkg-presentation-diagram.is-cycle {
@@ -172,6 +289,58 @@
 
 .pkg-presentation-diagram.is-hierarchy .pkg-presentation-diagram-connector {
     transform: rotate(90deg);
+}
+
+.pkg-presentation-diagram.is-radial {
+    position: absolute;
+    display: block;
+    padding: 0;
+}
+
+.pkg-presentation-diagram-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    display: flex;
+    width: 29%;
+    aspect-ratio: 1;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+    border: 5px solid currentColor;
+    background: rgba(255, 255, 255, 0.96);
+    padding: 10px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.pkg-presentation-diagram.is-radial .pkg-presentation-diagram-node {
+    position: absolute;
+    left: var(--node-x);
+    top: var(--node-y);
+    z-index: 2;
+    width: 24%;
+    min-width: 0;
+    height: 26%;
+    min-height: 0;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.96);
+}
+
+.pkg-presentation-radial-connector {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    width: 40%;
+    height: 3px;
+    transform: rotate(var(--connector-angle));
+    transform-origin: 0 50%;
+    background: currentColor;
+    opacity: 0.72;
 }
 
 .pkg-presentation-frame-list-item {

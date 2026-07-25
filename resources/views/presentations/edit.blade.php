@@ -71,9 +71,14 @@
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-frame>Tambah Frame</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-text>Tambah Teks</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-image>Masukkan Gambar</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-logo>Masukkan Logo</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-youtube>Tambah YouTube</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-link>Tambah Tautan</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-shape>Tambah Bentuk</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-diagram>Tambah Diagram</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames>Rapikan Frame</button>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-image-input>
+        <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-logo-input>
         <span class="ml-auto self-center text-xs text-gray-500 dark:text-gray-400">Cubit dua jari untuk zoom, geser dua jari untuk memindahkan kanvas, lalu tap frame untuk fokus.</span>
     </section>
 

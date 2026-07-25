@@ -96,7 +96,7 @@ class PresentationExportService
 
             foreach (($frame['elements'] ?? []) as $element) {
                 $type = (string) ($element['type'] ?? '');
-                if (! in_array($type, ['text', 'image', 'diagram'], true)) {
+                if (! in_array($type, ['text', 'image', 'logo', 'youtube', 'link', 'shape', 'diagram'], true)) {
                     continue;
                 }
 
@@ -107,7 +107,7 @@ class PresentationExportService
                 $prepared['heightPercent'] = $this->percentage($element['height'] ?? 100, $frameHeight);
                 $prepared['rotation'] = max(-180, min(180, (float) ($element['rotation'] ?? 0)));
 
-                if ($type === 'image') {
+                if (in_array($type, ['image', 'logo'], true)) {
                     $asset = $assets->get((string) ($element['assetId'] ?? ''));
                     $prepared['dataUrl'] = $asset ? $this->assetDataUrl($asset) : null;
                 }
@@ -246,9 +246,22 @@ class PresentationExportService
             $type = (string) ($element['type'] ?? '');
             $geometry = $this->elementGeometry($element, $frameWidth, $frameHeight);
 
-            if ($type === 'text') {
+            if (in_array($type, ['text', 'shape', 'link', 'youtube'], true)) {
+                if ($type === 'youtube') {
+                    $element['text'] = "Video YouTube\n".($element['youtubeUrl'] ?? '');
+                    $element['fontSize'] = 24;
+                    $element['align'] = 'center';
+                    $element['bold'] = true;
+                    $element['shapeType'] = 'rounded';
+                } elseif ($type === 'link') {
+                    $element['text'] = ($element['text'] ?? 'Buka tautan')."\n".($element['url'] ?? '');
+                    $element['fontSize'] = 22;
+                    $element['align'] = 'center';
+                    $element['bold'] = true;
+                    $element['shapeType'] = 'rounded';
+                }
                 $shapes .= $this->textShapeXml($shapeId++, $element, $geometry);
-            } elseif ($type === 'image') {
+            } elseif (in_array($type, ['image', 'logo'], true)) {
                 $assetId = (string) ($element['assetId'] ?? '');
                 if (! isset($media[$assetId])) {
                     continue;
@@ -301,6 +314,12 @@ class PresentationExportService
         $fontSize = (int) round(max(10, min(160, (float) ($element['fontSize'] ?? 32))) * 75);
         $fontColor = $this->pptColor($element['color'] ?? '#0f172a', '0F172A');
         $background = $this->shapeFillXml($element['backgroundColor'] ?? 'transparent');
+        $presetGeometry = match ($element['shapeType'] ?? null) {
+            'circle' => 'ellipse',
+            'rounded' => 'roundRect',
+            'hexagon' => 'hexagon',
+            default => 'rect',
+        };
         $alignment = match ($element['align'] ?? 'left') {
             'center' => 'ctr',
             'right' => 'r',
@@ -322,7 +341,7 @@ class PresentationExportService
             .'<p:nvSpPr><p:cNvPr id="'.$id.'" name="Teks '.$id.'"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>'
             .'<p:spPr><a:xfrm'.($rotation !== 0 ? ' rot="'.$rotation.'"' : '').'>'
             .$this->geometryXml($geometry)
-            .'</a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+            .'</a:xfrm><a:prstGeom prst="'.$presetGeometry.'"><a:avLst/></a:prstGeom>'
             .$background.'<a:ln><a:noFill/></a:ln></p:spPr>'
             .'<p:txBody><a:bodyPr wrap="square" anchor="ctr"/><a:lstStyle/>'.$paragraphs.'</p:txBody>'
             .'</p:sp>';
@@ -357,6 +376,52 @@ class PresentationExportService
         $count = count($items);
         $xml = '';
         $nodeGeometry = [];
+
+        if ($type === 'radial') {
+            $centerWidth = (int) round($geometry['cx'] * 0.28);
+            $centerHeight = (int) round($geometry['cy'] * 0.3);
+            $center = [
+                'x' => $geometry['x'] + (int) round(($geometry['cx'] - $centerWidth) / 2),
+                'y' => $geometry['y'] + (int) round(($geometry['cy'] - $centerHeight) / 2),
+                'cx' => $centerWidth,
+                'cy' => $centerHeight,
+            ];
+            $centerElement = $element;
+            $centerElement['text'] = $element['centerText'] ?? 'Logo / Tema';
+            $centerElement['fontSize'] = 20;
+            $centerElement['align'] = 'center';
+            $centerElement['bold'] = true;
+            $centerElement['shapeType'] = $element['nodeShape'] ?? 'circle';
+            $centerElement['backgroundColor'] = ($element['backgroundColor'] ?? 'transparent') === 'transparent'
+                ? '#ffffff'
+                : $element['backgroundColor'];
+            $xml .= $this->textShapeXml($shapeId++, $centerElement, $center);
+
+            foreach ($items as $index => $item) {
+                $angle = ((M_PI * 2) / $count) * $index - (M_PI / 2);
+                $nodeWidth = (int) round($geometry['cx'] * 0.24);
+                $nodeHeight = (int) round($geometry['cy'] * 0.22);
+                $node = [
+                    'x' => $geometry['x'] + (int) round(($geometry['cx'] * (0.5 + cos($angle) * 0.38)) - ($nodeWidth / 2)),
+                    'y' => $geometry['y'] + (int) round(($geometry['cy'] * (0.5 + sin($angle) * 0.36)) - ($nodeHeight / 2)),
+                    'cx' => $nodeWidth,
+                    'cy' => $nodeHeight,
+                ];
+                $xml .= $this->connectorShapeXml($shapeId++, $center, $node, $element['color'] ?? '#475569');
+                $nodeElement = $element;
+                $nodeElement['text'] = $item;
+                $nodeElement['fontSize'] = 15;
+                $nodeElement['align'] = 'center';
+                $nodeElement['bold'] = true;
+                $nodeElement['shapeType'] = $element['nodeShape'] ?? 'circle';
+                $nodeElement['backgroundColor'] = ($element['backgroundColor'] ?? 'transparent') === 'transparent'
+                    ? '#e2e8f0'
+                    : $element['backgroundColor'];
+                $xml .= $this->textShapeXml($shapeId++, $nodeElement, $node);
+            }
+
+            return [$xml, $shapeId];
+        }
 
         foreach ($items as $index => $item) {
             if ($type === 'hierarchy' && $count > 1) {

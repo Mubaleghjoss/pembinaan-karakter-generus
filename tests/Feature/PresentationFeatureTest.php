@@ -52,6 +52,10 @@ class PresentationFeatureTest extends TestCase
             ->assertSee('data-add-frame', false)
             ->assertSee('data-add-text', false)
             ->assertSee('data-add-image', false)
+            ->assertSee('data-add-logo', false)
+            ->assertSee('data-add-youtube', false)
+            ->assertSee('data-add-link', false)
+            ->assertSee('data-add-shape', false)
             ->assertSee('data-add-diagram', false)
             ->assertSee('data-arrange-frames', false)
             ->assertSee('data-editor-fit', false)
@@ -71,6 +75,8 @@ class PresentationFeatureTest extends TestCase
                 'width' => 800,
                 'height' => 450,
                 'backgroundColor' => '#ffffff',
+                'shape' => 'custom',
+                'borderRadius' => 36,
                 'elements' => [[
                     'id' => 'text-1',
                     'type' => 'text',
@@ -91,10 +97,47 @@ class PresentationFeatureTest extends TestCase
                     'y' => 240,
                     'width' => 640,
                     'height' => 140,
-                    'diagramType' => 'process',
+                    'diagramType' => 'radial',
                     'items' => ['Ilmu', 'Amal', 'Teladan'],
                     'color' => '#047857',
                     'backgroundColor' => 'transparent',
+                    'centerText' => 'Karakter',
+                    'nodeShape' => 'circle',
+                ], [
+                    'id' => 'youtube-1',
+                    'type' => 'youtube',
+                    'x' => 80,
+                    'y' => 40,
+                    'width' => 320,
+                    'height' => 180,
+                    'youtubeUrl' => 'https://youtu.be/dQw4w9WgXcQ',
+                    'title' => 'Video pembinaan',
+                    'color' => '#ffffff',
+                    'backgroundColor' => '#0f172a',
+                ], [
+                    'id' => 'link-1',
+                    'type' => 'link',
+                    'x' => 430,
+                    'y' => 40,
+                    'width' => 240,
+                    'height' => 70,
+                    'text' => 'Buka materi',
+                    'url' => 'https://pkgenerus.my.id/materi',
+                    'linkStyle' => 'button',
+                    'color' => '#ffffff',
+                    'backgroundColor' => '#047857',
+                ], [
+                    'id' => 'shape-1',
+                    'type' => 'shape',
+                    'x' => 430,
+                    'y' => 130,
+                    'width' => 220,
+                    'height' => 120,
+                    'text' => 'Amanah',
+                    'shapeType' => 'hexagon',
+                    'fontSize' => 28,
+                    'color' => '#ffffff',
+                    'backgroundColor' => '#0f766e',
                 ]],
             ]],
         ];
@@ -118,6 +161,11 @@ class PresentationFeatureTest extends TestCase
         $savedCanvas = $presentation->fresh()->canvas_data;
         $this->assertSame(1920, $savedCanvas['width']);
         $this->assertSame(1270, $savedCanvas['height']);
+        $this->assertSame('custom', $savedCanvas['frames'][0]['shape']);
+        $this->assertEquals(36, $savedCanvas['frames'][0]['borderRadius']);
+        $this->assertSame('dQw4w9WgXcQ', $savedCanvas['frames'][0]['elements'][2]['youtubeId']);
+        $this->assertSame('https://pkgenerus.my.id/materi', $savedCanvas['frames'][0]['elements'][3]['url']);
+        $this->assertSame('hexagon', $savedCanvas['frames'][0]['elements'][4]['shapeType']);
 
         $this->get(route('public.presentations.show', $presentation))->assertNotFound();
 
@@ -276,6 +324,60 @@ class PresentationFeatureTest extends TestCase
             'color' => '#0f172a',
             'backgroundColor' => 'transparent',
         ];
+        $canvas['frames'][0]['elements'][] = [
+            'id' => 'logo-1',
+            'type' => 'logo',
+            'x' => 30,
+            'y' => 300,
+            'width' => 100,
+            'height' => 100,
+            'assetId' => $asset->id,
+            'alt' => 'Logo PKG',
+            'fit' => 'contain',
+            'shape' => 'circle',
+            'rotation' => 0,
+            'color' => '#0f172a',
+            'backgroundColor' => 'transparent',
+        ];
+        $canvas['frames'][0]['elements'][] = [
+            'id' => 'youtube-1',
+            'type' => 'youtube',
+            'x' => 150,
+            'y' => 300,
+            'width' => 260,
+            'height' => 100,
+            'youtubeUrl' => 'https://youtu.be/dQw4w9WgXcQ',
+            'youtubeId' => 'dQw4w9WgXcQ',
+            'title' => 'Video PKG',
+            'color' => '#ffffff',
+            'backgroundColor' => '#0f172a',
+        ];
+        $canvas['frames'][0]['elements'][] = [
+            'id' => 'link-1',
+            'type' => 'link',
+            'x' => 420,
+            'y' => 300,
+            'width' => 180,
+            'height' => 80,
+            'text' => 'Materi lanjut',
+            'url' => 'https://pkgenerus.my.id/materi',
+            'linkStyle' => 'button',
+            'color' => '#ffffff',
+            'backgroundColor' => '#047857',
+        ];
+        $canvas['frames'][1]['elements'][] = [
+            'id' => 'shape-1',
+            'type' => 'shape',
+            'x' => 260,
+            'y' => 280,
+            'width' => 280,
+            'height' => 100,
+            'text' => 'Bentuk dapat diedit',
+            'shapeType' => 'hexagon',
+            'fontSize' => 24,
+            'color' => '#ffffff',
+            'backgroundColor' => '#0f766e',
+        ];
         $presentation->update(['canvas_data' => $canvas]);
 
         $pdf = $this->actingAs($admin)->get(route('presentations.export.pdf', $presentation));
@@ -306,6 +408,9 @@ class PresentationFeatureTest extends TestCase
             'Teks ini tetap bisa diedit',
             (string) $zip->getFromName('ppt/slides/slide1.xml')
         );
+        $this->assertStringContainsString('Video YouTube', (string) $zip->getFromName('ppt/slides/slide1.xml'));
+        $this->assertStringContainsString('Materi lanjut', (string) $zip->getFromName('ppt/slides/slide1.xml'));
+        $this->assertStringContainsString('Bentuk dapat diedit', (string) $zip->getFromName('ppt/slides/slide2.xml'));
 
         for ($index = 0; $index < $zip->numFiles; $index++) {
             $name = $zip->getNameIndex($index);

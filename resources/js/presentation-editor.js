@@ -43,6 +43,7 @@ if (root) {
         background: root.querySelector('[data-editor-background]'),
         pathMode: root.querySelector('[data-editor-path-mode]'),
         imageInput: root.querySelector('[data-image-input]'),
+        logoInput: root.querySelector('[data-logo-input]'),
     };
     let touchGesture = null;
 
@@ -208,6 +209,17 @@ if (root) {
                         <input type="color" class="pkg-field h-11 w-full p-1" data-inspector-prop="backgroundColor" value="${frame.backgroundColor || '#ffffff'}">
                     </div>
                     <div>
+                        <label class="form-label">Bentuk frame</label>
+                        <select class="pkg-field w-full" data-inspector-prop="shape">
+                            ${option('rounded', 'Sudut membulat', frame.shape || 'rounded')}
+                            ${option('rectangle', 'Kotak', frame.shape)}
+                            ${option('circle', 'Lingkaran / oval', frame.shape)}
+                            ${option('hexagon', 'Segi enam', frame.shape)}
+                            ${option('custom', 'Radius buatan sendiri', frame.shape)}
+                        </select>
+                    </div>
+                    ${frame.shape === 'custom' ? numberField('Radius sudut', 'borderRadius', frame.borderRadius || 22, 0, 240) : ''}
+                    <div>
                         <label class="form-label">Ukuran frame</label>
                         <div class="grid grid-cols-3 gap-2">
                             <button type="button" class="pkg-frame-size-button" data-frame-size="560x315">Kecil</button>
@@ -246,7 +258,7 @@ if (root) {
                 </div>
                 <label class="pkg-check"><input type="checkbox" data-inspector-prop="bold" ${element.bold ? 'checked' : ''}><span>Teks tebal</span></label>
             `;
-        } else if (element.type === 'image') {
+        } else if (element.type === 'image' || element.type === 'logo') {
             typeFields = `
                 <div>
                     <label class="form-label">Teks alternatif</label>
@@ -258,6 +270,66 @@ if (root) {
                         ${option('cover', 'Penuhi area', element.fit)}
                         ${option('contain', 'Tampilkan utuh', element.fit)}
                     </select>
+                </div>
+                ${element.type === 'logo' ? `
+                    <div>
+                        <label class="form-label">Bentuk logo</label>
+                        <select class="pkg-field w-full" data-inspector-prop="shape">
+                            ${option('circle', 'Lingkaran', element.shape || 'circle')}
+                            ${option('rounded', 'Sudut membulat', element.shape)}
+                            ${option('square', 'Kotak', element.shape)}
+                            ${option('hexagon', 'Segi enam', element.shape)}
+                        </select>
+                    </div>
+                ` : ''}
+            `;
+        } else if (element.type === 'youtube') {
+            typeFields = `
+                <div>
+                    <label class="form-label">Link YouTube</label>
+                    <input type="url" class="pkg-field w-full" maxlength="500" data-inspector-prop="youtubeUrl" value="${escapeAttribute(element.youtubeUrl || '')}" placeholder="https://youtu.be/...">
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Video dapat diputar dan dibuka layar penuh pada Pratinjau atau Tautan Publik.</p>
+                </div>
+                <div>
+                    <label class="form-label">Judul video</label>
+                    <input class="pkg-field w-full" maxlength="160" data-inspector-prop="title" value="${escapeAttribute(element.title || '')}">
+                </div>
+            `;
+        } else if (element.type === 'link') {
+            typeFields = `
+                <div><label class="form-label">Label tautan</label><input class="pkg-field w-full" maxlength="160" data-inspector-prop="text" value="${escapeAttribute(element.text || '')}"></div>
+                <div><label class="form-label">Alamat tautan</label><input type="url" class="pkg-field w-full" maxlength="1000" data-inspector-prop="url" value="${escapeAttribute(element.url || '')}" placeholder="https://..."></div>
+                <div>
+                    <label class="form-label">Tampilan tautan</label>
+                    <select class="pkg-field w-full" data-inspector-prop="linkStyle">
+                        ${option('button', 'Tombol', element.linkStyle)}
+                        ${option('card', 'Kartu', element.linkStyle)}
+                        ${option('text', 'Teks', element.linkStyle)}
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    ${colorField('Warna teks', 'color', element.color || '#ffffff')}
+                    ${colorField('Latar', 'backgroundColor', normalizeColorInput(element.backgroundColor, '#047857'))}
+                </div>
+            `;
+        } else if (element.type === 'shape') {
+            typeFields = `
+                <div><label class="form-label">Teks di bentuk</label><textarea class="pkg-field w-full" rows="3" maxlength="1000" data-inspector-prop="text">${escapeHtml(element.text || '')}</textarea></div>
+                <div>
+                    <label class="form-label">Bentuk</label>
+                    <select class="pkg-field w-full" data-inspector-prop="shapeType">
+                        ${option('circle', 'Lingkaran / oval', element.shapeType)}
+                        ${option('rounded', 'Sudut membulat', element.shapeType)}
+                        ${option('rectangle', 'Kotak', element.shapeType)}
+                        ${option('hexagon', 'Segi enam', element.shapeType)}
+                        ${option('custom', 'Radius buatan sendiri', element.shapeType)}
+                    </select>
+                </div>
+                ${element.shapeType === 'custom' ? numberField('Radius sudut', 'borderRadius', element.borderRadius || 24, 0, 240) : ''}
+                ${numberField('Ukuran huruf', 'fontSize', element.fontSize || 28, 10, 160)}
+                <div class="grid grid-cols-2 gap-3">
+                    ${colorField('Warna teks', 'color', element.color || '#ffffff')}
+                    ${colorField('Warna bentuk', 'backgroundColor', normalizeColorInput(element.backgroundColor, '#0f766e'))}
                 </div>
             `;
         } else {
@@ -272,8 +344,21 @@ if (root) {
                         ${option('process', 'Proses mendatar', element.diagramType)}
                         ${option('cycle', 'Siklus', element.diagramType)}
                         ${option('hierarchy', 'Hierarki', element.diagramType)}
+                        ${option('radial', 'Radial dengan pusat', element.diagramType)}
                     </select>
                 </div>
+                ${element.diagramType === 'radial' ? `
+                    <div><label class="form-label">Teks pusat / logo</label><input class="pkg-field w-full" maxlength="120" data-inspector-prop="centerText" value="${escapeAttribute(element.centerText || '')}"></div>
+                    <div>
+                        <label class="form-label">Bentuk node</label>
+                        <select class="pkg-field w-full" data-inspector-prop="nodeShape">
+                            ${option('circle', 'Lingkaran', element.nodeShape || 'circle')}
+                            ${option('rounded', 'Sudut membulat', element.nodeShape)}
+                            ${option('square', 'Kotak', element.nodeShape)}
+                            ${option('hexagon', 'Segi enam', element.nodeShape)}
+                        </select>
+                    </div>
+                ` : ''}
                 <div class="grid grid-cols-2 gap-3">
                     ${colorField('Warna diagram', 'color', element.color || '#0f172a')}
                     ${colorField('Latar', 'backgroundColor', normalizeColorInput(element.backgroundColor, '#ffffff'))}
@@ -324,6 +409,8 @@ if (root) {
             width: 800,
             height: 450,
             backgroundColor: '#ffffff',
+            shape: 'rounded',
+            borderRadius: 22,
             elements: [],
         };
         state.presentation.canvas.frames.push(frame);
@@ -405,12 +492,91 @@ if (root) {
         render();
     });
 
+    root.querySelector('[data-add-youtube]').addEventListener('click', () => {
+        const frame = selectedFrame();
+        if (!frame) return;
+        const element = {
+            id: presentationId('element'),
+            type: 'youtube',
+            x: 90,
+            y: 90,
+            width: Math.min(560, frame.width - 180),
+            height: Math.min(315, frame.height - 150),
+            rotation: 0,
+            youtubeUrl: '',
+            youtubeId: '',
+            title: 'Video YouTube',
+            color: '#ffffff',
+            backgroundColor: '#0f172a',
+        };
+        frame.elements.push(element);
+        state.selectedElementId = element.id;
+        state.mode = 'focus';
+        state.manualCamera = false;
+        markDirty();
+        render();
+    });
+
+    root.querySelector('[data-add-link]').addEventListener('click', () => {
+        const frame = selectedFrame();
+        if (!frame) return;
+        const element = {
+            id: presentationId('element'),
+            type: 'link',
+            x: 90,
+            y: 300,
+            width: 260,
+            height: 70,
+            rotation: 0,
+            text: 'Buka tautan',
+            url: 'https://',
+            linkStyle: 'button',
+            color: '#ffffff',
+            backgroundColor: '#047857',
+        };
+        frame.elements.push(element);
+        state.selectedElementId = element.id;
+        state.mode = 'focus';
+        state.manualCamera = false;
+        markDirty();
+        render();
+    });
+
+    root.querySelector('[data-add-shape]').addEventListener('click', () => {
+        const frame = selectedFrame();
+        if (!frame) return;
+        const element = {
+            id: presentationId('element'),
+            type: 'shape',
+            x: 110,
+            y: 140,
+            width: 220,
+            height: 150,
+            rotation: 0,
+            text: 'Isi bentuk',
+            shapeType: 'rounded',
+            borderRadius: 24,
+            fontSize: 28,
+            color: '#ffffff',
+            backgroundColor: '#0f766e',
+        };
+        frame.elements.push(element);
+        state.selectedElementId = element.id;
+        state.mode = 'focus';
+        state.manualCamera = false;
+        markDirty();
+        render();
+    });
+
     root.querySelector('[data-add-image]').addEventListener('click', () => {
         if (selectedFrame()) elements.imageInput.click();
     });
+    root.querySelector('[data-add-logo]').addEventListener('click', () => {
+        if (selectedFrame()) elements.logoInput.click();
+    });
 
-    elements.imageInput.addEventListener('change', async () => {
-        const file = elements.imageInput.files?.[0];
+    const uploadVisual = async (input, type) => {
+        const file = input.files?.[0];
         const frame = selectedFrame();
         if (!file || !frame) return;
 
@@ -433,15 +599,16 @@ if (root) {
             state.presentation.assets[String(data.asset.id)] = data.asset;
             const element = {
                 id: presentationId('element'),
-                type: 'image',
+                type,
                 assetId: data.asset.id,
                 x: 90,
                 y: 80,
-                width: Math.min(420, frame.width - 180),
-                height: Math.min(280, frame.height - 140),
+                width: type === 'logo' ? Math.min(220, frame.width - 180) : Math.min(420, frame.width - 180),
+                height: type === 'logo' ? Math.min(220, frame.height - 140) : Math.min(280, frame.height - 140),
                 rotation: 0,
                 alt: data.asset.name,
-                fit: 'cover',
+                fit: type === 'logo' ? 'contain' : 'cover',
+                shape: type === 'logo' ? 'circle' : 'rounded',
                 color: '#0f172a',
                 backgroundColor: 'transparent',
             };
@@ -455,9 +622,11 @@ if (root) {
             elements.saveStatus.textContent = error.message;
             elements.saveStatus.classList.add('text-red-600');
         } finally {
-            elements.imageInput.value = '';
+            input.value = '';
         }
-    });
+    };
+    elements.imageInput.addEventListener('change', () => uploadVisual(elements.imageInput, 'image'));
+    elements.logoInput.addEventListener('change', () => uploadVisual(elements.logoInput, 'logo'));
 
     elements.frameList.addEventListener('click', (event) => {
         const focusButton = event.target.closest('[data-frame-focus]');
@@ -486,13 +655,16 @@ if (root) {
         if (scope === 'frame' && ['width', 'height'].includes(input.dataset.inspectorProp)) return;
 
         let value = input.type === 'checkbox' ? input.checked : input.value;
-        if (['x', 'y', 'width', 'height', 'fontSize'].includes(input.dataset.inspectorProp)) {
+        if (['x', 'y', 'width', 'height', 'fontSize', 'borderRadius'].includes(input.dataset.inspectorProp)) {
             value = Number(value);
         }
         if (input.dataset.inspectorProp === 'items') {
             value = String(value).split('\n').map((item) => item.trim()).filter(Boolean).slice(0, 8);
         }
         target[input.dataset.inspectorProp] = value;
+        if (input.dataset.inspectorProp === 'youtubeUrl') {
+            target.youtubeId = extractYouTubeId(value);
+        }
         if (scope === 'frame') ensureCanvasContainsFrames();
         markDirty();
         renderPresentationStage({
@@ -505,6 +677,7 @@ if (root) {
         if (state.manualCamera) updateCameraHint();
         else applyCamera(false);
         if (scope === 'frame' && input.dataset.inspectorProp === 'title') renderFrameList();
+        if (['shape', 'shapeType', 'diagramType'].includes(input.dataset.inspectorProp)) renderInspector();
     });
 
     elements.inspector.addEventListener('change', (event) => {
@@ -624,6 +797,13 @@ if (root) {
             state.cameraScale = scale;
             state.manualCamera = true;
             updateCameraHint();
+        },
+        onTap: (tap) => {
+            if (state.mode !== 'overview' || state.drag?.moved) return false;
+            const frameNode = tap.target.closest?.('[data-frame-id]');
+            if (!frameNode) return false;
+            focusFrame(frameNode.dataset.frameId);
+            return true;
         },
     });
 
@@ -845,7 +1025,22 @@ function normalizeColorInput(value, fallback) {
 }
 
 function elementTypeLabel(type) {
-    return ({ text: 'Elemen Teks', image: 'Elemen Gambar', diagram: 'Elemen Diagram' })[type] || 'Elemen';
+    return ({
+        text: 'Elemen Teks',
+        image: 'Elemen Gambar',
+        logo: 'Elemen Logo',
+        youtube: 'Elemen YouTube',
+        link: 'Elemen Tautan',
+        shape: 'Elemen Bentuk',
+        diagram: 'Elemen Diagram',
+    })[type] || 'Elemen';
+}
+
+function extractYouTubeId(value) {
+    const match = String(value || '').trim().match(
+        /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/i
+    );
+    return match?.[1] || '';
 }
 
 function escapeHtml(value) {

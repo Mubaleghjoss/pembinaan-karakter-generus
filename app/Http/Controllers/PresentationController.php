@@ -243,6 +243,8 @@ class PresentationController extends Controller
                 'width' => 800,
                 'height' => 450,
                 'backgroundColor' => '#ffffff',
+                'shape' => 'rounded',
+                'borderRadius' => 22,
                 'elements' => [[
                     'id' => 'element-'.Str::lower(Str::random(8)),
                     'type' => 'text',
@@ -269,7 +271,7 @@ class PresentationController extends Controller
             is_string($value) && preg_match('/^(#[0-9a-fA-F]{6}|transparent)$/', $value)
                 ? strtolower($value)
                 : $fallback;
-        $allowedTypes = ['text', 'image', 'diagram'];
+        $allowedTypes = ['text', 'image', 'logo', 'youtube', 'link', 'shape', 'diagram'];
         $frames = [];
 
         foreach (array_slice($canvas['frames'] ?? [], 0, 40) as $frameIndex => $frame) {
@@ -303,17 +305,48 @@ class PresentationController extends Controller
                         'align' => in_array($element['align'] ?? null, ['left', 'center', 'right'], true) ? $element['align'] : 'left',
                         'bold' => (bool) ($element['bold'] ?? false),
                     ];
-                } elseif ($type === 'image') {
+                } elseif (in_array($type, ['image', 'logo'], true)) {
                     $normalized += [
                         'assetId' => max(0, (int) ($element['assetId'] ?? 0)),
-                        'alt' => Str::limit((string) ($element['alt'] ?? 'Gambar presentasi'), 160, ''),
+                        'alt' => Str::limit((string) ($element['alt'] ?? ($type === 'logo' ? 'Logo presentasi' : 'Gambar presentasi')), 160, ''),
                         'fit' => in_array($element['fit'] ?? null, ['cover', 'contain'], true) ? $element['fit'] : 'cover',
+                        'shape' => in_array($element['shape'] ?? null, ['circle', 'rounded', 'square', 'hexagon'], true)
+                            ? $element['shape']
+                            : ($type === 'logo' ? 'circle' : 'rounded'),
+                    ];
+                } elseif ($type === 'youtube') {
+                    $youtubeUrl = Str::limit((string) ($element['youtubeUrl'] ?? ''), 500, '');
+                    $normalized += [
+                        'youtubeUrl' => $youtubeUrl,
+                        'youtubeId' => $this->youtubeId($youtubeUrl),
+                        'title' => Str::limit((string) ($element['title'] ?? 'Video YouTube'), 160, ''),
+                    ];
+                } elseif ($type === 'link') {
+                    $normalized += [
+                        'text' => Str::limit((string) ($element['text'] ?? 'Buka tautan'), 160, ''),
+                        'url' => $this->safeWebUrl((string) ($element['url'] ?? '')),
+                        'linkStyle' => in_array($element['linkStyle'] ?? null, ['button', 'card', 'text'], true)
+                            ? $element['linkStyle']
+                            : 'button',
+                    ];
+                } elseif ($type === 'shape') {
+                    $normalized += [
+                        'text' => Str::limit((string) ($element['text'] ?? ''), 1000, ''),
+                        'shapeType' => in_array($element['shapeType'] ?? null, ['circle', 'rounded', 'rectangle', 'hexagon', 'custom'], true)
+                            ? $element['shapeType']
+                            : 'rounded',
+                        'borderRadius' => $number($element['borderRadius'] ?? null, 0, 240, 24),
+                        'fontSize' => $number($element['fontSize'] ?? null, 10, 160, 28),
                     ];
                 } else {
                     $normalized += [
-                        'diagramType' => in_array($element['diagramType'] ?? null, ['process', 'cycle', 'hierarchy'], true)
+                        'diagramType' => in_array($element['diagramType'] ?? null, ['process', 'cycle', 'hierarchy', 'radial'], true)
                             ? $element['diagramType']
                             : 'process',
+                        'centerText' => Str::limit((string) ($element['centerText'] ?? 'Logo / Tema'), 120, ''),
+                        'nodeShape' => in_array($element['nodeShape'] ?? null, ['circle', 'rounded', 'square', 'hexagon'], true)
+                            ? $element['nodeShape']
+                            : 'circle',
                         'items' => collect(array_slice($element['items'] ?? [], 0, 8))
                             ->map(fn ($item) => Str::limit((string) $item, 120, ''))
                             ->filter()
@@ -333,6 +366,10 @@ class PresentationController extends Controller
                 'width' => $number($frame['width'] ?? null, 320, 1600, 800),
                 'height' => $number($frame['height'] ?? null, 180, 900, 450),
                 'backgroundColor' => $color($frame['backgroundColor'] ?? null, '#ffffff'),
+                'shape' => in_array($frame['shape'] ?? null, ['rounded', 'rectangle', 'circle', 'hexagon', 'custom'], true)
+                    ? $frame['shape']
+                    : 'rounded',
+                'borderRadius' => $number($frame['borderRadius'] ?? null, 0, 240, 22),
                 'elements' => $elements,
             ];
         }
@@ -367,5 +404,26 @@ class PresentationController extends Controller
         } while (Presentation::query()->where('slug', $slug)->exists());
 
         return $slug;
+    }
+
+    private function youtubeId(string $url): string
+    {
+        return preg_match(
+            '~(?:youtu\.be/|youtube(?:-nocookie)?\.com/(?:watch\?(?:[^#]*&)?v=|embed/|shorts/|live/))([A-Za-z0-9_-]{11})~i',
+            trim($url),
+            $matches
+        ) ? $matches[1] : '';
+    }
+
+    private function safeWebUrl(string $url): string
+    {
+        $url = trim($url);
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
+            return '';
+        }
+
+        return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)
+            ? Str::limit($url, 1000, '')
+            : '';
     }
 }

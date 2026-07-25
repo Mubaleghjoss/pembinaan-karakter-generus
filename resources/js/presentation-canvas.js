@@ -45,6 +45,7 @@ export function renderPresentationStage({
     selectedFrameId = null,
     selectedElementId = null,
     overview = true,
+    interactive = false,
 }) {
     const canvas = presentation.canvas;
     const canvasBounds = presentationCanvasBounds(canvas);
@@ -62,6 +63,7 @@ export function renderPresentationStage({
         frameElement.style.width = `${frame.width}px`;
         frameElement.style.height = `${frame.height}px`;
         frameElement.style.backgroundColor = frame.backgroundColor || '#ffffff';
+        applyPresentationShape(frameElement, frame.shape || 'rounded', frame.borderRadius || 22);
         frameElement.classList.toggle('is-selected', frame.id === selectedFrameId);
         frameElement.classList.toggle('is-overview', overview);
 
@@ -85,7 +87,7 @@ export function renderPresentationStage({
         frameElement.appendChild(frameLabel);
 
         (frame.elements || []).forEach((element) => {
-            const elementNode = renderPresentationElement(element, presentation.assets || {});
+            const elementNode = renderPresentationElement(element, presentation.assets || {}, interactive);
             elementNode.dataset.elementId = element.id;
             elementNode.classList.toggle('is-selected', frame.id === selectedFrameId && element.id === selectedElementId);
             frameElement.appendChild(elementNode);
@@ -150,6 +152,7 @@ export function presentationPinchFactor(deltaY) {
 
 export function bindPresentationTouchGestures(viewport, stage, options = {}) {
     const pointers = new Map();
+    const tapStarts = new Map();
     let active = false;
     let previousGesture = null;
     let suppressTapUntil = 0;
@@ -170,9 +173,16 @@ export function bindPresentationTouchGestures(viewport, stage, options = {}) {
     const pointerDown = (event) => {
         if (event.pointerType !== 'touch') return;
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        tapStarts.set(event.pointerId, {
+            x: event.clientX,
+            y: event.clientY,
+            time: performance.now(),
+            target: event.target,
+        });
 
         if (pointers.size >= 2 && !active) {
             active = true;
+            tapStarts.clear();
             previousGesture = gestureMetrics();
             options.onStart?.();
             event.preventDefault();
@@ -210,6 +220,8 @@ export function bindPresentationTouchGestures(viewport, stage, options = {}) {
 
     const pointerEnd = (event) => {
         if (!pointers.has(event.pointerId)) return;
+        const tapStart = tapStarts.get(event.pointerId);
+        const wasGesture = active;
         pointers.delete(event.pointerId);
         if (active && pointers.size < 2) {
             active = false;
@@ -218,6 +230,23 @@ export function bindPresentationTouchGestures(viewport, stage, options = {}) {
             options.onEnd?.();
             event.preventDefault();
         }
+        if (!wasGesture && tapStart && event.type === 'pointerup') {
+            const movement = Math.hypot(event.clientX - tapStart.x, event.clientY - tapStart.y);
+            const duration = performance.now() - tapStart.time;
+            if (movement <= 14 && duration <= 650) {
+                const handled = options.onTap?.({
+                    target: tapStart.target,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                    originalEvent: event,
+                });
+                if (handled !== false) {
+                    suppressTapUntil = performance.now() + 360;
+                    event.preventDefault();
+                }
+            }
+        }
+        tapStarts.delete(event.pointerId);
     };
 
     viewport.addEventListener('pointerdown', pointerDown, { capture: true });
@@ -250,16 +279,8 @@ function cameraNumber(value, fallback) {
     return Number.isFinite(number) ? number : fallback;
 }
 
-function renderPresentationElement(element, assets) {
-    const node = document.createElement('div');
-    node.className = `pkg-presentation-element is-${element.type}`;
-    node.style.left = `${element.x}px`;
-    node.style.top = `${element.y}px`;
-    node.style.width = `${element.width}px`;
-    node.style.height = `${element.height}px`;
-    node.style.transform = `rotate(${element.rotation || 0}deg)`;
-    node.style.color = element.color || '#0f172a';
-    node.style.backgroundColor = element.backgroundColor || 'transparent';
+function renderPresentationElement(element, assets, interactive = false) {
+    const node = createPresentationElementShell(element);
 
     if (element.type === 'text') {
         node.classList.add('pkg-presentation-text');
@@ -270,24 +291,89 @@ function renderPresentationElement(element, assets) {
         return node;
     }
 
-    if (element.type === 'image') {
+    if (element.type === 'image' || element.type === 'logo') {
         const image = document.createElement('img');
         image.src = assets[String(element.assetId)]?.url || '';
-        image.alt = element.alt || 'Gambar presentasi';
+        image.alt = element.alt || (element.type === 'logo' ? 'Logo presentasi' : 'Gambar presentasi');
         image.draggable = false;
         image.style.objectFit = element.fit || 'cover';
+        applyPresentationShape(node, element.shape || (element.type === 'logo' ? 'circle' : 'rounded'), 18);
         node.appendChild(image);
+        return node;
+    }
+
+    if (element.type === 'youtube') {
+        node.classList.add('pkg-presentation-youtube');
+        const placeholder = document.createElement('div');
+        placeholder.className = 'pkg-presentation-youtube-placeholder';
+        placeholder.innerHTML = '<span aria-hidden="true"></span><strong>Video YouTube</strong>';
+        node.appendChild(placeholder);
+        if (interactive && element.youtubeId) {
+            node.classList.add('is-interactive');
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(element.youtubeId)}?rel=0`;
+            iframe.title = element.title || 'Video YouTube';
+            iframe.loading = 'lazy';
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+            iframe.allowFullscreen = true;
+            iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+            node.appendChild(iframe);
+        }
+        return node;
+    }
+
+    if (element.type === 'link') {
+        const link = document.createElement(interactive ? 'a' : 'div');
+        link.className = `pkg-presentation-link is-${element.linkStyle || 'button'}`;
+        link.textContent = element.text || 'Buka tautan';
+        if (interactive) {
+            link.href = element.url || '#';
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+        }
+        node.appendChild(link);
+        return node;
+    }
+
+    if (element.type === 'shape') {
+        node.classList.add('pkg-presentation-shape');
+        applyPresentationShape(node, element.shapeType || 'rounded', element.borderRadius || 24);
+        node.style.fontSize = `${element.fontSize || 28}px`;
+        node.textContent = element.text || '';
         return node;
     }
 
     node.classList.add('pkg-presentation-diagram', `is-${element.diagramType || 'process'}`);
     const items = Array.isArray(element.items) && element.items.length ? element.items : ['Ide 1', 'Ide 2', 'Ide 3'];
+    if (element.diagramType === 'radial') {
+        const centerNode = document.createElement('div');
+        centerNode.className = 'pkg-presentation-diagram-center';
+        centerNode.textContent = element.centerText || 'Logo / Tema';
+        applyPresentationShape(centerNode, element.nodeShape || 'circle', 22);
+        node.appendChild(centerNode);
+        items.forEach((item, index) => {
+            const angle = ((Math.PI * 2) / items.length) * index - (Math.PI / 2);
+            const connector = document.createElement('span');
+            connector.className = 'pkg-presentation-radial-connector';
+            connector.style.setProperty('--connector-angle', `${angle}rad`);
+            node.appendChild(connector);
+
+            const itemNode = document.createElement('div');
+            itemNode.className = 'pkg-presentation-diagram-node';
+            itemNode.textContent = item;
+            itemNode.style.setProperty('--node-x', `${50 + (Math.cos(angle) * 40)}%`);
+            itemNode.style.setProperty('--node-y', `${50 + (Math.sin(angle) * 38)}%`);
+            applyPresentationShape(itemNode, element.nodeShape || 'circle', 18);
+            node.appendChild(itemNode);
+        });
+        return node;
+    }
+
     items.forEach((item, index) => {
         const itemNode = document.createElement('div');
         itemNode.className = 'pkg-presentation-diagram-node';
         itemNode.textContent = item;
         node.appendChild(itemNode);
-
         if (index < items.length - 1) {
             const connector = document.createElement('span');
             connector.className = 'pkg-presentation-diagram-connector';
@@ -295,6 +381,26 @@ function renderPresentationElement(element, assets) {
             node.appendChild(connector);
         }
     });
-
     return node;
+}
+
+function createPresentationElementShell(element) {
+    const node = document.createElement('div');
+    node.className = `pkg-presentation-element is-${element.type}`;
+    node.style.left = `${element.x}px`;
+    node.style.top = `${element.y}px`;
+    node.style.width = `${element.width}px`;
+    node.style.height = `${element.height}px`;
+    node.style.transform = `rotate(${element.rotation || 0}deg)`;
+    node.style.color = element.color || '#0f172a';
+    node.style.backgroundColor = element.backgroundColor || 'transparent';
+    return node;
+}
+
+function applyPresentationShape(node, shape, borderRadius = 22) {
+    node.classList.add(`is-shape-${shape}`);
+    if (shape === 'custom') node.style.borderRadius = `${borderRadius}px`;
+    if (shape === 'hexagon') {
+        node.style.clipPath = 'polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)';
+    }
 }

@@ -25,7 +25,7 @@
             white-space: pre-wrap;
             line-height: 1.15;
         }
-        .image img {
+        .image img, .logo img {
             display: block;
             width: 100%;
             height: 100%;
@@ -51,6 +51,29 @@
             color: #475569;
             text-align: center;
             padding-top: 20pt;
+        }
+        .youtube, .link, .shape {
+            display: table;
+            padding: 10pt;
+            text-align: center;
+            font-weight: bold;
+        }
+        .youtube > div, .link > div, .shape > div {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .youtube { background: #0f172a !important; color: #fff !important; border-radius: 10pt; }
+        .link { border: 1.5pt solid currentColor; border-radius: 8pt; }
+        .diagram-radial { position: relative; width: 100%; height: 100%; }
+        .diagram-radial-center {
+            position: absolute; left: 36%; top: 34%; width: 28%; height: 32%;
+            padding: 12pt 6pt; border: 2pt solid currentColor; border-radius: 50%;
+            background: #fff; text-align: center; font-weight: bold;
+        }
+        .diagram-radial-item {
+            display: inline-block; width: 23%; margin: 3%; padding: 8pt 4pt;
+            border: 1.5pt solid currentColor; border-radius: 18pt;
+            background: #e2e8f0; text-align: center; font-weight: bold;
         }
     </style>
 </head>
@@ -79,8 +102,8 @@
                     class="element text"
                     style="{{ $style }}font-size:{{ max(10, min(160, (float) ($element['fontSize'] ?? 32))) * 0.75 }}pt;text-align:{{ $element['align'] ?? 'left' }};font-weight:{{ !empty($element['bold']) ? 'bold' : 'normal' }};"
                 >{{ $element['text'] ?? '' }}</div>
-            @elseif($element['type'] === 'image')
-                <div class="element image" style="{{ $style }}">
+            @elseif(in_array($element['type'], ['image', 'logo'], true))
+                <div class="element {{ $element['type'] }}" style="{{ $style }}border-radius:{{ $element['type'] === 'logo' && ($element['shape'] ?? 'circle') === 'circle' ? '50%' : '8pt' }};">
                     @if($element['dataUrl'])
                         <img
                             src="{{ $element['dataUrl'] }}"
@@ -90,6 +113,19 @@
                     @else
                         <div class="missing-image">Gambar tidak tersedia</div>
                     @endif
+                </div>
+            @elseif($element['type'] === 'youtube')
+                <div class="element youtube" style="{{ $style }}"><div>Video YouTube<br><span style="font-size:10pt;font-weight:normal;">{{ $element['youtubeUrl'] ?? '' }}</span></div></div>
+            @elseif($element['type'] === 'link')
+                <div class="element link" style="{{ $style }}"><div>{{ $element['text'] ?? 'Buka tautan' }}<br><span style="font-size:9pt;font-weight:normal;">{{ $element['url'] ?? '' }}</span></div></div>
+            @elseif($element['type'] === 'shape')
+                <div class="element shape" style="{{ $style }}border-radius:{{ ($element['shapeType'] ?? '') === 'circle' ? '50%' : (($element['borderRadius'] ?? 24) * 0.75).'pt' }};font-size:{{ max(10, min(160, (float) ($element['fontSize'] ?? 28))) * 0.75 }}pt;"><div>{{ $element['text'] ?? '' }}</div></div>
+            @elseif($element['type'] === 'diagram' && ($element['diagramType'] ?? '') === 'radial')
+                <div class="element diagram-radial" style="{{ $style }}">
+                    <div class="diagram-radial-center">{{ $element['centerText'] ?? 'Logo / Tema' }}</div>
+                    @foreach(array_slice($element['items'] ?? [], 0, 8) as $item)
+                        <span class="diagram-radial-item">{{ $item }}</span>
+                    @endforeach
                 </div>
             @elseif($element['type'] === 'diagram')
                 <div class="element" style="{{ $style }}">

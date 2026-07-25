@@ -25,7 +25,7 @@ if (root) {
         manualCamera: false,
     };
 
-    renderPresentationStage({ stage, presentation, overview: true });
+    renderPresentationStage({ stage, presentation, overview: true, interactive: true });
 
     const updateCamera = (animate = true) => {
         const frame = state.mode === 'frame' ? presentation.canvas.frames[state.currentIndex] : null;
@@ -102,6 +102,13 @@ if (root) {
             state.cameraScale = scale;
             state.manualCamera = true;
             updateZoomProgress();
+        },
+        onTap: (tap) => {
+            if (state.mode !== 'overview') return;
+            const frameNode = tap.target.closest?.('[data-frame-id]');
+            if (!frameNode) return;
+            const frame = findPresentationFrame(presentation, frameNode.dataset.frameId);
+            if (frame) showFrame(presentation.canvas.frames.indexOf(frame));
         },
     });
 
