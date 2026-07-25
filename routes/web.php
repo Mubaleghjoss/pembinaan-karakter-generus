@@ -365,6 +365,7 @@ Route::middleware('auth')->group(function () {
     // Pendataan dan penjadwalan guru MT/MS.
     Route::get('/pendataan-guru', [App\Http\Controllers\TeacherPlanningController::class, 'index'])->name('teacher-planning.index');
     Route::put('/pendataan-guru/akses', [App\Http\Controllers\TeacherPlanningController::class, 'updateInvite'])->name('teacher-planning.invite.update');
+    Route::put('/pendataan-guru/pesan-selesai', [App\Http\Controllers\TeacherPlanningController::class, 'updateSuccessMessage'])->name('teacher-planning.success-message.update');
     Route::put('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'updateProfile'])->name('teacher-planning.profiles.update');
     Route::post('/pendataan-guru/template', [App\Http\Controllers\TeacherPlanningController::class, 'storeTemplate'])->name('teacher-planning.templates.store');
     Route::patch('/pendataan-guru/template/{teacherScheduleTemplate}/toggle', [App\Http\Controllers\TeacherPlanningController::class, 'toggleTemplate'])->name('teacher-planning.templates.toggle');

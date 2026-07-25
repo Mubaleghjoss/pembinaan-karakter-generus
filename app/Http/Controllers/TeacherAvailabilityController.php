@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTeacherAvailabilityRequest;
 use App\Models\TeacherAvailabilityInvite;
 use App\Models\TeacherProfile;
+use App\Models\Setting;
 use App\Models\ThemeSetting;
 use App\Support\ParticipantProfileOptions;
 use Illuminate\Http\RedirectResponse;
@@ -118,7 +119,17 @@ class TeacherAvailabilityController extends Controller
 
     public function success()
     {
-        return view('public.teacher-availability.success', ['theme' => ThemeSetting::current()]);
+        return view('public.teacher-availability.success', [
+            'theme' => ThemeSetting::current(),
+            'successTitle' => Setting::get(
+                Setting::TEACHER_SUCCESS_TITLE_KEY,
+                Setting::TEACHER_SUCCESS_TITLE_DEFAULT
+            ),
+            'successMessage' => Setting::get(
+                Setting::TEACHER_SUCCESS_MESSAGE_KEY,
+                Setting::TEACHER_SUCCESS_MESSAGE_DEFAULT
+            ),
+        ]);
     }
 
     private function sessionInvite(Request $request): ?TeacherAvailabilityInvite

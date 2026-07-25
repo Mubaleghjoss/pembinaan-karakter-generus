@@ -8,6 +8,7 @@ use App\Models\TeacherScheduleAssignment;
 use App\Models\TeacherSchedulePeriod;
 use App\Models\TeacherScheduleSession;
 use App\Models\TeacherScheduleTemplate;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\TeacherSchedulePlanner;
 use App\Support\ParticipantProfileOptions;
@@ -68,6 +69,16 @@ class TeacherPlanningController extends Controller
             ->orderBy('rombel')
             ->get();
         $invite = TeacherAvailabilityInvite::query()->latest('id')->first();
+        $successMessageSettings = [
+            'title' => Setting::get(
+                Setting::TEACHER_SUCCESS_TITLE_KEY,
+                Setting::TEACHER_SUCCESS_TITLE_DEFAULT
+            ),
+            'message' => Setting::get(
+                Setting::TEACHER_SUCCESS_MESSAGE_KEY,
+                Setting::TEACHER_SUCCESS_MESSAGE_DEFAULT
+            ),
+        ];
         $warnings = $period ? $this->planner->warnings($period) : [];
         $stats = [
             'total' => TeacherProfile::count(),
@@ -107,7 +118,7 @@ class TeacherPlanningController extends Controller
         return view('teacher-planning.index', compact(
             'selectedMonth', 'period', 'profiles', 'eligibleProfiles', 'templates',
             'invite', 'warnings', 'stats', 'linkableUsers', 'roleStats', 'rombelStats',
-            'confirmationDue', 'reminderDue'
+            'confirmationDue', 'reminderDue', 'successMessageSettings'
         ) + [
             'groups' => ParticipantProfileOptions::groups(),
             'rombels' => TeacherProfile::ROMBELS,
@@ -153,6 +164,23 @@ class TeacherPlanningController extends Controller
         return $plainCode
             ? $redirect->with('teacher_access_code', $plainCode)
             : $redirect;
+    }
+
+    public function updateSuccessMessage(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $validated = $request->validate([
+            'success_title' => ['required', 'string', 'max:120'],
+            'success_message' => ['required', 'string', 'max:500'],
+        ]);
+
+        Setting::setMany([
+            Setting::TEACHER_SUCCESS_TITLE_KEY => trim($validated['success_title']),
+            Setting::TEACHER_SUCCESS_MESSAGE_KEY => trim($validated['success_message']),
+        ], 'teacher_planning');
+
+        return back()->with('success', 'Pesan setelah formulir terkirim berhasil disimpan.');
     }
 
     public function updateProfile(Request $request, TeacherProfile $teacherProfile): RedirectResponse

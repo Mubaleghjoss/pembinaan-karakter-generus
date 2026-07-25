@@ -10,8 +10,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m5 13 4 4L19 7"/>
             </svg>
         </div>
-        <h1 class="mt-5 text-2xl font-black text-gray-900 dark:text-white">Terima kasih</h1>
-        <p class="mt-3 leading-7 text-gray-600 dark:text-gray-300">Formulir kesediaan Anda sudah tersimpan. Admin akan menghubungi melalui WhatsApp saat jadwal disusun.</p>
+        <h1 class="mt-5 text-2xl font-black text-gray-900 dark:text-white">{{ $successTitle }}</h1>
+        <p class="mt-3 whitespace-pre-line leading-7 text-gray-600 dark:text-gray-300">{{ $successMessage }}</p>
         <a href="{{ route('public.index') }}" class="btn-secondary mt-6 justify-center">Kembali ke Beranda</a>
     </section>
 </main>

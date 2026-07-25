@@ -181,6 +181,31 @@ class TeacherPlanningFeatureTest extends TestCase
         $this->assertStringNotContainsString('pendataanguru', $navigation);
     }
 
+    public function test_admin_can_customize_teacher_form_success_message(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->put(route('teacher-planning.success-message.update'), [
+                'success_title' => 'Data Anda Berhasil Dikirim',
+                'success_message' => "Terima kasih sudah mengisi.\nPengurus akan segera menghubungi Anda.",
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->get(route('public.teacher-availability.success'))
+            ->assertOk()
+            ->assertSee('Data Anda Berhasil Dikirim')
+            ->assertSee('Terima kasih sudah mengisi.')
+            ->assertSee('Pengurus akan segera menghubungi Anda.');
+
+        $this->actingAs($admin)
+            ->get(route('teacher-planning.index'))
+            ->assertOk()
+            ->assertSee('Pesan Setelah Formulir Terkirim')
+            ->assertSee('Data Anda Berhasil Dikirim');
+    }
+
     public function test_admin_can_publish_incomplete_schedule_with_acknowledgement_and_export_it(): void
     {
         $admin = $this->admin();

@@ -77,6 +77,25 @@
         </details>
         @endif
 
+        @if(auth()->user()->isAdmin())
+        <details class="pkg-panel p-5">
+            <summary class="cursor-pointer text-lg font-bold text-gray-900 dark:text-white">Pesan Setelah Formulir Terkirim</summary>
+            <p class="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">Teks ini ditampilkan pada halaman selesai setelah calon guru mengirim formulir.</p>
+            <form method="POST" action="{{ route('teacher-planning.success-message.update') }}" class="mt-5 space-y-4">
+                @csrf @method('PUT')
+                <div>
+                    <label for="success_title" class="form-label">Judul</label>
+                    <input id="success_title" name="success_title" value="{{ old('success_title', $successMessageSettings['title']) }}" class="pkg-field w-full" maxlength="120" required>
+                </div>
+                <div>
+                    <label for="success_message" class="form-label">Isi pesan</label>
+                    <textarea id="success_message" name="success_message" rows="4" class="pkg-field w-full" maxlength="500" required>{{ old('success_message', $successMessageSettings['message']) }}</textarea>
+                </div>
+                <button class="btn-primary w-full justify-center">Simpan Pesan</button>
+            </form>
+        </details>
+        @endif
+
         <details class="pkg-panel p-5" @if($templates->isEmpty()) open @endif>
             <summary class="cursor-pointer text-lg font-bold text-gray-900 dark:text-white">Template Slot Mingguan</summary>
             <form method="POST" action="{{ route('teacher-planning.templates.store') }}" class="mt-5 grid gap-4 sm:grid-cols-2">

@@ -7,6 +7,14 @@ use Illuminate\Support\Facades\Cache;
 
 class Setting extends Model
 {
+    public const TEACHER_SUCCESS_TITLE_KEY = 'teacher_availability_success_title';
+
+    public const TEACHER_SUCCESS_MESSAGE_KEY = 'teacher_availability_success_message';
+
+    public const TEACHER_SUCCESS_TITLE_DEFAULT = 'Terima kasih';
+
+    public const TEACHER_SUCCESS_MESSAGE_DEFAULT = 'Formulir kesediaan Anda sudah tersimpan. Admin akan menghubungi melalui WhatsApp saat jadwal disusun.';
+
     /**
      * The table associated with the model.
      *
