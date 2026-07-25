@@ -361,6 +361,10 @@ if (root) {
                         <label class="form-label">Judul frame</label>
                         <input class="pkg-field w-full" maxlength="120" data-inspector-prop="title" value="${escapeAttribute(frame.title)}">
                     </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        ${numberField('Ukuran judul', 'titleFontSize', frame.titleFontSize || 14, 10, 72)}
+                        ${colorField('Warna judul', 'titleColor', frame.titleColor || '#334155')}
+                    </div>
                     <div>
                         <label class="form-label">Warna frame</label>
                         <input type="color" class="pkg-field h-11 w-full p-1" data-inspector-prop="backgroundColor" value="${frame.backgroundColor || '#ffffff'}">
@@ -661,6 +665,8 @@ if (root) {
             width: 800,
             height: 450,
             backgroundColor: '#ffffff',
+            titleColor: '#334155',
+            titleFontSize: 14,
             shape: 'rounded',
             borderRadius: 22,
             elements: [],

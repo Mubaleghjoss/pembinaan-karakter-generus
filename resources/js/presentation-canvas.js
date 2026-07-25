@@ -64,6 +64,40 @@ export function renderPresentationStage({
     stage.style.width = `${canvasBounds.width}px`;
     stage.style.height = `${canvasBounds.height}px`;
     stage.style.backgroundColor = presentation.backgroundColor || '#0f172a';
+    stage.classList.toggle('is-frame-focus', !overview);
+
+    if (editable && overview) {
+        const recommendedGap = 90;
+        canvas.frames.forEach((frame) => {
+            const frameX = Number(frame.x || 0);
+            const frameY = Number(frame.y || 0);
+            const frameWidth = Number(frame.width || 800);
+            const frameHeight = Number(frame.height || 450);
+            const isTooClose = canvas.frames.some((other) => {
+                if (other.id === frame.id) return false;
+                const otherX = Number(other.x || 0);
+                const otherY = Number(other.y || 0);
+                const otherWidth = Number(other.width || 800);
+                const otherHeight = Number(other.height || 450);
+                return !(
+                    frameX + frameWidth + recommendedGap <= otherX
+                    || otherX + otherWidth + recommendedGap <= frameX
+                    || frameY + frameHeight + recommendedGap <= otherY
+                    || otherY + otherHeight + recommendedGap <= frameY
+                );
+            });
+            const safeZone = document.createElement('div');
+            safeZone.className = 'pkg-presentation-frame-safe-zone';
+            safeZone.classList.toggle('is-too-close', isTooClose);
+            safeZone.classList.toggle('is-selected', frame.id === selectedFrameId);
+            safeZone.style.left = `${frameX - recommendedGap}px`;
+            safeZone.style.top = `${frameY - recommendedGap}px`;
+            safeZone.style.width = `${frameWidth + (recommendedGap * 2)}px`;
+            safeZone.style.height = `${frameHeight + (recommendedGap * 2)}px`;
+            safeZone.innerHTML = `<span>${isTooClose ? 'Jarak frame terlalu dekat' : `Batas aman ${recommendedGap} px`}</span>`;
+            stage.appendChild(safeZone);
+        });
+    }
 
     canvas.frames.forEach((frame, frameIndex) => {
         const frameElement = document.createElement('section');
@@ -77,6 +111,7 @@ export function renderPresentationStage({
         applyPresentationShape(frameElement, frame.shape || 'rounded', frame.borderRadius || 22);
         frameElement.classList.toggle('is-selected', frame.id === selectedFrameId);
         frameElement.classList.toggle('is-overview', overview);
+        frameElement.classList.toggle('is-active-view', !overview && frame.id === selectedFrameId);
 
         if (editable && overview && frame.id === selectedFrameId) {
             const resizeHandle = document.createElement('button');
@@ -104,6 +139,8 @@ export function renderPresentationStage({
         const frameLabel = document.createElement('span');
         frameLabel.className = 'pkg-presentation-frame-label';
         frameLabel.textContent = frame.title || `Frame ${frameIndex + 1}`;
+        frameLabel.style.color = frame.titleColor || '#334155';
+        frameLabel.style.fontSize = `${frame.titleFontSize || 14}px`;
         frameElement.appendChild(frameLabel);
 
         (frame.elements || []).forEach((element) => {

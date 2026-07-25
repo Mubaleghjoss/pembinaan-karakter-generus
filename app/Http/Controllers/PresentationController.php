@@ -249,6 +249,8 @@ class PresentationController extends Controller
                 'width' => 800,
                 'height' => 450,
                 'backgroundColor' => '#ffffff',
+                'titleColor' => '#334155',
+                'titleFontSize' => 14,
                 'shape' => 'rounded',
                 'borderRadius' => 22,
                 'elements' => [[
@@ -383,6 +385,8 @@ class PresentationController extends Controller
                 'width' => $number($frame['width'] ?? null, 320, 1600, 800),
                 'height' => $number($frame['height'] ?? null, 180, 900, 450),
                 'backgroundColor' => $color($frame['backgroundColor'] ?? null, '#ffffff'),
+                'titleColor' => $color($frame['titleColor'] ?? null, '#334155'),
+                'titleFontSize' => $number($frame['titleFontSize'] ?? null, 10, 72, 14),
                 'shape' => in_array($frame['shape'] ?? null, ['rounded', 'rectangle', 'circle', 'hexagon', 'custom'], true)
                     ? $frame['shape']
                     : 'rounded',

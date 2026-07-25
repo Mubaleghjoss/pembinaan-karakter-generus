@@ -130,6 +130,8 @@ class PresentationFeatureTest extends TestCase
                 'width' => 800,
                 'height' => 450,
                 'backgroundColor' => '#ffffff',
+                'titleColor' => '#be123c',
+                'titleFontSize' => 30,
                 'shape' => 'custom',
                 'borderRadius' => 36,
                 'elements' => [[
@@ -231,6 +233,8 @@ class PresentationFeatureTest extends TestCase
         $this->assertSame(1270, $savedCanvas['height']);
         $this->assertSame('custom', $savedCanvas['frames'][0]['shape']);
         $this->assertEquals(36, $savedCanvas['frames'][0]['borderRadius']);
+        $this->assertSame('#be123c', $savedCanvas['frames'][0]['titleColor']);
+        $this->assertEquals(30, $savedCanvas['frames'][0]['titleFontSize']);
         $this->assertSame('dQw4w9WgXcQ', $savedCanvas['frames'][0]['elements'][2]['youtubeId']);
         $this->assertSame('https://pkgenerus.my.id/materi', $savedCanvas['frames'][0]['elements'][3]['url']);
         $this->assertSame('hexagon', $savedCanvas['frames'][0]['elements'][4]['shapeType']);

@@ -46,6 +46,7 @@ if (root) {
         );
         if (frame) state.focusScale = state.cameraScale;
         state.manualCamera = false;
+        stage.classList.toggle('is-frame-focus', Boolean(frame));
         stage.querySelectorAll('[data-frame-id]').forEach((node) => {
             node.classList.toggle('is-active-view', frame?.id === node.dataset.frameId);
             node.classList.toggle('is-overview', !frame);
@@ -130,6 +131,7 @@ if (root) {
             state.pendingIndex = Math.max(0, state.currentIndex);
             state.manualCamera = true;
             state.overviewCandidate = false;
+            stage.classList.remove('is-frame-focus');
             stage.querySelectorAll('[data-frame-id]').forEach((node) => {
                 node.classList.remove('is-active-view');
                 node.classList.add('is-overview');
@@ -186,6 +188,7 @@ if (root) {
             && state.cameraScale <= state.focusScale * 0.72) {
             state.mode = 'overview';
             state.pendingIndex = Math.max(0, state.currentIndex);
+            stage.classList.remove('is-frame-focus');
             stage.querySelectorAll('[data-frame-id]').forEach((node) => {
                 node.classList.remove('is-active-view');
                 node.classList.add('is-overview');
