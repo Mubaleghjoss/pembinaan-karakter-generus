@@ -75,6 +75,14 @@
             border: 1.5pt solid currentColor; border-radius: 18pt;
             background: #e2e8f0; text-align: center; font-weight: bold;
         }
+        .export-line {
+            display: table;
+            width: 100%;
+            height: 100%;
+            background: transparent !important;
+        }
+        .export-line-row { display: table-cell; vertical-align: middle; white-space: nowrap; }
+        .export-line-segment { display: inline-block; width: 88%; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -120,6 +128,20 @@
                 <div class="element link" style="{{ $style }}"><div>{{ $element['text'] ?? 'Buka tautan' }}<br><span style="font-size:9pt;font-weight:normal;">{{ $element['url'] ?? '' }}</span></div></div>
             @elseif($element['type'] === 'shape')
                 <div class="element shape" style="{{ $style }}border-radius:{{ ($element['shapeType'] ?? '') === 'circle' ? '50%' : (($element['borderRadius'] ?? 24) * 0.75).'pt' }};font-size:{{ max(10, min(160, (float) ($element['fontSize'] ?? 28))) * 0.75 }}pt;"><div>{{ $element['text'] ?? '' }}</div></div>
+            @elseif($element['type'] === 'line')
+                @php
+                    $lineBorderStyle = match($element['lineStyle'] ?? 'solid') {
+                        'dashed' => 'dashed',
+                        'dotted' => 'dotted',
+                        default => 'solid',
+                    };
+                    $lineArrow = $element['arrow'] ?? 'none';
+                @endphp
+                <div class="element export-line" style="{{ $style }}">
+                    <div class="export-line-row">
+                        {{ in_array($lineArrow, ['start', 'both'], true) ? '◀' : '' }}<span class="export-line-segment" style="border-top:{{ max(1, min(20, (float) ($element['strokeWidth'] ?? 4))) * 0.75 }}pt {{ $lineBorderStyle }} {{ $element['color'] ?? '#0f172a' }};"></span>{{ in_array($lineArrow, ['end', 'both'], true) ? '▶' : '' }}
+                    </div>
+                </div>
             @elseif($element['type'] === 'diagram' && ($element['diagramType'] ?? '') === 'radial')
                 <div class="element diagram-radial" style="{{ $style }}">
                     <div class="diagram-radial-center">{{ $element['centerText'] ?? 'Logo / Tema' }}</div>

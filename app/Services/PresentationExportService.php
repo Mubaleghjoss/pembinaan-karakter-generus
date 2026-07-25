@@ -96,7 +96,7 @@ class PresentationExportService
 
             foreach (($frame['elements'] ?? []) as $element) {
                 $type = (string) ($element['type'] ?? '');
-                if (! in_array($type, ['text', 'image', 'logo', 'youtube', 'link', 'shape', 'diagram'], true)) {
+                if (! in_array($type, ['text', 'image', 'logo', 'youtube', 'link', 'shape', 'line', 'diagram'], true)) {
                     continue;
                 }
 
@@ -277,6 +277,8 @@ class PresentationExportService
             } elseif ($type === 'diagram') {
                 [$diagramXml, $shapeId] = $this->diagramShapesXml($shapeId, $element, $geometry);
                 $shapes .= $diagramXml;
+            } elseif ($type === 'line') {
+                $shapes .= $this->lineShapeXml($shapeId++, $element, $geometry);
             }
         }
 
@@ -494,6 +496,29 @@ class PresentationExportService
             .'<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="19050">'
             .'<a:solidFill><a:srgbClr val="'.$this->pptColor($color, '475569').'"/></a:solidFill>'
             .'<a:tailEnd type="none"/><a:headEnd type="triangle"/></a:ln></p:spPr>'
+            .'</p:cxnSp>';
+    }
+
+    private function lineShapeXml(int $id, array $element, array $geometry): string
+    {
+        $rotation = (int) round(max(-180, min(180, (float) ($element['rotation'] ?? 0))) * 60000);
+        $width = (int) round(max(1, min(20, (float) ($element['strokeWidth'] ?? 4))) * 12700);
+        $dash = match ($element['lineStyle'] ?? 'solid') {
+            'dashed' => '<a:prstDash val="dash"/>',
+            'dotted' => '<a:prstDash val="dot"/>',
+            default => '<a:prstDash val="solid"/>',
+        };
+        $arrow = (string) ($element['arrow'] ?? 'none');
+        $tail = in_array($arrow, ['start', 'both'], true) ? 'triangle' : 'none';
+        $head = in_array($arrow, ['end', 'both'], true) ? 'triangle' : 'none';
+        $y = $geometry['y'] + (int) round($geometry['cy'] / 2);
+
+        return '<p:cxnSp>'
+            .'<p:nvCxnSpPr><p:cNvPr id="'.$id.'" name="Garis '.$id.'"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>'
+            .'<p:spPr><a:xfrm'.($rotation !== 0 ? ' rot="'.$rotation.'"' : '').'><a:off x="'.$geometry['x'].'" y="'.$y.'"/>'
+            .'<a:ext cx="'.$geometry['cx'].'" cy="1"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom>'
+            .'<a:ln w="'.$width.'"><a:solidFill><a:srgbClr val="'.$this->pptColor($element['color'] ?? '#0f172a', '0F172A').'"/></a:solidFill>'
+            .$dash.'<a:tailEnd type="'.$tail.'"/><a:headEnd type="'.$head.'"/></a:ln></p:spPr>'
             .'</p:cxnSp>';
     }
 

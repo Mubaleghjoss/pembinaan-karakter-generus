@@ -10,6 +10,7 @@ import {
     presentationPinchFactor,
     presentationId,
     renderPresentationStage,
+    syncPresentationCamera,
     zoomPresentationAtPoint,
 } from './presentation-canvas';
 
@@ -28,8 +29,17 @@ if (root) {
         saveTimer: null,
         activeSave: null,
         cameraScale: 1,
+        focusScale: 1,
+        overviewCandidate: false,
         manualCamera: false,
         drag: null,
+        history: {
+            current: null,
+            undo: [],
+            redo: [],
+            lastGroup: null,
+            lastRecordedAt: 0,
+        },
     };
     const elements = {
         viewport: root.querySelector('[data-editor-viewport]'),
@@ -44,6 +54,8 @@ if (root) {
         pathMode: root.querySelector('[data-editor-path-mode]'),
         imageInput: root.querySelector('[data-image-input]'),
         logoInput: root.querySelector('[data-logo-input]'),
+        undo: root.querySelector('[data-editor-undo]'),
+        redo: root.querySelector('[data-editor-redo]'),
     };
     let touchGesture = null;
 
@@ -57,7 +69,45 @@ if (root) {
         state.saveTimer = window.setTimeout(() => save(), 1200);
     };
 
-    const markDirty = () => {
+    const captureHistorySnapshot = () => JSON.stringify({
+        canvas: state.presentation.canvas,
+        title: state.presentation.title,
+        description: state.presentation.description,
+        backgroundColor: state.presentation.backgroundColor,
+        pathMode: state.presentation.pathMode,
+    });
+
+    const updateHistoryButtons = () => {
+        elements.undo.disabled = state.history.undo.length === 0;
+        elements.redo.disabled = state.history.redo.length === 0;
+    };
+
+    const recordHistory = (group = null) => {
+        const nextSnapshot = captureHistorySnapshot();
+        if (state.history.current === null) {
+            state.history.current = nextSnapshot;
+            updateHistoryButtons();
+            return;
+        }
+        if (nextSnapshot === state.history.current) return;
+
+        const now = performance.now();
+        const shouldCoalesce = group
+            && state.history.lastGroup === group
+            && now - state.history.lastRecordedAt < 700;
+        if (!shouldCoalesce) {
+            state.history.undo.push(state.history.current);
+            if (state.history.undo.length > 80) state.history.undo.shift();
+        }
+        state.history.current = nextSnapshot;
+        state.history.redo = [];
+        state.history.lastGroup = group;
+        state.history.lastRecordedAt = now;
+        updateHistoryButtons();
+    };
+
+    const markDirty = (historyGroup = null) => {
+        recordHistory(historyGroup);
         state.dirty = true;
         state.changeVersion += 1;
         elements.saveStatus.textContent = 'Belum disimpan · akan disimpan otomatis';
@@ -112,6 +162,8 @@ if (root) {
     };
 
     ensureCanvasContainsFrames();
+    state.history.current = captureHistorySnapshot();
+    updateHistoryButtons();
 
     const updateCameraHint = () => {
         const frame = state.mode === 'focus' ? selectedFrame() : null;
@@ -128,6 +180,7 @@ if (root) {
             frame,
             animate
         );
+        if (frame) state.focusScale = state.cameraScale;
         state.manualCamera = false;
         updateCameraHint();
     };
@@ -332,6 +385,32 @@ if (root) {
                     ${colorField('Warna bentuk', 'backgroundColor', normalizeColorInput(element.backgroundColor, '#0f766e'))}
                 </div>
             `;
+        } else if (element.type === 'line') {
+            typeFields = `
+                <div class="grid grid-cols-2 gap-3">
+                    ${colorField('Warna garis', 'color', element.color || '#0f172a')}
+                    ${numberField('Ketebalan', 'strokeWidth', element.strokeWidth || 4, 1, 20)}
+                </div>
+                <div>
+                    <label class="form-label">Pola garis</label>
+                    <select class="pkg-field w-full" data-inspector-prop="lineStyle">
+                        ${option('solid', 'Penuh', element.lineStyle)}
+                        ${option('dashed', 'Putus-putus', element.lineStyle)}
+                        ${option('dotted', 'Titik-titik', element.lineStyle)}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Ujung panah</label>
+                    <select class="pkg-field w-full" data-inspector-prop="arrow">
+                        ${option('none', 'Tanpa panah', element.arrow)}
+                        ${option('end', 'Panah di akhir', element.arrow)}
+                        ${option('start', 'Panah di awal', element.arrow)}
+                        ${option('both', 'Panah dua arah', element.arrow)}
+                    </select>
+                </div>
+                ${numberField('Rotasi garis', 'rotation', element.rotation || 0, -180, 180)}
+                <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">Atur panjang melalui penanda kiri/kanan. Gunakan rotasi untuk membuat garis miring atau tegak.</p>
+            `;
         } else {
             typeFields = `
                 <div>
@@ -377,6 +456,51 @@ if (root) {
                 <button type="button" class="btn-danger w-full justify-center" data-delete-selected-element>Hapus Elemen</button>
             </div>
         `;
+    };
+
+    const restoreHistorySnapshot = (snapshot) => {
+        const restored = JSON.parse(snapshot);
+        state.presentation.canvas = restored.canvas;
+        state.presentation.title = restored.title;
+        state.presentation.description = restored.description;
+        state.presentation.backgroundColor = restored.backgroundColor;
+        state.presentation.pathMode = restored.pathMode;
+        elements.title.value = restored.title || '';
+        elements.description.value = restored.description || '';
+        elements.background.value = restored.backgroundColor || '#0f172a';
+        elements.pathMode.value = restored.pathMode || 'overview_between';
+
+        if (!findPresentationFrame(state.presentation, state.selectedFrameId)) {
+            state.selectedFrameId = state.presentation.canvas.frames[0]?.id || null;
+        }
+        if (!findPresentationElement(selectedFrame(), state.selectedElementId)) {
+            state.selectedElementId = null;
+        }
+        ensureCanvasContainsFrames();
+        state.dirty = true;
+        state.changeVersion += 1;
+        state.history.lastGroup = null;
+        state.history.lastRecordedAt = 0;
+        state.manualCamera = false;
+        elements.saveStatus.textContent = 'Perubahan dipulihkan · akan disimpan otomatis';
+        elements.saveStatus.classList.add('text-amber-600', 'dark:text-amber-300');
+        updateHistoryButtons();
+        scheduleAutomaticSave();
+        render(false);
+    };
+
+    const undoHistory = () => {
+        if (!state.history.undo.length) return;
+        state.history.redo.push(state.history.current);
+        state.history.current = state.history.undo.pop();
+        restoreHistorySnapshot(state.history.current);
+    };
+
+    const redoHistory = () => {
+        if (!state.history.redo.length) return;
+        state.history.undo.push(state.history.current);
+        state.history.current = state.history.redo.pop();
+        restoreHistorySnapshot(state.history.current);
     };
 
     const focusFrame = (frameId) => {
@@ -569,6 +693,31 @@ if (root) {
         render();
     });
 
+    root.querySelector('[data-add-line]').addEventListener('click', () => {
+        const frame = selectedFrame();
+        if (!frame) return;
+        const element = {
+            id: presentationId('element'),
+            type: 'line',
+            x: 100,
+            y: Math.max(70, Math.round(frame.height / 2) - 20),
+            width: Math.max(220, frame.width - 200),
+            height: 40,
+            rotation: 0,
+            color: '#0f766e',
+            backgroundColor: 'transparent',
+            strokeWidth: 4,
+            lineStyle: 'solid',
+            arrow: 'none',
+        };
+        frame.elements.push(element);
+        state.selectedElementId = element.id;
+        state.mode = 'focus';
+        state.manualCamera = false;
+        markDirty();
+        render();
+    });
+
     root.querySelector('[data-add-image]').addEventListener('click', () => {
         if (selectedFrame()) elements.imageInput.click();
     });
@@ -656,7 +805,7 @@ if (root) {
         if (scope === 'frame' && ['width', 'height'].includes(input.dataset.inspectorProp)) return;
 
         let value = input.type === 'checkbox' ? input.checked : input.value;
-        if (['x', 'y', 'width', 'height', 'fontSize', 'borderRadius'].includes(input.dataset.inspectorProp)) {
+        if (['x', 'y', 'width', 'height', 'fontSize', 'borderRadius', 'strokeWidth', 'rotation'].includes(input.dataset.inspectorProp)) {
             value = Number(value);
         }
         if (input.dataset.inspectorProp === 'items') {
@@ -667,7 +816,7 @@ if (root) {
             target.youtubeId = extractYouTubeId(value);
         }
         if (scope === 'frame') ensureCanvasContainsFrames();
-        markDirty();
+        markDirty(`inspector:${scope}:${target.id}:${input.dataset.inspectorProp}`);
         renderPresentationStage({
             stage: elements.stage,
             presentation: state.presentation,
@@ -735,12 +884,18 @@ if (root) {
         }
     });
 
-    const metadataChanged = () => {
+    const metadataChanged = (event) => {
         state.presentation.title = elements.title.value;
         state.presentation.description = elements.description.value;
         state.presentation.backgroundColor = elements.background.value;
         state.presentation.pathMode = elements.pathMode.value;
-        markDirty();
+        markDirty(`metadata:${event.target.dataset.editorTitle !== undefined
+            ? 'title'
+            : event.target.dataset.editorDescription !== undefined
+                ? 'description'
+                : event.target.dataset.editorBackground !== undefined
+                    ? 'background'
+                    : 'path'}`);
         if (document.activeElement === elements.background) render(false);
     };
     [elements.title, elements.description, elements.background, elements.pathMode].forEach((input) => {
@@ -763,6 +918,14 @@ if (root) {
             state.cameraScale = panPresentationCamera(elements.stage, -event.deltaX, -event.deltaY);
         }
         state.manualCamera = true;
+        if ((event.ctrlKey || event.metaKey)
+            && state.mode === 'focus'
+            && state.cameraScale <= state.focusScale * 0.72) {
+            state.mode = 'overview';
+            state.selectedElementId = null;
+            render(false);
+            return;
+        }
         updateCameraHint();
     }, { passive: false });
 
@@ -798,11 +961,25 @@ if (root) {
     touchGesture = bindPresentationTouchGestures(elements.viewport, elements.stage, {
         minimumScale: 0.03,
         maximumScale: 4,
-        onStart: cancelActiveDragForGesture,
+        onStart: () => {
+            state.overviewCandidate = false;
+            cancelActiveDragForGesture();
+        },
         onUpdate: (scale) => {
             state.cameraScale = scale;
             state.manualCamera = true;
+            if (state.mode === 'focus' && scale <= state.focusScale * 0.72) {
+                state.overviewCandidate = true;
+            }
             updateCameraHint();
+        },
+        onEnd: () => {
+            if (!state.overviewCandidate || state.mode !== 'focus') return;
+            state.mode = 'overview';
+            state.selectedElementId = null;
+            state.manualCamera = true;
+            state.overviewCandidate = false;
+            render(false);
         },
         onTap: (tap) => {
             if (state.mode !== 'overview' || state.drag?.moved) return false;
@@ -816,6 +993,7 @@ if (root) {
     elements.viewport.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return;
         if (touchGesture?.isActive()) return;
+        state.cameraScale = syncPresentationCamera(elements.stage);
         const frameNode = event.target.closest('[data-frame-id]');
         const frameResizeHandle = event.target.closest('[data-frame-resize]');
         const elementResizeHandle = event.target.closest('[data-element-resize]');
@@ -867,9 +1045,13 @@ if (root) {
     elements.viewport.addEventListener('pointermove', (event) => {
         if (touchGesture?.isActive()) return;
         if (!state.drag?.kind || !state.drag.target) return;
-        const deltaX = (event.clientX - state.drag.startX) / state.cameraScale;
-        const deltaY = (event.clientY - state.drag.startY) / state.cameraScale;
-        if (Math.abs(deltaX) + Math.abs(deltaY) > 2) state.drag.moved = true;
+        const screenDeltaX = event.clientX - state.drag.startX;
+        const screenDeltaY = event.clientY - state.drag.startY;
+        const movementThreshold = state.drag.kind.includes('resize') ? 3 : 7;
+        if (!state.drag.moved && Math.hypot(screenDeltaX, screenDeltaY) < movementThreshold) return;
+        state.drag.moved = true;
+        const deltaX = screenDeltaX / state.cameraScale;
+        const deltaY = screenDeltaY / state.cameraScale;
         if (state.drag.kind === 'frame-resize') {
             const width = clampPresentationNumber(state.drag.originWidth + deltaX, 320, 1600, state.drag.originWidth);
             const height = clampPresentationNumber(state.drag.originHeight + deltaY, 180, 900, state.drag.originHeight);
@@ -1045,6 +1227,21 @@ if (root) {
         return saved;
     }
 
+    elements.undo.addEventListener('click', undoHistory);
+    elements.redo.addEventListener('click', redoHistory);
+    document.addEventListener('keydown', (event) => {
+        if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+        const key = event.key.toLowerCase();
+        if (key === 'z') {
+            event.preventDefault();
+            if (event.shiftKey) redoHistory();
+            else undoHistory();
+        } else if (key === 'y') {
+            event.preventDefault();
+            redoHistory();
+        }
+    });
+
     root.querySelector('[data-editor-save]').addEventListener('click', save);
     root.querySelectorAll('[data-export-link]').forEach((link) => {
         link.addEventListener('click', async (event) => {
@@ -1114,6 +1311,7 @@ function elementTypeLabel(type) {
         youtube: 'Elemen YouTube',
         link: 'Elemen Tautan',
         shape: 'Elemen Bentuk',
+        line: 'Elemen Garis',
         diagram: 'Elemen Diagram',
     })[type] || 'Elemen';
 }

@@ -150,6 +150,19 @@ export function panPresentationCamera(stage, deltaX, deltaY) {
     return currentScale;
 }
 
+export function syncPresentationCamera(stage) {
+    const transform = window.getComputedStyle(stage).transform;
+    if (!transform || transform === 'none') {
+        return cameraNumber(stage.dataset.cameraScale, 1);
+    }
+
+    const matrix = new DOMMatrixReadOnly(transform);
+    const scale = Math.max(0.001, Math.hypot(matrix.a, matrix.b));
+    setPresentationCameraTransform(stage, matrix.e, matrix.f, scale, false);
+
+    return scale;
+}
+
 export function presentationPinchFactor(deltaY) {
     return Math.exp(-clampPresentationNumber(deltaY, -40, 40, 0) * 0.012);
 }
@@ -344,6 +357,48 @@ function renderPresentationElement(element, assets, interactive = false) {
         applyPresentationShape(node, element.shapeType || 'rounded', element.borderRadius || 24);
         node.style.fontSize = `${element.fontSize || 28}px`;
         node.textContent = element.text || '';
+        return node;
+    }
+
+    if (element.type === 'line') {
+        node.classList.add('pkg-presentation-line');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 100 20');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.setAttribute('aria-hidden', 'true');
+
+        const definitions = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const markerId = `presentation-arrow-${String(element.id || '').replace(/[^a-z0-9_-]/gi, '')}`;
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', markerId);
+        marker.setAttribute('viewBox', '0 0 10 10');
+        marker.setAttribute('refX', '8');
+        marker.setAttribute('refY', '5');
+        marker.setAttribute('markerWidth', '6');
+        marker.setAttribute('markerHeight', '6');
+        marker.setAttribute('orient', 'auto-start-reverse');
+        const arrowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        arrowPath.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+        arrowPath.setAttribute('fill', element.color || '#0f172a');
+        marker.appendChild(arrowPath);
+        definitions.appendChild(marker);
+        svg.appendChild(definitions);
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', '4');
+        line.setAttribute('y1', '10');
+        line.setAttribute('x2', '96');
+        line.setAttribute('y2', '10');
+        line.setAttribute('stroke', element.color || '#0f172a');
+        line.setAttribute('stroke-width', String(element.strokeWidth || 4));
+        line.setAttribute('vector-effect', 'non-scaling-stroke');
+        line.setAttribute('stroke-linecap', 'round');
+        if (element.lineStyle === 'dashed') line.setAttribute('stroke-dasharray', '12 8');
+        if (element.lineStyle === 'dotted') line.setAttribute('stroke-dasharray', '2 7');
+        if (['start', 'both'].includes(element.arrow)) line.setAttribute('marker-start', `url(#${markerId})`);
+        if (['end', 'both'].includes(element.arrow)) line.setAttribute('marker-end', `url(#${markerId})`);
+        svg.appendChild(line);
+        node.appendChild(svg);
         return node;
     }
 

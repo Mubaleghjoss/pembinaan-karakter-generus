@@ -56,9 +56,12 @@ class PresentationFeatureTest extends TestCase
             ->assertSee('data-add-youtube', false)
             ->assertSee('data-add-link', false)
             ->assertSee('data-add-shape', false)
+            ->assertSee('data-add-line', false)
             ->assertSee('data-add-diagram', false)
             ->assertSee('data-arrange-frames', false)
             ->assertSee('data-editor-fit', false)
+            ->assertSee('data-editor-undo', false)
+            ->assertSee('data-editor-redo', false)
             ->assertSee('data-save-before-open', false)
             ->assertSee('penanda hijau')
             ->assertSee('Unduh PDF')
@@ -139,6 +142,19 @@ class PresentationFeatureTest extends TestCase
                     'fontSize' => 28,
                     'color' => '#ffffff',
                     'backgroundColor' => '#0f766e',
+                ], [
+                    'id' => 'line-1',
+                    'type' => 'line',
+                    'x' => 80,
+                    'y' => 390,
+                    'width' => 640,
+                    'height' => 40,
+                    'rotation' => 0,
+                    'strokeWidth' => 5,
+                    'lineStyle' => 'dashed',
+                    'arrow' => 'both',
+                    'color' => '#0f766e',
+                    'backgroundColor' => 'transparent',
                 ]],
             ]],
         ];
@@ -167,6 +183,8 @@ class PresentationFeatureTest extends TestCase
         $this->assertSame('dQw4w9WgXcQ', $savedCanvas['frames'][0]['elements'][2]['youtubeId']);
         $this->assertSame('https://pkgenerus.my.id/materi', $savedCanvas['frames'][0]['elements'][3]['url']);
         $this->assertSame('hexagon', $savedCanvas['frames'][0]['elements'][4]['shapeType']);
+        $this->assertSame('dashed', $savedCanvas['frames'][0]['elements'][5]['lineStyle']);
+        $this->assertSame('both', $savedCanvas['frames'][0]['elements'][5]['arrow']);
 
         $this->get(route('public.presentations.show', $presentation))->assertNotFound();
 
@@ -379,6 +397,20 @@ class PresentationFeatureTest extends TestCase
             'color' => '#ffffff',
             'backgroundColor' => '#0f766e',
         ];
+        $canvas['frames'][1]['elements'][] = [
+            'id' => 'line-1',
+            'type' => 'line',
+            'x' => 160,
+            'y' => 400,
+            'width' => 480,
+            'height' => 30,
+            'rotation' => -8,
+            'strokeWidth' => 5,
+            'lineStyle' => 'dotted',
+            'arrow' => 'end',
+            'color' => '#047857',
+            'backgroundColor' => 'transparent',
+        ];
         $presentation->update(['canvas_data' => $canvas]);
 
         $pdf = $this->actingAs($admin)->get(route('presentations.export.pdf', $presentation));
@@ -412,6 +444,7 @@ class PresentationFeatureTest extends TestCase
         $this->assertStringContainsString('Video YouTube', (string) $zip->getFromName('ppt/slides/slide1.xml'));
         $this->assertStringContainsString('Materi lanjut', (string) $zip->getFromName('ppt/slides/slide1.xml'));
         $this->assertStringContainsString('Bentuk dapat diedit', (string) $zip->getFromName('ppt/slides/slide2.xml'));
+        $this->assertStringContainsString('Garis', (string) $zip->getFromName('ppt/slides/slide2.xml'));
 
         for ($index = 0; $index < $zip->numFiles; $index++) {
             $name = $zip->getNameIndex($index);

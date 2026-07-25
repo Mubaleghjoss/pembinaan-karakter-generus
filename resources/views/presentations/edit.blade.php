@@ -23,6 +23,8 @@
         </div>
         <div class="pkg-page-actions">
             <span class="text-sm text-gray-500 dark:text-gray-400" data-save-status>Semua perubahan tersimpan</span>
+            <button type="button" class="btn-secondary" data-editor-undo title="Ctrl+Z" disabled>Urungkan</button>
+            <button type="button" class="btn-secondary" data-editor-redo title="Ctrl+Shift+Z atau Ctrl+Y" disabled>Ulangi</button>
             <button type="button" class="btn-secondary" data-editor-overview>Overview</button>
             <button type="button" class="btn-secondary" data-editor-fit>Pas Tampilan</button>
             <a href="{{ route('presentations.preview', $presentation) }}" target="_blank" rel="noopener" class="btn-secondary" data-save-before-open>Pratinjau</a>
@@ -75,6 +77,7 @@
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-youtube>Tambah YouTube</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-link>Tambah Tautan</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-shape>Tambah Bentuk</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-line>Tambah Garis</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-diagram>Tambah Diagram</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames>Rapikan Frame</button>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-image-input>

@@ -271,7 +271,7 @@ class PresentationController extends Controller
             is_string($value) && preg_match('/^(#[0-9a-fA-F]{6}|transparent)$/', $value)
                 ? strtolower($value)
                 : $fallback;
-        $allowedTypes = ['text', 'image', 'logo', 'youtube', 'link', 'shape', 'diagram'];
+        $allowedTypes = ['text', 'image', 'logo', 'youtube', 'link', 'shape', 'line', 'diagram'];
         $frames = [];
 
         foreach (array_slice($canvas['frames'] ?? [], 0, 40) as $frameIndex => $frame) {
@@ -337,6 +337,16 @@ class PresentationController extends Controller
                             : 'rounded',
                         'borderRadius' => $number($element['borderRadius'] ?? null, 0, 240, 24),
                         'fontSize' => $number($element['fontSize'] ?? null, 10, 160, 28),
+                    ];
+                } elseif ($type === 'line') {
+                    $normalized += [
+                        'strokeWidth' => $number($element['strokeWidth'] ?? null, 1, 20, 4),
+                        'lineStyle' => in_array($element['lineStyle'] ?? null, ['solid', 'dashed', 'dotted'], true)
+                            ? $element['lineStyle']
+                            : 'solid',
+                        'arrow' => in_array($element['arrow'] ?? null, ['none', 'start', 'end', 'both'], true)
+                            ? $element['arrow']
+                            : 'none',
                     ];
                 } else {
                     $normalized += [

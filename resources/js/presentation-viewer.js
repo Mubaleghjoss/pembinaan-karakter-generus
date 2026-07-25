@@ -22,6 +22,8 @@ if (root) {
         currentIndex: -1,
         pendingIndex: 0,
         cameraScale: 1,
+        focusScale: 1,
+        overviewCandidate: false,
         manualCamera: false,
     };
 
@@ -30,6 +32,7 @@ if (root) {
     const updateCamera = (animate = true) => {
         const frame = state.mode === 'frame' ? presentation.canvas.frames[state.currentIndex] : null;
         state.cameraScale = applyPresentationCamera(viewport, stage, presentation.canvas, frame, animate);
+        if (frame) state.focusScale = state.cameraScale;
         state.manualCamera = false;
         stage.querySelectorAll('[data-frame-id]').forEach((node) => {
             node.classList.toggle('is-active-view', frame?.id === node.dataset.frameId);
@@ -98,9 +101,27 @@ if (root) {
     const touchGesture = bindPresentationTouchGestures(viewport, stage, {
         minimumScale: 0.03,
         maximumScale: 4,
+        onStart: () => {
+            state.overviewCandidate = false;
+        },
         onUpdate: (scale) => {
             state.cameraScale = scale;
             state.manualCamera = true;
+            if (state.mode === 'frame' && scale <= state.focusScale * 0.72) {
+                state.overviewCandidate = true;
+            }
+            updateZoomProgress();
+        },
+        onEnd: () => {
+            if (!state.overviewCandidate || state.mode !== 'frame') return;
+            state.mode = 'overview';
+            state.pendingIndex = Math.max(0, state.currentIndex);
+            state.manualCamera = true;
+            state.overviewCandidate = false;
+            stage.querySelectorAll('[data-frame-id]').forEach((node) => {
+                node.classList.remove('is-active-view');
+                node.classList.add('is-overview');
+            });
             updateZoomProgress();
         },
         onTap: (tap) => {
@@ -148,6 +169,16 @@ if (root) {
             state.cameraScale = panPresentationCamera(stage, -event.deltaX, -event.deltaY);
         }
         state.manualCamera = true;
+        if ((event.ctrlKey || event.metaKey)
+            && state.mode === 'frame'
+            && state.cameraScale <= state.focusScale * 0.72) {
+            state.mode = 'overview';
+            state.pendingIndex = Math.max(0, state.currentIndex);
+            stage.querySelectorAll('[data-frame-id]').forEach((node) => {
+                node.classList.remove('is-active-view');
+                node.classList.add('is-overview');
+            });
+        }
         updateZoomProgress();
     }, { passive: false });
 

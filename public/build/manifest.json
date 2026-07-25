@@ -37,15 +37,15 @@
     "file": "assets/news-slider-hXc9paC5.css",
     "src": "_news-slider-hXc9paC5.css"
   },
-  "_presentation-canvas-C-EWfnMr.css": {
-    "file": "assets/presentation-canvas-C-EWfnMr.css",
-    "src": "_presentation-canvas-C-EWfnMr.css"
+  "_presentation-canvas-BIKnSHIe.css": {
+    "file": "assets/presentation-canvas-BIKnSHIe.css",
+    "src": "_presentation-canvas-BIKnSHIe.css"
   },
-  "_presentation-canvas-DS94WncK.js": {
-    "file": "assets/presentation-canvas-DS94WncK.js",
+  "_presentation-canvas-B_WsLiEy.js": {
+    "file": "assets/presentation-canvas-B_WsLiEy.js",
     "name": "presentation-canvas",
     "css": [
-      "assets/presentation-canvas-C-EWfnMr.css"
+      "assets/presentation-canvas-BIKnSHIe.css"
     ]
   },
   "_qr-scanner-B4zfAtOc.js": {
@@ -76,7 +76,7 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-tg5h1ej2.js",
+    "file": "assets/app-C-Ab26mH.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -97,7 +97,7 @@
       "_browser-C8KFpyF2.js"
     ],
     "css": [
-      "assets/app-DBi_eHMO.css"
+      "assets/app-CfkNT7E5.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -123,7 +123,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-DFDjKG6d.js",
+    "file": "assets/QRScanner-DrOxJ7Ut.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -154,21 +154,21 @@
     ]
   },
   "resources/js/presentation-editor.js": {
-    "file": "assets/presentation-editor-DmPvQXZ4.js",
+    "file": "assets/presentation-editor-01xJSpwK.js",
     "name": "presentation-editor",
     "src": "resources/js/presentation-editor.js",
     "isEntry": true,
     "imports": [
-      "_presentation-canvas-DS94WncK.js"
+      "_presentation-canvas-B_WsLiEy.js"
     ]
   },
   "resources/js/presentation-viewer.js": {
-    "file": "assets/presentation-viewer-CaxSl0iJ.js",
+    "file": "assets/presentation-viewer-EUxPliaP.js",
     "name": "presentation-viewer",
     "src": "resources/js/presentation-viewer.js",
     "isEntry": true,
     "imports": [
-      "_presentation-canvas-DS94WncK.js"
+      "_presentation-canvas-B_WsLiEy.js"
     ]
   },
   "resources/js/public-scanner.js": {
