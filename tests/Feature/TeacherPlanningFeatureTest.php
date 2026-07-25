@@ -258,7 +258,11 @@ class TeacherPlanningFeatureTest extends TestCase
             ->assertSee('Pendataan &amp; Jadwal Guru', false)
             ->assertSee('Kode Akses Formulir')
             ->assertSee('Data lama ini belum memiliki tanda tangan.')
-            ->assertSee('Lihat PDF');
+            ->assertSee('Lihat PDF')
+            ->assertSee('data-generate-schedule-trigger', false)
+            ->assertSee('data-generate-schedule-confirm', false)
+            ->assertSee('data-generate-schedule-submit', false)
+            ->assertDontSee('data-confirm="Buat atau hitung ulang draft otomatis', false);
 
         $this->actingAs($admin)
             ->get(route('teacher-planning.profiles.statement.preview', $legacyProfile))

@@ -127,15 +127,80 @@
                 <div><label class="form-label">Bulan jadwal</label><input name="month" type="month" value="{{ $selectedMonth->format('Y-m') }}" class="pkg-field"></div>
                 <button class="btn-secondary">Tampilkan</button>
             </form>
-            <form method="POST" action="{{ route('teacher-planning.generate') }}"
-                  data-confirm="Buat atau hitung ulang draft otomatis untuk bulan ini? Penugasan manual tetap dipertahankan."
-                  data-confirm-title="Konfirmasi tindakan"
-                  data-confirm-button="Lanjutkan"
-                  data-confirm-tone="primary">
-                @csrf
-                <input type="hidden" name="month" value="{{ $selectedMonth->format('Y-m') }}">
-                <button class="btn-success" @disabled(! $hasActiveTemplates)>Buat Jadwal Bulanan</button>
-            </form>
+            <div x-data="{ generateConfirmOpen: false, generating: false }">
+                <form
+                    x-ref="generateScheduleForm"
+                    method="POST"
+                    action="{{ route('teacher-planning.generate') }}"
+                    data-generate-schedule-form
+                >
+                    @csrf
+                    <input type="hidden" name="month" value="{{ $selectedMonth->format('Y-m') }}">
+                    <button
+                        type="button"
+                        class="btn-success"
+                        data-generate-schedule-trigger
+                        @click="generateConfirmOpen = true"
+                        @disabled(! $hasActiveTemplates)
+                    >
+                        Buat Jadwal Bulanan
+                    </button>
+
+                    <div
+                        x-cloak
+                        x-show="generateConfirmOpen"
+                        x-transition.opacity
+                        class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="generate-schedule-title"
+                        data-generate-schedule-confirm
+                        @keydown.escape.window="if (!generating) generateConfirmOpen = false"
+                        @click.self="if (!generating) generateConfirmOpen = false"
+                    >
+                        <div class="pkg-modal w-full max-w-md p-6 shadow-2xl">
+                            <div class="flex items-start gap-4">
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 4h.01M10.29 3.86l-7.19 12.47A2 2 0 004.81 19h14.38a2 2 0 001.71-2.67L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h3 id="generate-schedule-title" class="text-lg font-semibold text-slate-900 dark:text-white">Konfirmasi tindakan</h3>
+                                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                        Buat atau hitung ulang draft otomatis untuk {{ $selectedMonth->translatedFormat('F Y') }}? Penugasan manual tetap dipertahankan.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    class="btn-secondary !justify-center !px-4 !py-2 text-sm"
+                                    @click="generateConfirmOpen = false"
+                                    :disabled="generating"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-70 dark:focus:ring-offset-slate-900"
+                                    data-generate-schedule-submit
+                                    :disabled="generating"
+                                    @click="
+                                        if (generating) return;
+                                        generating = true;
+                                        generateConfirmOpen = false;
+                                        $nextTick(() => $refs.generateScheduleForm.submit());
+                                    "
+                                >
+                                    <span x-show="!generating">Lanjutkan</span>
+                                    <span x-show="generating">Memproses...</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
         @if(! $hasActiveTemplates)
             <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
