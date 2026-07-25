@@ -81,7 +81,7 @@ class PresentationFeatureTest extends TestCase
                 'type' => 'text',
                 'x' => 120,
                 'y' => 40,
-                'width' => 520,
+                'width' => 1700,
                 'height' => 90,
                 'rotation' => 0,
                 'text' => 'Alur Pembinaan Generus',
@@ -117,7 +117,7 @@ class PresentationFeatureTest extends TestCase
                     'id' => 'canvas-text-1',
                     'x' => 120,
                     'y' => 40,
-                    'width' => 520,
+                    'width' => 1700,
                     'height' => 90,
                     'rotation' => 0,
                 ]],
@@ -227,7 +227,7 @@ class PresentationFeatureTest extends TestCase
             'is_published' => false,
         ]);
         $savedCanvas = $presentation->fresh()->canvas_data;
-        $this->assertSame(1920, $savedCanvas['width']);
+        $this->assertSame(1940, $savedCanvas['width']);
         $this->assertSame(1270, $savedCanvas['height']);
         $this->assertSame('custom', $savedCanvas['frames'][0]['shape']);
         $this->assertEquals(36, $savedCanvas['frames'][0]['borderRadius']);
@@ -238,11 +238,13 @@ class PresentationFeatureTest extends TestCase
         $this->assertSame('both', $savedCanvas['frames'][0]['elements'][5]['arrow']);
         $this->assertCount(2, $savedCanvas['elements']);
         $this->assertSame('Alur Pembinaan Generus', $savedCanvas['elements'][0]['text']);
+        $this->assertEquals(1700, $savedCanvas['elements'][0]['width']);
         $this->assertSame('dotted', $savedCanvas['elements'][1]['lineStyle']);
         $this->assertSame('end', $savedCanvas['elements'][1]['arrow']);
         $this->assertSame('frame-pembuka', $savedCanvas['layoutSnapshot']['frames'][0]['id']);
         $this->assertEquals(840, $savedCanvas['layoutSnapshot']['frames'][0]['x']);
         $this->assertSame('canvas-text-1', $savedCanvas['layoutSnapshot']['elements'][0]['id']);
+        $this->assertEquals(1700, $savedCanvas['layoutSnapshot']['elements'][0]['width']);
 
         $this->get(route('public.presentations.show', $presentation))->assertNotFound();
 

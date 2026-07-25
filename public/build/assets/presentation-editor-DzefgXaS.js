@@ -5,7 +5,7 @@ import{d as ye,p as E,r as ie,z as ke,a as xe,b as Se,c as we,s as Ee,f as B,e a
         <div class="grid grid-cols-2 gap-3">
             ${I("X","x",t.x,0,n?6800:5e3)}
             ${I("Y","y",t.y,0,n||a?12300:1100)}
-            ${I("Lebar","width",t.width,a?320:40,1600)}
+            ${I("Lebar","width",t.width,a?320:40,n?Math.max(40,Number(e.presentation.canvas.width||7e3)-Number(t.x||0)):1600)}
             ${I("Tinggi","height",t.height,a?180:30,900)}
         </div>
     `,W=()=>{const t=k(),a=R(),n=a||V(),s=!!a;if(!t&&!a){r.inspector.innerHTML='<p class="pkg-empty-copy">Tambahkan atau pilih frame untuk mulai menyunting.</p>';return}if(!n&&t){r.inspector.innerHTML=`

@@ -397,12 +397,14 @@ class PresentationController extends Controller
             }
 
             $type = $element['type'];
+            $elementX = $number($element['x'] ?? null, 0, 6800, 120);
+            $elementY = $number($element['y'] ?? null, 0, 12300, 120);
             $normalized = [
                 'id' => Str::limit((string) ($element['id'] ?? "canvas-element-{$elementIndex}"), 80, ''),
                 'type' => $type,
-                'x' => $number($element['x'] ?? null, 0, 6800, 120),
-                'y' => $number($element['y'] ?? null, 0, 12300, 120),
-                'width' => $number($element['width'] ?? null, 40, 1600, 320),
+                'x' => $elementX,
+                'y' => $elementY,
+                'width' => $number($element['width'] ?? null, 40, max(40, 7000 - $elementX), 320),
                 'height' => $number($element['height'] ?? null, 30, 900, 80),
                 'rotation' => $number($element['rotation'] ?? null, -180, 180, 0),
                 'color' => $color($element['color'] ?? null, '#f8fafc'),
@@ -482,11 +484,12 @@ class PresentationController extends Controller
                 if ($id === '' || ! isset($canvasElementIds[$id])) {
                     continue;
                 }
+                $snapshotX = $number($snapshot['x'] ?? null, 0, 6800, 0);
                 $snapshotElements[] = [
                     'id' => $id,
-                    'x' => $number($snapshot['x'] ?? null, 0, 6800, 0),
+                    'x' => $snapshotX,
                     'y' => $number($snapshot['y'] ?? null, 0, 12300, 0),
-                    'width' => $number($snapshot['width'] ?? null, 40, 1600, 320),
+                    'width' => $number($snapshot['width'] ?? null, 40, max(40, 7000 - $snapshotX), 320),
                     'height' => $number($snapshot['height'] ?? null, 30, 900, 80),
                     'rotation' => $number($snapshot['rotation'] ?? null, -180, 180, 0),
                 ];

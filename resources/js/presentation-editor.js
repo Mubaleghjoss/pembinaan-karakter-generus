@@ -330,7 +330,15 @@ if (root) {
         <div class="grid grid-cols-2 gap-3">
             ${numberField('X', 'x', item.x, 0, isCanvasElement ? 6800 : 5000)}
             ${numberField('Y', 'y', item.y, 0, isCanvasElement || isFrame ? 12300 : 1100)}
-            ${numberField('Lebar', 'width', item.width, isFrame ? 320 : 40, 1600)}
+            ${numberField(
+                'Lebar',
+                'width',
+                item.width,
+                isFrame ? 320 : 40,
+                isCanvasElement
+                    ? Math.max(40, Number(state.presentation.canvas.width || 7000) - Number(item.x || 0))
+                    : 1600
+            )}
             ${numberField('Tinggi', 'height', item.height, isFrame ? 180 : 30, 900)}
         </div>
     `;
