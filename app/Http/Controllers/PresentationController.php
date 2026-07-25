@@ -310,6 +310,7 @@ class PresentationController extends Controller
                 if ($type === 'text') {
                     $normalized += [
                         'text' => Str::limit((string) ($element['text'] ?? 'Teks'), 5000, ''),
+                        'html' => $this->sanitizeRichText((string) ($element['html'] ?? '')),
                         'fontSize' => $number($element['fontSize'] ?? null, 10, 160, 32),
                         'align' => in_array($element['align'] ?? null, ['left', 'center', 'right'], true) ? $element['align'] : 'left',
                         'bold' => (bool) ($element['bold'] ?? false),
@@ -546,5 +547,81 @@ class PresentationController extends Controller
         return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)
             ? Str::limit($url, 1000, '')
             : '';
+    }
+
+    private function sanitizeRichText(string $html): string
+    {
+        $html = Str::limit(trim($html), 20000, '');
+        if ($html === '') {
+            return '';
+        }
+
+        $html = preg_replace('/<!--.*?-->/s', '', $html) ?? '';
+        $html = preg_replace('~<(script|style)[^>]*>.*?</\1>~is', '', $html) ?? '';
+        $html = strip_tags(
+            $html,
+            '<b><strong><i><em><u><ul><ol><li><span><font><br><p><div>'
+        );
+        $sanitizeColor = static function (string $value): ?string {
+            $value = strtolower(trim($value));
+
+            return preg_match('/^(#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\))$/', $value)
+                ? $value
+                : null;
+        };
+
+        return preg_replace_callback(
+            '/<([a-z0-9]+)([^>]*)>/i',
+            static function (array $matches) use ($sanitizeColor): string {
+                $tag = strtolower($matches[1]);
+                $attributes = $matches[2] ?? '';
+                if ($tag === 'br') {
+                    return '<br>';
+                }
+                if ($tag === 'span') {
+                    $styles = [];
+                    if (preg_match('/\bstyle\s*=\s*(["\'])(.*?)\1/is', $attributes, $styleMatch)) {
+                        foreach (explode(';', $styleMatch[2]) as $declaration) {
+                            [$property, $value] = array_pad(explode(':', $declaration, 2), 2, '');
+                            $property = strtolower(trim($property));
+                            $value = strtolower(trim($value));
+                            if (in_array($property, ['color', 'background-color'], true)) {
+                                $safeValue = $sanitizeColor($value);
+                                if ($safeValue !== null) {
+                                    $styles[$property] = $safeValue;
+                                }
+                            } elseif ($property === 'font-weight' && in_array($value, ['bold', '700'], true)) {
+                                $styles[$property] = 'bold';
+                            } elseif ($property === 'font-style' && $value === 'italic') {
+                                $styles[$property] = 'italic';
+                            } elseif ($property === 'text-decoration' && str_contains($value, 'underline')) {
+                                $styles[$property] = 'underline';
+                            }
+                        }
+                    }
+
+                    return $styles
+                        ? '<span style="'.htmlspecialchars(
+                            collect($styles)->map(fn ($value, $property) => "{$property}:{$value}")->implode(';'),
+                            ENT_QUOTES | ENT_HTML5,
+                            'UTF-8'
+                        ).'">'
+                        : '<span>';
+                }
+                if ($tag === 'font') {
+                    $color = null;
+                    if (preg_match('/\bcolor\s*=\s*(["\'])(.*?)\1/is', $attributes, $colorMatch)) {
+                        $color = $sanitizeColor($colorMatch[2]);
+                    }
+
+                    return $color
+                        ? '<font color="'.htmlspecialchars($color, ENT_QUOTES | ENT_HTML5, 'UTF-8').'">'
+                        : '<font>';
+                }
+
+                return "<{$tag}>";
+            },
+            $html
+        ) ?? '';
     }
 }

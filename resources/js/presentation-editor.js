@@ -10,6 +10,7 @@ import {
     presentationPinchFactor,
     presentationId,
     renderPresentationStage,
+    sanitizePresentationRichText,
     syncPresentationCamera,
     zoomPresentationAtPoint,
 } from './presentation-canvas';
@@ -69,6 +70,7 @@ if (root) {
         blockMenuTitle: root.querySelector('[data-block-menu-title]'),
     };
     let touchGesture = null;
+    let richTextRange = null;
 
     elements.title.value = payload.title || '';
     elements.description.value = payload.description || '';
@@ -399,11 +401,38 @@ if (root) {
 
         let typeFields = '';
         if (element.type === 'text') {
-            typeFields = `
+            const plainTextEditor = `
                 <div>
                     <label class="form-label">Isi teks</label>
                     <textarea class="pkg-field w-full" rows="5" maxlength="5000" data-inspector-prop="text">${escapeHtml(element.text || '')}</textarea>
                 </div>
+            `;
+            const richTextValue = element.html
+                || escapeHtml(element.text || '').replace(/\n/g, '<br>');
+            const richTextEditor = `
+                <div>
+                    <label class="form-label">Isi teks</label>
+                    <div class="pkg-rich-text-toolbar" aria-label="Format bagian teks terpilih">
+                        <button type="button" data-rich-command="bold" title="Tebal"><strong>Tebal</strong></button>
+                        <button type="button" data-rich-command="italic" title="Miring"><em>Miring</em></button>
+                        <button type="button" data-rich-command="underline" title="Garis bawah"><u>Garis</u></button>
+                        <button type="button" data-rich-command="insertUnorderedList" title="Daftar titik">Titik</button>
+                        <button type="button" data-rich-command="insertOrderedList" title="Daftar nomor">Nomor</button>
+                        <label title="Warna tulisan terpilih">Warna <input type="color" value="${normalizeColorInput(element.color, '#0f172a')}" data-rich-color="foreColor"></label>
+                        <label title="Warna latar teks terpilih">Sorot <input type="color" value="#fef08a" data-rich-color="hiliteColor"></label>
+                    </div>
+                    <div
+                        class="pkg-rich-text-editor"
+                        contenteditable="true"
+                        role="textbox"
+                        aria-multiline="true"
+                        data-rich-text-editor
+                    >${sanitizePresentationRichText(richTextValue)}</div>
+                    <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">Blok bagian teks, lalu pilih format. Gunakan Titik atau Nomor untuk membuat daftar.</p>
+                </div>
+            `;
+            typeFields = `
+                ${isCanvasElement ? plainTextEditor : richTextEditor}
                 ${numberField('Ukuran huruf', 'fontSize', element.fontSize || 32, 10, 160)}
                 <div class="grid grid-cols-2 gap-3">
                     ${colorField('Warna teks', 'color', element.color || '#0f172a')}
@@ -1035,7 +1064,69 @@ if (root) {
         renderFrameList();
     });
 
+    const rememberRichTextSelection = () => {
+        const editor = elements.inspector.querySelector('[data-rich-text-editor]');
+        const selection = window.getSelection();
+        if (!editor || !selection?.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        if (editor.contains(range.commonAncestorContainer)) {
+            richTextRange = range.cloneRange();
+        }
+    };
+
+    const syncRichTextEditor = (editor) => {
+        const target = selectedElement();
+        if (!target || target.type !== 'text') return;
+        target.html = sanitizePresentationRichText(editor.innerHTML);
+        target.text = String(editor.innerText || editor.textContent || '').slice(0, 5000);
+        markDirty(`rich-text:${target.id}`);
+        renderPresentationStage({
+            stage: elements.stage,
+            presentation: state.presentation,
+            selectedFrameId: state.selectedFrameId,
+            selectedElementId: state.selectedElementId,
+            selectedCanvasElementId: state.selectedCanvasElementId,
+            overview: state.mode === 'overview',
+            editable: true,
+        });
+        applyBlockSelectionStyles();
+        if (state.manualCamera) updateCameraHint();
+        else applyCamera(false);
+    };
+
+    const applyRichTextCommand = (command, value = null) => {
+        const editor = elements.inspector.querySelector('[data-rich-text-editor]');
+        if (!editor) return;
+        editor.focus();
+        if (richTextRange) {
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(richTextRange);
+        }
+        document.execCommand('styleWithCSS', false, false);
+        const applied = document.execCommand(command, false, value);
+        if (!applied && command === 'hiliteColor') {
+            document.execCommand('backColor', false, value);
+        }
+        rememberRichTextSelection();
+        syncRichTextEditor(editor);
+    };
+
+    elements.inspector.addEventListener('pointerdown', (event) => {
+        if (event.target.closest('[data-rich-command]')) {
+            event.preventDefault();
+        }
+    });
+    elements.inspector.addEventListener('pointerup', rememberRichTextSelection);
+    elements.inspector.addEventListener('keyup', rememberRichTextSelection);
+
     elements.inspector.addEventListener('input', (event) => {
+        const richTextEditor = event.target.closest('[data-rich-text-editor]');
+        if (richTextEditor) {
+            rememberRichTextSelection();
+            syncRichTextEditor(richTextEditor);
+            return;
+        }
         const input = event.target.closest('[data-inspector-prop]');
         if (!input) return;
         const scope = input.closest('[data-inspector-scope]')?.dataset.inspectorScope;
@@ -1077,6 +1168,11 @@ if (root) {
     });
 
     elements.inspector.addEventListener('change', (event) => {
+        const richTextColor = event.target.closest('[data-rich-color]');
+        if (richTextColor) {
+            applyRichTextCommand(richTextColor.dataset.richColor, richTextColor.value);
+            return;
+        }
         const input = event.target.closest('[data-inspector-prop]');
         const scope = input?.closest('[data-inspector-scope]')?.dataset.inspectorScope;
         if (!input || scope !== 'frame' || !['width', 'height'].includes(input.dataset.inspectorProp)) return;
@@ -1093,6 +1189,11 @@ if (root) {
     });
 
     elements.inspector.addEventListener('click', (event) => {
+        const richTextCommand = event.target.closest('[data-rich-command]');
+        if (richTextCommand) {
+            applyRichTextCommand(richTextCommand.dataset.richCommand);
+            return;
+        }
         const sizeButton = event.target.closest('[data-frame-size]');
         if (sizeButton) {
             const frame = selectedFrame();

@@ -142,6 +142,7 @@ class PresentationFeatureTest extends TestCase
                     'width' => 700,
                     'height' => 140,
                     'text' => 'Pahami, praktikkan, dan teladankan.',
+                    'html' => '<p><strong>Pahami</strong>, <em>praktikkan</em>, dan <span style="color:#be123c;background-color:rgb(254, 240, 138);position:fixed" onclick="alert(1)">teladankan</span>.</p><ul><li>Amanah</li><li>Teladan</li></ul><script>alert(2)</script>',
                     'fontSize' => 42,
                     'color' => '#064e3b',
                     'backgroundColor' => 'transparent',
@@ -235,6 +236,12 @@ class PresentationFeatureTest extends TestCase
         $this->assertEquals(36, $savedCanvas['frames'][0]['borderRadius']);
         $this->assertSame('#be123c', $savedCanvas['frames'][0]['titleColor']);
         $this->assertEquals(30, $savedCanvas['frames'][0]['titleFontSize']);
+        $this->assertStringContainsString('<strong>Pahami</strong>', $savedCanvas['frames'][0]['elements'][0]['html']);
+        $this->assertStringContainsString('<ul><li>Amanah</li><li>Teladan</li></ul>', $savedCanvas['frames'][0]['elements'][0]['html']);
+        $this->assertStringContainsString('background-color:rgb(254, 240, 138)', $savedCanvas['frames'][0]['elements'][0]['html']);
+        $this->assertStringNotContainsString('onclick', $savedCanvas['frames'][0]['elements'][0]['html']);
+        $this->assertStringNotContainsString('position:', $savedCanvas['frames'][0]['elements'][0]['html']);
+        $this->assertStringNotContainsString('<script', $savedCanvas['frames'][0]['elements'][0]['html']);
         $this->assertSame('dQw4w9WgXcQ', $savedCanvas['frames'][0]['elements'][2]['youtubeId']);
         $this->assertSame('https://pkgenerus.my.id/materi', $savedCanvas['frames'][0]['elements'][3]['url']);
         $this->assertSame('hexagon', $savedCanvas['frames'][0]['elements'][4]['shapeType']);

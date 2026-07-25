@@ -25,6 +25,8 @@
             white-space: pre-wrap;
             line-height: 1.15;
         }
+        .text ul, .text ol { margin: 3pt 0; padding-left: 18pt; }
+        .text li { margin: 1pt 0; }
         .image img, .logo img {
             display: block;
             width: 100%;
@@ -109,7 +111,7 @@
                 <div
                     class="element text"
                     style="{{ $style }}font-size:{{ max(10, min(160, (float) ($element['fontSize'] ?? 32))) * 0.75 }}pt;text-align:{{ $element['align'] ?? 'left' }};font-weight:{{ !empty($element['bold']) ? 'bold' : 'normal' }};"
-                >{{ $element['text'] ?? '' }}</div>
+                >@if(!empty($element['html'])){!! $element['html'] !!}@else{{ $element['text'] ?? '' }}@endif</div>
             @elseif(in_array($element['type'], ['image', 'logo'], true))
                 <div class="element {{ $element['type'] }}" style="{{ $style }}border-radius:{{ $element['type'] === 'logo' && ($element['shape'] ?? 'circle') === 'circle' ? '50%' : '8pt' }};">
                     @if($element['dataUrl'])

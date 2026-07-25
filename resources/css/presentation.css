@@ -374,6 +374,116 @@
     overflow-wrap: anywhere;
 }
 
+.pkg-presentation-rich-content {
+    width: 100%;
+    max-width: 100%;
+}
+
+.pkg-presentation-text ul,
+.pkg-rich-text-editor ul {
+    margin: 0.25em 0;
+    padding-left: 1.5em;
+    list-style: disc;
+}
+
+.pkg-presentation-text ol,
+.pkg-rich-text-editor ol {
+    margin: 0.25em 0;
+    padding-left: 1.65em;
+    list-style: decimal;
+}
+
+.pkg-presentation-text li,
+.pkg-rich-text-editor li {
+    margin: 0.12em 0;
+}
+
+.pkg-presentation-text p,
+.pkg-presentation-text div {
+    margin: 0.16em 0;
+}
+
+.pkg-rich-text-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    border: 1px solid rgb(203 213 225);
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+    background: rgb(248 250 252);
+    padding: 8px;
+}
+
+.dark .pkg-rich-text-toolbar {
+    border-color: rgb(51 65 85);
+    background: rgb(15 23 42);
+}
+
+.pkg-rich-text-toolbar button,
+.pkg-rich-text-toolbar label {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid rgb(148 163 184);
+    border-radius: 8px;
+    background: white;
+    padding: 5px 9px;
+    color: rgb(30 41 59);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dark .pkg-rich-text-toolbar button,
+.dark .pkg-rich-text-toolbar label {
+    border-color: rgb(71 85 105);
+    background: rgb(30 41 59);
+    color: rgb(241 245 249);
+}
+
+.pkg-rich-text-toolbar button:hover {
+    border-color: #10b981;
+    color: #047857;
+}
+
+.pkg-rich-text-toolbar input[type="color"] {
+    width: 24px;
+    height: 24px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.pkg-rich-text-editor {
+    min-height: 150px;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid rgb(148 163 184);
+    border-radius: 0 0 12px 12px;
+    background: white;
+    padding: 12px;
+    color: rgb(15 23 42);
+    font-size: 14px;
+    line-height: 1.55;
+    outline: none;
+    white-space: pre-wrap;
+}
+
+.pkg-rich-text-editor:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16);
+}
+
+.dark .pkg-rich-text-editor {
+    border-color: rgb(71 85 105);
+    background: rgb(15 23 42);
+    color: rgb(241 245 249);
+}
+
 .pkg-presentation-element.is-image img,
 .pkg-presentation-element.is-logo img {
     width: 100%;

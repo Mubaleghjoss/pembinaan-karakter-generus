@@ -20,6 +20,42 @@ export function findPresentationElement(frame, elementId) {
     return frame?.elements?.find((element) => element.id === elementId) || null;
 }
 
+export function sanitizePresentationRichText(value) {
+    const template = document.createElement('template');
+    template.innerHTML = String(value || '').slice(0, 20000);
+    const allowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'SPAN', 'FONT', 'BR', 'P', 'DIV']);
+    const safeColor = (color) => /^(#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\))$/i
+        .test(String(color || '').trim());
+
+    [...template.content.querySelectorAll('*')].forEach((node) => {
+        if (!allowedTags.has(node.tagName)) {
+            node.replaceWith(...node.childNodes);
+            return;
+        }
+
+        const color = node.tagName === 'FONT' && safeColor(node.getAttribute('color'))
+            ? node.getAttribute('color').trim()
+            : null;
+        const styles = {};
+        if (node.tagName === 'SPAN') {
+            ['color', 'background-color'].forEach((property) => {
+                const propertyValue = node.style.getPropertyValue(property);
+                if (safeColor(propertyValue)) styles[property] = propertyValue.trim();
+            });
+            if (['bold', '700'].includes(node.style.fontWeight)) styles['font-weight'] = 'bold';
+            if (node.style.fontStyle === 'italic') styles['font-style'] = 'italic';
+            if (node.style.textDecoration.includes('underline')) styles['text-decoration'] = 'underline';
+        }
+        [...node.attributes].forEach((attribute) => node.removeAttribute(attribute.name));
+        if (color) node.setAttribute('color', color);
+        Object.entries(styles).forEach(([property, propertyValue]) => {
+            node.style.setProperty(property, propertyValue);
+        });
+    });
+
+    return template.innerHTML;
+}
+
 export function presentationCanvasBounds(canvas, padding = 120) {
     const frames = Array.isArray(canvas.frames) ? canvas.frames : [];
     const canvasElements = Array.isArray(canvas.elements) ? canvas.elements : [];
@@ -379,7 +415,14 @@ function renderPresentationElement(element, assets, interactive = false) {
         node.style.fontSize = `${element.fontSize || 32}px`;
         node.style.textAlign = element.align || 'left';
         node.style.fontWeight = element.bold ? '700' : '400';
-        node.textContent = element.text || 'Teks';
+        if (element.html) {
+            const richContent = document.createElement('div');
+            richContent.className = 'pkg-presentation-rich-content';
+            richContent.innerHTML = sanitizePresentationRichText(element.html);
+            node.appendChild(richContent);
+        } else {
+            node.textContent = element.text || 'Teks';
+        }
         return node;
     }
 
