@@ -47,6 +47,8 @@ Route::get('/materi-publik/{materi}/pdf/{index}/download', [App\Http\Controllers
     ->whereNumber('index')
     ->name('public.materi.pdf.download');
 Route::get('/materi-publik/{materi}', [App\Http\Controllers\PublicController::class, 'materiShow'])->name('public.materi.show');
+Route::get('/presentasi-publik/{presentation:slug}', [App\Http\Controllers\PresentationController::class, 'publicShow'])
+    ->name('public.presentations.show');
 Route::get('/kalender', [App\Http\Controllers\CalendarController::class, 'publicIndex'])->name('public.calendar.index');
 Route::get('/kalender/events', [App\Http\Controllers\CalendarController::class, 'publicEvents'])->name('public.calendar.events');
 // Pendataan guru privat. Sengaja tidak ditampilkan pada navigasi publik.
@@ -493,6 +495,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/berita/{berita}/download', [BeritaController::class, 'downloadPdf'])->name('berita.download');
 
     // Materi Management
+    Route::get('/presentasi', [App\Http\Controllers\PresentationController::class, 'index'])->name('presentations.index');
+    Route::post('/presentasi', [App\Http\Controllers\PresentationController::class, 'store'])->name('presentations.store');
+    Route::get('/presentasi/{presentation:slug}/edit', [App\Http\Controllers\PresentationController::class, 'edit'])->name('presentations.edit');
+    Route::put('/presentasi/{presentation:slug}', [App\Http\Controllers\PresentationController::class, 'update'])->name('presentations.update');
+    Route::post('/presentasi/{presentation:slug}/gambar', [App\Http\Controllers\PresentationController::class, 'uploadAsset'])->name('presentations.assets.store');
+    Route::get('/presentasi/{presentation:slug}/tayang', [App\Http\Controllers\PresentationController::class, 'preview'])->name('presentations.preview');
+    Route::patch('/presentasi/{presentation:slug}/publikasi', [App\Http\Controllers\PresentationController::class, 'togglePublish'])->name('presentations.publish');
+    Route::delete('/presentasi/{presentation:slug}', [App\Http\Controllers\PresentationController::class, 'destroy'])->name('presentations.destroy');
     Route::get('/materi-targets', [MateriTargetController::class, 'index'])->name('materi-targets.index');
     Route::post('/materi-targets', [MateriTargetController::class, 'store'])->name('materi-targets.store');
     Route::patch('/materi-targets/{target}', [MateriTargetController::class, 'update'])->name('materi-targets.update');

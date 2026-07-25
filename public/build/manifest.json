@@ -37,6 +37,17 @@
     "file": "assets/news-slider-hXc9paC5.css",
     "src": "_news-slider-hXc9paC5.css"
   },
+  "_presentation-canvas-CPtLzb2c.js": {
+    "file": "assets/presentation-canvas-CPtLzb2c.js",
+    "name": "presentation-canvas",
+    "css": [
+      "assets/presentation-canvas-DVGkXkSr.css"
+    ]
+  },
+  "_presentation-canvas-DVGkXkSr.css": {
+    "file": "assets/presentation-canvas-DVGkXkSr.css",
+    "src": "_presentation-canvas-DVGkXkSr.css"
+  },
   "_qr-scanner-B4zfAtOc.js": {
     "file": "assets/qr-scanner-B4zfAtOc.js",
     "name": "qr-scanner",
@@ -65,7 +76,7 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-euTtM-ln.js",
+    "file": "assets/app-tg5h1ej2.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -86,7 +97,7 @@
       "_browser-C8KFpyF2.js"
     ],
     "css": [
-      "assets/app-DM9JQmIL.css"
+      "assets/app-DBi_eHMO.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -112,7 +123,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-CH-Tkx_9.js",
+    "file": "assets/QRScanner-DFDjKG6d.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -140,6 +151,24 @@
     "isDynamicEntry": true,
     "assets": [
       "assets/pdf.worker.min-wgc6bjNh.mjs"
+    ]
+  },
+  "resources/js/presentation-editor.js": {
+    "file": "assets/presentation-editor-BI4rjEyu.js",
+    "name": "presentation-editor",
+    "src": "resources/js/presentation-editor.js",
+    "isEntry": true,
+    "imports": [
+      "_presentation-canvas-CPtLzb2c.js"
+    ]
+  },
+  "resources/js/presentation-viewer.js": {
+    "file": "assets/presentation-viewer-OA-mj-3A.js",
+    "name": "presentation-viewer",
+    "src": "resources/js/presentation-viewer.js",
+    "isEntry": true,
+    "imports": [
+      "_presentation-canvas-CPtLzb2c.js"
     ]
   },
   "resources/js/public-scanner.js": {

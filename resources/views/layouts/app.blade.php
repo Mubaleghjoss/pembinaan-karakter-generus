@@ -342,6 +342,9 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             <a href="{{ route('materi.index') }}" class="nav-item @if(request()->routeIs('materi.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Materi</span>
                             </a>
+                            <a href="{{ route('presentations.index') }}" class="nav-item @if(request()->routeIs('presentations.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Presentasi</span>
+                            </a>
                             @endif
                             @if(auth()->user()->isAdmin() || auth()->user()->isPengurusPkg() || auth()->user()->isTeacher())
                             <a href="{{ route('materi-rpp-journals.index') }}" class="nav-item @if(request()->routeIs('materi-rpp-journals.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">

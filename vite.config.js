@@ -11,6 +11,8 @@ export default defineConfig({
                 'resources/js/face-attendance.js',
                 'resources/js/qr-print.js',
                 'resources/js/rpg-beta-3d.js',
+                'resources/js/presentation-editor.js',
+                'resources/js/presentation-viewer.js',
             ],
             refresh: true,
         }),
