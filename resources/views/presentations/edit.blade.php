@@ -82,6 +82,7 @@
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-canvas-line>Tambah Garis Luar Frame</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-diagram>Tambah Diagram</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames>Rapikan Frame</button>
+        <button type="button" class="btn-primary !px-3 !py-2 text-sm" data-save-layout>Simpan Tata Letak</button>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-image-input>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-logo-input>
         <span class="ml-auto max-w-xl self-center text-xs text-gray-500 dark:text-gray-400">Pada Overview, seret tanda silang hijau untuk memindahkan frame. Klik elemen lalu seret penanda hijau di sisi atau sudut untuk mengubah ukuran. Cubit dua jari untuk zoom.</span>

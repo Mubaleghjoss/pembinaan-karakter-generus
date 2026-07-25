@@ -61,6 +61,7 @@ class PresentationFeatureTest extends TestCase
             ->assertSee('data-add-canvas-line', false)
             ->assertSee('data-add-diagram', false)
             ->assertSee('data-arrange-frames', false)
+            ->assertSee('data-save-layout', false)
             ->assertSee('data-editor-fit', false)
             ->assertSee('data-editor-undo', false)
             ->assertSee('data-editor-redo', false)

@@ -58,6 +58,7 @@ if (root) {
         logoInput: root.querySelector('[data-logo-input]'),
         undo: root.querySelector('[data-editor-undo]'),
         redo: root.querySelector('[data-editor-redo]'),
+        layoutSave: root.querySelector('[data-save-layout]'),
     };
     let touchGesture = null;
 
@@ -1410,6 +1411,17 @@ if (root) {
     });
 
     root.querySelector('[data-editor-save]').addEventListener('click', save);
+    elements.layoutSave?.addEventListener('click', async () => {
+        const originalLabel = elements.layoutSave.textContent;
+        elements.layoutSave.disabled = true;
+        elements.layoutSave.textContent = 'Menyimpan...';
+        const saved = await save();
+        elements.layoutSave.textContent = saved ? 'Tata Letak Tersimpan' : 'Gagal Menyimpan';
+        window.setTimeout(() => {
+            elements.layoutSave.textContent = originalLabel;
+            elements.layoutSave.disabled = false;
+        }, 1600);
+    });
     root.querySelectorAll('[data-export-link]').forEach((link) => {
         link.addEventListener('click', async (event) => {
             if (!state.dirty) return;
