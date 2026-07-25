@@ -5,8 +5,10 @@ import {
     decodePresentationPayload,
     findPresentationElement,
     findPresentationFrame,
+    presentationPinchFactor,
     presentationId,
     renderPresentationStage,
+    zoomPresentationAtPoint,
 } from './presentation-canvas';
 
 const root = document.getElementById('presentation-editor');
@@ -24,6 +26,7 @@ if (root) {
         saveTimer: null,
         activeSave: null,
         cameraScale: 1,
+        manualCamera: false,
         drag: null,
     };
     const elements = {
@@ -106,6 +109,12 @@ if (root) {
 
     ensureCanvasContainsFrames();
 
+    const updateCameraHint = () => {
+        const frame = state.mode === 'focus' ? selectedFrame() : null;
+        const label = frame ? `Fokus: ${frame.title}` : 'Mode Overview';
+        elements.hint.textContent = `${label} · ${Math.round(state.cameraScale * 100)}%`;
+    };
+
     const applyCamera = (animate = true) => {
         const frame = state.mode === 'focus' ? selectedFrame() : null;
         state.cameraScale = applyPresentationCamera(
@@ -115,7 +124,8 @@ if (root) {
             frame,
             animate
         );
-        elements.hint.textContent = frame ? `Fokus: ${frame.title}` : 'Mode Overview';
+        state.manualCamera = false;
+        updateCameraHint();
     };
 
     const render = (animate = true) => {
@@ -128,7 +138,13 @@ if (root) {
         });
         renderFrameList();
         renderInspector();
-        requestAnimationFrame(() => applyCamera(animate));
+        requestAnimationFrame(() => {
+            if (state.manualCamera) {
+                updateCameraHint();
+                return;
+            }
+            applyCamera(animate);
+        });
     };
 
     const renderFrameList = () => {
@@ -278,13 +294,19 @@ if (root) {
         state.selectedFrameId = frameId;
         state.selectedElementId = null;
         state.mode = 'focus';
+        state.manualCamera = false;
         render();
     };
 
     root.querySelector('[data-editor-overview]').addEventListener('click', () => {
         state.mode = 'overview';
         state.selectedElementId = null;
+        state.manualCamera = false;
         render();
+    });
+    root.querySelector('[data-editor-fit]').addEventListener('click', () => {
+        state.manualCamera = false;
+        applyCamera();
     });
 
     root.querySelector('[data-add-frame]').addEventListener('click', () => {
@@ -306,6 +328,7 @@ if (root) {
         state.selectedFrameId = frame.id;
         state.selectedElementId = null;
         state.mode = 'overview';
+        state.manualCamera = false;
         markDirty();
         render();
     });
@@ -323,6 +346,7 @@ if (root) {
         });
         state.mode = 'overview';
         state.selectedElementId = null;
+        state.manualCamera = false;
         ensureCanvasContainsFrames();
         markDirty();
         render();
@@ -349,6 +373,7 @@ if (root) {
         frame.elements.push(element);
         state.selectedElementId = element.id;
         state.mode = 'focus';
+        state.manualCamera = false;
         markDirty();
         render();
     });
@@ -372,6 +397,7 @@ if (root) {
         frame.elements.push(element);
         state.selectedElementId = element.id;
         state.mode = 'focus';
+        state.manualCamera = false;
         markDirty();
         render();
     });
@@ -419,6 +445,7 @@ if (root) {
             frame.elements.push(element);
             state.selectedElementId = element.id;
             state.mode = 'focus';
+            state.manualCamera = false;
             markDirty();
             render();
         } catch (error) {
@@ -472,7 +499,8 @@ if (root) {
             selectedElementId: state.selectedElementId,
             overview: state.mode === 'overview',
         });
-        applyCamera(false);
+        if (state.manualCamera) updateCameraHint();
+        else applyCamera(false);
         if (scope === 'frame' && input.dataset.inspectorProp === 'title') renderFrameList();
     });
 
@@ -504,6 +532,7 @@ if (root) {
         }
         if (event.target.closest('[data-focus-selected-frame]')) {
             state.mode = 'focus';
+            state.manualCamera = false;
             render();
             return;
         }
@@ -522,6 +551,7 @@ if (root) {
             state.selectedFrameId = frames[Math.max(0, index - 1)]?.id || frames[0]?.id;
             state.selectedElementId = null;
             state.mode = 'overview';
+            state.manualCamera = false;
             ensureCanvasContainsFrames();
             markDirty();
             render();
@@ -540,6 +570,22 @@ if (root) {
         input.addEventListener('input', metadataChanged);
         input.addEventListener('change', metadataChanged);
     });
+
+    elements.viewport.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+
+        event.preventDefault();
+        state.cameraScale = zoomPresentationAtPoint(
+            elements.viewport,
+            elements.stage,
+            presentationPinchFactor(event.deltaY),
+            event.clientX,
+            event.clientY,
+            { minimumScale: 0.03, maximumScale: 4 }
+        );
+        state.manualCamera = true;
+        updateCameraHint();
+    }, { passive: false });
 
     elements.viewport.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return;
@@ -629,6 +675,7 @@ if (root) {
             render(false);
         } else if (state.mode === 'overview' && drag.kind === 'frame') {
             state.mode = 'focus';
+            state.manualCamera = false;
             render();
             return;
         }
@@ -727,7 +774,10 @@ if (root) {
         event.preventDefault();
         event.returnValue = '';
     });
-    new ResizeObserver(() => applyCamera(false)).observe(elements.viewport);
+    new ResizeObserver(() => {
+        state.manualCamera = false;
+        applyCamera(false);
+    }).observe(elements.viewport);
 
     render(false);
 }

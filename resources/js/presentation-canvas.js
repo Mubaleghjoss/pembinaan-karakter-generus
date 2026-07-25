@@ -108,10 +108,47 @@ export function applyPresentationCamera(viewport, stage, canvas, frame = null, a
     const translateX = ((viewportWidth - (bounds.width * safeScale)) / 2) - (bounds.x * safeScale);
     const translateY = ((viewportHeight - (bounds.height * safeScale)) / 2) - (bounds.y * safeScale);
 
-    stage.style.transition = animate ? 'transform 560ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
-    stage.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${safeScale})`;
+    setPresentationCameraTransform(stage, translateX, translateY, safeScale, animate);
 
     return safeScale;
+}
+
+export function zoomPresentationAtPoint(viewport, stage, factor, clientX, clientY, options = {}) {
+    const viewportBounds = viewport.getBoundingClientRect();
+    const currentScale = cameraNumber(stage.dataset.cameraScale, 1);
+    const currentX = cameraNumber(stage.dataset.cameraX, 0);
+    const currentY = cameraNumber(stage.dataset.cameraY, 0);
+    const minimumScale = Number.isFinite(options.minimumScale) ? options.minimumScale : 0.03;
+    const maximumScale = Number.isFinite(options.maximumScale) ? options.maximumScale : 4;
+    const requestedScale = currentScale * clampPresentationNumber(factor, 0.72, 1.38, 1);
+    const nextScale = clampPresentationNumber(requestedScale, minimumScale, maximumScale, currentScale);
+    const pointerX = clientX - viewportBounds.left;
+    const pointerY = clientY - viewportBounds.top;
+    const contentX = (pointerX - currentX) / currentScale;
+    const contentY = (pointerY - currentY) / currentScale;
+    const nextX = pointerX - (contentX * nextScale);
+    const nextY = pointerY - (contentY * nextScale);
+
+    setPresentationCameraTransform(stage, nextX, nextY, nextScale, false);
+
+    return nextScale;
+}
+
+export function presentationPinchFactor(deltaY) {
+    return Math.exp(-clampPresentationNumber(deltaY, -40, 40, 0) * 0.012);
+}
+
+function setPresentationCameraTransform(stage, translateX, translateY, scale, animate) {
+    stage.dataset.cameraX = String(translateX);
+    stage.dataset.cameraY = String(translateY);
+    stage.dataset.cameraScale = String(scale);
+    stage.style.transition = animate ? 'transform 560ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
+    stage.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
+}
+
+function cameraNumber(value, fallback) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
 }
 
 function renderPresentationElement(element, assets) {

@@ -3,7 +3,9 @@ import {
     applyPresentationCamera,
     decodePresentationPayload,
     findPresentationFrame,
+    presentationPinchFactor,
     renderPresentationStage,
+    zoomPresentationAtPoint,
 } from './presentation-canvas';
 
 const root = document.getElementById('presentation-viewer');
@@ -17,20 +19,32 @@ if (root) {
         mode: 'overview',
         currentIndex: -1,
         pendingIndex: 0,
+        cameraScale: 1,
+        manualCamera: false,
     };
 
     renderPresentationStage({ stage, presentation, overview: true });
 
     const updateCamera = (animate = true) => {
         const frame = state.mode === 'frame' ? presentation.canvas.frames[state.currentIndex] : null;
-        applyPresentationCamera(viewport, stage, presentation.canvas, frame, animate);
+        state.cameraScale = applyPresentationCamera(viewport, stage, presentation.canvas, frame, animate);
+        state.manualCamera = false;
         stage.querySelectorAll('[data-frame-id]').forEach((node) => {
             node.classList.toggle('is-active-view', frame?.id === node.dataset.frameId);
             node.classList.toggle('is-overview', !frame);
         });
-        progress.textContent = frame
+        const locationLabel = frame
             ? `${state.currentIndex + 1} / ${presentation.canvas.frames.length} · ${frame.title}`
             : 'Overview';
+        progress.textContent = `${locationLabel} · ${Math.round(state.cameraScale * 100)}%`;
+    };
+
+    const updateZoomProgress = () => {
+        const frame = state.mode === 'frame' ? presentation.canvas.frames[state.currentIndex] : null;
+        const locationLabel = frame
+            ? `${state.currentIndex + 1} / ${presentation.canvas.frames.length} · ${frame.title}`
+            : 'Overview';
+        progress.textContent = `${locationLabel} · ${Math.round(state.cameraScale * 100)}%`;
     };
 
     const showOverview = (pendingIndex = state.currentIndex < 0 ? 0 : state.currentIndex + 1) => {
@@ -90,6 +104,7 @@ if (root) {
     root.querySelector('[data-viewer-next]').addEventListener('click', next);
     root.querySelector('[data-viewer-prev]').addEventListener('click', previous);
     root.querySelector('[data-viewer-home]').addEventListener('click', () => showOverview(0));
+    root.querySelector('[data-viewer-fit]').addEventListener('click', () => updateCamera());
     root.querySelector('[data-viewer-fullscreen]').addEventListener('click', async () => {
         if (document.fullscreenElement) {
             await document.exitFullscreen();
@@ -97,6 +112,22 @@ if (root) {
             await root.requestFullscreen();
         }
     });
+
+    viewport.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+
+        event.preventDefault();
+        state.cameraScale = zoomPresentationAtPoint(
+            viewport,
+            stage,
+            presentationPinchFactor(event.deltaY),
+            event.clientX,
+            event.clientY,
+            { minimumScale: 0.03, maximumScale: 4 }
+        );
+        state.manualCamera = true;
+        updateZoomProgress();
+    }, { passive: false });
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'ArrowRight' || event.key === ' ') {
@@ -108,9 +139,15 @@ if (root) {
         } else if (event.key === 'Home' || event.key.toLowerCase() === 'o') {
             event.preventDefault();
             showOverview(0);
+        } else if (event.key === '0') {
+            event.preventDefault();
+            updateCamera();
         }
     });
 
-    new ResizeObserver(() => updateCamera(false)).observe(viewport);
+    new ResizeObserver(() => {
+        state.manualCamera = false;
+        updateCamera(false);
+    }).observe(viewport);
     requestAnimationFrame(() => updateCamera(false));
 }
