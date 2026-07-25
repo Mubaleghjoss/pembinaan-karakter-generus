@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gambar Jadwal MT/MS</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite('resources/js/app.js')
 </head>
 <body class="min-h-screen bg-gray-100 p-4 dark:bg-gray-950 sm:p-8">
     <main class="mx-auto max-w-5xl">

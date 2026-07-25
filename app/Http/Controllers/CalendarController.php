@@ -538,16 +538,73 @@ class CalendarController extends Controller
             $query->whereHas('assignments.teacher', fn ($teacher) => $teacher->where('user_id', $viewer->id));
         }
 
-        return $query
+        $sessions = $query
             ->orderBy('session_date')
             ->orderBy('start_time')
-            ->get()
+            ->get();
+
+        if ($viewer === null) {
+            return $sessions
+                ->groupBy(fn (TeacherScheduleSession $session) => $session->session_date->toDateString())
+                ->map(function (Collection $daySessions, string $date) {
+                    $rombelOrder = ['smp' => 1, 'sma' => 2, 'pranikah' => 3];
+                    $daySessions = $daySessions
+                        ->sortBy(fn (TeacherScheduleSession $session) => sprintf(
+                            '%s-%02d',
+                            substr($session->start_time, 0, 5),
+                            $rombelOrder[$session->rombel] ?? 99
+                        ))
+                        ->values();
+                    $sessionDetails = $daySessions
+                        ->map(function (TeacherScheduleSession $session) {
+                            $main = $session->assignments->firstWhere('role', 'main')?->teacher;
+                            $backup = $session->assignments->firstWhere('role', 'backup')?->teacher;
+
+                            return [
+                                'rombel' => strtoupper($session->rombel),
+                                'main_teacher' => $main?->publicDisplayName() ?? 'Belum diisi',
+                                'backup_teacher' => $backup?->publicDisplayName() ?? 'Belum diisi',
+                                'start_time' => substr($session->start_time, 0, 5),
+                                'end_time' => substr($session->end_time, 0, 5),
+                                'location' => $session->location,
+                            ];
+                        })
+                        ->values()
+                        ->all();
+                    $startTime = $daySessions
+                        ->map(fn (TeacherScheduleSession $session) => substr($session->start_time, 0, 5))
+                        ->min();
+                    $endTime = $daySessions
+                        ->map(fn (TeacherScheduleSession $session) => substr($session->end_time, 0, 5))
+                        ->max();
+
+                    return [
+                        'id' => 'public-teacher-schedule-'.$date,
+                        'title' => 'KBM',
+                        'start' => $date.'T'.$startTime.':00',
+                        'end' => $date.'T'.$endTime.':00',
+                        'allDay' => false,
+                        'color' => '#047857',
+                        'type' => 'teacher_schedule',
+                        'extendedProps' => [
+                            'type' => 'teacher_schedule',
+                            'title' => 'KBM',
+                            'start_time' => $startTime,
+                            'end_time' => $endTime,
+                            'sessions' => $sessionDetails,
+                        ],
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        return $sessions
             ->map(function (TeacherScheduleSession $session) use ($viewer) {
                 $main = $session->assignments->firstWhere('role', 'main')?->teacher;
                 $backup = $session->assignments->firstWhere('role', 'backup')?->teacher;
-                $public = $viewer === null;
-                $mainName = $main ? ($public ? $main->publicDisplayName() : $main->name) : 'Belum diisi';
-                $backupName = $backup ? ($public ? $backup->publicDisplayName() : $backup->name) : 'Belum diisi';
+                $mainName = $main?->name ?? 'Belum diisi';
+                $backupName = $backup?->name ?? 'Belum diisi';
                 $props = [
                     'type' => 'teacher_schedule',
                     'title' => 'Program Tambahan Keilmuan '.strtoupper($session->rombel),
@@ -565,7 +622,7 @@ class CalendarController extends Controller
                 }
 
                 return [
-                    'id' => ($public ? 'public-' : '').'teacher-schedule-'.$session->id,
+                    'id' => 'teacher-schedule-'.$session->id,
                     'title' => 'MT/MS '.strtoupper($session->rombel).": {$mainName} / {$backupName}",
                     'start' => $session->session_date->format('Y-m-d').'T'.substr($session->start_time, 0, 8),
                     'end' => $session->session_date->format('Y-m-d').'T'.substr($session->end_time, 0, 8),

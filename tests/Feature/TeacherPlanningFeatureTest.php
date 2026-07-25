@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\TeacherSchedulePlanner;
 use App\Support\ParticipantProfileOptions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -188,10 +189,27 @@ class TeacherPlanningFeatureTest extends TestCase
             'rombel' => 'smp',
             'start_time' => '20:00',
             'end_time' => '21:30',
+            'location' => 'Masjid Sawah Dalam',
             'status' => 'scheduled',
         ]);
         $assignment = app(TeacherSchedulePlanner::class)
             ->createAssignment($session, $profile, 'main', 'manual', true, $admin->id);
+        foreach ([
+            ['rombel' => 'sma', 'location' => 'Aula Panunggangan'],
+            ['rombel' => 'pranikah', 'location' => 'Ruang Pranikah'],
+        ] as $sessionData) {
+            $additionalSession = TeacherScheduleSession::create([
+                'period_id' => $period->id,
+                'session_date' => now()->addDays(5)->toDateString(),
+                'rombel' => $sessionData['rombel'],
+                'start_time' => '20:00',
+                'end_time' => '21:30',
+                'location' => $sessionData['location'],
+                'status' => 'scheduled',
+            ]);
+            app(TeacherSchedulePlanner::class)
+                ->createAssignment($additionalSession, $profile, 'main', 'manual', true, $admin->id);
+        }
         $token = Crypt::decryptString($assignment->confirmation_token_encrypted);
 
         $this->get(route('public.teacher-confirmation.show', $token))
@@ -217,8 +235,15 @@ class TeacherPlanningFeatureTest extends TestCase
         $event = collect($response->json())->firstWhere('type', 'teacher_schedule');
 
         $this->assertNotNull($event);
-        $this->assertStringContainsString('Ahmad', $event['title']);
-        $this->assertStringNotContainsString('Fulan Panunggangan', $event['title']);
+        $this->assertSame('KBM', $event['title']);
+        $this->assertCount(1, collect($response->json())->where('type', 'teacher_schedule'));
+        $this->assertSame(['SMP', 'SMA', 'PRANIKAH'], array_column($event['extendedProps']['sessions'], 'rombel'));
+        $this->assertSame(
+            ['Masjid Sawah Dalam', 'Aula Panunggangan', 'Ruang Pranikah'],
+            array_column($event['extendedProps']['sessions'], 'location')
+        );
+        $this->assertSame(['Ahmad', 'Ahmad', 'Ahmad'], array_column($event['extendedProps']['sessions'], 'main_teacher'));
+        $this->assertStringNotContainsString('Fulan Panunggangan', json_encode($event));
         $this->assertArrayNotHasKey('whatsapp', $event['extendedProps']);
     }
 
@@ -418,6 +443,8 @@ class TeacherPlanningFeatureTest extends TestCase
             ->get(route('teacher-planning.export.pdf', $period))
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
+
+        app(Vite::class)->useHotFile(storage_path('framework/testing-vite-hot'));
 
         $this->actingAs($admin)
             ->get(route('teacher-planning.export.image', $period))

@@ -48,6 +48,10 @@
                         <span class="h-3 w-3 rounded-full" style="background-color: #0F766E"></span>
                         <span>Jadwal Presensi</span>
                     </div>
+                    <div class="flex items-center gap-2">
+                        <span class="h-3 w-3 rounded-full" style="background-color: #047857"></span>
+                        <span>KBM</span>
+                    </div>
                 </div>
             </div>
 
@@ -397,6 +401,55 @@ function publicCalendarEventHtml(event) {
                 </div>
                 <span class="mt-4 inline-flex rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-800">Target: ${publicCalendarText(props.target_label)}</span>
                 ${props.url ? `<a href="${props.url}" class="btn-primary mt-5 inline-flex justify-center">${props.action_label || 'Buka Scan Presensi'}</a>` : ''}
+            </div>
+        `;
+    }
+
+    if (type === 'teacher_schedule') {
+        const sessions = Array.isArray(props.sessions) ? props.sessions : [];
+        const sessionCards = sessions.map((session) => {
+            const rombel = publicCalendarEscape(session.rombel || '-');
+            const mainTeacher = publicCalendarEscape(session.main_teacher || 'Belum diisi');
+            const backupTeacher = publicCalendarEscape(session.backup_teacher || 'Belum diisi');
+            const location = publicCalendarEscape(session.location || 'Belum ditentukan');
+            const sessionTime = session.start_time
+                ? `${publicCalendarEscape(session.start_time)}${session.end_time ? ' - ' + publicCalendarEscape(session.end_time) : ''} WIB`
+                : '-';
+
+            return `
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-left dark:border-emerald-900 dark:bg-emerald-950/30">
+                    <div class="flex items-center justify-between gap-3">
+                        <h3 class="text-base font-bold text-emerald-800 dark:text-emerald-200">${rombel}</h3>
+                        <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">${sessionTime}</span>
+                    </div>
+                    <dl class="mt-3 grid gap-2 text-sm">
+                        <div>
+                            <dt class="text-gray-500 dark:text-gray-400">Pengajar utama</dt>
+                            <dd class="font-semibold text-gray-900 dark:text-white">${mainTeacher}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500 dark:text-gray-400">Pengajar cadangan</dt>
+                            <dd class="font-semibold text-gray-900 dark:text-white">${backupTeacher}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500 dark:text-gray-400">Lokasi</dt>
+                            <dd class="font-semibold text-gray-900 dark:text-white">${location}</dd>
+                        </div>
+                    </dl>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div>
+                <div class="text-center">
+                    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-lg font-bold text-emerald-700">KBM</div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Kegiatan Belajar Mengajar</h2>
+                    <p class="mt-1 text-gray-600 dark:text-gray-300">${dateLabel}${timeLabel ? ' | ' + timeLabel + ' WIB' : ''}</p>
+                </div>
+                <div class="mt-5 grid gap-3">
+                    ${sessionCards || '<p class="rounded-xl bg-gray-50 p-4 text-center text-sm text-gray-600 dark:bg-slate-800 dark:text-gray-300">Rincian rombel belum tersedia.</p>'}
+                </div>
             </div>
         `;
     }
