@@ -60,6 +60,7 @@ class PresentationFeatureTest extends TestCase
             ->assertSee('data-arrange-frames', false)
             ->assertSee('data-editor-fit', false)
             ->assertSee('data-save-before-open', false)
+            ->assertSee('penanda hijau')
             ->assertSee('Unduh PDF')
             ->assertSee('Unduh PPTX');
 

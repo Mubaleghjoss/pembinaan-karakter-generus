@@ -134,6 +134,72 @@
     cursor: move;
 }
 
+.pkg-presentation-editor .pkg-presentation-frame:not(.is-overview) .pkg-presentation-element {
+    cursor: move;
+}
+
+.pkg-presentation-element-controls {
+    position: absolute;
+    z-index: 12;
+    border: 2px dashed rgba(16, 185, 129, 0.9);
+    transform-origin: center;
+    pointer-events: none;
+}
+
+.pkg-presentation-element-resize-handle {
+    position: absolute;
+    z-index: 13;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    background: transparent;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.pkg-presentation-element-resize-handle::after {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 11px;
+    height: 11px;
+    transform: translate(-50%, -50%);
+    border: 2px solid #ffffff;
+    border-radius: 3px;
+    background: #10b981;
+    box-shadow: 0 3px 9px rgba(2, 6, 23, 0.38);
+    content: "";
+}
+
+.pkg-presentation-element-resize-handle.is-nw,
+.pkg-presentation-element-resize-handle.is-se {
+    cursor: nwse-resize;
+}
+
+.pkg-presentation-element-resize-handle.is-ne,
+.pkg-presentation-element-resize-handle.is-sw {
+    cursor: nesw-resize;
+}
+
+.pkg-presentation-element-resize-handle.is-n,
+.pkg-presentation-element-resize-handle.is-s {
+    cursor: ns-resize;
+}
+
+.pkg-presentation-element-resize-handle.is-e,
+.pkg-presentation-element-resize-handle.is-w {
+    cursor: ew-resize;
+}
+
+.pkg-presentation-element-resize-handle.is-nw { left: -15px; top: -15px; }
+.pkg-presentation-element-resize-handle.is-n { left: calc(50% - 15px); top: -15px; }
+.pkg-presentation-element-resize-handle.is-ne { right: -15px; top: -15px; }
+.pkg-presentation-element-resize-handle.is-e { right: -15px; top: calc(50% - 15px); }
+.pkg-presentation-element-resize-handle.is-se { right: -15px; bottom: -15px; }
+.pkg-presentation-element-resize-handle.is-s { left: calc(50% - 15px); bottom: -15px; }
+.pkg-presentation-element-resize-handle.is-sw { left: -15px; bottom: -15px; }
+.pkg-presentation-element-resize-handle.is-w { left: -15px; top: calc(50% - 15px); }
+
 .pkg-presentation-text {
     display: flex;
     align-items: center;

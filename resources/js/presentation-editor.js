@@ -371,6 +371,7 @@ if (root) {
                 <div class="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
                     ${elementTypeLabel(element.type)}
                 </div>
+                <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">Seret bagian tengah elemen untuk memindahkan. Gunakan penanda hijau pada sisi dan sudut untuk mengubah ukuran langsung.</p>
                 ${typeFields}
                 ${commonPositionFields(element)}
                 <button type="button" class="btn-danger w-full justify-center" data-delete-selected-element>Hapus Elemen</button>
@@ -779,6 +780,11 @@ if (root) {
                 snapshot.item.height = snapshot.height;
                 if (snapshot.item.type === 'text') snapshot.item.fontSize = snapshot.fontSize;
             });
+        } else if (drag.kind === 'element-resize' && drag.target) {
+            drag.target.x = drag.originX;
+            drag.target.y = drag.originY;
+            drag.target.width = drag.originWidth;
+            drag.target.height = drag.originHeight;
         } else if (drag.target) {
             drag.target.x = drag.originX;
             drag.target.y = drag.originY;
@@ -811,12 +817,21 @@ if (root) {
         if (event.button !== 0) return;
         if (touchGesture?.isActive()) return;
         const frameNode = event.target.closest('[data-frame-id]');
-        const elementNode = event.target.closest('[data-element-id]');
-        const resizeHandle = event.target.closest('[data-frame-resize]');
+        const frameResizeHandle = event.target.closest('[data-frame-resize]');
+        const elementResizeHandle = event.target.closest('[data-element-resize]');
         if (!frameNode) return;
 
         const frame = findPresentationFrame(state.presentation, frameNode.dataset.frameId);
-        const element = findPresentationElement(frame, elementNode?.dataset.elementId);
+        const clickedElementNode = event.target.closest('.pkg-presentation-element[data-element-id]');
+        const elementId = elementResizeHandle?.dataset.elementId || clickedElementNode?.dataset.elementId;
+        const element = findPresentationElement(frame, elementId);
+        const elementNode = element
+            ? frameNode.querySelector(`.pkg-presentation-element[data-element-id="${CSS.escape(element.id)}"]`)
+            : null;
+        const controlsNode = elementResizeHandle?.closest('.pkg-presentation-element-controls')
+            || (element
+                ? frameNode.querySelector(`.pkg-presentation-element-controls[data-element-id="${CSS.escape(element.id)}"]`)
+                : null);
         state.selectedFrameId = frame.id;
         state.selectedElementId = state.mode === 'focus' && element ? element.id : null;
         const frameElements = (frame.elements || []).map((item) => ({
@@ -829,16 +844,19 @@ if (root) {
         }));
         state.drag = {
             kind: state.mode === 'overview'
-                ? (resizeHandle ? 'frame-resize' : 'frame')
-                : (element ? 'element' : null),
+                ? (frameResizeHandle ? 'frame-resize' : 'frame')
+                : (elementResizeHandle ? 'element-resize' : (element ? 'element' : null)),
             target: state.mode === 'overview' ? frame : element,
             node: state.mode === 'overview' ? frameNode : elementNode,
+            controlsNode,
+            frame,
+            resizeDirection: elementResizeHandle?.dataset.elementResize || null,
             startX: event.clientX,
             startY: event.clientY,
             originX: state.mode === 'overview' ? frame.x : element?.x,
             originY: state.mode === 'overview' ? frame.y : element?.y,
-            originWidth: frame.width,
-            originHeight: frame.height,
+            originWidth: state.mode === 'overview' ? frame.width : element?.width,
+            originHeight: state.mode === 'overview' ? frame.height : element?.height,
             frameElements,
             moved: false,
         };
@@ -878,11 +896,72 @@ if (root) {
                 node.style.height = `${snapshot.item.height}px`;
                 if (snapshot.item.type === 'text') node.style.fontSize = `${snapshot.item.fontSize}px`;
             });
+        } else if (state.drag.kind === 'element-resize') {
+            const direction = state.drag.resizeDirection || 'se';
+            const minimumWidth = 40;
+            const minimumHeight = 30;
+            let x = state.drag.originX;
+            let y = state.drag.originY;
+            let width = state.drag.originWidth;
+            let height = state.drag.originHeight;
+
+            if (direction.includes('e')) {
+                width = clampPresentationNumber(
+                    state.drag.originWidth + deltaX,
+                    minimumWidth,
+                    Math.max(minimumWidth, state.drag.frame.width - state.drag.originX),
+                    state.drag.originWidth
+                );
+            }
+            if (direction.includes('s')) {
+                height = clampPresentationNumber(
+                    state.drag.originHeight + deltaY,
+                    minimumHeight,
+                    Math.max(minimumHeight, state.drag.frame.height - state.drag.originY),
+                    state.drag.originHeight
+                );
+            }
+            if (direction.includes('w')) {
+                x = clampPresentationNumber(
+                    state.drag.originX + deltaX,
+                    0,
+                    state.drag.originX + state.drag.originWidth - minimumWidth,
+                    state.drag.originX
+                );
+                width = state.drag.originWidth + (state.drag.originX - x);
+            }
+            if (direction.includes('n')) {
+                y = clampPresentationNumber(
+                    state.drag.originY + deltaY,
+                    0,
+                    state.drag.originY + state.drag.originHeight - minimumHeight,
+                    state.drag.originY
+                );
+                height = state.drag.originHeight + (state.drag.originY - y);
+            }
+
+            Object.assign(state.drag.target, { x, y, width, height });
+            state.drag.node.style.left = `${x}px`;
+            state.drag.node.style.top = `${y}px`;
+            state.drag.node.style.width = `${width}px`;
+            state.drag.node.style.height = `${height}px`;
+            if (state.drag.controlsNode) {
+                state.drag.controlsNode.style.left = `${x}px`;
+                state.drag.controlsNode.style.top = `${y}px`;
+                state.drag.controlsNode.style.width = `${width}px`;
+                state.drag.controlsNode.style.height = `${height}px`;
+            }
         } else {
-            state.drag.target.x = Math.max(0, state.drag.originX + deltaX);
-            state.drag.target.y = Math.max(0, state.drag.originY + deltaY);
+            const maximumX = Math.max(0, state.drag.frame.width - state.drag.target.width);
+            const maximumY = Math.max(0, state.drag.frame.height - state.drag.target.height);
+            state.drag.target.x = clampPresentationNumber(state.drag.originX + deltaX, 0, maximumX, state.drag.originX);
+            state.drag.target.y = clampPresentationNumber(state.drag.originY + deltaY, 0, maximumY, state.drag.originY);
             state.drag.node.style.left = `${state.drag.target.x}px`;
             state.drag.node.style.top = `${state.drag.target.y}px`;
+            if (state.drag.controlsNode) {
+                state.drag.controlsNode.style.left = `${state.drag.target.x}px`;
+                state.drag.controlsNode.style.top = `${state.drag.target.y}px`;
+            }
         }
     });
 
@@ -903,6 +982,9 @@ if (root) {
             state.mode = 'focus';
             state.manualCamera = false;
             render();
+            return;
+        } else if (state.mode === 'focus' && drag.kind === 'element') {
+            render(false);
             return;
         }
         renderFrameList();

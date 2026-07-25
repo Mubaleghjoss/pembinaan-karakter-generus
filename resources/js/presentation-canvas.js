@@ -89,8 +89,12 @@ export function renderPresentationStage({
         (frame.elements || []).forEach((element) => {
             const elementNode = renderPresentationElement(element, presentation.assets || {}, interactive);
             elementNode.dataset.elementId = element.id;
-            elementNode.classList.toggle('is-selected', frame.id === selectedFrameId && element.id === selectedElementId);
+            const isSelected = frame.id === selectedFrameId && element.id === selectedElementId;
+            elementNode.classList.toggle('is-selected', isSelected);
             frameElement.appendChild(elementNode);
+            if (!overview && isSelected) {
+                frameElement.appendChild(createPresentationElementControls(element));
+            }
         });
 
         stage.appendChild(frameElement);
@@ -395,6 +399,29 @@ function createPresentationElementShell(element) {
     node.style.color = element.color || '#0f172a';
     node.style.backgroundColor = element.backgroundColor || 'transparent';
     return node;
+}
+
+function createPresentationElementControls(element) {
+    const controls = document.createElement('div');
+    controls.className = 'pkg-presentation-element-controls';
+    controls.dataset.elementId = element.id;
+    controls.style.left = `${element.x}px`;
+    controls.style.top = `${element.y}px`;
+    controls.style.width = `${element.width}px`;
+    controls.style.height = `${element.height}px`;
+    controls.style.transform = `rotate(${element.rotation || 0}deg)`;
+
+    ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].forEach((direction) => {
+        const handle = document.createElement('button');
+        handle.type = 'button';
+        handle.className = `pkg-presentation-element-resize-handle is-${direction}`;
+        handle.dataset.elementResize = direction;
+        handle.dataset.elementId = element.id;
+        handle.setAttribute('aria-label', `Ubah ukuran elemen dari sisi ${direction}`);
+        controls.appendChild(handle);
+    });
+
+    return controls;
 }
 
 function applyPresentationShape(node, shape, borderRadius = 22) {
