@@ -36,8 +36,9 @@ class TeacherStatementDocumentService
     public function response(TeacherProfile $teacher, bool $download = true): Response
     {
         abort_unless(class_exists(Dompdf::class), 503, 'Generator PDF belum tersedia di server.');
-        abort_unless(filled($teacher->signature_path), 404);
-        abort_unless(Storage::disk('local')->exists($teacher->signature_path), 404);
+        $signature = filled($teacher->signature_path) && Storage::disk('local')->exists($teacher->signature_path)
+            ? $this->signatureDataUri($teacher->signature_path)
+            : null;
 
         $options = new Options();
         $options->set('isRemoteEnabled', false);
@@ -46,7 +47,7 @@ class TeacherStatementDocumentService
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml(view('public.teacher-availability.pdf', [
             'teacher' => $teacher,
-            'signature' => $this->signatureDataUri($teacher->signature_path),
+            'signature' => $signature,
             'participationRole' => $this->participationRoleLabel($teacher->participation_role),
             'rombelLabels' => collect($teacher->rombels ?? [])
                 ->map(fn (string $rombel) => TeacherProfile::ROMBELS[$rombel] ?? strtoupper($rombel))

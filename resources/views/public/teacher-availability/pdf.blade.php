@@ -14,6 +14,7 @@
         .statement { border: 1px solid #9ca3af; margin-top: 16px; padding: 10px 14px; }
         .signature-block { margin-top: 18px; text-align: center; }
         .signature { height: 78px; margin: 6px auto 1px; max-width: 220px; object-fit: contain; }
+        .signature-missing { color: #92400e; height: 50px; margin: 12px auto 4px; padding-top: 22px; }
         .name { font-weight: bold; text-decoration: underline; }
         .meta { color: #4b5563; font-size: 9px; margin-top: 18px; }
     </style>
@@ -43,7 +44,11 @@
 
     <div class="signature-block">
         Yang menyatakan,<br>
-        <img class="signature" src="{{ $signature }}" alt="Tanda tangan guru"><br>
+        @if($signature)
+            <img class="signature" src="{{ $signature }}" alt="Tanda tangan guru"><br>
+        @else
+            <div class="signature-missing">Tanda tangan belum tersedia (data lama)</div>
+        @endif
         <span class="name">{{ $teacher->name }}</span>
     </div>
 

@@ -205,11 +205,21 @@ class TeacherPlanningFeatureTest extends TestCase
 
     public function test_admin_can_open_management_page_and_form_link_is_not_in_public_navigation(): void
     {
-        $this->actingAs($this->admin())
+        $admin = $this->admin();
+        $legacyProfile = TeacherProfile::create($this->profileAttributes());
+
+        $this->actingAs($admin)
             ->get(route('teacher-planning.index'))
             ->assertOk()
             ->assertSee('Pendataan &amp; Jadwal Guru', false)
-            ->assertSee('Kode Akses Formulir');
+            ->assertSee('Kode Akses Formulir')
+            ->assertSee('Data lama ini belum memiliki tanda tangan.')
+            ->assertSee('Lihat PDF');
+
+        $this->actingAs($admin)
+            ->get(route('teacher-planning.profiles.statement.preview', $legacyProfile))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
 
         $navigation = file_get_contents(resource_path('views/layouts/public.blade.php'));
         $this->assertStringNotContainsString('pendataanguru', $navigation);

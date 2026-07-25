@@ -241,22 +241,21 @@
                     </summary>
                     <form method="POST" action="{{ route('teacher-planning.profiles.update', $profile) }}" class="mt-5 grid gap-4 border-t border-gray-200 pt-5 dark:border-gray-700 sm:grid-cols-2">
                         @csrf @method('PUT')
-                        @if($profile->signature_path)
-                            <div class="flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/30 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <p class="font-bold text-emerald-900 dark:text-emerald-100">Surat Pernyataan Kesediaan</p>
-                                    <p class="mt-1 text-sm text-emerald-800 dark:text-emerald-200">Dikirim {{ $profile->submitted_at->translatedFormat('d F Y H:i') }} WIB dan sudah ditandatangani.</p>
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <a href="{{ route('teacher-planning.profiles.statement.preview', $profile) }}" target="_blank" rel="noopener" class="btn-secondary">Lihat PDF</a>
-                                    @if(auth()->user()->isAdmin() || auth()->user()->hasPamongCrudPermission('teacher_scheduling', 'export'))
-                                        <a href="{{ route('teacher-planning.profiles.statement.download', $profile) }}" class="btn-success">Unduh PDF</a>
-                                    @endif
-                                </div>
+                        <div class="flex flex-col gap-3 rounded-2xl border p-4 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between {{ $profile->signature_path ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/30' : 'border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30' }}">
+                            <div>
+                                <p class="font-bold text-gray-900 dark:text-white">Surat Pernyataan Kesediaan</p>
+                                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                                    Dikirim {{ $profile->submitted_at->translatedFormat('d F Y H:i') }} WIB.
+                                    {{ $profile->signature_path ? 'Sudah ditandatangani.' : 'Data lama ini belum memiliki tanda tangan.' }}
+                                </p>
                             </div>
-                        @else
-                            <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200 sm:col-span-2">Data lama ini belum memiliki tanda tangan dan surat PDF.</div>
-                        @endif
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{{ route('teacher-planning.profiles.statement.preview', $profile) }}" target="_blank" rel="noopener" class="btn-secondary">Lihat PDF</a>
+                                @if(auth()->user()->isAdmin() || auth()->user()->hasPamongCrudPermission('teacher_scheduling', 'export'))
+                                    <a href="{{ route('teacher-planning.profiles.statement.download', $profile) }}" class="btn-success">Unduh PDF</a>
+                                @endif
+                            </div>
+                        </div>
                         <div><label class="form-label">Nama lengkap</label><input name="name" value="{{ $profile->name }}" class="pkg-field w-full" required></div>
                         <div><label class="form-label">Nama publik/panggilan</label><input name="public_name" value="{{ $profile->public_name }}" class="pkg-field w-full"></div>
                         <div><label class="form-label">Kelompok</label><select name="kelompok" class="pkg-field w-full">@foreach($groups as $value => $label)<option value="{{ $value }}" @selected($profile->kelompok === $value)>{{ $label }}</option>@endforeach</select></div>
