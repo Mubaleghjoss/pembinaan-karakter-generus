@@ -104,6 +104,24 @@ class PresentationFeatureTest extends TestCase
                 'color' => '#34d399',
                 'backgroundColor' => 'transparent',
             ]],
+            'layoutSnapshot' => [
+                'savedAt' => '2026-07-25T18:15:00+07:00',
+                'frames' => [[
+                    'id' => 'frame-pembuka',
+                    'x' => 840,
+                    'y' => 620,
+                    'width' => 800,
+                    'height' => 450,
+                ]],
+                'elements' => [[
+                    'id' => 'canvas-text-1',
+                    'x' => 120,
+                    'y' => 40,
+                    'width' => 520,
+                    'height' => 90,
+                    'rotation' => 0,
+                ]],
+            ],
             'frames' => [[
                 'id' => 'frame-pembuka',
                 'title' => 'Pembuka',
@@ -222,6 +240,9 @@ class PresentationFeatureTest extends TestCase
         $this->assertSame('Alur Pembinaan Generus', $savedCanvas['elements'][0]['text']);
         $this->assertSame('dotted', $savedCanvas['elements'][1]['lineStyle']);
         $this->assertSame('end', $savedCanvas['elements'][1]['arrow']);
+        $this->assertSame('frame-pembuka', $savedCanvas['layoutSnapshot']['frames'][0]['id']);
+        $this->assertEquals(840, $savedCanvas['layoutSnapshot']['frames'][0]['x']);
+        $this->assertSame('canvas-text-1', $savedCanvas['layoutSnapshot']['elements'][0]['id']);
 
         $this->get(route('public.presentations.show', $presentation))->assertNotFound();
 

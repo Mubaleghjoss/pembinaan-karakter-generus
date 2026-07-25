@@ -82,11 +82,11 @@
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-canvas-line>Tambah Garis Luar Frame</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-add-diagram>Tambah Diagram</button>
         <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-editor-block>Blok Pilihan</button>
-        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames>Rapikan Frame</button>
-        <button type="button" class="btn-primary !px-3 !py-2 text-sm" data-save-layout>Simpan Tata Letak</button>
+        <button type="button" class="btn-secondary !px-3 !py-2 text-sm" data-arrange-frames title="Kembalikan frame ke patokan tata letak yang sudah disimpan">Rapikan Frame</button>
+        <button type="button" class="btn-primary !px-3 !py-2 text-sm" data-save-layout>Simpan Tata Letak Rapi</button>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-image-input>
         <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" data-logo-input>
-        <span class="ml-auto max-w-xl self-center text-xs text-gray-500 dark:text-gray-400">Aktifkan Blok Pilihan lalu seret area kosong untuk memilih beberapa objek. Drag objek terpilih untuk memindahkan bersama, atau klik kanan untuk Duplikat dan Hapus. Gunakan penanda hijau untuk mengubah ukuran.</span>
+        <span class="ml-auto max-w-xl self-center text-xs text-gray-500 dark:text-gray-400">Setelah posisi frame rapi, simpan sebagai patokan melalui Simpan Tata Letak Rapi. Tombol Rapikan Frame akan mengembalikan susunan ke patokan tersebut. Perubahan biasa tetap tersimpan otomatis. Gunakan penanda hijau untuk mengubah ukuran.</span>
     </section>
 
     <section class="mt-4 grid min-h-[680px] gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">

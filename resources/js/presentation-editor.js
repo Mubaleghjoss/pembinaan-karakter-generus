@@ -19,6 +19,9 @@ const root = document.getElementById('presentation-editor');
 if (root) {
     const payload = decodePresentationPayload(root.dataset.presentationPayload);
     payload.canvas.elements = Array.isArray(payload.canvas.elements) ? payload.canvas.elements : [];
+    payload.canvas.layoutSnapshot = payload.canvas.layoutSnapshot && typeof payload.canvas.layoutSnapshot === 'object'
+        ? payload.canvas.layoutSnapshot
+        : null;
     const state = {
         presentation: payload,
         selectedFrameId: payload.canvas.frames[0]?.id || null,
@@ -118,6 +121,10 @@ if (root) {
         recordHistory(historyGroup);
         state.dirty = true;
         state.changeVersion += 1;
+        if (elements.layoutSave) {
+            elements.layoutSave.disabled = false;
+            elements.layoutSave.textContent = 'Simpan Tata Letak Rapi';
+        }
         elements.saveStatus.textContent = 'Belum disimpan · akan disimpan otomatis';
         elements.saveStatus.classList.add('text-amber-600', 'dark:text-amber-300');
         scheduleAutomaticSave();
@@ -663,21 +670,51 @@ if (root) {
 
     root.querySelector('[data-arrange-frames]').addEventListener('click', () => {
         const frames = state.presentation.canvas.frames;
-        const maximumWidth = Math.max(...frames.map((frame) => Number(frame.width || 800)));
-        const maximumHeight = Math.max(...frames.map((frame) => Number(frame.height || 450)));
-        const columnGap = 160;
-        const rowGap = 140;
-
-        frames.forEach((frame, index) => {
-            frame.x = 120 + ((index % 2) * (maximumWidth + columnGap));
-            frame.y = 120 + (Math.floor(index / 2) * (maximumHeight + rowGap));
-        });
+        const snapshot = state.presentation.canvas.layoutSnapshot;
+        const hasSavedLayout = Boolean(snapshot?.frames?.length || snapshot?.elements?.length);
+        if (hasSavedLayout) {
+            const frameLayouts = new Map((snapshot.frames || []).map((layout) => [layout.id, layout]));
+            const elementLayouts = new Map((snapshot.elements || []).map((layout) => [layout.id, layout]));
+            frames.forEach((frame) => {
+                const layout = frameLayouts.get(frame.id);
+                if (!layout) return;
+                if (Number(frame.width) !== Number(layout.width)
+                    || Number(frame.height) !== Number(layout.height)) {
+                    resizeFrame(frame, Number(layout.width), Number(layout.height));
+                }
+                frame.x = Number(layout.x);
+                frame.y = Number(layout.y);
+            });
+            state.presentation.canvas.elements.forEach((element) => {
+                const layout = elementLayouts.get(element.id);
+                if (!layout) return;
+                Object.assign(element, {
+                    x: Number(layout.x),
+                    y: Number(layout.y),
+                    width: Number(layout.width),
+                    height: Number(layout.height),
+                    rotation: Number(layout.rotation || 0),
+                });
+            });
+        } else {
+            const maximumWidth = Math.max(...frames.map((frame) => Number(frame.width || 800)));
+            const maximumHeight = Math.max(...frames.map((frame) => Number(frame.height || 450)));
+            const columnGap = 160;
+            const rowGap = 140;
+            frames.forEach((frame, index) => {
+                frame.x = 120 + ((index % 2) * (maximumWidth + columnGap));
+                frame.y = 120 + (Math.floor(index / 2) * (maximumHeight + rowGap));
+            });
+        }
         state.mode = 'overview';
         state.selectedElementId = null;
         state.selectedCanvasElementId = null;
         state.manualCamera = false;
         ensureCanvasContainsFrames();
         markDirty();
+        elements.saveStatus.textContent = hasSavedLayout
+            ? 'Tata letak rapi tersimpan sudah dipulihkan dan akan disimpan otomatis.'
+            : 'Belum ada patokan tersimpan. Frame dirapikan otomatis dan akan disimpan.';
         render();
     });
 
@@ -1719,14 +1756,15 @@ if (root) {
         if (event.key === 'Escape') hideBlockMenu();
     });
 
-    async function save() {
+    async function save(options = {}) {
+        const force = options.force === true;
         window.clearTimeout(state.saveTimer);
         if (state.activeSave) {
             const activeSaved = await state.activeSave;
-            if (activeSaved && state.dirty) return save();
+            if (activeSaved && (state.dirty || force)) return save({ force });
             return activeSaved;
         }
-        if (!state.dirty) return true;
+        if (!state.dirty && !force) return true;
 
         const saveVersion = state.changeVersion;
         state.saving = true;
@@ -1749,8 +1787,26 @@ if (root) {
                         canvas_data: state.presentation.canvas,
                     }),
                 });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || Object.values(data.errors || {})[0]?.[0] || 'Presentasi gagal disimpan.');
+                const responseText = await response.text();
+                let data = {};
+                try {
+                    data = responseText ? JSON.parse(responseText) : {};
+                } catch {
+                    data = {};
+                }
+                if (!response.ok) {
+                    if (response.status === 419) {
+                        throw new Error('Sesi halaman sudah berakhir. Muat ulang halaman lalu simpan kembali.');
+                    }
+                    if ([401, 403].includes(response.status)) {
+                        throw new Error('Akses penyimpanan berakhir. Silakan login kembali.');
+                    }
+                    throw new Error(
+                        data.message
+                        || Object.values(data.errors || {})[0]?.[0]
+                        || `Presentasi gagal disimpan (${response.status}).`
+                    );
+                }
                 if (state.changeVersion === saveVersion) {
                     state.dirty = false;
                     elements.saveStatus.textContent = 'Semua perubahan tersimpan';
@@ -1789,15 +1845,42 @@ if (root) {
 
     root.querySelector('[data-editor-save]').addEventListener('click', save);
     elements.layoutSave?.addEventListener('click', async () => {
-        const originalLabel = elements.layoutSave.textContent;
+        const savedAt = new Date();
+        state.presentation.canvas.layoutSnapshot = {
+            savedAt: savedAt.toISOString(),
+            frames: state.presentation.canvas.frames.map((frame) => ({
+                id: frame.id,
+                x: Number(frame.x || 0),
+                y: Number(frame.y || 0),
+                width: Number(frame.width || 800),
+                height: Number(frame.height || 450),
+            })),
+            elements: state.presentation.canvas.elements.map((element) => ({
+                id: element.id,
+                x: Number(element.x || 0),
+                y: Number(element.y || 0),
+                width: Number(element.width || 320),
+                height: Number(element.height || 80),
+                rotation: Number(element.rotation || 0),
+            })),
+        };
+        markDirty('layout-snapshot');
         elements.layoutSave.disabled = true;
-        elements.layoutSave.textContent = 'Menyimpan...';
-        const saved = await save();
-        elements.layoutSave.textContent = saved ? 'Tata Letak Tersimpan' : 'Gagal Menyimpan';
-        window.setTimeout(() => {
-            elements.layoutSave.textContent = originalLabel;
-            elements.layoutSave.disabled = false;
-        }, 1600);
+        elements.layoutSave.textContent = 'Menyimpan Patokan...';
+        const saved = await save({ force: true });
+        const savedTime = new Intl.DateTimeFormat('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        }).format(savedAt);
+        elements.layoutSave.textContent = saved
+            ? `Patokan Tersimpan ${savedTime}`
+            : 'Gagal Menyimpan';
+        elements.layoutSave.disabled = false;
+        if (saved) {
+            elements.saveStatus.textContent = `Patokan tata letak rapi tersimpan pada ${savedTime}`;
+            elements.saveStatus.classList.remove('text-amber-600', 'dark:text-amber-300', 'text-red-600');
+        }
     });
     root.querySelectorAll('[data-export-link]').forEach((link) => {
         link.addEventListener('click', async (event) => {

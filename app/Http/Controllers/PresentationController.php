@@ -96,6 +96,9 @@ class PresentationController extends Controller
             'canvas_data.frames' => ['required', 'array', 'min:1', 'max:40'],
             'canvas_data.frames.*.elements' => ['present', 'array', 'max:60'],
             'canvas_data.elements' => ['sometimes', 'array', 'max:80'],
+            'canvas_data.layoutSnapshot' => ['sometimes', 'nullable', 'array'],
+            'canvas_data.layoutSnapshot.frames' => ['sometimes', 'array', 'max:40'],
+            'canvas_data.layoutSnapshot.elements' => ['sometimes', 'array', 'max:80'],
         ]);
 
         $canvasData = $request->input('canvas_data', []);
@@ -237,6 +240,7 @@ class PresentationController extends Controller
             'width' => 2400,
             'height' => 1400,
             'elements' => [],
+            'layoutSnapshot' => null,
             'frames' => [[
                 'id' => 'frame-'.Str::lower(Str::random(8)),
                 'title' => 'Pembuka',
@@ -446,12 +450,64 @@ class PresentationController extends Controller
             $requiredHeight = (int) min(12500, max($requiredHeight, $element['y'] + $element['height'] + 120));
         }
 
+        $layoutSnapshot = null;
+        if (is_array($canvas['layoutSnapshot'] ?? null)) {
+            $frameIds = array_fill_keys(array_column($frames, 'id'), true);
+            $canvasElementIds = array_fill_keys(array_column($canvasElements, 'id'), true);
+            $snapshotFrames = [];
+            $snapshotElements = [];
+
+            foreach (array_slice($canvas['layoutSnapshot']['frames'] ?? [], 0, 40) as $snapshot) {
+                if (! is_array($snapshot)) {
+                    continue;
+                }
+                $id = Str::limit((string) ($snapshot['id'] ?? ''), 80, '');
+                if ($id === '' || ! isset($frameIds[$id])) {
+                    continue;
+                }
+                $snapshotFrames[] = [
+                    'id' => $id,
+                    'x' => $number($snapshot['x'] ?? null, 0, 5000, 0),
+                    'y' => $number($snapshot['y'] ?? null, 0, 11000, 0),
+                    'width' => $number($snapshot['width'] ?? null, 320, 1600, 800),
+                    'height' => $number($snapshot['height'] ?? null, 180, 900, 450),
+                ];
+            }
+
+            foreach (array_slice($canvas['layoutSnapshot']['elements'] ?? [], 0, 80) as $snapshot) {
+                if (! is_array($snapshot)) {
+                    continue;
+                }
+                $id = Str::limit((string) ($snapshot['id'] ?? ''), 80, '');
+                if ($id === '' || ! isset($canvasElementIds[$id])) {
+                    continue;
+                }
+                $snapshotElements[] = [
+                    'id' => $id,
+                    'x' => $number($snapshot['x'] ?? null, 0, 6800, 0),
+                    'y' => $number($snapshot['y'] ?? null, 0, 12300, 0),
+                    'width' => $number($snapshot['width'] ?? null, 40, 1600, 320),
+                    'height' => $number($snapshot['height'] ?? null, 30, 900, 80),
+                    'rotation' => $number($snapshot['rotation'] ?? null, -180, 180, 0),
+                ];
+            }
+
+            if ($snapshotFrames || $snapshotElements) {
+                $layoutSnapshot = [
+                    'savedAt' => Str::limit((string) ($canvas['layoutSnapshot']['savedAt'] ?? now()->toIso8601String()), 40, ''),
+                    'frames' => $snapshotFrames,
+                    'elements' => $snapshotElements,
+                ];
+            }
+        }
+
         return [
             'version' => 1,
             'width' => max($requestedWidth, $requiredWidth),
             'height' => max($requestedHeight, $requiredHeight),
             'frames' => $frames,
             'elements' => $canvasElements,
+            'layoutSnapshot' => $layoutSnapshot,
         ];
     }
 
