@@ -23,8 +23,8 @@ class TeacherProfile extends Model
         'invite_id', 'user_id', 'name', 'public_name', 'kelompok', 'whatsapp',
         'whatsapp_normalized', 'participation_role', 'rombels', 'available_nights',
         'night_priorities', 'monthly_limit', 'competencies', 'material_readiness',
-        'backup_contact_preference', 'constraints', 'consent_version', 'consented_at',
-        'submitted_at', 'is_active',
+        'backup_contact_preference', 'constraints', 'signature_path', 'document_token_hash',
+        'consent_version', 'consented_at', 'submitted_at', 'is_active',
     ];
 
     protected $casts = [

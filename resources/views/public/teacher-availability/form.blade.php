@@ -30,7 +30,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('public.teacher-availability.store') }}" class="space-y-6">
+    <form id="teacher-availability-form" method="POST" action="{{ route('public.teacher-availability.store') }}" class="space-y-6">
         @csrf
         <section class="pkg-card p-5 sm:p-6">
             <h2 class="text-lg font-bold text-gray-900 dark:text-white">Data Diri</h2>
@@ -166,13 +166,22 @@
         <section class="pkg-card p-5 sm:p-6">
             <h2 class="text-lg font-bold text-gray-900 dark:text-white">Pernyataan Kesediaan</h2>
             <p class="mt-3 leading-7 text-gray-600 dark:text-gray-300">Saya bersedia ikut membantu Program Tambahan Keilmuan PKG Desa Panunggangan sesuai kemampuan dan waktu yang saya pilih. Saya siap mempelajari bahan ajar yang diberikan, menjalankan jadwal dengan amanah, serta segera memberikan informasi kepada admin apabila berhalangan hadir.</p>
+            <div class="mt-6" data-signature-pad>
+                <div class="flex items-center justify-between gap-3">
+                    <label class="form-label mb-0" for="teacher-signature-canvas">Tanda Tangan</label>
+                    <button type="button" data-signature-clear class="btn-secondary px-3 py-1.5 text-xs">Hapus</button>
+                </div>
+                <canvas id="teacher-signature-canvas" data-signature-canvas class="pkg-signature-canvas mt-2 bg-white" aria-label="Area tanda tangan guru"></canvas>
+                <input type="hidden" name="signature" data-signature-input>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Tulis menggunakan jari pada layar sentuh, stylus, atau mouse.</p>
+            </div>
             <label class="pkg-check mt-5">
                 <input type="checkbox" name="consent" value="1" @checked(old('consent')) required>
-                <span>Saya menyetujui pernyataan di atas.</span>
+                <span>Saya menyetujui pernyataan di atas dan memastikan tanda tangan dibuat oleh saya sendiri.</span>
             </label>
         </section>
 
-        <button type="submit" class="btn-success min-h-12 w-full justify-center text-base">Kirim Formulir Kesediaan</button>
+        <button id="teacher-availability-submit" type="submit" class="btn-success min-h-12 w-full justify-center text-base">Kirim Formulir dan Buat Surat</button>
     </form>
 </main>
 
@@ -189,6 +198,85 @@ function teacherAvailabilityForm() {
         },
     };
 }
+
+(function () {
+    const form = document.getElementById('teacher-availability-form');
+    const wrapper = form?.querySelector('[data-signature-pad]');
+    if (!form || !wrapper) return;
+
+    const canvas = wrapper.querySelector('[data-signature-canvas]');
+    const input = wrapper.querySelector('[data-signature-input]');
+    const clearButton = wrapper.querySelector('[data-signature-clear]');
+    const submitButton = document.getElementById('teacher-availability-submit');
+    const context = canvas.getContext('2d');
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const rect = canvas.getBoundingClientRect();
+    let drawing = false;
+    let hasInk = false;
+
+    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    context.lineWidth = 2.4;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.strokeStyle = '#0f172a';
+
+    const point = (event) => {
+        const box = canvas.getBoundingClientRect();
+        return {x: event.clientX - box.left, y: event.clientY - box.top};
+    };
+    const finish = (event) => {
+        if (!drawing) return;
+        drawing = false;
+        context.closePath();
+        if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+        input.value = hasInk ? canvas.toDataURL('image/png') : '';
+    };
+
+    canvas.addEventListener('pointerdown', (event) => {
+        drawing = true;
+        hasInk = true;
+        canvas.setPointerCapture(event.pointerId);
+        const currentPoint = point(event);
+        context.beginPath();
+        context.moveTo(currentPoint.x, currentPoint.y);
+        event.preventDefault();
+    });
+    canvas.addEventListener('pointermove', (event) => {
+        if (!drawing) return;
+        const currentPoint = point(event);
+        context.lineTo(currentPoint.x, currentPoint.y);
+        context.stroke();
+        event.preventDefault();
+    });
+    canvas.addEventListener('pointerup', finish);
+    canvas.addEventListener('pointercancel', finish);
+    clearButton.addEventListener('click', () => {
+        context.save();
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.restore();
+        hasInk = false;
+        input.value = '';
+    });
+
+    form.addEventListener('submit', (event) => {
+        if (!input.value) {
+            event.preventDefault();
+            canvas.scrollIntoView({behavior: 'smooth', block: 'center'});
+            if (window.showNotification) {
+                window.showNotification('Tanda tangan wajib diisi sebelum formulir dikirim.', 'warning');
+            } else {
+                window.alert('Tanda tangan wajib diisi sebelum formulir dikirim.');
+            }
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Menyimpan dan membuat surat...';
+    });
+})();
 </script>
 @endpush
 @endsection

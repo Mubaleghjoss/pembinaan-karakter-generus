@@ -12,6 +12,15 @@
         </div>
         <h1 class="mt-5 text-2xl font-black text-gray-900 dark:text-white">{{ $successTitle }}</h1>
         <p class="mt-3 whitespace-pre-line leading-7 text-gray-600 dark:text-gray-300">{{ $successMessage }}</p>
+        @if($teacherProfile && $downloadToken)
+            <div class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left text-sm dark:border-emerald-900/60 dark:bg-emerald-950/30">
+                <p class="font-bold text-emerald-900 dark:text-emerald-100">Surat pernyataan kesediaan sudah dibuat.</p>
+                <p class="mt-1 text-emerald-800 dark:text-emerald-200">Dikirim pada {{ $teacherProfile->submitted_at->translatedFormat('d F Y H:i') }} WIB.</p>
+            </div>
+            <a href="{{ route('public.teacher-availability.pdf', [$teacherProfile, $downloadToken]) }}" class="btn-success mt-5 flex w-full justify-center px-5 py-3 font-bold">
+                Unduh PDF Surat Pernyataan
+            </a>
+        @endif
         <a href="{{ route('public.index') }}" class="btn-secondary mt-6 justify-center">Kembali ke Beranda</a>
     </section>
 </main>

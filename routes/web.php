@@ -60,6 +60,9 @@ Route::post('/pendataanguru', [App\Http\Controllers\TeacherAvailabilityControlle
     ->name('public.teacher-availability.store');
 Route::get('/pendataanguru/selesai', [App\Http\Controllers\TeacherAvailabilityController::class, 'success'])
     ->name('public.teacher-availability.success');
+Route::get('/pendataanguru/hasil/{teacherProfile}/{downloadToken}/pdf', [App\Http\Controllers\TeacherAvailabilityController::class, 'pdf'])
+    ->middleware('throttle:30,1')
+    ->name('public.teacher-availability.pdf');
 Route::get('/konfirmasi-pengajar/{token}', [App\Http\Controllers\TeacherConfirmationController::class, 'show'])
     ->middleware('throttle:30,1')
     ->name('public.teacher-confirmation.show');
@@ -367,6 +370,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/pendataan-guru/akses', [App\Http\Controllers\TeacherPlanningController::class, 'updateInvite'])->name('teacher-planning.invite.update');
     Route::put('/pendataan-guru/pesan-selesai', [App\Http\Controllers\TeacherPlanningController::class, 'updateSuccessMessage'])->name('teacher-planning.success-message.update');
     Route::put('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'updateProfile'])->name('teacher-planning.profiles.update');
+    Route::get('/pendataan-guru/profil/{teacherProfile}/surat', [App\Http\Controllers\TeacherPlanningController::class, 'statementPreview'])->name('teacher-planning.profiles.statement.preview');
+    Route::get('/pendataan-guru/profil/{teacherProfile}/surat/unduh', [App\Http\Controllers\TeacherPlanningController::class, 'statementDownload'])->name('teacher-planning.profiles.statement.download');
     Route::post('/pendataan-guru/template', [App\Http\Controllers\TeacherPlanningController::class, 'storeTemplate'])->name('teacher-planning.templates.store');
     Route::patch('/pendataan-guru/template/{teacherScheduleTemplate}/toggle', [App\Http\Controllers\TeacherPlanningController::class, 'toggleTemplate'])->name('teacher-planning.templates.toggle');
     Route::post('/pendataan-guru/jadwal/generate', [App\Http\Controllers\TeacherPlanningController::class, 'generate'])->name('teacher-planning.generate');

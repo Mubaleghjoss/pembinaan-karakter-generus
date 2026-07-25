@@ -11,6 +11,7 @@ use App\Models\TeacherScheduleTemplate;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\TeacherSchedulePlanner;
+use App\Services\TeacherStatementDocumentService;
 use App\Support\ParticipantProfileOptions;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
@@ -504,6 +505,26 @@ class TeacherPlanningController extends Controller
             'period' => $teacherSchedulePeriod,
             'rows' => $rows,
         ]);
+    }
+
+    public function statementPreview(
+        TeacherProfile $teacherProfile,
+        TeacherStatementDocumentService $documentService
+    )
+    {
+        $this->authorizeModule('view');
+
+        return $documentService->response($teacherProfile, false);
+    }
+
+    public function statementDownload(
+        TeacherProfile $teacherProfile,
+        TeacherStatementDocumentService $documentService
+    )
+    {
+        $this->authorizeModule('export');
+
+        return $documentService->response($teacherProfile);
     }
 
     private function authorizeModule(string $operation): void

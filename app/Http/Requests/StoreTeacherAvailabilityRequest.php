@@ -45,7 +45,16 @@ class StoreTeacherAvailabilityRequest extends FormRequest
                 'ready', 'one_day_notice', 'unavailable',
             ])],
             'constraints' => [$unavailable ? 'required' : 'nullable', 'string', 'max:1000'],
+            'signature' => ['required', 'string', 'max:1400000'],
             'consent' => ['accepted'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'signature.required' => 'Tanda tangan wajib diisi.',
+            'consent.accepted' => 'Pernyataan kesediaan wajib disetujui.',
         ];
     }
 

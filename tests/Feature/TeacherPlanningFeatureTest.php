@@ -14,11 +14,19 @@ use App\Support\ParticipantProfileOptions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TeacherPlanningFeatureTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('local');
+    }
 
     public function test_private_teacher_form_requires_code_and_stores_normalized_profile(): void
     {
@@ -47,13 +55,39 @@ class TeacherPlanningFeatureTest extends TestCase
         $this->post('/pendataanguru', $this->profilePayload())
             ->assertRedirect(route('public.teacher-availability.success'));
 
+        $teacherProfile = TeacherProfile::query()->firstOrFail();
         $this->assertDatabaseHas('teacher_profiles', [
             'name' => 'Ahmad Fulan',
             'whatsapp_normalized' => '6281234567890',
             'participation_role' => TeacherProfile::ROLE_BOTH,
             'monthly_limit' => 2,
         ]);
+        $this->assertNotNull($teacherProfile->signature_path);
+        $this->assertNotNull($teacherProfile->document_token_hash);
+        Storage::disk('local')->assertExists($teacherProfile->signature_path);
         $this->assertSame(1, TeacherAvailabilityInvite::firstOrFail()->used_count);
+
+        $downloadToken = session('teacher_availability.download_token');
+        $this->assertIsString($downloadToken);
+
+        $this->get(route('public.teacher-availability.success'))
+            ->assertOk()
+            ->assertSee('Surat pernyataan kesediaan sudah dibuat.')
+            ->assertSee('Unduh PDF Surat Pernyataan');
+
+        $this->get(route('public.teacher-availability.pdf', [$teacherProfile, 'token-yang-salah']))
+            ->assertNotFound();
+
+        $this->get(route('public.teacher-availability.pdf', [$teacherProfile, $downloadToken]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', 'attachment; filename="surat-kesediaan-guru-ahmad-fulan.pdf"');
+
+        $this->actingAs($this->admin())
+            ->get(route('teacher-planning.profiles.statement.preview', $teacherProfile))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', 'inline; filename="surat-kesediaan-guru-ahmad-fulan.pdf"');
     }
 
     public function test_duplicate_whatsapp_cannot_create_second_profile(): void
@@ -265,6 +299,7 @@ class TeacherPlanningFeatureTest extends TestCase
             'material_readiness' => 'ready',
             'backup_contact_preference' => 'ready',
             'constraints' => 'Tidak bisa tanggal merah.',
+            'signature' => $this->signature(),
             'consent' => '1',
         ];
     }
@@ -306,5 +341,10 @@ class TeacherPlanningFeatureTest extends TestCase
             'status' => 'active',
             'password' => Hash::make('password'),
         ]);
+    }
+
+    private function signature(): string
+    {
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
     }
 }
