@@ -98,6 +98,7 @@
 
         <details class="pkg-panel p-5" @if($templates->isEmpty()) open @endif>
             <summary class="cursor-pointer text-lg font-bold text-gray-900 dark:text-white">Template Slot Mingguan</summary>
+            <p class="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">Generator jadwal hanya memakai template aktif. Tambahkan kombinasi malam dan rombel yang memang akan belajar, misalnya Senin malam untuk SMP.</p>
             <form method="POST" action="{{ route('teacher-planning.templates.store') }}" class="mt-5 grid gap-4 sm:grid-cols-2">
                 @csrf
                 <div><label class="form-label">Malam</label><select name="weekday" class="pkg-field w-full" required>@foreach($nights as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
@@ -126,12 +127,21 @@
                 <div><label class="form-label">Bulan jadwal</label><input name="month" type="month" value="{{ $selectedMonth->format('Y-m') }}" class="pkg-field"></div>
                 <button class="btn-secondary">Tampilkan</button>
             </form>
-            <form method="POST" action="{{ route('teacher-planning.generate') }}" data-confirm="Buat atau hitung ulang draft otomatis untuk bulan ini? Penugasan manual tetap dipertahankan.">
+            <form method="POST" action="{{ route('teacher-planning.generate') }}"
+                  data-confirm="Buat atau hitung ulang draft otomatis untuk bulan ini? Penugasan manual tetap dipertahankan."
+                  data-confirm-title="Konfirmasi tindakan"
+                  data-confirm-button="Lanjutkan"
+                  data-confirm-tone="primary">
                 @csrf
                 <input type="hidden" name="month" value="{{ $selectedMonth->format('Y-m') }}">
-                <button class="btn-success">Buat Jadwal Bulanan</button>
+                <button class="btn-success" @disabled(! $hasActiveTemplates)>Buat Jadwal Bulanan</button>
             </form>
         </div>
+        @if(! $hasActiveTemplates)
+            <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                Jadwal belum bisa dibuat karena belum ada Template Slot Mingguan aktif. Buka bagian <strong>Template Slot Mingguan</strong>, tambahkan minimal satu malam dan rombel, lalu coba kembali.
+            </div>
+        @endif
     </section>
 
     @if($period)
@@ -279,6 +289,16 @@
                         <label class="pkg-check sm:col-span-2"><input type="checkbox" name="is_active" value="1" @checked($profile->is_active)><span>Profil aktif</span></label>
                         <button class="btn-primary justify-center sm:col-span-2">Simpan Profil</button>
                     </form>
+                    @if(auth()->user()->isAdmin())
+                        <form method="POST" action="{{ route('teacher-planning.profiles.destroy', $profile) }}" class="mt-4 border-t border-red-200 pt-4 dark:border-red-900/50"
+                              data-confirm="Hapus data kesediaan {{ $profile->name }}? Tindakan ini tidak dapat dibatalkan."
+                              data-confirm-title="Hapus data guru"
+                              data-confirm-button="Hapus"
+                              data-confirm-tone="danger">
+                            @csrf @method('DELETE')
+                            <button class="btn-danger w-full justify-center">Hapus Data Kesediaan Guru</button>
+                        </form>
+                    @endif
                 </details>
             @empty
                 <div class="pkg-empty-state"><h3 class="pkg-empty-title">Belum ada pengisi</h3><p class="pkg-empty-copy">Bagikan tautan `/pendataanguru` beserta kode akses.</p></div>

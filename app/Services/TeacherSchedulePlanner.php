@@ -12,12 +12,17 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TeacherSchedulePlanner
 {
     public function generate(TeacherSchedulePeriod $period, ?int $actorId = null): TeacherSchedulePeriod
     {
-        abort_if($period->status === 'published', 422, 'Jadwal yang sudah diterbitkan tidak dapat dibuat ulang.');
+        if ($period->status === 'published') {
+            throw ValidationException::withMessages([
+                'month' => 'Jadwal yang sudah diterbitkan tidak dapat dibuat ulang.',
+            ]);
+        }
 
         return DB::transaction(function () use ($period, $actorId) {
             $period = TeacherSchedulePeriod::query()->lockForUpdate()->findOrFail($period->id);
@@ -30,7 +35,11 @@ class TeacherSchedulePlanner
                 ->orderBy('rombel')
                 ->get();
 
-            abort_if($templates->isEmpty(), 422, 'Aktifkan minimal satu template slot sebelum membuat jadwal.');
+            if ($templates->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'templates' => 'Aktifkan minimal satu Template Slot Mingguan sebelum membuat jadwal.',
+                ]);
+            }
 
             foreach ($templates as $template) {
                 $targetWeekday = $this->carbonWeekday($template->weekday);

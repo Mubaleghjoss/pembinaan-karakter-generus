@@ -90,6 +90,10 @@
 
                     <fieldset>
                         <legend class="form-label">Malam yang memungkinkan dan urutan prioritas</legend>
+                        <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
+                            <p class="font-bold">Mengapa perlu diurutkan?</p>
+                            <p class="mt-1">Urutan prioritas membantu sistem memilih malam yang paling nyaman bagi Anda saat membagi jadwal secara otomatis. Pilihan pertama akan diutamakan; jika jadwal penuh atau berbenturan, sistem mencoba pilihan kedua lalu ketiga. Setiap malam yang dicentang harus memakai nomor urutan yang berbeda.</p>
+                        </div>
                         <div class="space-y-3">
                             @foreach($nights as $value => $label)
                                 <div class="grid items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700 sm:grid-cols-[1fr_180px]">

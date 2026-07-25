@@ -148,6 +148,25 @@ class TeacherPlanningFeatureTest extends TestCase
         }
     }
 
+    public function test_generate_without_active_template_returns_to_management_page_with_clear_error(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->from(route('teacher-planning.index', ['month' => '2026-08']))
+            ->post(route('teacher-planning.generate'), ['month' => '2026-08'])
+            ->assertRedirect(route('teacher-planning.index', ['month' => '2026-08']))
+            ->assertSessionHasErrors('templates');
+
+        $this->assertDatabaseCount('teacher_schedule_periods', 0);
+
+        $this->actingAs($admin)
+            ->get(route('teacher-planning.index', ['month' => '2026-08']))
+            ->assertOk()
+            ->assertSee('Jadwal belum bisa dibuat karena belum ada Template Slot Mingguan aktif.')
+            ->assertSee('Buat Jadwal Bulanan');
+    }
+
     public function test_confirmation_and_public_calendar_use_private_token_and_public_name(): void
     {
         $admin = $this->admin();
@@ -248,6 +267,63 @@ class TeacherPlanningFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('Pesan Setelah Formulir Terkirim')
             ->assertSee('Data Anda Berhasil Dikirim');
+    }
+
+    public function test_admin_can_delete_unassigned_teacher_profile_and_its_private_signature(): void
+    {
+        $admin = $this->admin();
+        $invite = TeacherAvailabilityInvite::create([
+            'label' => 'Pendataan Guru',
+            'token_hash' => hash('sha256', 'DELETE01'),
+            'max_uses' => 10,
+            'used_count' => 1,
+            'expires_at' => now()->addDays(30),
+            'is_active' => true,
+        ]);
+        $signaturePath = 'teacher-statements/delete-test/tanda-tangan.png';
+        Storage::disk('local')->put($signaturePath, 'signature');
+        $teacherProfile = TeacherProfile::create([
+            ...$this->profileAttributes($invite->id),
+            'signature_path' => $signaturePath,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('teacher-planning.profiles.destroy', $teacherProfile))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('teacher_profiles', ['id' => $teacherProfile->id]);
+        $this->assertSame(0, $invite->fresh()->used_count);
+        Storage::disk('local')->assertMissing($signaturePath);
+    }
+
+    public function test_admin_cannot_delete_teacher_profile_that_is_still_assigned(): void
+    {
+        $admin = $this->admin();
+        $teacherProfile = TeacherProfile::create($this->profileAttributes());
+        $period = TeacherSchedulePeriod::create([
+            'month' => now()->startOfMonth()->toDateString(),
+            'status' => 'draft',
+            'created_by' => $admin->id,
+        ]);
+        $session = TeacherScheduleSession::create([
+            'period_id' => $period->id,
+            'session_date' => now()->addDays(5)->toDateString(),
+            'rombel' => 'smp',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'status' => 'scheduled',
+        ]);
+        app(TeacherSchedulePlanner::class)
+            ->createAssignment($session, $teacherProfile, 'main', 'manual', true, $admin->id);
+
+        $this->actingAs($admin)
+            ->from(route('teacher-planning.index'))
+            ->delete(route('teacher-planning.profiles.destroy', $teacherProfile))
+            ->assertRedirect(route('teacher-planning.index'))
+            ->assertSessionHasErrors('teacher_profile');
+
+        $this->assertDatabaseHas('teacher_profiles', ['id' => $teacherProfile->id]);
     }
 
     public function test_admin_can_publish_incomplete_schedule_with_acknowledgement_and_export_it(): void

@@ -69,6 +69,7 @@ class TeacherPlanningController extends Controller
             ->orderBy('weekday')
             ->orderBy('rombel')
             ->get();
+        $hasActiveTemplates = $templates->contains('is_active', true);
         $invite = TeacherAvailabilityInvite::query()->latest('id')->first();
         $successMessageSettings = [
             'title' => Setting::get(
@@ -119,7 +120,7 @@ class TeacherPlanningController extends Controller
         return view('teacher-planning.index', compact(
             'selectedMonth', 'period', 'profiles', 'eligibleProfiles', 'templates',
             'invite', 'warnings', 'stats', 'linkableUsers', 'roleStats', 'rombelStats',
-            'confirmationDue', 'reminderDue', 'successMessageSettings'
+            'confirmationDue', 'reminderDue', 'successMessageSettings', 'hasActiveTemplates'
         ) + [
             'groups' => ParticipantProfileOptions::groups(),
             'rombels' => TeacherProfile::ROMBELS,
@@ -275,6 +276,13 @@ class TeacherPlanningController extends Controller
     {
         $this->authorizeModule('create');
         $validated = $request->validate(['month' => ['required', 'date_format:Y-m']]);
+
+        if (! TeacherScheduleTemplate::query()->where('is_active', true)->exists()) {
+            throw ValidationException::withMessages([
+                'templates' => 'Jadwal belum dapat dibuat. Tambahkan dan aktifkan minimal satu Template Slot Mingguan terlebih dahulu.',
+            ]);
+        }
+
         $month = Carbon::createFromFormat('Y-m', $validated['month'])->startOfMonth();
         $period = TeacherSchedulePeriod::query()->firstOrCreate([
             'month' => $month->toDateString(),
@@ -286,6 +294,39 @@ class TeacherPlanningController extends Controller
 
         return redirect()->route('teacher-planning.index', ['month' => $month->format('Y-m')])
             ->with('success', 'Draft jadwal bulanan berhasil dibuat.');
+    }
+
+    public function destroyProfile(
+        Request $request,
+        TeacherProfile $teacherProfile,
+        TeacherStatementDocumentService $documentService
+    ): RedirectResponse {
+        abort_unless($request->user()->isAdmin(), 403);
+        $signaturePath = $teacherProfile->signature_path;
+
+        DB::transaction(function () use ($teacherProfile): void {
+            $profile = TeacherProfile::query()->lockForUpdate()->findOrFail($teacherProfile->id);
+
+            if ($profile->assignments()->exists()) {
+                throw ValidationException::withMessages([
+                    'teacher_profile' => 'Data guru tidak dapat dihapus karena sudah digunakan dalam jadwal. Lepaskan seluruh penugasannya terlebih dahulu.',
+                ]);
+            }
+
+            $inviteId = $profile->invite_id;
+            $profile->delete();
+
+            if ($inviteId) {
+                $invite = TeacherAvailabilityInvite::query()->lockForUpdate()->find($inviteId);
+                if ($invite && $invite->used_count > 0) {
+                    $invite->decrement('used_count');
+                }
+            }
+        });
+
+        $documentService->deleteSignature($signaturePath);
+
+        return back()->with('success', 'Data kesediaan guru berhasil dihapus.');
     }
 
     public function assign(

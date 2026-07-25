@@ -370,6 +370,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/pendataan-guru/akses', [App\Http\Controllers\TeacherPlanningController::class, 'updateInvite'])->name('teacher-planning.invite.update');
     Route::put('/pendataan-guru/pesan-selesai', [App\Http\Controllers\TeacherPlanningController::class, 'updateSuccessMessage'])->name('teacher-planning.success-message.update');
     Route::put('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'updateProfile'])->name('teacher-planning.profiles.update');
+    Route::delete('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'destroyProfile'])->name('teacher-planning.profiles.destroy');
     Route::get('/pendataan-guru/profil/{teacherProfile}/surat', [App\Http\Controllers\TeacherPlanningController::class, 'statementPreview'])->name('teacher-planning.profiles.statement.preview');
     Route::get('/pendataan-guru/profil/{teacherProfile}/surat/unduh', [App\Http\Controllers\TeacherPlanningController::class, 'statementDownload'])->name('teacher-planning.profiles.statement.download');
     Route::post('/pendataan-guru/template', [App\Http\Controllers\TeacherPlanningController::class, 'storeTemplate'])->name('teacher-planning.templates.store');
