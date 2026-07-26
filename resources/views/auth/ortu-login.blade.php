@@ -5,9 +5,11 @@
 @section('auth_accent_secondary', '#10b981')
 @section('auth_card_title', 'Login Orang Tua')
 @section('auth_card_copy', 'Gunakan akun orang tua untuk memantau progres anak secara langsung.')
-@section('auth_public_navigation', 'true')
+@section('auth_public_navigation', 'false')
 
 @section('content')
+    @include('auth.partials.role-switcher', ['activeRole' => 'ortu'])
+
     @if($errors->any())
         <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
             {{ $errors->first() }}

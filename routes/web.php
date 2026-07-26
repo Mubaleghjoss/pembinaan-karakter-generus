@@ -37,7 +37,11 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes (no auth required)
 Route::get('/', [App\Http\Controllers\PublicController::class, 'index'])->name('public.index');
-Route::get('/berita-publik/{slug}', [App\Http\Controllers\PublicController::class, 'berita'])->name('public.berita');
+Route::get('/berita-publik/{slug}', [App\Http\Controllers\PublicController::class, 'legacyBerita'])
+    ->name('public.berita.legacy');
+Route::get('/berita/{slug}', [App\Http\Controllers\PublicController::class, 'berita'])
+    ->where('slug', '(?!create$)[A-Za-z0-9-]+')
+    ->name('public.berita');
 Route::get('/scan-presensi', [App\Http\Controllers\PublicController::class, 'scanner'])->name('public.scanner');
 Route::get('/materi', [App\Http\Controllers\PublicController::class, 'materiIndex'])->name('materi.index');
 Route::get('/materi-publik/{materi}/pdf/{index}', [App\Http\Controllers\PublicController::class, 'materiPdfView'])
@@ -374,6 +378,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [App\Http\Controllers\TeacherPortalController::class, 'dashboard'])->name('dashboard');
             Route::get('/jadwal', [App\Http\Controllers\TeacherPortalController::class, 'schedule'])->name('schedule');
             Route::get('/jadwal/{assignment}', [App\Http\Controllers\TeacherPortalController::class, 'scheduleShow'])->name('schedule.show');
+            Route::patch('/jadwal/{assignment}/konfirmasi', [App\Http\Controllers\TeacherPortalController::class, 'confirmSchedule'])->name('schedule.confirm');
+            Route::post('/jadwal/{assignment}/permohonan', [App\Http\Controllers\TeacherPortalController::class, 'requestScheduleChange'])->name('schedule.request');
             Route::get('/materi', [App\Http\Controllers\TeacherPortalController::class, 'materials'])->name('materials');
             Route::get('/profil', [App\Http\Controllers\TeacherPortalController::class, 'profile'])->name('profile');
             Route::put('/profil', [App\Http\Controllers\TeacherPortalController::class, 'updateProfile'])->name('profile.update');
@@ -416,6 +422,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/pendataan-guru', [App\Http\Controllers\TeacherPlanningController::class, 'index'])->name('teacher-planning.index');
     Route::put('/pendataan-guru/akses', [App\Http\Controllers\TeacherPlanningController::class, 'updateInvite'])->name('teacher-planning.invite.update');
     Route::put('/pendataan-guru/pesan-selesai', [App\Http\Controllers\TeacherPlanningController::class, 'updateSuccessMessage'])->name('teacher-planning.success-message.update');
+    Route::put('/pendataan-guru/kontak-admin', [App\Http\Controllers\TeacherPlanningController::class, 'updateAdminContact'])->name('teacher-planning.admin-contact.update');
     Route::put('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'updateProfile'])->name('teacher-planning.profiles.update');
     Route::post('/pendataan-guru/profil/{teacherProfile}/akun', [App\Http\Controllers\TeacherPlanningController::class, 'createAccount'])->name('teacher-planning.profiles.account.store');
     Route::post('/pendataan-guru/profil/{teacherProfile}/akun/reset-password', [App\Http\Controllers\TeacherPlanningController::class, 'resetAccountPassword'])->name('teacher-planning.profiles.account.reset');
@@ -432,6 +439,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/pendataan-guru/periode/{teacherSchedulePeriod}', [App\Http\Controllers\TeacherPlanningController::class, 'destroyPeriod'])->name('teacher-planning.periods.destroy');
     Route::post('/pendataan-guru/penugasan/{assignment}/whatsapp/{stage}', [App\Http\Controllers\TeacherPlanningController::class, 'whatsapp'])->name('teacher-planning.assignments.whatsapp');
     Route::patch('/pendataan-guru/penugasan/{assignment}/terkirim/{stage}', [App\Http\Controllers\TeacherPlanningController::class, 'markWhatsappSent'])->name('teacher-planning.assignments.sent');
+    Route::patch('/pendataan-guru/penugasan/{assignment}/status', [App\Http\Controllers\TeacherPlanningController::class, 'updateConfirmationStatus'])->name('teacher-planning.assignments.status');
+    Route::patch('/pendataan-guru/permohonan/{teacherScheduleRequest}/status', [App\Http\Controllers\TeacherPlanningController::class, 'updateScheduleRequest'])->name('teacher-planning.requests.status');
     Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/excel', [App\Http\Controllers\TeacherPlanningController::class, 'exportExcel'])->name('teacher-planning.export.excel');
     Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/pdf', [App\Http\Controllers\TeacherPlanningController::class, 'exportPdf'])->name('teacher-planning.export.pdf');
     Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/gambar', [App\Http\Controllers\TeacherPlanningController::class, 'exportImage'])->name('teacher-planning.export.image');
@@ -541,7 +550,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // News (Berita)
-    Route::resource('berita', BeritaController::class)->parameters([
+    Route::resource('berita', BeritaController::class)->except(['show'])->parameters([
         'berita' => 'berita',
     ]);
     Route::get('/berita/{berita}/download', [BeritaController::class, 'downloadPdf'])->name('berita.download');

@@ -84,7 +84,7 @@
             </div>
             <div class="p-6">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                    <a href="{{ route('berita.show', $item) }}">
+                    <a href="{{ route('public.berita', $item->slug) }}">
                         {{ $item->judul }}
                     </a>
                 </h3>
@@ -92,7 +92,7 @@
                     {{ $item->excerpt }}
                 </p>
                 <div class="flex items-center justify-between mt-auto">
-                    <a href="{{ route('berita.show', $item) }}" class="text-blue-600 dark:text-blue-400 font-medium text-sm hover:underline">
+                    <a href="{{ route('public.berita', $item->slug) }}" class="text-blue-600 dark:text-blue-400 font-medium text-sm hover:underline">
                         Baca Selengkapnya &rarr;
                     </a>
                     @if($item->pdf_path)

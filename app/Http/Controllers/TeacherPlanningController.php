@@ -8,6 +8,7 @@ use App\Models\TeacherMaterial;
 use App\Models\TeacherProfile;
 use App\Models\TeacherScheduleAssignment;
 use App\Models\TeacherSchedulePeriod;
+use App\Models\TeacherScheduleRequest;
 use App\Models\TeacherScheduleSession;
 use App\Models\TeacherScheduleTemplate;
 use App\Models\Setting;
@@ -16,6 +17,7 @@ use App\Services\TeacherSchedulePlanner;
 use App\Services\TeacherSchedulePwaNotificationService;
 use App\Services\TeacherStatementDocumentService;
 use App\Support\ParticipantProfileOptions;
+use App\Support\WhatsappLink;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -63,7 +65,11 @@ class TeacherPlanningController extends Controller
             : null;
         $period = TeacherSchedulePeriod::query()
             ->whereDate('month', $selectedMonth)
-            ->with(['sessions.assignments.teacher.user', 'sessions.materials'])
+            ->with([
+                'sessions.assignments.teacher.user',
+                'sessions.assignments.requests' => fn ($query) => $query->latest(),
+                'sessions.materials',
+            ])
             ->first();
         $profilesQuery = TeacherProfile::query()
             ->with('user:id,name,username');
@@ -113,6 +119,7 @@ class TeacherPlanningController extends Controller
                 Setting::TEACHER_SUCCESS_MESSAGE_DEFAULT
             ),
         ];
+        $adminWhatsapp = Setting::get(Setting::TEACHER_ADMIN_WHATSAPP_KEY, '');
         $warnings = $period ? $this->planner->warnings($period) : [];
         $analyticsProfiles = TeacherProfile::query()->get([
             'id', 'kelompok', 'participation_role', 'rombels', 'available_nights',
@@ -194,7 +201,7 @@ class TeacherPlanningController extends Controller
             'invite', 'warnings', 'stats', 'linkableUsers', 'groupStats', 'roleStats',
             'rombelStats', 'nightStats', 'competencyStats', 'activeProfileFilter',
             'confirmationDue', 'reminderDue', 'successMessageSettings', 'hasActiveTemplates',
-            'groups', 'teacherMaterials'
+            'groups', 'teacherMaterials', 'adminWhatsapp'
         ) + [
             'rombels' => TeacherProfile::ROMBELS,
             'nights' => TeacherProfile::NIGHTS,
@@ -257,6 +264,20 @@ class TeacherPlanningController extends Controller
         ], 'teacher_planning');
 
         return back()->with('success', 'Pesan setelah formulir terkirim berhasil disimpan.');
+    }
+
+    public function updateAdminContact(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $validated = $request->validate([
+            'admin_whatsapp' => ['required', 'string', 'max:24'],
+        ]);
+        $phone = WhatsappLink::normalizeOrFail($validated['admin_whatsapp'], 'admin_whatsapp');
+
+        Setting::set(Setting::TEACHER_ADMIN_WHATSAPP_KEY, $phone, 'teacher_planning');
+
+        return back()->with('success', 'Nomor WhatsApp Admin untuk Portal Guru berhasil disimpan.');
     }
 
     public function updateProfile(Request $request, TeacherProfile $teacherProfile): RedirectResponse
@@ -622,7 +643,23 @@ class TeacherPlanningController extends Controller
                 : $assignment->confirmation_requested_at,
         ])->save();
 
-        return redirect()->away('https://wa.me/'.$assignment->teacher->whatsapp_normalized.'?text='.rawurlencode($message));
+        $whatsappUrl = WhatsappLink::url(
+            $assignment->teacher->whatsapp_normalized ?: $assignment->teacher->whatsapp,
+            $message
+        );
+        if (! $whatsappUrl) {
+            throw ValidationException::withMessages([
+                'whatsapp' => "Nomor WhatsApp {$assignment->teacher->name} belum valid. Perbarui nomor pada Data Kesediaan Guru.",
+            ]);
+        }
+
+        if ($assignment->teacher->whatsapp_normalized !== WhatsappLink::normalize($assignment->teacher->whatsapp)) {
+            $assignment->teacher->update([
+                'whatsapp_normalized' => WhatsappLink::normalize($assignment->teacher->whatsapp),
+            ]);
+        }
+
+        return redirect()->away($whatsappUrl);
     }
 
     public function markWhatsappSent(TeacherScheduleAssignment $assignment, string $stage): RedirectResponse
@@ -632,6 +669,53 @@ class TeacherPlanningController extends Controller
         $assignment->update(["{$stage}_whatsapp_sent_at" => now()]);
 
         return back()->with('success', 'Pesan ditandai sudah dikirim.');
+    }
+
+    public function updateConfirmationStatus(
+        Request $request,
+        TeacherScheduleAssignment $assignment
+    ): RedirectResponse {
+        $this->authorizeModule('edit');
+        $validated = $request->validate([
+            'confirmation_status' => ['required', Rule::in(['pending', 'confirmed', 'declined'])],
+            'confirmation_note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $assignment->update([
+            'confirmation_status' => $validated['confirmation_status'],
+            'confirmation_note' => trim($validated['confirmation_note'] ?? '') ?: null,
+            'confirmed_at' => $validated['confirmation_status'] === 'pending' ? null : now(),
+        ]);
+
+        return back()->with('success', 'Status konfirmasi Guru berhasil diperbarui.');
+    }
+
+    public function updateScheduleRequest(
+        Request $request,
+        TeacherScheduleRequest $teacherScheduleRequest
+    ): RedirectResponse {
+        $this->authorizeModule('edit');
+        $validated = $request->validate([
+            'status' => ['required', Rule::in([
+                TeacherScheduleRequest::STATUS_PENDING,
+                TeacherScheduleRequest::STATUS_APPROVED,
+                TeacherScheduleRequest::STATUS_REJECTED,
+            ])],
+            'admin_note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $teacherScheduleRequest->update([
+            'status' => $validated['status'],
+            'admin_note' => trim($validated['admin_note'] ?? '') ?: null,
+            'resolved_by' => $validated['status'] === TeacherScheduleRequest::STATUS_PENDING
+                ? null
+                : $request->user()->id,
+            'resolved_at' => $validated['status'] === TeacherScheduleRequest::STATUS_PENDING
+                ? null
+                : now(),
+        ]);
+
+        return back()->with('success', 'Status permohonan Guru berhasil diperbarui.');
     }
 
     public function exportExcel(TeacherSchedulePeriod $teacherSchedulePeriod): StreamedResponse
@@ -787,17 +871,6 @@ class TeacherPlanningController extends Controller
 
     private function normalizeWhatsapp(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?: '';
-        if (str_starts_with($digits, '0')) {
-            $digits = '62'.substr($digits, 1);
-        } elseif (! str_starts_with($digits, '62')) {
-            $digits = '62'.$digits;
-        }
-
-        if (! preg_match('/^62[0-9]{8,13}$/', $digits)) {
-            throw ValidationException::withMessages(['whatsapp' => 'Nomor WhatsApp tidak valid.']);
-        }
-
-        return $digits;
+        return WhatsappLink::normalizeOrFail($phone);
     }
 }

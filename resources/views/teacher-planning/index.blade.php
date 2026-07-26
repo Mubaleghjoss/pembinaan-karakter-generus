@@ -16,10 +16,10 @@
     </header>
 
     @if(session('success'))
-        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('success') }}</div>
+        <div data-page-feedback="success" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('success') }}</div>
     @endif
     @if($errors->any())
-        <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+        <div data-page-feedback="error" class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
             <ul class="list-disc space-y-1 pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
         </div>
     @endif
@@ -151,6 +151,21 @@
                     <textarea id="success_message" name="success_message" rows="4" class="pkg-field w-full" maxlength="500" required>{{ old('success_message', $successMessageSettings['message']) }}</textarea>
                 </div>
                 <button class="btn-primary w-full justify-center">Simpan Pesan</button>
+            </form>
+        </details>
+        @endif
+
+        @if(auth()->user()->isAdmin())
+        <details class="pkg-panel p-5" @if(blank($adminWhatsapp)) open @endif>
+            <summary class="cursor-pointer text-lg font-bold text-gray-900 dark:text-white">Kontak Admin untuk Guru</summary>
+            <p class="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">Nomor ini dipakai tombol WhatsApp dan pengajuan perubahan jadwal di Portal Guru.</p>
+            <form method="POST" action="{{ route('teacher-planning.admin-contact.update') }}" class="mt-5 space-y-4">
+                @csrf @method('PUT')
+                <div>
+                    <label for="admin_whatsapp" class="form-label">Nomor WhatsApp Admin</label>
+                    <input id="admin_whatsapp" name="admin_whatsapp" value="{{ old('admin_whatsapp', $adminWhatsapp) }}" class="pkg-field w-full" inputmode="tel" placeholder="Contoh: 081234567890" maxlength="24" required>
+                </div>
+                <button class="btn-primary w-full justify-center">Simpan Kontak Admin</button>
             </form>
         </details>
         @endif
@@ -370,14 +385,14 @@
                     $main = $session->assignments->firstWhere('role', 'main');
                     $backup = $session->assignments->firstWhere('role', 'backup');
                 @endphp
-                <article class="p-4 sm:p-5">
+                <article id="sesi-{{ $session->id }}" class="scroll-mt-24 p-4 sm:p-5">
                     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <p class="font-black text-gray-900 dark:text-white">{{ $session->session_date->translatedFormat('l, d F Y') }} · {{ strtoupper($session->rombel) }}</p>
                             <p class="text-sm text-gray-500">{{ substr($session->start_time, 0, 5) }}–{{ substr($session->end_time, 0, 5) }} WIB{{ $session->location ? ' · '.$session->location : '' }}</p>
                         </div>
                         @if($main && $backup)
-                            <form method="POST" action="{{ route('teacher-planning.sessions.swap', $session) }}" data-confirm="Tukar pengajar utama dan cadangan pada sesi ini?">@csrf @method('PATCH')<button class="btn-secondary !px-3 !py-2 text-sm">Tukar Utama/Cadangan</button></form>
+                            <form method="POST" action="{{ route('teacher-planning.sessions.swap', $session) }}" data-stay-submit data-confirm="Tukar pengajar utama dan cadangan pada sesi ini?">@csrf @method('PATCH')<button class="btn-secondary !px-3 !py-2 text-sm">Tukar Utama/Cadangan</button></form>
                         @endif
                     </div>
                     <div class="grid gap-4 lg:grid-cols-2">
@@ -391,7 +406,7 @@
                                         </span>
                                     @endif
                                 </div>
-                                <form method="POST" action="{{ route('teacher-planning.sessions.assign', [$session, $role]) }}" class="space-y-3">
+                                <form method="POST" action="{{ route('teacher-planning.sessions.assign', [$session, $role]) }}" class="space-y-3" data-stay-submit>
                                     @csrf @method('PUT')
                                     <select name="teacher_profile_id" class="pkg-field w-full">
                                         <option value="">Belum diisi</option>
@@ -407,15 +422,53 @@
                                         <form method="POST" action="{{ route('teacher-planning.assignments.whatsapp', [$assignment, 'h3']) }}" target="_blank">@csrf<button class="btn-success w-full justify-center !px-2 !py-2 text-xs">WA H-3</button></form>
                                         <form method="POST" action="{{ route('teacher-planning.assignments.whatsapp', [$assignment, 'h1']) }}" target="_blank">@csrf<button class="btn-success w-full justify-center !px-2 !py-2 text-xs">WA H-1</button></form>
                                         @foreach(['h3' => 'Tandai H-3 terkirim', 'h1' => 'Tandai H-1 terkirim'] as $stage => $label)
-                                            <form method="POST" action="{{ route('teacher-planning.assignments.sent', [$assignment, $stage]) }}">@csrf @method('PATCH')<button class="btn-secondary w-full justify-center !px-2 !py-2 text-xs">{{ $label }}</button></form>
+                                            @php($sentAt = $assignment->getAttribute("{$stage}_whatsapp_sent_at"))
+                                            <form method="POST" action="{{ route('teacher-planning.assignments.sent', [$assignment, $stage]) }}" data-stay-submit>
+                                                @csrf @method('PATCH')
+                                                <button class="btn-secondary w-full justify-center !px-2 !py-2 text-xs">
+                                                    {{ $sentAt ? strtoupper($stage).' terkirim '.$sentAt->format('d/m H:i') : $label }}
+                                                </button>
+                                            </form>
                                         @endforeach
                                     </div>
+                                    <form method="POST" action="{{ route('teacher-planning.assignments.status', $assignment) }}" class="mt-3 space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700" data-stay-submit>
+                                        @csrf @method('PATCH')
+                                        <label class="form-label">Status konfirmasi</label>
+                                        <select name="confirmation_status" class="pkg-field w-full">
+                                            <option value="pending" @selected($assignment->confirmation_status === 'pending')>Menunggu</option>
+                                            <option value="confirmed" @selected($assignment->confirmation_status === 'confirmed')>Bersedia</option>
+                                            <option value="declined" @selected($assignment->confirmation_status === 'declined')>Berhalangan</option>
+                                        </select>
+                                        <input name="confirmation_note" value="{{ $assignment->confirmation_note }}" class="pkg-field w-full" maxlength="500" placeholder="Catatan status (opsional)">
+                                        <button class="btn-secondary w-full justify-center !py-2 text-xs">Simpan Status</button>
+                                    </form>
+                                    @foreach($assignment->requests->take(3) as $scheduleRequest)
+                                        <form method="POST" action="{{ route('teacher-planning.requests.status', $scheduleRequest) }}" class="mt-3 space-y-2 rounded-xl border border-sky-200 bg-sky-50 p-3 dark:border-sky-900/60 dark:bg-sky-950/30" data-stay-submit>
+                                            @csrf @method('PATCH')
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <p class="text-xs font-black uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                                                        {{ $scheduleRequest->request_type === 'reschedule' ? 'Pengajuan jadwal ulang' : 'Tidak bisa mengajar' }}
+                                                    </p>
+                                                    <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ $scheduleRequest->reason }}</p>
+                                                </div>
+                                                <span class="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-sky-700 dark:bg-slate-900 dark:text-sky-300">#{{ $scheduleRequest->id }}</span>
+                                            </div>
+                                            <select name="status" class="pkg-field w-full">
+                                                <option value="pending" @selected($scheduleRequest->status === 'pending')>Menunggu</option>
+                                                <option value="approved" @selected($scheduleRequest->status === 'approved')>Disetujui</option>
+                                                <option value="rejected" @selected($scheduleRequest->status === 'rejected')>Ditolak</option>
+                                            </select>
+                                            <input name="admin_note" value="{{ $scheduleRequest->admin_note }}" class="pkg-field w-full" maxlength="500" placeholder="Catatan Admin (opsional)">
+                                            <button class="btn-secondary w-full justify-center !py-2 text-xs">Simpan Permohonan</button>
+                                        </form>
+                                    @endforeach
                                     @if($assignment->confirmation_note)<p class="mt-3 text-sm text-gray-600 dark:text-gray-300">Catatan: {{ $assignment->confirmation_note }}</p>@endif
                                 @endif
                             </div>
                         @endforeach
                     </div>
-                    <form method="POST" action="{{ route('teacher-planning.sessions.materials.sync', $session) }}" class="mt-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
+                    <form method="POST" action="{{ route('teacher-planning.sessions.materials.sync', $session) }}" class="mt-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700" data-stay-submit>
                         @csrf @method('PUT')
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
@@ -438,7 +491,7 @@
         </div>
 
         <div class="border-t border-gray-200 p-5 dark:border-gray-700">
-            <form method="POST" action="{{ route('teacher-planning.periods.publish', $period) }}" class="space-y-3">
+            <form method="POST" action="{{ route('teacher-planning.periods.publish', $period) }}" class="space-y-3" data-stay-submit>
                 @csrf @method('PATCH')
                 @if($warnings)<textarea name="warning_acknowledgement" class="pkg-field w-full" rows="2" maxlength="1000" placeholder="Tuliskan catatan persetujuan untuk menerbitkan jadwal yang masih memiliki peringatan" required></textarea>@endif
                 <button class="btn-success">{{ $period->status === 'published' ? 'Terbitkan Ulang Perubahan' : 'Terbitkan ke Kalender' }}</button>
@@ -574,3 +627,56 @@
     </section>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        const storageKey = 'teacher-planning:stay';
+
+        document.querySelectorAll('form[data-stay-submit]').forEach((form) => {
+            form.addEventListener('submit', () => {
+                sessionStorage.setItem(storageKey, JSON.stringify({
+                    y: window.scrollY,
+                    at: Date.now()
+                }));
+            });
+        });
+
+        const savedRaw = sessionStorage.getItem(storageKey);
+        if (!savedRaw) return;
+
+        sessionStorage.removeItem(storageKey);
+        let saved;
+        try {
+            saved = JSON.parse(savedRaw);
+        } catch (error) {
+            return;
+        }
+        if (!saved || Date.now() - Number(saved.at || 0) > 120000) return;
+
+        const restore = () => window.scrollTo({ top: Number(saved.y || 0), behavior: 'auto' });
+        restore();
+        window.requestAnimationFrame(() => {
+            restore();
+            window.setTimeout(restore, 120);
+        });
+
+        const feedback = document.querySelector('[data-page-feedback]');
+        if (!feedback) return;
+        const tone = feedback.dataset.pageFeedback === 'error' ? 'error' : 'success';
+        const toast = document.createElement('div');
+        toast.setAttribute('role', 'status');
+        toast.className = 'fixed right-4 top-20 z-[120] max-w-sm rounded-2xl border px-4 py-3 text-sm font-bold shadow-2xl transition duration-300 '
+            + (tone === 'error'
+                ? 'border-red-200 bg-red-600 text-white'
+                : 'border-emerald-200 bg-emerald-600 text-white');
+        toast.textContent = feedback.innerText.trim();
+        document.body.appendChild(toast);
+        feedback.remove();
+        window.setTimeout(() => {
+            toast.classList.add('translate-x-4', 'opacity-0');
+            window.setTimeout(() => toast.remove(), 320);
+        }, 3200);
+    })();
+</script>
+@endpush

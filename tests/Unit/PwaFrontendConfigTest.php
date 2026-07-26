@@ -24,7 +24,7 @@ class PwaFrontendConfigTest extends TestCase
         $this->assertStringContainsString('pkg-auth-panel-content', $layout);
         $this->assertStringContainsString('rel="manifest"', $layout);
         $this->assertStringNotContainsString('authQuickStats', $layout);
-        $this->assertStringNotContainsString('auth-theme-toggle', $layout);
+        $this->assertStringContainsString('data-auth-theme-toggle', $layout);
         $this->assertStringNotContainsString("@yield('auth_footer')", $layout);
         $this->assertStringContainsString('height: 100svh', $styles);
         $this->assertStringContainsString('max-width: 28rem', $styles);
@@ -37,27 +37,28 @@ class PwaFrontendConfigTest extends TestCase
         }
     }
 
-    public function test_all_login_pages_expose_the_public_navigation(): void
+    public function test_all_login_pages_expose_direct_role_switching_without_the_large_public_navigation(): void
     {
         $layout = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/auth.blade.php');
-        $navigation = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/partials/auth-public-navigation.blade.php');
+        $switcher = file_get_contents(dirname(__DIR__, 2).'/resources/views/auth/partials/role-switcher.blade.php');
         $pamongLogin = file_get_contents(dirname(__DIR__, 2).'/resources/views/auth/login.blade.php');
         $siswaLogin = file_get_contents(dirname(__DIR__, 2).'/resources/views/auth/siswa-login.blade.php');
         $ortuLogin = file_get_contents(dirname(__DIR__, 2).'/resources/views/auth/ortu-login.blade.php');
 
-        $this->assertStringContainsString("@include('layouts.partials.auth-public-navigation')", $layout);
+        $this->assertStringContainsString('pkg-auth-appbar', $layout);
 
         foreach ([$pamongLogin, $siswaLogin, $ortuLogin] as $login) {
-            $this->assertStringContainsString("@section('auth_public_navigation', 'true')", $login);
+            $this->assertStringContainsString("@section('auth_public_navigation', 'false')", $login);
+            $this->assertStringContainsString("@include('auth.partials.role-switcher'", $login);
         }
 
-        foreach (['Beranda', 'Game 29 Karakter', 'Kalender', 'Materi', 'Scan Presensi', 'Lapor PKG'] as $label) {
-            $this->assertStringContainsString($label, $navigation);
+        foreach (['Siswa', 'Orang Tua', 'Pamong/Guru'] as $label) {
+            $this->assertStringContainsString($label, $switcher);
         }
 
-        $this->assertStringContainsString('id="auth-mobile-menu-toggle"', $navigation);
-        $this->assertStringContainsString('menu.inert = !open', $navigation);
-        $this->assertStringContainsString('Pamong dan Guru', $navigation);
+        $this->assertStringContainsString("'route' => 'siswa.login'", $switcher);
+        $this->assertStringContainsString("'route' => 'ortu.login'", $switcher);
+        $this->assertStringContainsString("'route' => 'login'", $switcher);
     }
 
     public function test_public_mobile_navigation_uses_accessible_off_canvas_panel(): void

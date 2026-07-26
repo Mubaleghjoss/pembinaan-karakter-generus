@@ -65,14 +65,12 @@ class Berita extends Model
         parent::boot();
 
         static::creating(function ($berita) {
-            if (empty($berita->slug)) {
-                $berita->slug = Str::slug($berita->judul);
-            }
+            $berita->slug = self::uniqueSlug($berita->judul);
         });
 
         static::updating(function ($berita) {
-            if ($berita->isDirty('judul') && empty($berita->slug)) {
-                $berita->slug = Str::slug($berita->judul);
+            if ($berita->isDirty('judul')) {
+                $berita->slug = self::uniqueSlug($berita->judul, $berita->getKey());
             }
         });
     }
@@ -186,6 +184,23 @@ class Berita extends Model
             $q->where('judul', 'like', "%{$search}%")
                 ->orWhere('isi', 'like', "%{$search}%");
         });
+    }
+
+    private static function uniqueSlug(string $title, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($title) ?: 'berita';
+        $slug = $base;
+        $counter = 2;
+
+        while (self::query()
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->exists()) {
+            $slug = $base.'-'.$counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 
     /**

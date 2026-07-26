@@ -51,8 +51,22 @@ class PublicController extends Controller
         ));
     }
 
-    public function berita($slug)
+    public function legacyBerita(string $slug)
     {
+        return redirect()->route('public.berita', ['slug' => $slug], 301);
+    }
+
+    public function berita(string $slug)
+    {
+        if (ctype_digit($slug)) {
+            $legacyBerita = Berita::query()
+                ->whereKey((int) $slug)
+                ->whereNotNull('published_at')
+                ->firstOrFail();
+
+            return redirect()->route('public.berita', ['slug' => $legacyBerita->slug], 301);
+        }
+
         $theme = ThemeSetting::current();
 
         $berita = Berita::where('slug', $slug)

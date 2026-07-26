@@ -521,6 +521,55 @@ class TeacherPlanningFeatureTest extends TestCase
             ->assertSee('scheduleCanvas', false);
     }
 
+    public function test_whatsapp_reminder_normalizes_legacy_teacher_phone_and_admin_can_set_status(): void
+    {
+        $admin = $this->admin();
+        $teacher = TeacherProfile::create([
+            ...$this->profileAttributes(),
+            'whatsapp' => '0812-3456-7890',
+            'whatsapp_normalized' => '',
+        ]);
+        $period = TeacherSchedulePeriod::create([
+            'month' => now()->startOfMonth()->toDateString(),
+            'status' => 'published',
+            'created_by' => $admin->id,
+            'published_by' => $admin->id,
+            'published_at' => now(),
+        ]);
+        $session = TeacherScheduleSession::create([
+            'period_id' => $period->id,
+            'session_date' => now()->addDays(3)->toDateString(),
+            'rombel' => 'smp',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'status' => 'scheduled',
+        ]);
+        $assignment = app(TeacherSchedulePlanner::class)
+            ->createAssignment($session, $teacher, 'main', 'manual', true, $admin->id);
+
+        $response = $this->actingAs($admin)
+            ->post(route('teacher-planning.assignments.whatsapp', [$assignment, 'h3']))
+            ->assertRedirect();
+        $this->assertStringStartsWith(
+            'https://wa.me/6281234567890?text=',
+            (string) $response->headers->get('Location')
+        );
+        $this->assertSame('6281234567890', $teacher->fresh()->whatsapp_normalized);
+
+        $this->actingAs($admin)
+            ->patch(route('teacher-planning.assignments.status', $assignment), [
+                'confirmation_status' => 'declined',
+                'confirmation_note' => 'Dikonfirmasi Admin melalui telepon.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+        $this->assertDatabaseHas('teacher_schedule_assignments', [
+            'id' => $assignment->id,
+            'confirmation_status' => 'declined',
+            'confirmation_note' => 'Dikonfirmasi Admin melalui telepon.',
+        ]);
+    }
+
     private function profilePayload(): array
     {
         return [

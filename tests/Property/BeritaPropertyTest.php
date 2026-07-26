@@ -19,6 +19,8 @@ class BeritaPropertyTest extends TestCase
 {
     use RefreshDatabase;
 
+    private int $adminRoleId;
+
     /**
      * Setup role sebelum setiap test.
      */
@@ -33,16 +35,16 @@ class BeritaPropertyTest extends TestCase
      */
     private function seedRoles(): void
     {
-        if (Role::count() === 0) {
-            Role::create([
-                'id' => 1,
-                'name' => 'admin',
+        $role = Role::query()->updateOrCreate(
+            ['name' => 'admin'],
+            [
                 'display_name' => 'Administrator',
                 'description' => 'Full system access',
-                'permissions' => ['view_students', 'manage_students'],
+                'permissions' => ['*'],
                 'is_active' => true,
-            ]);
-        }
+            ]
+        );
+        $this->adminRoleId = $role->id;
     }
 
     /**
@@ -54,7 +56,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_berita_creation_persists_all_fields(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
         $statuses = ['draft', 'published'];
 
         // Test dengan berbagai kombinasi data valid
@@ -92,7 +94,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_berita_validation_rejects_empty_title(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
         $this->actingAs($user);
 
         // Test dengan berbagai variasi judul kosong
@@ -117,7 +119,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_berita_validation_rejects_empty_content(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
         $this->actingAs($user);
 
         // Test dengan berbagai variasi isi kosong
@@ -143,7 +145,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_berita_update_persists_changes(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
 
         for ($i = 0; $i < 10; $i++) {
             // Buat berita awal
@@ -188,7 +190,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_berita_deletion_removes_record(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
 
         for ($i = 0; $i < 10; $i++) {
             // Buat berita
@@ -216,7 +218,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_published_berita_visibility(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
 
         // Buat beberapa berita dengan status berbeda
         $publishedBerita = [];
@@ -265,7 +267,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_published_scope_respects_published_at_date(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
 
         // Berita published dengan tanggal di masa lalu
         $pastPublished = Berita::factory()->create([
@@ -303,7 +305,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_berita_filter_by_status(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
 
         // Buat berita dengan berbagai status
         $statuses = ['draft', 'published', 'archived'];
@@ -350,7 +352,7 @@ class BeritaPropertyTest extends TestCase
      */
     public function test_berita_no_filter_returns_all(): void
     {
-        $user = User::factory()->create(['role_id' => 1]);
+        $user = User::factory()->create(['role_id' => $this->adminRoleId]);
 
         // Buat berita dengan berbagai status
         $totalCount = 0;

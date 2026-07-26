@@ -115,4 +115,22 @@ class BeritaSocialLinksFeatureTest extends TestCase
             ->assertSee('x-teleport="body"', false)
             ->assertSee('openLightbox(1)', false);
     }
+
+    public function test_public_news_uses_title_slug_and_redirects_legacy_urls(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $berita = Berita::factory()->published()->create([
+            'judul' => 'Sosialisasi Program PKG serta Penyaksian Pengurus',
+            'author_id' => $admin->id,
+        ]);
+
+        $canonicalUrl = route('public.berita', $berita->slug);
+        $this->assertStringEndsWith(
+            '/berita/sosialisasi-program-pkg-serta-penyaksian-pengurus',
+            $canonicalUrl
+        );
+        $this->get($canonicalUrl)->assertOk();
+        $this->get('/berita/'.$berita->id)->assertRedirect($canonicalUrl);
+        $this->get('/berita-publik/'.$berita->slug)->assertRedirect($canonicalUrl);
+    }
 }

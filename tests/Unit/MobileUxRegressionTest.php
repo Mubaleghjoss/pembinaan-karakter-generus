@@ -147,6 +147,27 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('pkg-panel-lg min-w-0 p-4', $form);
     }
 
+    public function test_login_pages_offer_clean_direct_role_switching(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $layout = file_get_contents($root.'/resources/views/layouts/auth.blade.php');
+        $switcher = file_get_contents($root.'/resources/views/auth/partials/role-switcher.blade.php');
+
+        $this->assertStringContainsString('pkg-auth-appbar', $layout);
+        $this->assertStringContainsString('data-auth-theme-toggle', $layout);
+        $this->assertStringContainsString("route('public.index')", $layout);
+
+        foreach (['siswa.login', 'ortu.login', 'login'] as $route) {
+            $this->assertStringContainsString("'route' => '{$route}'", $switcher);
+        }
+
+        foreach (['login', 'siswa-login', 'ortu-login'] as $view) {
+            $source = file_get_contents($root."/resources/views/auth/{$view}.blade.php");
+            $this->assertStringContainsString("@include('auth.partials.role-switcher'", $source);
+            $this->assertStringContainsString("@section('auth_public_navigation', 'false')", $source);
+        }
+    }
+
     public function test_pkg_verification_navigation_stays_on_one_mobile_row(): void
     {
         $source = file_get_contents(dirname(__DIR__, 2).'/resources/views/tugas-pkg/verification/index.blade.php');

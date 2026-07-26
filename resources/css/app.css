@@ -870,6 +870,88 @@ html.reveal-ready [data-reveal].is-visible {
     position: relative;
     width: 100%;
     max-width: 28rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pkg-auth-appbar {
+    display: flex;
+    min-height: 3.75rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
+    border-radius: 1.15rem;
+    padding: 0.65rem 0.75rem;
+    background: color-mix(in srgb, var(--pkg-surface, #ffffff) 92%, transparent);
+    box-shadow: var(--pkg-shadow-soft, 0 18px 46px rgba(15, 23, 42, 0.08));
+    backdrop-filter: blur(18px);
+}
+
+.pkg-auth-appbar-button {
+    display: inline-flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
+    border-radius: 0.85rem;
+    color: var(--pkg-text-muted, #64748b);
+    background: var(--pkg-surface-muted, #f8fafc);
+    transition: color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.pkg-auth-appbar-button:hover {
+    color: var(--auth-accent, #0f766e);
+    border-color: color-mix(in srgb, var(--auth-accent, #0f766e) 40%, transparent);
+    transform: translateY(-1px);
+}
+
+.pkg-auth-role-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.pkg-auth-role {
+    display: flex;
+    min-width: 0;
+    min-height: 3.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
+    border-radius: 0.9rem;
+    padding: 0.55rem 0.4rem;
+    color: var(--pkg-text-muted, #64748b);
+    background: var(--pkg-surface-muted, #f8fafc);
+    transition: color 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+
+.pkg-auth-role:hover {
+    border-color: color-mix(in srgb, var(--auth-accent, #0f766e) 32%, transparent);
+    color: var(--auth-accent, #0f766e);
+    transform: translateY(-1px);
+}
+
+.pkg-auth-role.is-active {
+    border-color: color-mix(in srgb, var(--auth-accent, #0f766e) 50%, transparent);
+    color: var(--auth-accent, #0f766e);
+    background: color-mix(in srgb, var(--auth-accent, #0f766e) 10%, var(--pkg-surface, #ffffff));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--auth-accent, #0f766e) 12%, transparent);
+}
+
+.pkg-auth-role-icon {
+    display: none;
+    width: 1.2rem;
+    height: 1.2rem;
+    flex: none;
+}
+
+.pkg-auth-role-icon svg {
+    width: 100%;
+    height: 100%;
 }
 
 .pkg-auth-panel {
@@ -956,6 +1038,23 @@ html.reveal-ready [data-reveal].is-visible {
 
     .pkg-auth-panel-content {
         padding: 0.8rem 0.9rem;
+    }
+
+    .pkg-auth-appbar {
+        min-height: 3.35rem;
+        border-radius: 0.9rem;
+        padding-block: 0.45rem;
+    }
+
+    .pkg-auth-role {
+        min-height: 3rem;
+        padding-inline: 0.25rem;
+    }
+}
+
+@media (min-width: 390px) {
+    .pkg-auth-role-icon {
+        display: block;
     }
 }
 

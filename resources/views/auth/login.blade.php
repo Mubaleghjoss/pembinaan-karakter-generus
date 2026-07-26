@@ -5,9 +5,11 @@
 @section('auth_accent_secondary', '#0369a1')
 @section('auth_card_title', 'Login Pamong atau Guru')
 @section('auth_card_copy', 'Masuk dengan akun Admin, Pamong, atau Guru menggunakan username, nomor HP, atau email terdaftar.')
-@section('auth_public_navigation', 'true')
+@section('auth_public_navigation', 'false')
 
 @section('content')
+    @include('auth.partials.role-switcher', ['activeRole' => 'staff'])
+
     @if ($errors->any())
         <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
             {{ $errors->first() }}

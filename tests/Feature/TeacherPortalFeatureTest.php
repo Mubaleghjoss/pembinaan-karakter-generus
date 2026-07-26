@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\PwaNotificationDelivery;
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\TeacherMaterial;
 use App\Models\TeacherProfile;
 use App\Models\TeacherSchedulePeriod;
+use App\Models\TeacherScheduleRequest;
 use App\Models\TeacherScheduleSession;
 use App\Models\User;
 use App\Notifications\TaskBadgeWebPushNotification;
@@ -219,6 +221,64 @@ class TeacherPortalFeatureTest extends TestCase
         $assignment->session->update(['session_date' => now()->addDay()->toDateString()]);
         $this->assertSame(1, $notifications->notifyDue(today()));
         Notification::assertSentTo($guru, TaskBadgeWebPushNotification::class, 3);
+    }
+
+    public function test_guru_can_confirm_and_submit_schedule_request_to_configured_admin_whatsapp(): void
+    {
+        $admin = $this->admin();
+        [$guru, $profile] = $this->guru();
+        [, $otherProfile] = $this->guru('Guru Lain', '6281234567891');
+        $period = $this->period($admin, 'published');
+        $assignment = $this->assignment($period, $profile, 'main', now()->addDays(4));
+        $otherAssignment = $this->assignment($period, $otherProfile, 'backup', now()->addDays(5), 'sma');
+
+        $this->actingAs($admin)
+            ->put(route('teacher-planning.admin-contact.update'), [
+                'admin_whatsapp' => '0812-9999-8877',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+        $this->assertSame('6281299998877', Setting::get(Setting::TEACHER_ADMIN_WHATSAPP_KEY));
+
+        $this->actingAs($guru)
+            ->patch(route('guru.schedule.confirm', $assignment), [
+                'status' => 'confirmed',
+                'note' => 'Insyaallah hadir.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+        $this->assertDatabaseHas('teacher_schedule_assignments', [
+            'id' => $assignment->id,
+            'confirmation_status' => 'confirmed',
+            'confirmation_note' => 'Insyaallah hadir.',
+        ]);
+
+        $response = $this->actingAs($guru)
+            ->post(route('guru.schedule.request', $assignment), [
+                'request_type' => TeacherScheduleRequest::TYPE_RESCHEDULE,
+                'reason' => 'Mohon digeser ke sesi Jumat karena ada kegiatan keluarga.',
+            ])
+            ->assertRedirect();
+
+        $this->assertStringStartsWith(
+            'https://wa.me/6281299998877?text=',
+            (string) $response->headers->get('Location')
+        );
+        $scheduleRequest = TeacherScheduleRequest::query()->firstOrFail();
+        $this->assertSame($assignment->id, $scheduleRequest->assignment_id);
+        $this->assertSame(TeacherScheduleRequest::STATUS_PENDING, $scheduleRequest->status);
+
+        $this->actingAs($admin)
+            ->patch(route('teacher-planning.requests.status', $scheduleRequest), [
+                'status' => TeacherScheduleRequest::STATUS_APPROVED,
+                'admin_note' => 'Admin akan menukar jadwal.',
+            ])
+            ->assertRedirect();
+        $this->assertSame(TeacherScheduleRequest::STATUS_APPROVED, $scheduleRequest->fresh()->status);
+
+        $this->actingAs($guru)
+            ->patch(route('guru.schedule.confirm', $otherAssignment), ['status' => 'confirmed'])
+            ->assertNotFound();
     }
 
     private function admin(): User

@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\TeacherMaterial;
 use App\Models\TeacherProfile;
 use App\Models\TeacherScheduleAssignment;
+use App\Models\TeacherScheduleRequest;
+use App\Models\Setting;
 use App\Services\Contracts\PamongQrServiceInterface;
 use App\Services\TeacherStatementDocumentService;
+use App\Support\WhatsappLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,11 +65,111 @@ class TeacherPortalController extends Controller
     public function scheduleShow(Request $request, TeacherScheduleAssignment $assignment): View
     {
         $profile = $this->teacherProfile($request);
-        abort_unless($assignment->teacher_profile_id === $profile->id, 404);
-        $assignment->loadMissing(['session.materials', 'session.period']);
-        abort_unless($assignment->session?->period?->status === 'published', 404);
+        $assignment = $this->ownPublishedAssignment($profile, $assignment);
+        $adminWhatsapp = Setting::get(Setting::TEACHER_ADMIN_WHATSAPP_KEY, '');
+        $role = $assignment->role === 'main' ? 'pengajar utama' : 'pengajar cadangan';
+        $session = $assignment->session;
+        $adminMessage = "Assalamu'alaikum Admin PKG. Saya {$profile->name}, {$role} rombel "
+            .strtoupper($session->rombel).' pada '
+            .$session->session_date->translatedFormat('l, d F Y').', pukul '
+            .substr($session->start_time, 0, 5).'-'.substr($session->end_time, 0, 5)
+            .' WIB. Saya ingin menghubungi Admin terkait jadwal ini.';
+        $adminWhatsappUrl = WhatsappLink::url($adminWhatsapp, $adminMessage);
 
-        return view('guru.schedule-show', compact('profile', 'assignment'));
+        return view('guru.schedule-show', compact(
+            'profile',
+            'assignment',
+            'adminWhatsapp',
+            'adminWhatsappUrl'
+        ));
+    }
+
+    public function confirmSchedule(
+        Request $request,
+        TeacherScheduleAssignment $assignment
+    ): RedirectResponse {
+        $profile = $this->teacherProfile($request);
+        $assignment = $this->ownPublishedAssignment($profile, $assignment);
+        abort_if($assignment->session->session_date->copy()->endOfDay()->isPast(), 422, 'Jadwal ini sudah berlalu.');
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['confirmed', 'declined'])],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $assignment->update([
+            'confirmation_status' => $validated['status'],
+            'confirmation_note' => trim($validated['note'] ?? '') ?: null,
+            'confirmed_at' => now(),
+        ]);
+
+        return back()->with(
+            'success',
+            $validated['status'] === 'confirmed'
+                ? 'Kesediaan mengajar berhasil dikonfirmasi.'
+                : 'Informasi berhalangan sudah disimpan dan dapat dilihat Admin.'
+        );
+    }
+
+    public function requestScheduleChange(
+        Request $request,
+        TeacherScheduleAssignment $assignment
+    ): RedirectResponse {
+        $profile = $this->teacherProfile($request);
+        $assignment = $this->ownPublishedAssignment($profile, $assignment);
+        abort_if($assignment->session->session_date->copy()->endOfDay()->isPast(), 422, 'Jadwal ini sudah berlalu.');
+        $validated = $request->validate([
+            'request_type' => ['required', Rule::in([
+                TeacherScheduleRequest::TYPE_RESCHEDULE,
+                TeacherScheduleRequest::TYPE_UNABLE,
+            ])],
+            'reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ]);
+
+        $scheduleRequest = TeacherScheduleRequest::query()
+            ->firstOrNew([
+                'assignment_id' => $assignment->id,
+                'teacher_profile_id' => $profile->id,
+                'request_type' => $validated['request_type'],
+                'status' => TeacherScheduleRequest::STATUS_PENDING,
+            ]);
+        $scheduleRequest->fill([
+            'reason' => trim($validated['reason']),
+            'admin_note' => null,
+            'resolved_by' => null,
+            'resolved_at' => null,
+        ])->save();
+
+        if ($validated['request_type'] === TeacherScheduleRequest::TYPE_UNABLE) {
+            $assignment->update([
+                'confirmation_status' => 'declined',
+                'confirmation_note' => trim($validated['reason']),
+                'confirmed_at' => now(),
+            ]);
+        }
+
+        $session = $assignment->session;
+        $requestLabel = $validated['request_type'] === TeacherScheduleRequest::TYPE_RESCHEDULE
+            ? 'pengajuan penjadwalan ulang'
+            : 'permohonan maaf karena tidak bisa mengajar';
+        $message = "Assalamu'alaikum Admin PKG. Saya {$profile->name} mengirim {$requestLabel} untuk jadwal "
+            .strtoupper($session->rombel).' pada '
+            .$session->session_date->translatedFormat('l, d F Y').', pukul '
+            .substr($session->start_time, 0, 5).'-'.substr($session->end_time, 0, 5)
+            ." WIB.\n\nKeterangan: ".trim($validated['reason'])
+            ."\n\nPermohonan ini sudah tercatat di sistem dengan nomor #{$scheduleRequest->id}.";
+        $adminWhatsappUrl = WhatsappLink::url(
+            Setting::get(Setting::TEACHER_ADMIN_WHATSAPP_KEY, ''),
+            $message
+        );
+
+        if (! $adminWhatsappUrl) {
+            return back()->with(
+                'success',
+                'Permohonan sudah tersimpan di sistem. Nomor WhatsApp Admin belum diatur, sehingga WhatsApp tidak dapat dibuka.'
+            );
+        }
+
+        return redirect()->away($adminWhatsappUrl);
     }
 
     public function materials(Request $request): View
@@ -266,7 +369,26 @@ class TeacherPortalController extends Controller
         return TeacherScheduleAssignment::query()
             ->where('teacher_profile_id', $profile->id)
             ->whereHas('session.period', fn ($query) => $query->where('status', 'published'))
-            ->with(['session.period', 'session.materials']);
+            ->with([
+                'session.period',
+                'session.materials',
+                'requests' => fn ($query) => $query->latest(),
+            ]);
+    }
+
+    private function ownPublishedAssignment(
+        TeacherProfile $profile,
+        TeacherScheduleAssignment $assignment
+    ): TeacherScheduleAssignment {
+        abort_unless($assignment->teacher_profile_id === $profile->id, 404);
+        $assignment->loadMissing([
+            'session.materials',
+            'session.period',
+            'requests' => fn ($query) => $query->latest(),
+        ]);
+        abort_unless($assignment->session?->period?->status === 'published', 404);
+
+        return $assignment;
     }
 
     private function sessionDateSubquery()
@@ -279,17 +401,6 @@ class TeacherPortalController extends Controller
 
     private function normalizeWhatsapp(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?: '';
-        if (str_starts_with($digits, '0')) {
-            $digits = '62'.substr($digits, 1);
-        } elseif (! str_starts_with($digits, '62')) {
-            $digits = '62'.$digits;
-        }
-
-        if (! preg_match('/^62[0-9]{8,13}$/', $digits)) {
-            throw ValidationException::withMessages(['whatsapp' => 'Nomor WhatsApp tidak valid.']);
-        }
-
-        return $digits;
+        return WhatsappLink::normalizeOrFail($phone);
     }
 }

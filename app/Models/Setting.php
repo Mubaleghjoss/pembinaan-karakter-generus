@@ -15,6 +15,8 @@ class Setting extends Model
 
     public const TEACHER_SUCCESS_MESSAGE_DEFAULT = 'Formulir kesediaan Anda sudah tersimpan. Admin akan menghubungi melalui WhatsApp saat jadwal disusun.';
 
+    public const TEACHER_ADMIN_WHATSAPP_KEY = 'teacher_admin_whatsapp';
+
     /**
      * The table associated with the model.
      *
