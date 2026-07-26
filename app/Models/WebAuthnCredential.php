@@ -68,6 +68,13 @@ class WebAuthnCredential extends Model
      */
     public function getDashboardRoute(): string
     {
+        if ($this->user_type === 'admin') {
+            $user = $this->getUser();
+            if ($user?->isGuru()) {
+                return $user->must_change_password ? 'guru.password.initial' : 'guru.dashboard';
+            }
+        }
+
         return match($this->user_type) {
             'siswa' => 'siswa.dashboard',
             'admin' => 'dashboard',

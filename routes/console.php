@@ -12,3 +12,8 @@ Schedule::command('pwa:notify-pending-tasks')
     ->everyFiveMinutes()
     ->between('05:00', '21:00')
     ->withoutOverlapping();
+
+Schedule::command('pwa:notify-teacher-schedules')
+    ->everyFiveMinutes()
+    ->between('05:00', '21:00')
+    ->withoutOverlapping();

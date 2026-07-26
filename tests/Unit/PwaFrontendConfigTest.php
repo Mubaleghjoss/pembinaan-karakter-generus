@@ -57,7 +57,7 @@ class PwaFrontendConfigTest extends TestCase
 
         $this->assertStringContainsString('id="auth-mobile-menu-toggle"', $navigation);
         $this->assertStringContainsString('menu.inert = !open', $navigation);
-        $this->assertStringContainsString('Pamong / Admin', $navigation);
+        $this->assertStringContainsString('Pamong dan Guru', $navigation);
     }
 
     public function test_public_mobile_navigation_uses_accessible_off_canvas_panel(): void

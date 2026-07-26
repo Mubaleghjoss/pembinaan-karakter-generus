@@ -564,6 +564,10 @@ class WebAuthnController extends Controller
             return view('ortu.biometrik', compact('credentials', 'legacyCredentialCount', 'validCredentialCount', 'webauthnEnvironment'));
         }
 
+        if (Auth::user()?->isGuru()) {
+            return view('guru.biometrik', compact('credentials', 'legacyCredentialCount', 'validCredentialCount', 'webauthnEnvironment'));
+        }
+
         return view('admin.biometrik', compact('credentials', 'legacyCredentialCount', 'validCredentialCount', 'webauthnEnvironment'));
     }
 

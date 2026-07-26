@@ -21,7 +21,7 @@
                         Login Orang Tua
                     </a>
                     <a href="{{ route('login') }}" class="btn-secondary justify-center text-sm">
-                        Login Pamong / Admin
+                        Login Pamong atau Guru
                     </a>
                 </div>
             </div>

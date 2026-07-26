@@ -41,6 +41,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'pamong.permission' => \App\Http\Middleware\CheckPamongPermission::class,
             'log.pamong' => \App\Http\Middleware\LogPamongActivity::class,
             'admin.only' => \App\Http\Middleware\EnsureAdminUser::class,
+            'guru.profile' => \App\Http\Middleware\EnsureTeacherPortalAccess::class,
+            'guru.password' => \App\Http\Middleware\EnsureTeacherPasswordChanged::class,
         ]);
 
         // Apply sanitize middleware to all API routes
@@ -52,6 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\UpdateLastActivity::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\RestrictGuruToPortal::class,
         ]);
         
         // Exclude QR scan endpoint from CSRF verification (public endpoint)

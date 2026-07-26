@@ -10,6 +10,7 @@
             <p class="pkg-page-subheading">Kelola kesediaan MT/MS, pemerataan tugas, konfirmasi, dan jadwal bulanan.</p>
         </div>
         <div class="pkg-page-actions">
+            <a href="{{ route('teacher-materials.index') }}" class="btn-secondary">Pustaka Materi</a>
             <a href="{{ route('public.teacher-availability.index') }}" target="_blank" rel="noopener" class="btn-secondary">Buka Formulir</a>
         </div>
     </header>
@@ -26,6 +27,19 @@
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
             <p class="text-sm font-bold text-emerald-800 dark:text-emerald-200">Kode akses baru—salin sekarang karena tidak dapat ditampilkan kembali:</p>
             <code class="mt-2 inline-block rounded-lg bg-white px-4 py-2 text-lg font-black tracking-[0.18em] text-emerald-800 dark:bg-gray-900 dark:text-emerald-200">{{ session('teacher_access_code') }}</code>
+        </div>
+    @endif
+    @if(session('teacher_credentials'))
+        @php
+            $credentials = session('teacher_credentials');
+        @endphp
+        <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
+            <p class="font-black">Kredensial awal {{ $credentials['name'] }}</p>
+            <p class="mt-1 text-sm">Password hanya ditampilkan sekali. Guru wajib menggantinya saat login pertama.</p>
+            <dl class="mt-3 grid gap-2 sm:grid-cols-2">
+                <div class="rounded-lg bg-white/80 p-3 dark:bg-slate-950/50"><dt class="text-xs font-bold uppercase tracking-wide">Username</dt><dd class="mt-1 select-all font-mono text-lg font-black">{{ $credentials['username'] }}</dd></div>
+                <div class="rounded-lg bg-white/80 p-3 dark:bg-slate-950/50"><dt class="text-xs font-bold uppercase tracking-wide">Password</dt><dd class="mt-1 select-all font-mono text-lg font-black">{{ $credentials['password'] }}</dd></div>
+            </dl>
         </div>
     @endif
 
@@ -401,6 +415,24 @@
                             </div>
                         @endforeach
                     </div>
+                    <form method="POST" action="{{ route('teacher-planning.sessions.materials.sync', $session) }}" class="mt-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
+                        @csrf @method('PUT')
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <p class="font-bold text-gray-900 dark:text-white">Materi sesi</p>
+                                <p class="text-sm text-gray-500">Materi ini selalu tampil kepada pengajar utama dan cadangan pada sesi tersebut.</p>
+                            </div>
+                            <a href="{{ route('teacher-materials.index') }}" class="text-sm font-bold text-emerald-600">Kelola pustaka</a>
+                        </div>
+                        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            @forelse($teacherMaterials as $material)
+                                <label class="pkg-check"><input type="checkbox" name="material_ids[]" value="{{ $material->id }}" @checked($session->materials->contains($material->id))><span>{{ $material->title }}</span></label>
+                            @empty
+                                <p class="text-sm text-gray-500">Belum ada materi aktif.</p>
+                            @endforelse
+                        </div>
+                        <button class="btn-secondary mt-4 w-full justify-center !py-2 text-sm">Simpan Materi Sesi</button>
+                    </form>
                 </article>
             @endforeach
         </div>
@@ -468,6 +500,25 @@
                                 @endif
                             </div>
                         </div>
+                        <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900/60 dark:bg-sky-950/30 sm:col-span-2">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="font-bold text-gray-900 dark:text-white">Akun Portal Guru</p>
+                                    @if($profile->user)
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Tertaut ke <span class="font-bold">{{ $profile->user->username }}</span>. Role akun tidak diubah oleh penyuntingan profil.</p>
+                                    @else
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Belum memiliki akun. Admin dapat membuat akun Guru dengan password awal sekali tampil.</p>
+                                    @endif
+                                </div>
+                                @if(auth()->user()->isAdmin())
+                                    @if(!$profile->user_id)
+                                        <button type="submit" form="create-teacher-account-{{ $profile->id }}" class="btn-primary whitespace-nowrap">Buat Akun Guru</button>
+                                    @elseif($profile->user?->isGuru())
+                                        <button type="submit" form="reset-teacher-account-{{ $profile->id }}" class="btn-secondary whitespace-nowrap">Reset Password Awal</button>
+                                    @endif
+                                @endif
+                            </div>
+                        </div>
                         <div><label class="form-label">Nama lengkap</label><input name="name" value="{{ $profile->name }}" class="pkg-field w-full" required></div>
                         <div><label class="form-label">Nama publik/panggilan</label><input name="public_name" value="{{ $profile->public_name }}" class="pkg-field w-full"></div>
                         <div><label class="form-label">Kelompok</label><select name="kelompok" class="pkg-field w-full">@foreach($groups as $value => $label)<option value="{{ $value }}" @selected($profile->kelompok === $value)>{{ $label }}</option>@endforeach</select></div>
@@ -492,6 +543,11 @@
                         <button class="btn-primary justify-center sm:col-span-2">Simpan Profil</button>
                     </form>
                     @if(auth()->user()->isAdmin())
+                        @if(!$profile->user_id)
+                            <form id="create-teacher-account-{{ $profile->id }}" method="POST" action="{{ route('teacher-planning.profiles.account.store', $profile) }}" class="hidden" data-confirm="Buat akun Portal Guru untuk {{ $profile->name }}?">@csrf</form>
+                        @elseif($profile->user?->isGuru())
+                            <form id="reset-teacher-account-{{ $profile->id }}" method="POST" action="{{ route('teacher-planning.profiles.account.reset', $profile) }}" class="hidden" data-confirm="Buat ulang password awal akun {{ $profile->user->username }}?">@csrf</form>
+                        @endif
                         <form method="POST" action="{{ route('teacher-planning.profiles.destroy', $profile) }}" class="mt-4 border-t border-red-200 pt-4 dark:border-red-900/50"
                               data-confirm="Hapus data kesediaan {{ $profile->name }}? Tindakan ini tidak dapat dibatalkan."
                               data-confirm-title="Hapus data guru"

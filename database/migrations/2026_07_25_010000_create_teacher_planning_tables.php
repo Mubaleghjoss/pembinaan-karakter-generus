@@ -38,8 +38,9 @@ return new class extends Migration
             $table->string('backup_contact_preference', 40)->nullable();
             $table->text('constraints')->nullable();
             $table->string('consent_version', 20)->default('v1');
-            $table->timestamp('consented_at');
-            $table->timestamp('submitted_at');
+            // DATETIME avoids the single automatic TIMESTAMP limitation on older MariaDB/cPanel setups.
+            $table->dateTime('consented_at');
+            $table->dateTime('submitted_at');
             $table->boolean('is_active')->default(true)->index();
             $table->timestamps();
 

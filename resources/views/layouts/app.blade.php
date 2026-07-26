@@ -557,6 +557,9 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                                 <p class="text-xs text-gray-500">{{ auth()->user()->role->display_name ?? 'User' }}</p>
                             </div>
                             <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" role="menuitem">Profil</a>
+                            @if($teacherPortalAvailable ?? false)
+                                <a href="{{ route('guru.dashboard') }}" class="block px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40" role="menuitem">Buka Portal Guru</a>
+                            @endif
                             @if(auth()->user()->hasAnyRole(\App\Models\User::attendanceRoleNames()))
                                 <a href="{{ route('profile.id-card') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" role="menuitem">ID Card Saya</a>
                             @endif

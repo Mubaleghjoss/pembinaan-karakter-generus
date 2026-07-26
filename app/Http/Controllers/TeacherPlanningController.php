@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\TeacherAvailabilityInvite;
+use App\Models\Role;
+use App\Models\TeacherMaterial;
 use App\Models\TeacherProfile;
 use App\Models\TeacherScheduleAssignment;
 use App\Models\TeacherSchedulePeriod;
@@ -11,6 +13,7 @@ use App\Models\TeacherScheduleTemplate;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\TeacherSchedulePlanner;
+use App\Services\TeacherSchedulePwaNotificationService;
 use App\Services\TeacherStatementDocumentService;
 use App\Support\ParticipantProfileOptions;
 use Carbon\Carbon;
@@ -20,6 +23,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -59,7 +63,7 @@ class TeacherPlanningController extends Controller
             : null;
         $period = TeacherSchedulePeriod::query()
             ->whereDate('month', $selectedMonth)
-            ->with(['sessions.assignments.teacher.user'])
+            ->with(['sessions.assignments.teacher.user', 'sessions.materials'])
             ->first();
         $profilesQuery = TeacherProfile::query()
             ->with('user:id,name,username');
@@ -180,13 +184,17 @@ class TeacherPlanningController extends Controller
             ->orderBy('name')
             ->orderBy('username')
             ->get(['id', 'name', 'username', 'phone']);
+        $teacherMaterials = TeacherMaterial::query()
+            ->active()
+            ->orderBy('title')
+            ->get(['id', 'title', 'rombels']);
 
         return view('teacher-planning.index', compact(
             'selectedMonth', 'period', 'profiles', 'eligibleProfiles', 'templates',
             'invite', 'warnings', 'stats', 'linkableUsers', 'groupStats', 'roleStats',
             'rombelStats', 'nightStats', 'competencyStats', 'activeProfileFilter',
             'confirmationDue', 'reminderDue', 'successMessageSettings', 'hasActiveTemplates',
-            'groups'
+            'groups', 'teacherMaterials'
         ) + [
             'rombels' => TeacherProfile::ROMBELS,
             'nights' => TeacherProfile::NIGHTS,
@@ -306,6 +314,92 @@ class TeacherPlanningController extends Controller
         ]);
 
         return back()->with('success', 'Profil kesediaan guru berhasil diperbarui.');
+    }
+
+    public function createAccount(Request $request, TeacherProfile $teacherProfile): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        if ($teacherProfile->user_id) {
+            throw ValidationException::withMessages([
+                'teacher_account' => 'Profil ini sudah tertaut ke sebuah akun.',
+            ]);
+        }
+
+        $password = $this->randomTeacherPassword();
+        $user = DB::transaction(function () use ($teacherProfile, $password): User {
+            $profile = TeacherProfile::query()->lockForUpdate()->findOrFail($teacherProfile->id);
+            if ($profile->user_id) {
+                throw ValidationException::withMessages([
+                    'teacher_account' => 'Profil ini sudah tertaut ke sebuah akun.',
+                ]);
+            }
+
+            $role = Role::query()->where('name', User::ROLE_GURU)->where('is_active', true)->firstOrFail();
+            $username = $this->availableTeacherUsername($profile->name);
+            $user = User::query()->create([
+                'name' => $profile->name,
+                'username' => $username,
+                'phone' => $profile->whatsapp_normalized ?: $this->normalizeWhatsapp($profile->whatsapp),
+                'kelompok' => $profile->kelompok,
+                'password' => Hash::make($password),
+                'role_id' => $role->id,
+                'status' => 'active',
+                'must_change_password' => true,
+                'password_changed_at' => null,
+                'theme_preference' => 'system',
+            ]);
+            $profile->update(['user_id' => $user->id]);
+
+            return $user;
+        });
+
+        return back()
+            ->with('success', 'Akun Guru berhasil dibuat. Salin kredensial sebelum menutup halaman.')
+            ->with('teacher_credentials', [
+                'name' => $teacherProfile->name,
+                'username' => $user->username,
+                'password' => $password,
+            ]);
+    }
+
+    public function resetAccountPassword(Request $request, TeacherProfile $teacherProfile): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        $teacherProfile->loadMissing('user.role');
+        abort_unless($teacherProfile->user?->isGuru(), 422, 'Reset ini hanya tersedia untuk akun Guru.');
+
+        $password = $this->randomTeacherPassword();
+        $teacherProfile->user->forceFill([
+            'password' => Hash::make($password),
+            'must_change_password' => true,
+            'password_changed_at' => null,
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+        ])->save();
+
+        return back()
+            ->with('success', 'Password awal Guru berhasil dibuat ulang.')
+            ->with('teacher_credentials', [
+                'name' => $teacherProfile->name,
+                'username' => $teacherProfile->user->username,
+                'password' => $password,
+            ]);
+    }
+
+    public function syncSessionMaterials(
+        Request $request,
+        TeacherScheduleSession $teacherScheduleSession
+    ): RedirectResponse {
+        $this->authorizeModule('edit');
+        $validated = $request->validate([
+            'material_ids' => ['nullable', 'array'],
+            'material_ids.*' => ['integer', 'exists:teacher_materials,id'],
+        ]);
+
+        $teacherScheduleSession->materials()->sync(array_values(array_unique($validated['material_ids'] ?? [])));
+
+        return back()->with('success', 'Materi sesi berhasil diperbarui.');
     }
 
     public function storeTemplate(Request $request): RedirectResponse
@@ -473,7 +567,11 @@ class TeacherPlanningController extends Controller
         return back()->with('success', 'Pengajar utama dan cadangan berhasil ditukar.');
     }
 
-    public function publish(Request $request, TeacherSchedulePeriod $teacherSchedulePeriod): RedirectResponse
+    public function publish(
+        Request $request,
+        TeacherSchedulePeriod $teacherSchedulePeriod,
+        TeacherSchedulePwaNotificationService $notifications
+    ): RedirectResponse
     {
         $this->authorizeModule('publish');
         $warnings = $this->planner->warnings($teacherSchedulePeriod);
@@ -486,8 +584,9 @@ class TeacherPlanningController extends Controller
             'published_at' => now(),
             'publish_warning_acknowledgement' => $validated['warning_acknowledgement'] ?? null,
         ]);
+        $sent = $notifications->notifyPublished($teacherSchedulePeriod->fresh());
 
-        return back()->with('success', 'Jadwal berhasil diterbitkan ke kalender.');
+        return back()->with('success', "Jadwal berhasil diterbitkan. {$sent} notifikasi perangkat Guru dikirim.");
     }
 
     public function destroyPeriod(
@@ -656,6 +755,34 @@ class TeacherPlanningController extends Controller
                     && $user->hasPamongCrudPermission('teacher_scheduling', $operation))),
             403
         );
+    }
+
+    private function availableTeacherUsername(string $name): string
+    {
+        $slug = Str::slug($name, '.');
+        $base = 'guru.'.($slug !== '' ? $slug : 'pengajar');
+        $base = Str::limit($base, 45, '');
+        $username = $base;
+        $suffix = 2;
+
+        while (User::query()->where('username', $username)->exists()) {
+            $username = Str::limit($base, 45 - strlen((string) $suffix) - 1, '').'.'.$suffix;
+            $suffix++;
+        }
+
+        return $username;
+    }
+
+    private function randomTeacherPassword(): string
+    {
+        $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+        $password = '';
+
+        for ($index = 0; $index < 12; $index++) {
+            $password .= $characters[random_int(0, strlen($characters) - 1)];
+        }
+
+        return $password;
     }
 
     private function normalizeWhatsapp(string $phone): string

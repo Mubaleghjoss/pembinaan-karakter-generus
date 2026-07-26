@@ -51,6 +51,12 @@ class RoleSeeder extends Seeder
                 ],
             ],
             [
+                'name' => 'guru',
+                'display_name' => 'Guru',
+                'description' => 'Guru PKG dengan akses Portal Guru',
+                'permissions' => [],
+            ],
+            [
                 'name' => 'pkg_manager',
                 'display_name' => 'Pengurus PKG',
                 'description' => 'Pengurus operasional PKG dengan akses terbatas per bidang',

@@ -352,7 +352,7 @@
                                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                                     </span>
                                     <div>
-                                        <div class="font-semibold text-gray-800 dark:text-slate-100 text-sm">Pamong / Admin</div>
+                                        <div class="font-semibold text-gray-800 dark:text-slate-100 text-sm">Pamong dan Guru</div>
                                         <div class="text-xs text-gray-400 dark:text-slate-400">Panel pengelola</div>
                                     </div>
                                 </a>
@@ -471,7 +471,7 @@
                             <span class="w-8 h-8 rounded-lg bg-amber-500/30 flex items-center justify-center">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                             </span>
-                            <span class="font-medium">Pamong / Admin</span>
+                            <span class="font-medium">Pamong dan Guru</span>
                         </a>
                     </div>
                 @endif
@@ -516,7 +516,7 @@
                         @else
                             <li><a href="{{ route('ortu.login') }}" class="text-gray-400 hover:text-white transition-colors">Login Orang Tua</a></li>
                             <li><a href="{{ route('siswa.login') }}" class="text-gray-400 hover:text-white transition-colors">Login Siswa</a></li>
-                            <li><a href="{{ route('login') }}" class="text-gray-400 hover:text-white transition-colors">Login Pamong</a></li>
+                            <li><a href="{{ route('login') }}" class="text-gray-400 hover:text-white transition-colors">Login Pamong atau Guru</a></li>
                         @endif
                     </ul>
                 </div>

@@ -335,6 +335,29 @@ Route::prefix('ortu')->name('ortu.')->group(function () {
     });
 });
 
+Route::get('/guru/manifest.json', function () {
+    return response()->json([
+        'name' => 'Portal Guru PKG Panunggangan',
+        'short_name' => 'Guru PKG',
+        'description' => 'Jadwal dan materi Guru PKG Panunggangan',
+        'id' => '/guru',
+        'start_url' => '/guru',
+        'scope' => '/',
+        'display' => 'standalone',
+        'background_color' => '#f8fafc',
+        'theme_color' => '#047857',
+        'orientation' => 'portrait-primary',
+        'lang' => 'id',
+        'icons' => [
+            ['src' => '/images/icons/pkg-logo-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => '/images/icons/pkg-logo-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => '/images/icons/pkg-logo-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'maskable'],
+            ['src' => '/images/icons/pkg-logo-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+        ],
+        'categories' => ['education', 'productivity'],
+    ], 200, ['Content-Type' => 'application/manifest+json']);
+})->name('guru.manifest');
+
 Route::middleware('auth')->group(function () {
     Route::post('/push-subscriptions', [PushSubscriptionController::class, 'storeWeb'])
         ->name('pwa.push-subscriptions.store');
@@ -342,6 +365,26 @@ Route::middleware('auth')->group(function () {
         ->name('pwa.push-subscriptions.destroy');
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    Route::prefix('guru')->name('guru.')->middleware('guru.profile')->group(function () {
+        Route::get('/password-awal', [App\Http\Controllers\TeacherPortalController::class, 'initialPassword'])->name('password.initial');
+        Route::put('/password-awal', [App\Http\Controllers\TeacherPortalController::class, 'updateInitialPassword'])->name('password.initial.update');
+
+        Route::middleware('guru.password')->group(function () {
+            Route::get('/', [App\Http\Controllers\TeacherPortalController::class, 'dashboard'])->name('dashboard');
+            Route::get('/jadwal', [App\Http\Controllers\TeacherPortalController::class, 'schedule'])->name('schedule');
+            Route::get('/jadwal/{assignment}', [App\Http\Controllers\TeacherPortalController::class, 'scheduleShow'])->name('schedule.show');
+            Route::get('/materi', [App\Http\Controllers\TeacherPortalController::class, 'materials'])->name('materials');
+            Route::get('/profil', [App\Http\Controllers\TeacherPortalController::class, 'profile'])->name('profile');
+            Route::put('/profil', [App\Http\Controllers\TeacherPortalController::class, 'updateProfile'])->name('profile.update');
+            Route::put('/kesediaan', [App\Http\Controllers\TeacherPortalController::class, 'updateAvailability'])->name('availability.update');
+            Route::put('/tema', [App\Http\Controllers\TeacherPortalController::class, 'updateTheme'])->name('theme.update');
+            Route::get('/ubah-password', [App\Http\Controllers\TeacherPortalController::class, 'password'])->name('password.edit');
+            Route::put('/ubah-password', [App\Http\Controllers\TeacherPortalController::class, 'updatePassword'])->name('password.update');
+            Route::get('/surat-kesediaan', [App\Http\Controllers\TeacherPortalController::class, 'statement'])->name('statement');
+            Route::get('/kartu-id', [App\Http\Controllers\TeacherPortalController::class, 'idCard'])->name('id-card');
+        });
+    });
 
     // WebAuthn biometric routes (admin/pamong)
     Route::get('/webauthn/register-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'registerOptions'])->name('webauthn.register-options');
@@ -372,12 +415,15 @@ Route::middleware('auth')->group(function () {
     Route::put('/pendataan-guru/akses', [App\Http\Controllers\TeacherPlanningController::class, 'updateInvite'])->name('teacher-planning.invite.update');
     Route::put('/pendataan-guru/pesan-selesai', [App\Http\Controllers\TeacherPlanningController::class, 'updateSuccessMessage'])->name('teacher-planning.success-message.update');
     Route::put('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'updateProfile'])->name('teacher-planning.profiles.update');
+    Route::post('/pendataan-guru/profil/{teacherProfile}/akun', [App\Http\Controllers\TeacherPlanningController::class, 'createAccount'])->name('teacher-planning.profiles.account.store');
+    Route::post('/pendataan-guru/profil/{teacherProfile}/akun/reset-password', [App\Http\Controllers\TeacherPlanningController::class, 'resetAccountPassword'])->name('teacher-planning.profiles.account.reset');
     Route::delete('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'destroyProfile'])->name('teacher-planning.profiles.destroy');
     Route::get('/pendataan-guru/profil/{teacherProfile}/surat', [App\Http\Controllers\TeacherPlanningController::class, 'statementPreview'])->name('teacher-planning.profiles.statement.preview');
     Route::get('/pendataan-guru/profil/{teacherProfile}/surat/unduh', [App\Http\Controllers\TeacherPlanningController::class, 'statementDownload'])->name('teacher-planning.profiles.statement.download');
     Route::post('/pendataan-guru/template', [App\Http\Controllers\TeacherPlanningController::class, 'storeTemplate'])->name('teacher-planning.templates.store');
     Route::patch('/pendataan-guru/template/{teacherScheduleTemplate}/toggle', [App\Http\Controllers\TeacherPlanningController::class, 'toggleTemplate'])->name('teacher-planning.templates.toggle');
     Route::post('/pendataan-guru/jadwal/generate', [App\Http\Controllers\TeacherPlanningController::class, 'generate'])->name('teacher-planning.generate');
+    Route::put('/pendataan-guru/sesi/{teacherScheduleSession}/materi', [App\Http\Controllers\TeacherPlanningController::class, 'syncSessionMaterials'])->name('teacher-planning.sessions.materials.sync');
     Route::put('/pendataan-guru/sesi/{teacherScheduleSession}/{role}', [App\Http\Controllers\TeacherPlanningController::class, 'assign'])->name('teacher-planning.sessions.assign');
     Route::patch('/pendataan-guru/sesi/{teacherScheduleSession}/swap', [App\Http\Controllers\TeacherPlanningController::class, 'swap'])->name('teacher-planning.sessions.swap');
     Route::patch('/pendataan-guru/periode/{teacherSchedulePeriod}/publish', [App\Http\Controllers\TeacherPlanningController::class, 'publish'])->name('teacher-planning.periods.publish');
@@ -387,6 +433,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/excel', [App\Http\Controllers\TeacherPlanningController::class, 'exportExcel'])->name('teacher-planning.export.excel');
     Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/pdf', [App\Http\Controllers\TeacherPlanningController::class, 'exportPdf'])->name('teacher-planning.export.pdf');
     Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/gambar', [App\Http\Controllers\TeacherPlanningController::class, 'exportImage'])->name('teacher-planning.export.image');
+    Route::get('/pendataan-guru/materi', [App\Http\Controllers\TeacherMaterialController::class, 'index'])->name('teacher-materials.index');
+    Route::post('/pendataan-guru/materi', [App\Http\Controllers\TeacherMaterialController::class, 'store'])->name('teacher-materials.store');
+    Route::put('/pendataan-guru/materi/{teacherMaterial}', [App\Http\Controllers\TeacherMaterialController::class, 'update'])->name('teacher-materials.update');
+    Route::delete('/pendataan-guru/materi/{teacherMaterial}', [App\Http\Controllers\TeacherMaterialController::class, 'destroy'])->name('teacher-materials.destroy');
 
     // Student management - Import/Export (harus sebelum resource agar tidak bentrok)
     Route::get('/siswa/template-import', [SiswaController::class, 'downloadTemplate'])->name('siswa.import.template');

@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Siswa;
 use App\Models\User;
 use App\Services\TaskPwaNotificationService;
+use App\Services\TeacherSchedulePwaNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PushSubscriptionController extends Controller
 {
-    public function __construct(private readonly TaskPwaNotificationService $taskNotifications) {}
+    public function __construct(
+        private readonly TaskPwaNotificationService $taskNotifications,
+        private readonly TeacherSchedulePwaNotificationService $teacherNotifications,
+    ) {}
 
     public function storeWeb(Request $request): JsonResponse
     {
@@ -75,8 +79,12 @@ class PushSubscriptionController extends Controller
 
     private function badgeCount(User|Siswa $notifiable): int
     {
-        return $notifiable instanceof Siswa
-            ? $this->taskNotifications->pendingStudentTaskCount($notifiable)
+        if ($notifiable instanceof Siswa) {
+            return $this->taskNotifications->pendingStudentTaskCount($notifiable);
+        }
+
+        return $notifiable->teacherProfile
+            ? $this->teacherNotifications->upcomingCount($notifiable)
             : $this->taskNotifications->pendingVerificationCount($notifiable);
     }
 }

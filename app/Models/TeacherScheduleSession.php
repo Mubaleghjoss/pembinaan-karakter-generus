@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class TeacherScheduleSession extends Model
 {
@@ -23,6 +24,16 @@ class TeacherScheduleSession extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(TeacherScheduleAssignment::class, 'session_id');
+    }
+
+    public function materials(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            TeacherMaterial::class,
+            'teacher_material_session',
+            'teacher_schedule_session_id',
+            'teacher_material_id'
+        )->withTimestamps();
     }
 
     public function mainAssignment(): ?TeacherScheduleAssignment

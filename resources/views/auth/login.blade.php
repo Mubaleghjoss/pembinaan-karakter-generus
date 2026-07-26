@@ -1,10 +1,10 @@
 @extends('layouts.auth')
 
-@section('title', 'Login Pamong - ' . ($siteSettings['site_title'] ?? 'PKG Presensi'))
+@section('title', 'Login Pamong atau Guru - ' . ($siteSettings['site_title'] ?? 'PKG Presensi'))
 @section('auth_accent', '#0f766e')
 @section('auth_accent_secondary', '#0369a1')
-@section('auth_card_title', 'Login Pamong')
-@section('auth_card_copy', 'Gunakan username, nomor HP, atau email yang terdaftar untuk masuk ke dashboard.')
+@section('auth_card_title', 'Login Pamong atau Guru')
+@section('auth_card_copy', 'Masuk dengan akun Admin, Pamong, atau Guru menggunakan username, nomor HP, atau email terdaftar.')
 @section('auth_public_navigation', 'true')
 
 @section('content')

@@ -15,6 +15,7 @@ use App\Models\ThemeSetting;
 use App\Models\TeacherScheduleAssignment;
 use App\Models\TeacherSchedulePeriod;
 use App\Models\TeacherScheduleSession;
+use App\Models\TeacherProfile;
 use App\Models\TracerKarakter;
 use App\Services\MateriRppJournalWorkflowService;
 use Carbon\Carbon;
@@ -529,7 +530,8 @@ class CalendarController extends Controller
         }
 
         $query = TeacherScheduleSession::query()
-            ->whereBetween('session_date', [$start->toDateString(), $end->toDateString()])
+            ->whereDate('session_date', '>=', $start->toDateString())
+            ->whereDate('session_date', '<=', $end->toDateString())
             ->where('status', 'scheduled')
             ->whereHas('period', fn ($period) => $period->where('status', 'published'))
             ->with(['assignments.teacher']);
@@ -1056,9 +1058,17 @@ class CalendarController extends Controller
 
         return implode(':', [
             TeacherSchedulePeriod::count(),
+            TeacherSchedulePeriod::max('id') ?: 0,
             TeacherSchedulePeriod::max('updated_at') ?: 'no-periods',
+            TeacherScheduleSession::count(),
+            TeacherScheduleSession::max('id') ?: 0,
             TeacherScheduleSession::max('updated_at') ?: 'no-sessions',
+            TeacherScheduleAssignment::count(),
+            TeacherScheduleAssignment::max('id') ?: 0,
             TeacherScheduleAssignment::max('updated_at') ?: 'no-assignments',
+            TeacherProfile::count(),
+            TeacherProfile::max('id') ?: 0,
+            TeacherProfile::max('updated_at') ?: 'no-teachers',
         ]);
     }
 }

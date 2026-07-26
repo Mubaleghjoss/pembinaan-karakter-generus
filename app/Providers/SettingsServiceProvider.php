@@ -63,7 +63,12 @@ class SettingsServiceProvider extends ServiceProvider
                 $siswaSidebarPendingJournalCount = 0;
                 $ortuSidebarPendingTaskCount = 0;
                 $ortuSidebarUnreadChatCount = 0;
+                $teacherPortalAvailable = false;
                 $user = Auth::user();
+                if ($user) {
+                    $user->loadMissing('teacherProfile:id,user_id');
+                    $teacherPortalAvailable = $user->teacherProfile !== null;
+                }
                 if ($user && $user->hasPamongMenuAccess('tracer_karakter')) {
                     $pendingPkgVerificationCount = app(TaskPwaNotificationService::class)
                         ->pendingVerificationCount($user);
@@ -173,6 +178,7 @@ class SettingsServiceProvider extends ServiceProvider
                 $view->with('siswaSidebarPendingJournalCount', $siswaSidebarPendingJournalCount);
                 $view->with('ortuSidebarPendingTaskCount', $ortuSidebarPendingTaskCount);
                 $view->with('ortuSidebarUnreadChatCount', $ortuSidebarUnreadChatCount);
+                $view->with('teacherPortalAvailable', $teacherPortalAvailable);
             } catch (\Exception $e) {
                 // If settings table doesn't exist yet, use defaults
                 $view->with('siteSettings', [
@@ -198,6 +204,7 @@ class SettingsServiceProvider extends ServiceProvider
                 $view->with('siswaSidebarPendingJournalCount', 0);
                 $view->with('ortuSidebarPendingTaskCount', 0);
                 $view->with('ortuSidebarUnreadChatCount', 0);
+                $view->with('teacherPortalAvailable', false);
             }
         });
     }

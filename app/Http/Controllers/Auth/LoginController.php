@@ -149,6 +149,9 @@ class LoginController extends Controller
     protected function sendLoginResponse(Request $request)
     {
         $user = Auth::user();
+        $redirectRoute = $user->isGuru()
+            ? ($user->must_change_password ? 'guru.password.initial' : 'guru.dashboard')
+            : 'dashboard';
 
         if ($request->expectsJson()) {
             $token = $user->createToken('auth_token')->plainTextToken;
@@ -157,11 +160,15 @@ class LoginController extends Controller
                 'message' => 'Login berhasil',
                 'user' => $user->load('role'),
                 'token' => $token,
-                'redirect_url' => route('dashboard'),
+                'redirect_url' => route($redirectRoute),
             ]);
         }
 
-        return redirect()->intended(route('dashboard'));
+        if ($user->isGuru()) {
+            return redirect()->route($redirectRoute);
+        }
+
+        return redirect()->intended(route($redirectRoute));
     }
 
     /**

@@ -23,6 +23,8 @@ class User extends Authenticatable
 
     public const ROLE_TEACHER = 'teacher';
 
+    public const ROLE_GURU = 'guru';
+
     public const ROLE_PKG_MANAGER = 'pkg_manager';
 
     /**
@@ -38,6 +40,8 @@ class User extends Authenticatable
         'kelompok',
         'profile_assignment_confirmed_at',
         'password',
+        'must_change_password',
+        'password_changed_at',
         'role_id',
         'organizational_team_id',
         'organizational_title',
@@ -86,6 +90,8 @@ class User extends Authenticatable
         'qr_token_generated_at' => 'datetime',
         'profile_assignment_confirmed_at' => 'datetime',
         'password' => 'hashed',
+        'must_change_password' => 'boolean',
+        'password_changed_at' => 'datetime',
     ];
 
     /**
@@ -107,6 +113,11 @@ class User extends Authenticatable
     public function pamong(): HasOne
     {
         return $this->hasOne(Pamong::class);
+    }
+
+    public function teacherProfile(): HasOne
+    {
+        return $this->hasOne(TeacherProfile::class);
     }
 
     /**
@@ -240,6 +251,11 @@ class User extends Authenticatable
         return $this->hasRole(self::ROLE_TEACHER);
     }
 
+    public function isGuru(): bool
+    {
+        return $this->hasRole(self::ROLE_GURU);
+    }
+
     public function isPengurusPkg(): bool
     {
         return $this->hasRole(self::ROLE_PKG_MANAGER);
@@ -251,6 +267,10 @@ class User extends Authenticatable
 
         if ($roleName === self::ROLE_TEACHER) {
             return 'Pamong';
+        }
+
+        if ($roleName === self::ROLE_GURU) {
+            return 'Guru';
         }
 
         if ($this->role?->display_name) {
@@ -291,6 +311,7 @@ class User extends Authenticatable
             self::ROLE_ADMIN,
             self::ROLE_TEACHER,
             self::ROLE_PKG_MANAGER,
+            self::ROLE_GURU,
         ];
     }
 
@@ -474,6 +495,10 @@ class User extends Authenticatable
         if ($this->isAdmin()) {
             return true;
         }
+
+        if ($this->isGuru()) {
+            return false;
+        }
         
         // Roles outside scoped operational access don't use this permission system
         if (! $this->usesPamongPermissionSystem()) {
@@ -498,6 +523,10 @@ class User extends Authenticatable
         // Admin always has full access
         if ($this->isAdmin()) {
             return true;
+        }
+
+        if ($this->isGuru()) {
+            return false;
         }
 
         // Roles outside scoped operational access don't use this permission system

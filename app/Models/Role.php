@@ -43,9 +43,10 @@ class Role extends Model
 
     public function getDisplayNameAttribute($value): ?string
     {
+        $roleName = $this->attributes['name'] ?? null;
         if (
-            ($this->attributes['name'] ?? null) === User::ROLE_TEACHER
-            || in_array($value, ['Guru', 'Guru/Pamong'], true)
+            $roleName === User::ROLE_TEACHER
+            || ($roleName !== User::ROLE_GURU && in_array($value, ['Guru', 'Guru/Pamong'], true))
         ) {
             return 'Pamong';
         }
