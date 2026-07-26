@@ -1252,6 +1252,30 @@ html.reveal-ready [data-reveal].is-visible {
     border-radius: 0.75rem;
 }
 
+.pkg-task-tabs {
+    scrollbar-width: none;
+    scroll-padding-inline: 1rem;
+}
+
+.pkg-task-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.pkg-task-evidence[open] summary svg {
+    transform: rotate(180deg);
+}
+
+.pkg-task-evidence summary::-webkit-details-marker {
+    display: none;
+}
+
+@media (max-width: 1023px) {
+    .pkg-task-tabs.sticky {
+        position: relative;
+        top: auto;
+    }
+}
+
 .pkg-student-task-header-actions {
     display: grid;
     width: 100%;

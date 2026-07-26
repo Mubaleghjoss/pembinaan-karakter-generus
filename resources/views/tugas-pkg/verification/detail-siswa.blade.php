@@ -111,16 +111,16 @@
 
         <!-- Tab Navigation -->
         <div class="mb-4 border-b border-gray-200 dark:border-gray-700" x-data="{ activeTab: '{{ ($trashedRecords->count() > 0 && request('tab') === 'deleted') ? 'deleted' : 'active' }}' }">
-            <nav class="flex gap-4" aria-label="Tabs">
+            <nav class="pkg-task-tabs flex gap-4 overflow-x-auto" aria-label="Tabs">
                 <button @click="activeTab = 'active'" 
                     :class="activeTab === 'active' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                    class="py-3 px-1 border-b-2 font-medium text-sm transition-colors">
+                    class="shrink-0 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors">
                     Data Aktif ({{ $summary['total'] }})
                 </button>
                 @if($trashedRecords->count() > 0)
                 <button @click="activeTab = 'deleted'" 
                     :class="activeTab === 'deleted' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                    class="py-3 px-1 border-b-2 font-medium text-sm transition-colors">
+                    class="shrink-0 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors">
                     Data Terhapus ({{ $trashedRecords->count() }})
                 </button>
                 @endif
@@ -129,7 +129,7 @@
             <!-- Active Records Tab -->
             <div x-show="activeTab === 'active'" x-cloak>
                 <div class="pkg-panel overflow-hidden mt-4">
-                    <div class="overflow-x-auto">
+                    <div class="pkg-mobile-table overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
@@ -152,10 +152,10 @@
                                     $missingRequiredProof = $requiresProof && ! $record->has_proof;
                                 @endphp
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                    <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                    <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400" data-label="No">
                                         {{ $records->firstItem() + $index }}
                                     </td>
-                                    <td class="px-4 py-4 whitespace-nowrap">
+                                    <td class="px-4 py-4 whitespace-nowrap" data-label="Tanggal">
                                         <p class="text-sm font-medium text-gray-900 dark:text-white">
                                             {{ $record->checked_at ? $record->checked_at->isoFormat('D MMM YYYY') : '-' }}
                                         </p>
@@ -164,14 +164,14 @@
                                         </p>
                                     </td>
                                     @if(!$selectedKarakter)
-                                    <td class="px-4 py-4">
+                                    <td class="pkg-mobile-main px-4 py-4" data-label="Tugas">
                                         <p class="text-sm font-medium text-gray-800 dark:text-white">{{ $record->karakter->nama ?? '-' }}</p>
                                         <span class="pkg-status-badge {{ ($record->karakter->kategori ?? '') === 'harian' ? 'pkg-status-info' : (($record->karakter->kategori ?? '') === 'mingguan' ? 'pkg-status-neutral' : 'pkg-status-warning') }}">
                                             {{ $record->karakter->kategori_label ?? '-' }}
                                         </span>
                                     </td>
                                     @endif
-                                    <td class="px-4 py-4">
+                                    <td class="px-4 py-4" data-label="Bukti dan catatan">
                                         {{-- Catatan Siswa --}}
                                         @if($record->student_note)
                                         <div class="text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 max-w-xs mb-1.5">
@@ -269,7 +269,7 @@
                                         @endforeach
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4 text-center">
+                                    <td class="px-4 py-4 text-center" data-label="Status">
                                         @if($record->verified_at)
                                         <span class="pkg-status-badge pkg-status-success">
                                             Terverifikasi
@@ -283,7 +283,7 @@
                                         </span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4">
+                                    <td class="px-4 py-4" data-label="Verifikator">
                                         @if($record->verifier)
                                         <p class="text-sm text-gray-800 dark:text-white">{{ $record->verifier->username ?? $record->verifier->name ?? '-' }}</p>
                                         @else
@@ -293,7 +293,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="{{ $selectedKarakter ? 5 : 6 }}" class="px-6 py-12 text-center">
+                                    <td colspan="{{ $selectedKarakter ? 5 : 6 }}" class="pkg-mobile-empty px-6 py-12 text-center">
                                         <div class="text-gray-400 dark:text-gray-500">
                                             <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -329,7 +329,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="pkg-mobile-table overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
@@ -350,8 +350,8 @@
                                     $trashedMissingRequiredProof = $trashedRequiresProof && ! $trashed->has_proof;
                                 @endphp
                                 <tr class="hover:bg-red-50/50 dark:hover:bg-red-900/10">
-                                    <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $index + 1 }}</td>
-                                    <td class="px-4 py-4 whitespace-nowrap">
+                                    <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400" data-label="No">{{ $index + 1 }}</td>
+                                    <td class="px-4 py-4 whitespace-nowrap" data-label="Tanggal">
                                         <p class="text-sm font-medium text-gray-900 dark:text-white">
                                             {{ $trashed->checked_at ? $trashed->checked_at->isoFormat('D MMM YYYY') : '-' }}
                                         </p>
@@ -359,7 +359,7 @@
                                             {{ $trashed->checked_at ? $trashed->checked_at->format('H:i') : '' }}
                                         </p>
                                     </td>
-                                    <td class="px-4 py-4">
+                                    <td class="pkg-mobile-main px-4 py-4" data-label="Tugas">
                                         <p class="text-sm font-medium text-gray-800 dark:text-white">{{ $trashed->karakter->nama ?? '-' }}</p>
                                         @if($trashed->student_note)
                                         <p class="text-xs text-blue-600 dark:text-blue-400 italic mt-0.5">Catatan: {{ Str::limit($trashed->student_note, 80) }}</p>
@@ -419,7 +419,7 @@
                                         <span class="mt-2 block text-xs text-gray-500 dark:text-gray-400">Bonus +{{ $trashed->proof_bonus_points }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4">
+                                    <td class="px-4 py-4" data-label="Status awal">
                                         @if($trashed->verified_at)
                                         <span class="pkg-status-badge pkg-status-success">
                                             Terverifikasi
@@ -431,7 +431,7 @@
                                         </span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4">
+                                    <td class="px-4 py-4" data-label="Dihapus">
                                         <p class="text-xs text-red-600 dark:text-red-400 font-medium">
                                             {{ $trashed->deleted_at ? $trashed->deleted_at->isoFormat('D MMM YYYY HH:mm') : '-' }}
                                         </p>
@@ -444,7 +444,7 @@
                                         </p>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4 text-center">
+                                    <td class="pkg-mobile-actions px-4 py-4 text-center" data-label="Aksi">
                                         <form action="{{ route('tugas-pkg.verification.restore', $trashed->id) }}" method="POST"
                                               data-confirm="Pulihkan data ini? {{ $trashed->isVerified() ? 'Poin akan dikembalikan ke siswa.' : '' }}"
                                               data-confirm-title="Pulihkan data karakter"

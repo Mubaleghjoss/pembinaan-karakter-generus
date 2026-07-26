@@ -179,7 +179,7 @@ class MobileUxRegressionTest extends TestCase
         $analyticsPosition = strpos($source, 'Analitik Keaktifan Pamong');
 
         $this->assertStringContainsString('sticky top-0 z-30', $navigation);
-        $this->assertStringContainsString('flex min-w-max flex-nowrap gap-3', $navigation);
+        $this->assertStringContainsString('flex min-w-max flex-nowrap gap-2 sm:gap-3', $navigation);
         $this->assertStringContainsString('role="tablist"', $navigation);
         $this->assertStringContainsString("'pkg-tab-link pkg-tab-link-active'", $navigation);
         $this->assertStringNotContainsString('pkg-filter-bar mb-6 flex flex-nowrap', $source);
@@ -196,5 +196,17 @@ class MobileUxRegressionTest extends TestCase
         $this->assertNotFalse($filterClosePosition);
         $this->assertNotFalse($checklistPosition);
         $this->assertLessThan($checklistPosition, $filterClosePosition);
+        $this->assertStringContainsString('grid grid-cols-3 gap-2', $verificationTab);
+        $this->assertStringContainsString('Pilih semua kiriman di halaman ini', $verificationTab);
+
+        $mobileCard = file_get_contents(dirname(__DIR__, 2).'/resources/views/tugas-pkg/verification/partials/mobile-checklist-card.blade.php');
+        $this->assertStringContainsString('Lihat jawaban dan bukti', $mobileCard);
+        $this->assertStringContainsString('grid grid-cols-2 gap-2', $mobileCard);
+
+        foreach (['rekap', 'history', 'detail-siswa'] as $view) {
+            $relatedView = file_get_contents(dirname(__DIR__, 2)."/resources/views/tugas-pkg/verification/{$view}.blade.php");
+            $this->assertStringContainsString('pkg-mobile-table overflow-x-auto', $relatedView);
+            $this->assertStringContainsString('data-label=', $relatedView);
+        }
     }
 }

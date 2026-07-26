@@ -6,6 +6,13 @@
     $proofMeta = 'Diunggah: ' . ($checklist->checked_at?->isoFormat('D MMM YYYY HH:mm') ?? '-');
     $proofUnavailable = $checklist->proof_media_unavailable;
     $voiceUnavailable = $checklist->voice_note_media_unavailable;
+    $ortuComments = $checklist->ortuComments ?? collect();
+    $hasEvidenceDetails = $checklist->student_note
+        || $checklist->hasil_teks
+        || $checklist->has_photo_proof
+        || $checklist->has_voice_note
+        || ($checklist->click_history && is_array($checklist->click_history))
+        || $ortuComments->isNotEmpty();
 @endphp
 
 <article class="pkg-card-soft border border-slate-200 p-4 dark:border-slate-700">
@@ -65,19 +72,28 @@
                 @endif
             </div>
 
-            @if($checklist->student_note)
+            @if($hasEvidenceDetails)
+            <details class="pkg-task-evidence overflow-hidden rounded-xl border border-slate-200 bg-white/70 dark:border-slate-700 dark:bg-slate-950/20">
+                <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    <span>Lihat jawaban dan bukti</span>
+                    <svg class="h-4 w-4 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/>
+                    </svg>
+                </summary>
+                <div class="space-y-3 border-t border-slate-200 p-3 dark:border-slate-700">
+                @if($checklist->student_note)
                 <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
                     <span class="font-semibold">Catatan:</span> {{ Str::limit($checklist->student_note, 140) }}
                 </div>
-            @endif
+                @endif
 
-            @if($checklist->hasil_teks)
+                @if($checklist->hasil_teks)
                 <div class="rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs leading-5 text-purple-800 dark:border-purple-700 dark:bg-purple-900/30 dark:text-purple-200">
                     <span class="font-semibold">Jawaban:</span> {{ Str::limit($checklist->hasil_teks, 180) }}
                 </div>
-            @endif
+                @endif
 
-            @if($checklist->has_photo_proof && $checklist->proof_media_available)
+                @if($checklist->has_photo_proof && $checklist->proof_media_available)
                 <div class="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
                     <a href="{{ $checklist->proof_url }}" target="_blank" rel="noopener" data-preview-src="{{ $checklist->proof_url }}" data-preview-alt="Bukti foto {{ $checklist->karakter->nama }}" data-preview-title="Bukti foto - {{ $checklist->siswa->nama }}" data-preview-filename="{{ basename($checklist->proof_path ?? 'bukti-foto.jpg') }}" data-preview-meta="{{ $proofMeta }}" onclick="return window.openImagePreviewFromLink ? window.openImagePreviewFromLink(this) : true;" class="block h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-blue-200 bg-white dark:border-blue-800 dark:bg-slate-900">
                         <img src="{{ $checklist->proof_url }}" alt="Bukti foto {{ $checklist->karakter->nama }}" loading="lazy" class="h-full w-full object-cover">
@@ -89,14 +105,14 @@
                         <p class="mt-1 text-xs text-blue-700/80 dark:text-blue-300/80">{{ $checklist->proof_compressed_size_kb ?? 0 }} KB</p>
                     </div>
                 </div>
-            @elseif($proofUnavailable)
+                @elseif($proofUnavailable)
                 <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
                     File bukti foto tidak tersedia di storage server.
                     <span class="break-all font-mono">{{ $checklist->proof_path }}</span>
                 </div>
-            @endif
+                @endif
 
-            @if($checklist->has_voice_note && $checklist->voice_note_media_available)
+                @if($checklist->has_voice_note && $checklist->voice_note_media_available)
                 <div class="rounded-lg border border-violet-200 bg-violet-50 p-3 dark:border-violet-800 dark:bg-violet-900/20">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <p class="text-xs font-semibold text-violet-700 dark:text-violet-300">Voice note bukti</p>
@@ -111,14 +127,14 @@
                         <source src="{{ $checklist->voice_note_url }}" type="{{ $checklist->voice_note_mime_type }}">
                     </audio>
                 </div>
-            @elseif($voiceUnavailable)
+                @elseif($voiceUnavailable)
                 <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
                     File voice note tidak tersedia di storage server.
                     <span class="break-all font-mono">{{ $checklist->voice_note_path }}</span>
                 </div>
-            @endif
+                @endif
 
-            @if($checklist->click_history && is_array($checklist->click_history))
+                @if($checklist->click_history && is_array($checklist->click_history))
                 @php
                     $histArray = $checklist->click_history;
                     $lastHist = end($histArray);
@@ -127,10 +143,9 @@
                     <span class="font-semibold">Zikir:</span> {{ $lastHist['count'] ?? 0 }} klik tercatat
                     <button type="button" onclick="openZikrHistoryModal('{{ addslashes(json_encode($checklist->click_history)) }}')" class="ml-1 font-semibold underline underline-offset-2">Detail</button>
                 </div>
-            @endif
+                @endif
 
-            @php $ortuComments = $checklist->ortuComments ?? collect(); @endphp
-            @if($ortuComments->count() > 0)
+                @if($ortuComments->count() > 0)
                 <div class="space-y-1">
                     @foreach($ortuComments as $oc)
                         <div class="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs leading-5 text-teal-800 dark:border-teal-700 dark:bg-teal-900/30 dark:text-teal-200">
@@ -139,22 +154,25 @@
                         </div>
                     @endforeach
                 </div>
+                @endif
+                </div>
+            </details>
             @endif
 
-            <div class="grid grid-cols-1 gap-2">
-                <a href="{{ route('pamong.chat.index', ['tab' => 'pribadi', 'siswa_id' => $checklist->siswa->id]) }}" class="pkg-btn-secondary justify-center px-3 py-2 text-sm">
-                    Chat siswa
-                </a>
-
+            <div class="grid grid-cols-2 gap-2">
                 @if(!$checklist->isVerified())
-                    <button type="button" onclick="openVerifyModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}')" class="btn-success justify-center px-3 py-2 text-sm">
+                    <button type="button" onclick="openVerifyModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}')" class="btn-success col-span-2 justify-center px-3 py-2 text-sm">
                         Verifikasi
                     </button>
                 @else
-                    <button type="button" onclick="openUnverifyModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}', {{ $checklist->awarded_points ?? ($checklist->karakter->poin ?? 10) }})" class="pkg-btn-secondary justify-center px-3 py-2 text-sm">
+                    <button type="button" onclick="openUnverifyModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}', {{ $checklist->awarded_points ?? ($checklist->karakter->poin ?? 10) }})" class="pkg-btn-secondary col-span-2 justify-center px-3 py-2 text-sm">
                         Batal verifikasi
                     </button>
                 @endif
+
+                <a href="{{ route('pamong.chat.index', ['tab' => 'pribadi', 'siswa_id' => $checklist->siswa->id]) }}" class="pkg-btn-secondary justify-center px-3 py-2 text-sm">
+                    Chat siswa
+                </a>
 
                 <button type="button" onclick="openDeleteModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}', {{ $checklist->isVerified() ? 'true' : 'false' }}, {{ $checklist->awarded_points ?? ($checklist->karakter->poin ?? 10) }})" class="btn-danger justify-center px-3 py-2 text-sm">
                     Tolak verifikasi

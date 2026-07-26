@@ -496,13 +496,19 @@ class TracerKarakterController extends Controller
                 })
                 ->sortByDesc('percentage')
                 ->values();
+            $rekapSummary = [
+                'total_siswa' => $rekapData->count(),
+                'average_percentage' => $rekapData->isNotEmpty()
+                    ? round((float) $rekapData->avg('percentage'), 1)
+                    : 0,
+            ];
 
             $kelasOptions = Kelas::where('is_active', true)->get();
             $pamongOptions = ! $user->isTeacher()
                 ? \App\Models\User::whereHas('role', fn($q) => $q->whereIn('name', User::operationalRoleNames()))->get()
                 : collect();
 
-            return compact('rekapData', 'kelasOptions', 'pamongOptions', 'totalKarakter');
+            return compact('rekapData', 'rekapSummary', 'kelasOptions', 'pamongOptions', 'totalKarakter');
         });
 
         return view('tugas-pkg.verification.rekap', $payload);

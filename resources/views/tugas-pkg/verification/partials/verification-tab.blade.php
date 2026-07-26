@@ -2,45 +2,45 @@
 <div x-show="activeTab === 'verification'" x-cloak x-data="verificationManager()">
     <!-- Stats -->
     @if(isset($stats))
-    <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-3">
-        <div class="pkg-card-soft rounded-2xl p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-blue-100 dark:bg-blue-900/30 rounded-lg p-3">
-                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="grid grid-cols-3 gap-2 mb-6 sm:gap-4">
+        <div class="pkg-card-soft rounded-xl p-3 sm:rounded-2xl sm:p-5">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 sm:h-12 sm:w-12">
+                    <svg class="h-5 w-5 text-blue-600 dark:text-blue-400 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm text-gray-500 dark:text-gray-300">Total</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total'] }}</p>
+                <div class="min-w-0 sm:ml-4">
+                    <p class="truncate text-[11px] text-gray-500 dark:text-gray-300 sm:text-sm">Total</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">{{ $stats['total'] }}</p>
                 </div>
             </div>
         </div>
         
-        <div class="pkg-card-soft rounded-2xl p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
-                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="pkg-card-soft rounded-xl p-3 sm:rounded-2xl sm:p-5">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30 sm:h-12 sm:w-12">
+                    <svg class="h-5 w-5 text-green-600 dark:text-green-400 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm text-gray-500 dark:text-gray-300">Terverifikasi</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['verified'] }}</p>
+                <div class="min-w-0 sm:ml-4">
+                    <p class="truncate text-[11px] text-gray-500 dark:text-gray-300 sm:text-sm">Selesai</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">{{ $stats['verified'] }}</p>
                 </div>
             </div>
         </div>
         
-        <div class="pkg-card-soft rounded-2xl p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg p-3">
-                    <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="pkg-card-soft rounded-xl p-3 sm:rounded-2xl sm:p-5">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-yellow-100 dark:bg-yellow-900/30 sm:h-12 sm:w-12">
+                    <svg class="h-5 w-5 text-yellow-600 dark:text-yellow-400 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm text-gray-500 dark:text-gray-300">Menunggu</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['unverified'] }}</p>
+                <div class="min-w-0 sm:ml-4">
+                    <p class="truncate text-[11px] text-gray-500 dark:text-gray-300 sm:text-sm">Menunggu</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">{{ $stats['unverified'] }}</p>
                 </div>
             </div>
         </div>
@@ -49,11 +49,11 @@
 
     <!-- Filters -->
     <x-collapsible-section title="Filter verifikasi" description="Saring tugas berdasarkan status, siswa, bukti, dan tanggal." :open="request()->filled('siswa_id') || request()->filled('karakter_id') || request()->filled('proof_status') || request()->filled('date_from') || request()->filled('date_to') || request('status', 'unverified') !== 'unverified'" :compact="true" class="mb-6">
-        <form id="filterForm" method="GET" action="{{ route('tugas-pkg.verification') }}" class="pkg-filter-grid grid-cols-1 md:grid-cols-6 gap-4">
+        <form id="filterForm" method="GET" action="{{ route('tugas-pkg.verification') }}" class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6">
             <input type="hidden" name="tab" value="verification">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Status</label>
-                <select name="status" onchange="this.form.submit()" class="w-full px-3 py-2 pkg-field">
+                <select name="status" class="w-full px-3 py-2 pkg-field">
                     <option value="all" {{ request('status') === 'all' ? 'selected' : '' }}>Semua</option>
                     <option value="unverified" {{ request('status', 'unverified') === 'unverified' ? 'selected' : '' }}>Menunggu</option>
                     <option value="verified" {{ request('status') === 'verified' ? 'selected' : '' }}>Terverifikasi</option>
@@ -62,7 +62,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Siswa</label>
-                <select name="siswa_id" onchange="this.form.submit()" class="w-full px-3 py-2 pkg-field">
+                <select name="siswa_id" class="w-full px-3 py-2 pkg-field">
                     <option value="">Semua Siswa</option>
                     @if(isset($siswaOptions))
                         @foreach($siswaOptions as $siswa)
@@ -74,7 +74,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Tugas PKG</label>
-                <select name="karakter_id" onchange="this.form.submit()" class="w-full px-3 py-2 pkg-field">
+                <select name="karakter_id" class="w-full px-3 py-2 pkg-field">
                     <option value="">Semua Tugas</option>
                     @if(isset($karakterOptions))
                         @foreach($karakterOptions as $karakter)
@@ -86,7 +86,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Status Bukti</label>
-                <select name="proof_status" onchange="this.form.submit()" class="w-full px-3 py-2 pkg-field">
+                <select name="proof_status" class="w-full px-3 py-2 pkg-field">
                     <option value="">Semua Bukti</option>
                     <option value="valid" {{ request('proof_status') === 'valid' ? 'selected' : '' }}>Bukti Valid</option>
                     <option value="no_proof" {{ request('proof_status') === 'no_proof' ? 'selected' : '' }}>Tanpa Bukti</option>
@@ -97,12 +97,17 @@
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Dari Tanggal</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}" onchange="this.form.submit()" class="w-full px-3 py-2 pkg-field">
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full px-3 py-2 pkg-field">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Sampai Tanggal</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}" onchange="this.form.submit()" class="w-full px-3 py-2 pkg-field">
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full px-3 py-2 pkg-field">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 sm:col-span-2 lg:col-span-6 lg:flex lg:justify-end">
+                <a href="{{ route('tugas-pkg.verification', ['tab' => 'verification']) }}" class="btn-secondary justify-center px-4 py-2 text-sm">Reset</a>
+                <button type="submit" class="btn-primary justify-center px-4 py-2 text-sm">Terapkan Filter</button>
             </div>
         </form>
     </x-collapsible-section>
@@ -147,6 +152,12 @@
                 <input type="hidden" name="notes" id="bulkActionNotes">
 
                 <div class="space-y-3 p-3 lg:hidden">
+                    @if($checklists->isNotEmpty())
+                        <label class="pkg-card-soft flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            <input type="checkbox" @change="toggleAll($event)" class="h-5 w-5 rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                            Pilih semua kiriman di halaman ini
+                        </label>
+                    @endif
                     @forelse($checklists as $checklist)
                         @include('tugas-pkg.verification.partials.mobile-checklist-card', ['checklist' => $checklist])
                     @empty

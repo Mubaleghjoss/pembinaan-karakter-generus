@@ -40,7 +40,13 @@
         </div>
     </div>
 
-    <div class="pkg-filter-bar mb-6">
+    <x-collapsible-section
+        title="Filter daftar tugas"
+        description="Cari tugas aktif berdasarkan nama, kategori, atau jenis penyelesaian."
+        :open="request()->filled('search') || request()->filled('karakter_id') || request()->filled('kategori') || request()->filled('jenis_penyelesaian')"
+        :compact="true"
+        class="mb-6"
+    >
         <form method="GET" class="pkg-filter-grid sm:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
             <label class="block">
                 <span class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cari</span>
@@ -82,7 +88,7 @@
                 <a href="{{ route('tugas-pkg.index') }}" class="btn-secondary w-full justify-center text-sm !px-4 !py-2">Reset</a>
             </div>
         </form>
-    </div>
+    </x-collapsible-section>
 
     @php
         $categoryColors = [
