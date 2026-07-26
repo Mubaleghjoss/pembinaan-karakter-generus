@@ -94,11 +94,20 @@ html.pkg-mobile-menu-open body {
 @media (max-width: 1023.98px) {
     .pkg-portal-mobile-main {
         padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+        overscroll-behavior-y: contain;
     }
 
     .pkg-portal-mobile-chat {
         height: calc(100dvh - 10rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
         min-height: 22rem;
+    }
+
+    .pkg-mobile-bottom-offset {
+        bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
+    }
+
+    #pwa-install {
+        bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
     }
 }
 

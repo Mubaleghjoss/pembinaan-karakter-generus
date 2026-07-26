@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\PamongPermission;
+use App\Models\Role;
 use App\Models\Siswa;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -53,5 +56,55 @@ class PortalMobileNavigationFeatureTest extends TestCase
             ->assertSee(route('ortu.tugas'), false)
             ->assertSee(route('ortu.materi.index'), false)
             ->assertSee(route('ortu.chat'), false);
+    }
+
+    public function test_admin_dashboard_renders_mobile_shell_and_editable_favorites(): void
+    {
+        $admin = $this->operationalUser(User::ROLE_ADMIN, 'Administrator');
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Navigasi Portal Admin')
+            ->assertSee('Favorit Admin')
+            ->assertSee('Atur Favorit')
+            ->assertSee(route('profile.mobile-menu-favorites.update'), false)
+            ->assertSee(route('tugas-pkg.verification'), false);
+    }
+
+    public function test_pamong_dashboard_renders_only_permitted_mobile_menu(): void
+    {
+        $pamong = $this->operationalUser(User::ROLE_TEACHER, 'Pamong');
+        PamongPermission::query()->create([
+            'user_id' => $pamong->id,
+            'menu_permissions' => ['dashboard', 'materi'],
+            'crud_permissions' => ['materi' => ['view']],
+        ]);
+
+        $this->actingAs($pamong)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Navigasi Portal Pamong')
+            ->assertSee(route('materi.index'), false)
+            ->assertDontSee('Favorit Admin')
+            ->assertDontSee(route('settings.index'), false)
+            ->assertDontSee(route('tugas-pkg.verification'), false);
+    }
+
+    private function operationalUser(string $roleName, string $displayName): User
+    {
+        $role = Role::query()->firstOrCreate(
+            ['name' => $roleName],
+            [
+                'display_name' => $displayName,
+                'permissions' => $roleName === User::ROLE_ADMIN ? ['*'] : [],
+                'is_active' => true,
+            ]
+        );
+
+        return User::factory()->create([
+            'role_id' => $role->id,
+            'name' => $displayName.' Mobile',
+        ]);
     }
 }

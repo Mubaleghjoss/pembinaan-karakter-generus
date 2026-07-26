@@ -84,6 +84,7 @@
 <body class="h-full font-sans antialiased" x-data="{ 
     darkMode: localStorage.getItem('darkMode') !== null ? localStorage.getItem('darkMode') === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches,
     sidebarCollapsed: window.innerWidth < 1024 ? true : (localStorage.getItem('sidebarCollapsed') !== 'false'),
+    mobileMenuOpen: false,
     toggleDarkMode() {
         this.darkMode = !this.darkMode;
         localStorage.setItem('darkMode', this.darkMode);
@@ -96,11 +97,11 @@
 }" 
 :class="{ 'dark': darkMode }" 
 x-init="document.documentElement.classList.remove('sidebar-preload-closed')"
-x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', !sidebarCollapsed && window.innerWidth < 1024)"
-@resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true">
+x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', mobileMenuOpen || (!sidebarCollapsed && window.innerWidth < 1024)); document.documentElement.classList.toggle('pkg-mobile-menu-open', mobileMenuOpen)"
+@resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true; else mobileMenuOpen = false">
     
     @auth
-    <div class="flex h-screen overflow-hidden">
+    <div class="pkg-portal-shell flex max-w-full overflow-hidden">
         <!-- Mobile Overlay -->
         <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 bg-black/50 z-40 lg:hidden" x-transition:enter="transition-opacity ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
         
@@ -113,7 +114,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
             x-transition:leave="transition-transform ease-in duration-150"
             x-transition:leave-start="translate-x-0"
             x-transition:leave-end="-translate-x-full"
-            class="pkg-sidebar fixed lg:relative inset-y-0 left-0 z-50 w-64 flex flex-col border-r will-change-transform">
+            class="pkg-sidebar fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r will-change-transform lg:relative lg:flex">
             <!-- Logo -->
             <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
                 <a href="{{ route('dashboard') }}" class="flex items-center">
@@ -518,8 +519,12 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
         
         <!-- Main Content Area -->
         <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+            @if(!empty($mobilePortal))
+                @include('layouts.partials.portal-mobile-navigation')
+            @endif
+
             <!-- Top Header -->
-            <header class="pkg-topbar relative z-[80] h-16 shrink-0 border-b flex items-center justify-between px-4 lg:px-6">
+            <header class="pkg-topbar relative z-[80] hidden h-16 shrink-0 items-center justify-between border-b px-4 lg:flex lg:px-6">
                 <!-- Left: Menu Button -->
                 <div class="flex items-center">
                     <button @click="sidebarCollapsed = !sidebarCollapsed" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -573,7 +578,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
             </header>
             
             <!-- Page Content -->
-            <main class="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
+            <main class="pkg-portal-mobile-main min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
                 @if(session('success'))
                 <div class="mx-4 mt-4 lg:mx-6">
                     <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-4">

@@ -51,6 +51,7 @@ class User extends Authenticatable
         'qr_token',
         'qr_token_generated_at',
         'theme_preference',
+        'mobile_menu_favorites',
         'last_login_at',
         'last_login_ip',
         'failed_login_attempts',
@@ -92,6 +93,7 @@ class User extends Authenticatable
         'password' => 'hashed',
         'must_change_password' => 'boolean',
         'password_changed_at' => 'datetime',
+        'mobile_menu_favorites' => 'array',
     ];
 
     /**

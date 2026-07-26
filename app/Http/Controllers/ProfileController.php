@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OrganizationalTeam;
 use App\Services\Contracts\PamongQrServiceInterface;
 use App\Services\FaceAttendanceService;
+use App\Support\OperationalMobileNavigation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -224,5 +225,39 @@ class ProfileController extends Controller
         }
 
         return back()->with('success', 'Password berhasil diperbarui');
+    }
+
+    /**
+     * Update the current admin's ordered mobile menu favorites.
+     */
+    public function updateMobileMenuFavorites(
+        Request $request,
+        OperationalMobileNavigation $navigation
+    ) {
+        $user = Auth::user();
+
+        abort_unless($user->isAdmin(), 403, 'Favorit menu hanya dapat diatur oleh Admin.');
+
+        if ($request->boolean('reset')) {
+            $user->forceFill(['mobile_menu_favorites' => null])->save();
+
+            return back()->with('success', 'Favorit menu dikembalikan ke susunan awal.');
+        }
+
+        $validated = $request->validate([
+            'favorites_present' => ['required', 'accepted'],
+            'favorites' => ['nullable', 'array', 'max:'.OperationalMobileNavigation::MAX_FAVORITES],
+            'favorites.*' => ['string', 'distinct', Rule::in($navigation->adminFavoriteKeys())],
+        ], [
+            'favorites.max' => 'Favorit menu maksimal enam pilihan.',
+            'favorites.*.distinct' => 'Menu favorit tidak boleh dipilih lebih dari satu kali.',
+            'favorites.*.in' => 'Pilihan menu favorit tidak valid.',
+        ]);
+
+        $user->forceFill([
+            'mobile_menu_favorites' => array_values($validated['favorites'] ?? []),
+        ])->save();
+
+        return back()->with('success', 'Favorit menu berhasil disimpan.');
     }
 }

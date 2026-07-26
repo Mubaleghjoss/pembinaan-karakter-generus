@@ -64,7 +64,7 @@
     </div>
 
     <!-- Chat Area -->
-    <div class="pkg-card min-w-0 flex-col lg:col-span-3 lg:h-[500px]" :class="selectedSiswa ? 'flex h-[calc(100dvh-10rem)] min-h-[28rem]' : 'hidden lg:flex'">
+    <div class="pkg-card pkg-portal-mobile-chat min-w-0 flex-col lg:col-span-3 lg:h-[500px]" :class="selectedSiswa ? 'flex' : 'hidden lg:flex'">
         <!-- Chat Header -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
             <button type="button" @click="closePribadiConversation()" class="btn-secondary !h-10 !w-10 !p-0 lg:hidden" aria-label="Kembali ke daftar siswa">

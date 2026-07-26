@@ -374,7 +374,7 @@
          x-transition:leave="transition ease-in duration-300"
          x-transition:leave-start="translate-y-0 opacity-100"
          x-transition:leave-end="translate-y-full opacity-0"
-         class="fixed inset-x-3 bottom-4 z-[9999] flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 shadow-2xl dark:border-gray-700 dark:bg-gray-800 sm:inset-x-auto sm:left-1/2 sm:bottom-8 sm:-translate-x-1/2 sm:flex-nowrap sm:rounded-full sm:px-6">
+         class="pkg-mobile-bottom-offset fixed inset-x-3 bottom-4 z-[9999] flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 shadow-2xl dark:border-gray-700 dark:bg-gray-800 sm:inset-x-auto sm:left-1/2 sm:bottom-8 sm:-translate-x-1/2 sm:flex-nowrap sm:rounded-full sm:px-6">
         <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
             <span x-text="selectedItems.length"></span> terpilih
         </span>

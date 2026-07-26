@@ -409,6 +409,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update.post');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::put('/profile/mobile-menu-favorites', [ProfileController::class, 'updateMobileMenuFavorites'])
+        ->name('profile.mobile-menu-favorites.update');
 
     // Pendataan dan penjadwalan guru MT/MS.
     Route::get('/pendataan-guru', [App\Http\Controllers\TeacherPlanningController::class, 'index'])->name('teacher-planning.index');

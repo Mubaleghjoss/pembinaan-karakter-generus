@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\ThemeSetting;
 use App\Services\MateriRppJournalWorkflowService;
 use App\Services\TaskPwaNotificationService;
+use App\Support\OperationalMobileNavigation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -206,6 +207,28 @@ class SettingsServiceProvider extends ServiceProvider
                 $view->with('ortuSidebarUnreadChatCount', 0);
                 $view->with('teacherPortalAvailable', false);
             }
+        });
+
+        View::composer('layouts.app', function ($view) {
+            $user = Auth::user();
+            if (! $user) {
+                $view->with('mobilePortal', null);
+
+                return;
+            }
+
+            $data = $view->getData();
+            $view->with('mobilePortal', app(OperationalMobileNavigation::class)->build(
+                $user,
+                request(),
+                [
+                    'verification' => (int) ($data['pendingPkgVerificationCount'] ?? 0),
+                    'reports' => (int) ($data['pendingLaporanPenyaksianCount'] ?? 0),
+                    'chat' => (int) ($data['appSidebarUnreadChatCount'] ?? 0),
+                    'journals' => (int) ($data['appSidebarPendingJournalCount'] ?? 0),
+                ],
+                (bool) ($data['teacherPortalAvailable'] ?? false)
+            ));
         });
     }
 }

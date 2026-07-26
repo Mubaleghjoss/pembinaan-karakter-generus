@@ -29,11 +29,12 @@ class MobileUxRegressionTest extends TestCase
         $navigation = file_get_contents($root.'/resources/views/layouts/partials/portal-mobile-navigation.blade.php');
         $styles = file_get_contents($root.'/resources/css/app.css');
 
-        $this->assertStringContainsString('grid h-16 grid-cols-6', $navigation);
+        $this->assertStringContainsString('grid h-16 {{ $bottomColumnClass }}', $navigation);
         $this->assertStringContainsString('mobileMenuOpen = true', $navigation);
         $this->assertStringContainsString('pkg-portal-mobile-sheet', $navigation);
         $this->assertStringContainsString('env(safe-area-inset-bottom)', $styles);
         $this->assertStringContainsString('.pkg-portal-mobile-chat', $styles);
+        $this->assertStringContainsString('Favorit Admin', $navigation);
 
         $expectedRoutes = [
             'siswa' => [
@@ -77,6 +78,23 @@ class MobileUxRegressionTest extends TestCase
                 $this->assertStringContainsString("route('{$route}')", $layout);
             }
         }
+    }
+
+    public function test_admin_and_pamong_use_permission_aware_mobile_navigation_without_changing_desktop_sidebar(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $layout = file_get_contents($root.'/resources/views/layouts/app.blade.php');
+        $navigation = file_get_contents($root.'/app/Support/OperationalMobileNavigation.php');
+
+        $this->assertStringContainsString('mobileMenuOpen: false', $layout);
+        $this->assertStringContainsString("@include('layouts.partials.portal-mobile-navigation')", $layout);
+        $this->assertStringContainsString('hidden w-64 flex-col', $layout);
+        $this->assertStringContainsString('lg:relative lg:flex', $layout);
+        $this->assertStringContainsString('pkg-portal-mobile-main', $layout);
+        $this->assertStringContainsString('Portal Admin', $navigation);
+        $this->assertStringContainsString('Portal Pamong', $navigation);
+        $this->assertStringContainsString('pamongBottomItems', $navigation);
+        $this->assertStringContainsString('MAX_FAVORITES = 6', $navigation);
     }
 
     public function test_chat_views_use_mobile_master_detail_and_visibility_aware_polling(): void
