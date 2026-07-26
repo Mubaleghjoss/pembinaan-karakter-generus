@@ -58,6 +58,24 @@ function currentCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.content || '';
 }
 
+function isCredentialManagerUnknownError(error) {
+    const message = String(error?.message || '').toLowerCase();
+
+    return error?.name === 'UnknownError'
+        || message.includes('credential manager')
+        || message.includes('pengelola kredensial');
+}
+
+async function recoverCredentialManager() {
+    try {
+        await navigator.credentials?.preventSilentAccess?.();
+    } catch (error) {
+        console.debug('Credential Manager silent access reset was skipped', error);
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 500));
+}
+
 async function refreshCsrfToken() {
     if (csrfRefreshPromise) {
         return csrfRefreshPromise;
@@ -375,6 +393,7 @@ async function loginWithBiometric({
 
     try {
         let challengeRetryCount = 0;
+        let credentialManagerRetryCount = 0;
 
         while (challengeRetryCount <= 1) {
             try {
@@ -387,7 +406,7 @@ async function loginWithBiometric({
                 }, { refreshBefore: true });
                 const options = normalizePublicKeyOptions(await parseJsonResponse(optionsResponse));
 
-                const credential = await navigator.credentials.get({
+                const credentialRequest = {
                     publicKey: {
                         challenge: base64UrlToBuffer(options.challenge),
                         rpId: options.rpId,
@@ -400,7 +419,13 @@ async function loginWithBiometric({
                               }))
                             : [],
                     },
-                });
+                };
+
+                if (credentialManagerRetryCount > 0) {
+                    credentialRequest.mediation = 'required';
+                }
+
+                const credential = await navigator.credentials.get(credentialRequest);
 
                 const loginResponse = await fetchWithFreshCsrf(loginUrl, {
                     method: 'POST',
@@ -426,6 +451,13 @@ async function loginWithBiometric({
                 window.location.href = result.redirect || fallbackRedirect;
                 return true;
             } catch (error) {
+                if (isCredentialManagerUnknownError(error) && credentialManagerRetryCount < 1) {
+                    credentialManagerRetryCount += 1;
+                    await recoverCredentialManager();
+                    await refreshCsrfToken();
+                    continue;
+                }
+
                 const challengeExpired = error.status === 422
                     && error.message?.includes(biometricChallengeExpiredMessage);
 
@@ -441,6 +473,16 @@ async function loginWithBiometric({
         restoreButton();
 
         if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
+            return;
+        }
+
+        if (isCredentialManagerUnknownError(error)) {
+            await showBiometricDialog({
+                type: 'error',
+                title: 'Biometrik belum siap',
+                text: 'Pengelola biometrik perangkat belum merespons. Pastikan tidak ada dialog biometrik lain yang masih terbuka, lalu coba lagi.',
+                confirmButtonColor: errorColor,
+            });
             return;
         }
 

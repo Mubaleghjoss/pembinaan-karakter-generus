@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
@@ -207,13 +208,22 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        $loginUrl = route('login', ['fresh' => Str::random(12)]);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Logout berhasil',
+                'redirect' => $loginUrl,
             ]);
         }
 
-        return redirect()->route('login');
+        return redirect()
+            ->to($loginUrl)
+            ->withHeaders([
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+            ]);
     }
 
     /**

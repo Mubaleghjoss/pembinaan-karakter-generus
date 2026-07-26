@@ -161,6 +161,39 @@ class WebAuthnControllerFeatureTest extends TestCase
     }
 
     #[Test]
+    public function logout_redirects_each_portal_to_a_unique_uncached_login_url(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin Logout',
+            'username' => 'admin-logout',
+            'email' => 'admin-logout@example.test',
+            'password' => bcrypt('secret123'),
+            'status' => 'active',
+        ]);
+        $siswa = $this->createSiswa([
+            'ortu_username' => 'ortu.logout',
+            'ortu_password' => bcrypt('secret123'),
+        ]);
+
+        $responses = [
+            $this->actingAs($admin)->post(route('logout')),
+            $this->actingAs($siswa, 'siswa')->post(route('siswa.logout')),
+            $this->actingAs($siswa, 'ortu')->post(route('ortu.logout')),
+        ];
+
+        foreach ($responses as $response) {
+            $response->assertRedirect();
+            $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+
+            $query = [];
+            parse_str((string) parse_url((string) $response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+            $this->assertArrayHasKey('fresh', $query);
+            $this->assertSame(12, strlen((string) $query['fresh']));
+        }
+    }
+
+    #[Test]
     public function settings_page_provides_environment_warning_metadata(): void
     {
         config()->set('app.url', 'https://pkg.example.com');

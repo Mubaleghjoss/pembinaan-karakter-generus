@@ -42,6 +42,9 @@ class BiometricLoginViewConfigTest extends TestCase
         $this->assertStringContainsString("window.addEventListener('pageshow'", $script);
         $this->assertStringContainsString("document.addEventListener('visibilitychange'", $script);
         $this->assertStringContainsString('activeBiometricLoginButtons', $script);
+        $this->assertStringContainsString('isCredentialManagerUnknownError', $script);
+        $this->assertStringContainsString("credentialRequest.mediation = 'required'", $script);
+        $this->assertStringContainsString('credentialManagerRetryCount < 1', $script);
         $this->assertStringContainsString("requestUrl.pathname === '/csrf-token'", $serviceWorker);
         $this->assertStringContainsString("fetch(event.request, { cache: 'no-store' })", $serviceWorker);
     }
