@@ -3,7 +3,7 @@
 <head>
     @include('layouts.partials.theme-init')
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Portal Siswa') - {{ $siteSettings['site_title'] ?? 'PKG' }}</title>
     @include('layouts.partials.favicons')
@@ -57,6 +57,7 @@
       x-data="{
         darkMode: localStorage.getItem('darkMode') !== null ? localStorage.getItem('darkMode') === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches,
         sidebarCollapsed: window.innerWidth < 1024 ? true : (localStorage.getItem('siswaSidebarCollapsed') === 'true'),
+        mobileMenuOpen: false,
         toggleDarkMode() {
             this.darkMode = !this.darkMode;
             localStorage.setItem('darkMode', this.darkMode);
@@ -65,11 +66,75 @@
       }"
       :class="{ 'dark': darkMode }"
       x-init="document.documentElement.classList.remove('sidebar-preload-closed')"
-      x-effect="localStorage.setItem('siswaSidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', !sidebarCollapsed && window.innerWidth < 1024)"
-      @resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true">
-@php($currentSiswa = Auth::guard('siswa')->user())
+      x-effect="localStorage.setItem('siswaSidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', mobileMenuOpen || (!sidebarCollapsed && window.innerWidth < 1024))"
+      @resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true; else mobileMenuOpen = false">
+@php
+    $currentSiswa = Auth::guard('siswa')->user();
+    $siswaTaskBadge = (int) ($siswaSidebarPendingTaskCount ?? 0);
+    $siswaJournalBadge = (int) ($siswaSidebarPendingJournalCount ?? 0);
+    $siswaChatBadge = (int) ($siswaSidebarUnreadChatCount ?? 0);
+    $mobilePortal = [
+        'tone' => 'blue',
+        'portal_label' => 'Portal Siswa',
+        'home_url' => route('siswa.dashboard'),
+        'profile_url' => route('siswa.profile'),
+        'profile_label' => 'profil siswa',
+        'user_name' => $currentSiswa?->nama ?? 'Siswa',
+        'user_meta' => trim(($currentSiswa?->kelas?->nama ?? '') . ' - ' . ($currentSiswa?->nis ?? ''), ' -'),
+        'photo_url' => $currentSiswa?->foto_path ? asset('storage/' . $currentSiswa->foto_path) : null,
+        'bottom_items' => [
+            ['label' => 'Beranda', 'icon' => 'home', 'url' => route('siswa.dashboard'), 'active' => request()->routeIs('siswa.dashboard')],
+            ['label' => 'Kalender', 'icon' => 'calendar', 'url' => route('siswa.calendar.index'), 'active' => request()->routeIs('siswa.calendar.*')],
+            ['label' => 'Tugas', 'icon' => 'check', 'url' => route('siswa.tugas-pkg.index'), 'active' => request()->routeIs('siswa.tugas-pkg.*') || request()->routeIs('siswa.karakter.*'), 'badge' => $siswaTaskBadge],
+            ['label' => 'Materi', 'icon' => 'book', 'url' => route('siswa.materi.index'), 'active' => request()->routeIs('siswa.materi.*') || request()->routeIs('siswa.materi-rpp-journals.*'), 'badge' => $siswaJournalBadge],
+            ['label' => 'Chat', 'icon' => 'chat', 'url' => route('siswa.chat.index'), 'active' => request()->routeIs('siswa.chat.*') || request()->routeIs('siswa.group-chat.*'), 'badge' => $siswaChatBadge],
+        ],
+        'more_active' => request()->routeIs('siswa.kehadiran.*')
+            || request()->routeIs('siswa.gamification.*')
+            || request()->routeIs('siswa.rpg.*')
+            || request()->routeIs('siswa.profile')
+            || request()->routeIs('siswa.kartu*')
+            || request()->routeIs('siswa.biometrik'),
+        'sheet_sections' => [
+            [
+                'label' => 'Menu utama',
+                'items' => [
+                    ['label' => 'Beranda', 'icon' => 'home', 'url' => route('siswa.dashboard'), 'active' => request()->routeIs('siswa.dashboard')],
+                    ['label' => 'Kalender', 'icon' => 'calendar', 'url' => route('siswa.calendar.index'), 'active' => request()->routeIs('siswa.calendar.*')],
+                    ['label' => 'Tugas PKG', 'icon' => 'check', 'url' => route('siswa.tugas-pkg.index'), 'active' => request()->routeIs('siswa.tugas-pkg.*') || request()->routeIs('siswa.karakter.*'), 'badge' => $siswaTaskBadge],
+                    ['label' => 'Materi', 'icon' => 'book', 'url' => route('siswa.materi.index'), 'active' => request()->routeIs('siswa.materi.*')],
+                    ['label' => 'Chat', 'icon' => 'chat', 'url' => route('siswa.chat.index'), 'active' => request()->routeIs('siswa.chat.*') || request()->routeIs('siswa.group-chat.*'), 'badge' => $siswaChatBadge],
+                ],
+            ],
+            [
+                'label' => 'Belajar dan aktivitas',
+                'items' => [
+                    ['label' => 'Jurnal RPP', 'icon' => 'journal', 'url' => route('siswa.materi-rpp-journals.index'), 'active' => request()->routeIs('siswa.materi-rpp-journals.*'), 'badge' => $siswaJournalBadge],
+                    ['label' => 'Kehadiran', 'icon' => 'attendance', 'url' => route('siswa.kehadiran.index'), 'active' => request()->routeIs('siswa.kehadiran.*')],
+                    ['label' => 'Gamifikasi', 'icon' => 'game', 'url' => route('siswa.gamification.dashboard'), 'active' => request()->routeIs('siswa.gamification.*')],
+                    ['label' => 'RPG Quest', 'icon' => 'rpg', 'url' => route('siswa.rpg.index'), 'active' => request()->routeIs('siswa.rpg.*')],
+                ],
+            ],
+            [
+                'label' => 'Akun siswa',
+                'items' => [
+                    ['label' => 'Profil dan Foto', 'icon' => 'user', 'url' => route('siswa.profile'), 'active' => request()->routeIs('siswa.profile')],
+                    ['label' => 'Kartu Siswa', 'icon' => 'card', 'url' => route('siswa.kartu'), 'active' => request()->routeIs('siswa.kartu')],
+                    ['label' => 'Cetak Kartu', 'icon' => 'print', 'url' => route('siswa.kartu.print'), 'active' => request()->routeIs('siswa.kartu.print'), 'target' => '_blank'],
+                    ['label' => 'Biometrik', 'icon' => 'fingerprint', 'url' => route('siswa.biometrik'), 'active' => request()->routeIs('siswa.biometrik')],
+                ],
+            ],
+        ],
+        'push' => [
+            'subscribe_url' => route('siswa.pwa.push-subscriptions.store'),
+            'unsubscribe_url' => route('siswa.pwa.push-subscriptions.destroy'),
+            'badge_count' => $siswaTaskBadge,
+        ],
+        'logout_url' => route('siswa.logout'),
+    ];
+@endphp
 
-<div class="flex h-screen overflow-hidden">
+<div class="pkg-portal-shell flex overflow-hidden">
     <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 z-40 bg-black/50 lg:hidden" x-transition:enter="transition-opacity ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
 
     <aside x-show="!sidebarCollapsed"
@@ -79,7 +144,7 @@
            x-transition:leave="transition-transform ease-in duration-150"
            x-transition:leave-start="translate-x-0"
            x-transition:leave-end="-translate-x-full"
-           class="pkg-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r will-change-transform lg:relative">
+           class="pkg-sidebar fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r will-change-transform lg:relative lg:flex">
         <div class="flex h-16 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
             <a href="{{ route('siswa.dashboard') }}" class="flex min-w-0 items-center">
                 @if(!empty($siteSettings['site_logo']))
@@ -186,7 +251,9 @@
     </aside>
 
     <div class="flex min-w-0 flex-1 flex-col">
-        <header class="pkg-topbar sticky top-0 z-30 flex h-16 items-center justify-between border-b px-4 sm:px-6">
+        @include('layouts.partials.portal-mobile-navigation')
+
+        <header class="pkg-topbar sticky top-0 z-30 hidden h-16 items-center justify-between border-b px-4 sm:px-6 lg:flex">
             <div class="flex min-w-0 items-center">
                 <button type="button" @click="sidebarCollapsed = !sidebarCollapsed" class="mr-3 rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -239,7 +306,7 @@
             </div>
         </header>
 
-        <main class="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
+        <main class="pkg-portal-mobile-main min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
             @if(session('success'))
                 <div class="mx-4 mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300 sm:mx-6">
                     {{ session('success') }}

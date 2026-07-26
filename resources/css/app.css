@@ -29,6 +29,85 @@ html.pkg-mobile-menu-open body {
     overscroll-behavior: none;
 }
 
+.pkg-portal-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    max-width: 100%;
+    padding-top: env(safe-area-inset-top);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(18px);
+}
+
+.dark .pkg-portal-mobile-header {
+    border-color: rgba(30, 41, 59, 0.9);
+    background: rgba(2, 6, 23, 0.92);
+}
+
+.pkg-portal-mobile-bottom {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    max-width: 100%;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid rgba(226, 232, 240, 0.92);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(18px);
+}
+
+.dark .pkg-portal-mobile-bottom {
+    border-color: rgba(30, 41, 59, 0.92);
+    background: rgba(2, 6, 23, 0.96);
+}
+
+.pkg-portal-mobile-sheet {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 36rem;
+    max-height: min(88dvh, 52rem);
+    margin-inline: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1.25rem;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+    border-radius: 2rem 2rem 0 0;
+    background: #ffffff;
+    box-shadow: 0 -24px 70px rgba(15, 23, 42, 0.25);
+}
+
+.dark .pkg-portal-mobile-sheet {
+    background: #0f172a;
+}
+
+.pkg-portal-shell {
+    height: 100vh;
+    height: 100dvh;
+}
+
+@media (max-width: 1023.98px) {
+    .pkg-portal-mobile-main {
+        padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+
+    .pkg-portal-mobile-chat {
+        height: calc(100dvh - 10rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        min-height: 22rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .pkg-portal-shell {
+        height: 100vh;
+    }
+}
+
 ::selection {
     background: color-mix(in srgb, var(--pkg-brand, #0f766e) 22%, #ffffff);
     color: var(--pkg-heading, #020617);

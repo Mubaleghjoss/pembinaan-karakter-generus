@@ -3,7 +3,7 @@
 <head>
     @include('layouts.partials.theme-init')
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Portal Orang Tua') - {{ $siteSettings['site_title'] ?? 'PKG' }}</title>
     @include('layouts.partials.favicons')
@@ -56,6 +56,7 @@
 <body class="h-full font-sans antialiased" x-data="{ 
     darkMode: localStorage.getItem('darkMode') !== null ? localStorage.getItem('darkMode') === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches,
     sidebarCollapsed: window.innerWidth < 1024 ? true : (localStorage.getItem('ortuSidebarCollapsed') === 'true'),
+    mobileMenuOpen: false,
     toggleDarkMode() {
         this.darkMode = !this.darkMode;
         localStorage.setItem('darkMode', this.darkMode);
@@ -68,9 +69,61 @@
 }" 
 :class="{ 'dark': darkMode }" 
 x-init="document.documentElement.classList.remove('sidebar-preload-closed')"
-x-effect="localStorage.setItem('ortuSidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', !sidebarCollapsed && window.innerWidth < 1024)"
-@resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true">
-    <div class="flex h-screen overflow-hidden">
+x-effect="localStorage.setItem('ortuSidebarCollapsed', sidebarCollapsed); document.documentElement.classList.toggle('overflow-hidden', mobileMenuOpen || (!sidebarCollapsed && window.innerWidth < 1024))"
+@resize.window="if (window.innerWidth < 1024) sidebarCollapsed = true; else mobileMenuOpen = false">
+    @php
+        $currentOrtu = Auth::guard('ortu')->user();
+        $siswa = $currentOrtu;
+        $ortuTaskBadge = (int) ($ortuSidebarPendingTaskCount ?? 0);
+        $ortuChatBadge = (int) ($ortuSidebarUnreadChatCount ?? 0);
+        $mobilePortal = [
+            'tone' => 'teal',
+            'portal_label' => 'Portal Orang Tua',
+            'home_url' => route('ortu.dashboard'),
+            'profile_url' => route('ortu.settings'),
+            'profile_label' => 'pengaturan orang tua',
+            'user_name' => $currentOrtu?->nama ?? 'Orang Tua',
+            'user_meta' => trim(($currentOrtu?->kelas?->nama ?? '') . ' - ' . ($currentOrtu?->nis ?? ''), ' -'),
+            'photo_url' => $currentOrtu?->foto_path ? asset('storage/' . $currentOrtu->foto_path) : null,
+            'bottom_items' => [
+                ['label' => 'Beranda', 'icon' => 'home', 'url' => route('ortu.dashboard'), 'active' => request()->routeIs('ortu.dashboard')],
+                ['label' => 'Kalender', 'icon' => 'calendar', 'url' => route('ortu.jadwal'), 'active' => request()->routeIs('ortu.jadwal*')],
+                ['label' => 'Tugas', 'icon' => 'check', 'url' => route('ortu.tugas'), 'active' => request()->routeIs('ortu.tugas*'), 'badge' => $ortuTaskBadge],
+                ['label' => 'Materi', 'icon' => 'book', 'url' => route('ortu.materi.index'), 'active' => request()->routeIs('ortu.materi.*')],
+                ['label' => 'Chat', 'icon' => 'chat', 'url' => route('ortu.chat'), 'active' => request()->routeIs('ortu.chat*'), 'badge' => $ortuChatBadge],
+            ],
+            'more_active' => request()->routeIs('ortu.kehadiran')
+                || request()->routeIs('ortu.settings*')
+                || request()->routeIs('ortu.biometrik'),
+            'sheet_sections' => [
+                [
+                    'label' => 'Menu utama',
+                    'items' => [
+                        ['label' => 'Beranda', 'icon' => 'home', 'url' => route('ortu.dashboard'), 'active' => request()->routeIs('ortu.dashboard')],
+                        ['label' => 'Kalender', 'icon' => 'calendar', 'url' => route('ortu.jadwal'), 'active' => request()->routeIs('ortu.jadwal*')],
+                        ['label' => 'Tugas PKG', 'icon' => 'check', 'url' => route('ortu.tugas'), 'active' => request()->routeIs('ortu.tugas*'), 'badge' => $ortuTaskBadge],
+                        ['label' => 'Materi', 'icon' => 'book', 'url' => route('ortu.materi.index'), 'active' => request()->routeIs('ortu.materi.*')],
+                        ['label' => 'Chat Pamong', 'icon' => 'chat', 'url' => route('ortu.chat'), 'active' => request()->routeIs('ortu.chat*'), 'badge' => $ortuChatBadge],
+                    ],
+                ],
+                [
+                    'label' => 'Aktivitas Generus',
+                    'items' => [
+                        ['label' => 'Kehadiran PKG', 'icon' => 'attendance', 'url' => route('ortu.kehadiran'), 'active' => request()->routeIs('ortu.kehadiran')],
+                    ],
+                ],
+                [
+                    'label' => 'Akun orang tua',
+                    'items' => [
+                        ['label' => 'Pengaturan', 'icon' => 'settings', 'url' => route('ortu.settings'), 'active' => request()->routeIs('ortu.settings*')],
+                        ['label' => 'Biometrik', 'icon' => 'fingerprint', 'url' => route('ortu.biometrik'), 'active' => request()->routeIs('ortu.biometrik')],
+                    ],
+                ],
+            ],
+            'logout_url' => route('ortu.logout'),
+        ];
+    @endphp
+    <div class="pkg-portal-shell flex overflow-hidden">
         <!-- Mobile Overlay -->
         <div x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" class="pkg-sidebar-overlay fixed inset-0 bg-black/50 z-40 lg:hidden" x-transition:enter="transition-opacity ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
         
@@ -83,7 +136,7 @@ x-effect="localStorage.setItem('ortuSidebarCollapsed', sidebarCollapsed); docume
             x-transition:leave="transition-transform ease-in duration-150"
             x-transition:leave-start="translate-x-0"
             x-transition:leave-end="-translate-x-full"
-            class="pkg-sidebar fixed lg:relative inset-y-0 left-0 z-50 w-64 flex flex-col border-r will-change-transform">
+            class="pkg-sidebar fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r will-change-transform lg:relative lg:flex">
             <!-- Logo -->
             <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
                 <a href="{{ route('ortu.dashboard') }}" class="flex items-center">
@@ -104,7 +157,6 @@ x-effect="localStorage.setItem('ortuSidebarCollapsed', sidebarCollapsed); docume
             <!-- Student Info -->
             <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-teal-50 dark:bg-teal-900/30">
                 <div class="flex items-center space-x-3">
-                    @php $siswa = Auth::guard('ortu')->user(); @endphp
                     <div class="w-10 h-10 rounded-full bg-teal-600 dark:bg-teal-700 flex items-center justify-center flex-shrink-0">
                         @if($siswa->foto_path)
                             <img src="{{ asset('storage/' . $siswa->foto_path) }}" class="w-10 h-10 rounded-full object-cover">
@@ -192,8 +244,10 @@ x-effect="localStorage.setItem('ortuSidebarCollapsed', sidebarCollapsed); docume
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col min-w-0">
+            @include('layouts.partials.portal-mobile-navigation')
+
             <!-- Top Bar -->
-            <header class="pkg-topbar sticky top-0 z-30 flex items-center justify-between h-16 px-4 sm:px-6 border-b">
+            <header class="pkg-topbar sticky top-0 z-30 hidden h-16 items-center justify-between border-b px-4 sm:px-6 lg:flex">
                 <div class="flex items-center">
                     <button @click="sidebarCollapsed = !sidebarCollapsed" class="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mr-3">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -213,7 +267,7 @@ x-effect="localStorage.setItem('ortuSidebarCollapsed', sidebarCollapsed); docume
             </header>
 
             <!-- Page Content -->
-            <main class="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
+            <main class="pkg-portal-mobile-main min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">
                 @if(session('success'))
                 <div class="mx-4 sm:mx-6 mt-4">
                     <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg text-sm" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">

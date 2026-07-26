@@ -50,7 +50,7 @@
             </div>
         </div>
 
-        <div class="pkg-card min-w-0 flex-col lg:col-span-3 lg:h-[600px]" :class="selectedPamong ? 'flex h-[calc(100dvh-6rem)] min-h-[28rem]' : 'hidden lg:flex'">
+        <div class="pkg-portal-mobile-chat pkg-card min-w-0 flex-col lg:col-span-3 lg:h-[600px]" :class="selectedPamong ? 'flex' : 'hidden lg:flex'">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
                 <button type="button" @click="closeConversation()" class="btn-secondary !h-10 !w-10 !p-0 lg:hidden" aria-label="Kembali ke daftar pamong">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>

@@ -48,7 +48,7 @@
         </div>
 
         <!-- Chat Area -->
-        <div class="lg:col-span-3 pkg-card flex flex-col" style="height: 600px;">
+        <div class="pkg-portal-mobile-chat pkg-card flex flex-col lg:col-span-3 lg:h-[600px]">
             <!-- Chat Header -->
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
                 <template x-if="selectedGroupName">

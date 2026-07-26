@@ -23,6 +23,62 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringNotContainsString('|| $pendingLaporanPenyaksianCountForSidebar > 0;', $adminLayout);
     }
 
+    public function test_siswa_and_ortu_share_mobile_app_navigation_without_removing_desktop_sidebar(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $navigation = file_get_contents($root.'/resources/views/layouts/partials/portal-mobile-navigation.blade.php');
+        $styles = file_get_contents($root.'/resources/css/app.css');
+
+        $this->assertStringContainsString('grid h-16 grid-cols-6', $navigation);
+        $this->assertStringContainsString('mobileMenuOpen = true', $navigation);
+        $this->assertStringContainsString('pkg-portal-mobile-sheet', $navigation);
+        $this->assertStringContainsString('env(safe-area-inset-bottom)', $styles);
+        $this->assertStringContainsString('.pkg-portal-mobile-chat', $styles);
+
+        $expectedRoutes = [
+            'siswa' => [
+                'siswa.dashboard',
+                'siswa.calendar.index',
+                'siswa.tugas-pkg.index',
+                'siswa.materi.index',
+                'siswa.chat.index',
+                'siswa.materi-rpp-journals.index',
+                'siswa.kehadiran.index',
+                'siswa.gamification.dashboard',
+                'siswa.rpg.index',
+                'siswa.profile',
+                'siswa.kartu',
+                'siswa.kartu.print',
+                'siswa.biometrik',
+            ],
+            'ortu' => [
+                'ortu.dashboard',
+                'ortu.jadwal',
+                'ortu.tugas',
+                'ortu.materi.index',
+                'ortu.chat',
+                'ortu.kehadiran',
+                'ortu.settings',
+                'ortu.biometrik',
+            ],
+        ];
+
+        foreach ($expectedRoutes as $portal => $routes) {
+            $layout = file_get_contents($root."/resources/views/layouts/{$portal}.blade.php");
+
+            $this->assertStringContainsString('viewport-fit=cover', $layout);
+            $this->assertStringContainsString('mobileMenuOpen: false', $layout);
+            $this->assertStringContainsString("@include('layouts.partials.portal-mobile-navigation')", $layout);
+            $this->assertStringContainsString('hidden w-64 flex-col', $layout);
+            $this->assertStringContainsString('lg:flex', $layout);
+            $this->assertStringContainsString('pkg-portal-mobile-main', $layout);
+
+            foreach ($routes as $route) {
+                $this->assertStringContainsString("route('{$route}')", $layout);
+            }
+        }
+    }
+
     public function test_chat_views_use_mobile_master_detail_and_visibility_aware_polling(): void
     {
         $views = [
@@ -41,6 +97,9 @@ class MobileUxRegressionTest extends TestCase
 
         $this->assertStringContainsString('closeConversation()', file_get_contents(dirname(__DIR__, 2).'/resources/views/siswa/chat/index.blade.php'));
         $this->assertStringContainsString('closeConversation()', file_get_contents(dirname(__DIR__, 2).'/resources/views/ortu/chat/index.blade.php'));
+        $this->assertStringContainsString('pkg-portal-mobile-chat', file_get_contents(dirname(__DIR__, 2).'/resources/views/siswa/chat/index.blade.php'));
+        $this->assertStringContainsString('pkg-portal-mobile-chat', file_get_contents(dirname(__DIR__, 2).'/resources/views/ortu/chat/index.blade.php'));
+        $this->assertStringContainsString('pkg-portal-mobile-chat', file_get_contents(dirname(__DIR__, 2).'/resources/views/siswa/group-chat/index.blade.php'));
         $this->assertStringContainsString('closePribadiConversation()', file_get_contents(dirname(__DIR__, 2).'/resources/views/pamong/chat/partials/pribadi.blade.php'));
         $this->assertStringContainsString('closeGrupConversation()', file_get_contents(dirname(__DIR__, 2).'/resources/views/pamong/chat/partials/grup.blade.php'));
     }
