@@ -3,18 +3,16 @@
 @section('title', 'Tugas PKG')
 
 @section('content')
-<div class="max-w-5xl mx-auto px-4 py-6" x-data="window.tugasPkgPage()">
-    <div class="mb-4">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Tugas PKG</h1>
-                <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Tandai tugas yang sudah kamu lakukan</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="location.reload()" class="px-3 py-2 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-colors flex items-center gap-1">Refresh</button>
-                <a href="{{ route('siswa.tugas-pkg.history') }}" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">Riwayat</a>
-                <a href="{{ route('siswa.tugas-pkg.verified-history') }}" class="px-3 py-2 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50">Terverifikasi</a>
-            </div>
+<div class="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6" x-data="window.tugasPkgPage()">
+    <div class="pkg-page-header mb-4 sm:mb-5">
+        <div class="min-w-0">
+            <h1 class="pkg-page-heading">Tugas PKG</h1>
+            <p class="pkg-page-subheading">Pilih tugas yang sudah kamu lakukan, lalu kirim bukti jika tersedia.</p>
+        </div>
+        <div class="pkg-student-task-header-actions">
+            <button onclick="location.reload()" class="pkg-student-task-header-action border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40">Muat Ulang</button>
+            <a href="{{ route('siswa.tugas-pkg.history') }}" class="pkg-student-task-header-action border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Riwayat</a>
+            <a href="{{ route('siswa.tugas-pkg.verified-history') }}" class="pkg-student-task-header-action border-green-200 bg-green-100 text-green-700 hover:bg-green-200 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50">Terverifikasi</a>
         </div>
     </div>
 
@@ -34,10 +32,9 @@
             @endforeach
         </div>
         @if($selectedDate !== now()->toDateString())
-        <div class="mt-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 px-3 py-2 rounded-lg text-xs flex items-center gap-2">
-            <span>Tanggal</span>
-            <span>Menampilkan tugas tanggal <strong>{{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}</strong></span>
-            <a href="{{ route('siswa.tugas-pkg.index') }}" class="ml-auto text-amber-600 dark:text-amber-400 hover:text-amber-800 font-medium underline">Kembali ke Hari Ini</a>
+        <div class="mt-2 flex flex-col items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300 sm:flex-row sm:items-center">
+            <span>Menampilkan tugas <strong>{{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}</strong></span>
+            <a href="{{ route('siswa.tugas-pkg.index') }}" class="font-semibold text-amber-700 underline dark:text-amber-300 sm:ml-auto">Kembali ke Hari Ini</a>
         </div>
         @endif
     </div>
@@ -60,9 +57,9 @@
     @if(isset($pendingVerification) && $pendingVerification->count() > 0 && $selectedDate === now()->toDateString())
     <div class="mb-6">
         <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 overflow-hidden">
-            <div class="px-5 py-4 border-b border-yellow-200 dark:border-yellow-800">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
+            <div class="border-b border-yellow-200 px-4 py-4 dark:border-yellow-800 sm:px-5">
+                <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 class="flex flex-wrap items-center gap-2 text-base font-bold text-yellow-800 dark:text-yellow-300 sm:text-lg">
                         Menunggu Verifikasi
                         <span class="text-xs font-normal bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 px-2 py-0.5 rounded-full">{{ $pendingVerification->count() }} tugas</span>
                     </h2>
@@ -71,13 +68,13 @@
             </div>
             <div class="divide-y divide-yellow-100 dark:divide-yellow-800/50">
                 @foreach($pendingVerification as $pending)
-                <div class="px-5 py-3 flex items-center justify-between gap-4">
+                <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-medium text-gray-900 dark:text-white">{{ $pending->karakter->nama ?? '-' }}</h3>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="text-sm font-bold leading-snug text-gray-900 dark:text-white">{{ $pending->karakter->nama ?? '-' }}</h3>
                             <span class="px-1.5 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">+{{ $pending->awarded_points ?? ($pending->karakter->poin ?? 0) }} poin</span>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Dicatat: {{ $pending->checked_at->format('d M Y H:i') }} | {{ $pending->checked_at->diffForHumans() }}</p>
+                        <p class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">Dicatat {{ $pending->checked_at->format('d M Y H:i') }} · {{ $pending->checked_at->diffForHumans() }}</p>
                         @if($pending->student_note)
                             <p class="text-xs text-blue-600 dark:text-blue-400 mt-0.5 italic">Catatan: "{{ $pending->student_note }}"</p>
                         @endif
@@ -109,7 +106,7 @@
                             <div class="mt-1 text-xs text-blue-600 dark:text-blue-400">Bonus bukti +{{ $pending->proof_bonus_points }} poin</div>
                         @endif
                     </div>
-                    <span class="flex-shrink-0 px-3 py-1.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-lg font-medium inline-flex items-center gap-1">Menunggu Verifikasi</span>
+                    <span class="inline-flex min-h-10 w-full flex-shrink-0 items-center justify-center rounded-xl bg-yellow-100 px-3 py-2 text-center text-xs font-semibold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 sm:min-h-0 sm:w-auto sm:justify-start sm:py-1.5">Menunggu Verifikasi</span>
                 </div>
                 @endforeach
             </div>
@@ -124,14 +121,14 @@
             $progressPercent = $progress['total'] > 0 ? round(($progress['completed'] / $progress['total']) * 100) : 0;
         @endphp
         @if($tasks->count() > 0)
-        <div class="mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-t-lg border border-gray-200 dark:border-gray-700 px-5 py-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $katInfo['label'] }}</h2>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">
+        <div class="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div class="px-4 py-4 sm:px-5">
+                <div class="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Tugas {{ $katInfo['label'] }}</h2>
+                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400 sm:text-sm">
                         {{ $progress['completed'] }}/{{ $progress['total'] }} selesai
                         @if($progress['verified'] > 0)
-                            | {{ $progress['verified'] }} terverifikasi
+                            · {{ $progress['verified'] }} terverifikasi
                         @endif
                     </span>
                 </div>
@@ -140,7 +137,7 @@
                 </div>
             </div>
 
-            <div class="border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-lg divide-y divide-gray-100 dark:divide-gray-700">
+            <div class="pkg-student-task-list">
                 @foreach($tasks as $karakter)
                     @php
                         $checks = $checkedKarakter->get($karakter->id);
@@ -151,11 +148,11 @@
                         $isExpired = $karakter->tanggal_selesai && $selectedWorkDate->gt($karakter->tanggal_selesai->copy()->startOfDay());
                         $isAvailable = $karakter->isAvailableOn($selectedDate);
                     @endphp
-                    <div class="bg-white dark:bg-gray-800 px-5 py-4 {{ $isExpired ? 'opacity-60' : '' }}">
-                        <div class="flex items-center justify-between gap-4">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">{{ $karakter->nama }}</h3>
+                    <article class="pkg-student-task-card {{ $isExpired ? 'opacity-60' : '' }}">
+                        <div class="pkg-student-task-card-layout">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="w-full text-base font-bold leading-snug text-gray-900 dark:text-white sm:w-auto">{{ $karakter->nama }}</h3>
                                     <span class="px-1.5 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">+{{ $karakter->poin }} poin</span>
                                     @if(($karakter->photo_proof_bonus_points ?? 0) > 0 || ($karakter->voice_note_bonus_points ?? 0) > 0)
                                         <span class="px-1.5 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
@@ -164,13 +161,13 @@
                                     @endif
                                 </div>
                                 @if($karakter->deskripsi)
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $karakter->deskripsi }}</p>
+                                    <p class="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ $karakter->deskripsi }}</p>
                                 @endif
                                 @if($karakter->allows_photo_proof || $karakter->allows_voice_note_proof)
-                                    <div class="mt-2 flex flex-wrap gap-2">
+                                    <div class="mt-3 grid gap-2 sm:flex sm:flex-wrap">
                                         @if($karakter->allows_photo_proof)
                                             <div class="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                                                <div class="font-medium">Kirim bukti foto dapat poin +{{ $karakter->photo_proof_bonus_points ?? 0 }}</div>
+                                                <div class="font-semibold">Bukti foto · bonus +{{ $karakter->photo_proof_bonus_points ?? 0 }} poin</div>
                                                 @if($karakter->photo_proof_instruction)
                                                     <div class="mt-1">{{ $karakter->photo_proof_instruction }}</div>
                                                 @endif
@@ -178,7 +175,7 @@
                                         @endif
                                         @if($karakter->allows_voice_note_proof)
                                             <div class="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs text-violet-700 dark:border-violet-800 dark:bg-violet-900/20 dark:text-violet-300">
-                                                <div class="font-medium">Kirim bukti voice note dapat poin +{{ $karakter->voice_note_bonus_points ?? 0 }}</div>
+                                                <div class="font-semibold">Voice note · bonus +{{ $karakter->voice_note_bonus_points ?? 0 }} poin</div>
                                                 @if($karakter->voice_note_instruction)
                                                     <div class="mt-1">{{ $karakter->voice_note_instruction }}</div>
                                                 @endif
@@ -187,10 +184,10 @@
                                     </div>
                                 @endif
                                 @if($karakter->formatted_period)
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                    <p class="mt-2 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                                         Periode: {{ $karakter->formatted_period }}
                                         @if($isExpired)
-                                            <span class="text-red-500 font-medium">| Berakhir</span>
+                                            <span class="font-medium text-red-500">· Berakhir</span>
                                         @endif
                                     </p>
                                 @endif
@@ -228,27 +225,27 @@
                                     <p class="mt-1 text-xs text-blue-600 dark:text-blue-400">Bonus bukti +{{ $dateCheck->proof_bonus_points }} poin</p>
                                 @endif
                             </div>
-                            <div class="flex-shrink-0">
+                            <div class="pkg-student-task-action">
                                 @if($isExpired)
-                                    <span class="px-3 py-2 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg inline-flex items-center gap-1">Waktu Selesai</span>
+                                    <span class="inline-flex items-center justify-center rounded-xl bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-500 dark:bg-gray-700 dark:text-gray-400">Waktu Selesai</span>
                                 @elseif($isVerified)
-                                    <span class="px-3 py-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg inline-flex items-center gap-1 font-medium">Terverifikasi</span>
+                                    <span class="inline-flex items-center justify-center rounded-xl bg-green-100 px-3 py-2 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">Terverifikasi</span>
                                 @elseif($isChecked)
-                                    <span class="px-3 py-2 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-lg inline-flex items-center gap-1 font-medium">Menunggu Verifikasi</span>
+                                    <span class="inline-flex items-center justify-center rounded-xl bg-yellow-100 px-3 py-2 text-center text-xs font-semibold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Menunggu Verifikasi</span>
                                 @elseif(!$isAvailable)
-                                    <span class="px-3 py-2 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg inline-flex items-center gap-1">Belum Tersedia</span>
+                                    <span class="inline-flex items-center justify-center rounded-xl bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-500 dark:bg-gray-700 dark:text-gray-400">Belum Tersedia</span>
                                 @else
                                     @if($karakter->jenis_penyelesaian === 'teks')
-                                        <button data-url="{{ route('siswa.tugas-pkg.submit', $karakter) }}" data-nama="{{ $karakter->nama }}" data-target="{{ $karakter->target_teks }}" data-allows-photo-proof="{{ $karakter->allows_photo_proof ? '1' : '0' }}" data-photo-proof-bonus="{{ $karakter->photo_proof_bonus_points ?? 0 }}" data-photo-proof-instruction="{{ $karakter->photo_proof_instruction }}" data-allows-voice-proof="{{ $karakter->allows_voice_note_proof ? '1' : '0' }}" data-voice-proof-bonus="{{ $karakter->voice_note_bonus_points ?? 0 }}" data-voice-proof-instruction="{{ $karakter->voice_note_instruction }}" data-proof-requirement="{{ $karakter->proof_requirement ?? 'optional' }}" data-voice-max-seconds="{{ $karakter->voice_note_max_seconds ?? 0 }}" @click="openTeksModal($el.dataset.url, $el.dataset.nama, $el.dataset.target, $el.dataset.allowsPhotoProof, $el.dataset.photoProofBonus, $el.dataset.photoProofInstruction, $el.dataset.allowsVoiceProof, $el.dataset.voiceProofBonus, $el.dataset.voiceProofInstruction, $el.dataset.proofRequirement, $el.dataset.voiceMaxSeconds)" class="px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-1 font-medium shadow-sm">Kerjakan Tugas</button>
+                                        <button data-url="{{ route('siswa.tugas-pkg.submit', $karakter) }}" data-nama="{{ $karakter->nama }}" data-target="{{ $karakter->target_teks }}" data-allows-photo-proof="{{ $karakter->allows_photo_proof ? '1' : '0' }}" data-photo-proof-bonus="{{ $karakter->photo_proof_bonus_points ?? 0 }}" data-photo-proof-instruction="{{ $karakter->photo_proof_instruction }}" data-allows-voice-proof="{{ $karakter->allows_voice_note_proof ? '1' : '0' }}" data-voice-proof-bonus="{{ $karakter->voice_note_bonus_points ?? 0 }}" data-voice-proof-instruction="{{ $karakter->voice_note_instruction }}" data-proof-requirement="{{ $karakter->proof_requirement ?? 'optional' }}" data-voice-max-seconds="{{ $karakter->voice_note_max_seconds ?? 0 }}" @click="openTeksModal($el.dataset.url, $el.dataset.nama, $el.dataset.target, $el.dataset.allowsPhotoProof, $el.dataset.photoProofBonus, $el.dataset.photoProofInstruction, $el.dataset.allowsVoiceProof, $el.dataset.voiceProofBonus, $el.dataset.voiceProofInstruction, $el.dataset.proofRequirement, $el.dataset.voiceMaxSeconds)" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">Kerjakan Tugas</button>
                                     @elseif($karakter->jenis_penyelesaian === 'klik')
-                                        <button data-url="{{ route('siswa.tugas-pkg.submit', $karakter) }}" data-id="{{ $karakter->id }}" data-nama="{{ $karakter->nama }}" data-target="{{ $karakter->target_klik ?? 0 }}" data-poin="{{ $karakter->poin ?? 0 }}" data-deskripsi="{{ $karakter->deskripsi }}" data-allows-photo-proof="{{ $karakter->allows_photo_proof ? '1' : '0' }}" data-photo-proof-bonus="{{ $karakter->photo_proof_bonus_points ?? 0 }}" data-photo-proof-instruction="{{ $karakter->photo_proof_instruction }}" data-allows-voice-proof="{{ $karakter->allows_voice_note_proof ? '1' : '0' }}" data-voice-proof-bonus="{{ $karakter->voice_note_bonus_points ?? 0 }}" data-voice-proof-instruction="{{ $karakter->voice_note_instruction }}" data-proof-requirement="{{ $karakter->proof_requirement ?? 'optional' }}" data-voice-max-seconds="{{ $karakter->voice_note_max_seconds ?? 0 }}" @click="openKlikModal($el.dataset.url, $el.dataset.id, $el.dataset.nama, $el.dataset.target, $el.dataset.poin, $el.dataset.deskripsi, $el.dataset.allowsPhotoProof, $el.dataset.photoProofBonus, $el.dataset.photoProofInstruction, $el.dataset.allowsVoiceProof, $el.dataset.voiceProofBonus, $el.dataset.voiceProofInstruction, $el.dataset.proofRequirement, $el.dataset.voiceMaxSeconds)" class="px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-1 font-medium shadow-sm">Mulai Hitungan</button>
+                                        <button data-url="{{ route('siswa.tugas-pkg.submit', $karakter) }}" data-id="{{ $karakter->id }}" data-nama="{{ $karakter->nama }}" data-target="{{ $karakter->target_klik ?? 0 }}" data-poin="{{ $karakter->poin ?? 0 }}" data-deskripsi="{{ $karakter->deskripsi }}" data-allows-photo-proof="{{ $karakter->allows_photo_proof ? '1' : '0' }}" data-photo-proof-bonus="{{ $karakter->photo_proof_bonus_points ?? 0 }}" data-photo-proof-instruction="{{ $karakter->photo_proof_instruction }}" data-allows-voice-proof="{{ $karakter->allows_voice_note_proof ? '1' : '0' }}" data-voice-proof-bonus="{{ $karakter->voice_note_bonus_points ?? 0 }}" data-voice-proof-instruction="{{ $karakter->voice_note_instruction }}" data-proof-requirement="{{ $karakter->proof_requirement ?? 'optional' }}" data-voice-max-seconds="{{ $karakter->voice_note_max_seconds ?? 0 }}" @click="openKlikModal($el.dataset.url, $el.dataset.id, $el.dataset.nama, $el.dataset.target, $el.dataset.poin, $el.dataset.deskripsi, $el.dataset.allowsPhotoProof, $el.dataset.photoProofBonus, $el.dataset.photoProofInstruction, $el.dataset.allowsVoiceProof, $el.dataset.voiceProofBonus, $el.dataset.voiceProofInstruction, $el.dataset.proofRequirement, $el.dataset.voiceMaxSeconds)" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">Mulai Hitungan</button>
                                     @else
-                                        <button data-url="{{ route('siswa.tugas-pkg.submit', $karakter) }}" data-nama="{{ $karakter->nama }}" data-deskripsi="{{ $karakter->deskripsi }}" data-allows-photo-proof="{{ $karakter->allows_photo_proof ? '1' : '0' }}" data-photo-proof-bonus="{{ $karakter->photo_proof_bonus_points ?? 0 }}" data-photo-proof-instruction="{{ $karakter->photo_proof_instruction }}" data-allows-voice-proof="{{ $karakter->allows_voice_note_proof ? '1' : '0' }}" data-voice-proof-bonus="{{ $karakter->voice_note_bonus_points ?? 0 }}" data-voice-proof-instruction="{{ $karakter->voice_note_instruction }}" data-proof-requirement="{{ $karakter->proof_requirement ?? 'optional' }}" data-voice-max-seconds="{{ $karakter->voice_note_max_seconds ?? 0 }}" @click="openEvidenceModal($el.dataset.url, $el.dataset.nama, $el.dataset.deskripsi, $el.dataset.allowsPhotoProof, $el.dataset.photoProofBonus, $el.dataset.photoProofInstruction, $el.dataset.allowsVoiceProof, $el.dataset.voiceProofBonus, $el.dataset.voiceProofInstruction, $el.dataset.proofRequirement, $el.dataset.voiceMaxSeconds)" class="px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-1 font-medium shadow-sm">Tandai Selesai</button>
+                                        <button data-url="{{ route('siswa.tugas-pkg.submit', $karakter) }}" data-nama="{{ $karakter->nama }}" data-deskripsi="{{ $karakter->deskripsi }}" data-allows-photo-proof="{{ $karakter->allows_photo_proof ? '1' : '0' }}" data-photo-proof-bonus="{{ $karakter->photo_proof_bonus_points ?? 0 }}" data-photo-proof-instruction="{{ $karakter->photo_proof_instruction }}" data-allows-voice-proof="{{ $karakter->allows_voice_note_proof ? '1' : '0' }}" data-voice-proof-bonus="{{ $karakter->voice_note_bonus_points ?? 0 }}" data-voice-proof-instruction="{{ $karakter->voice_note_instruction }}" data-proof-requirement="{{ $karakter->proof_requirement ?? 'optional' }}" data-voice-max-seconds="{{ $karakter->voice_note_max_seconds ?? 0 }}" @click="openEvidenceModal($el.dataset.url, $el.dataset.nama, $el.dataset.deskripsi, $el.dataset.allowsPhotoProof, $el.dataset.photoProofBonus, $el.dataset.photoProofInstruction, $el.dataset.allowsVoiceProof, $el.dataset.voiceProofBonus, $el.dataset.voiceProofInstruction, $el.dataset.proofRequirement, $el.dataset.voiceMaxSeconds)" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">Tandai Selesai</button>
                                     @endif
                                 @endif
                             </div>
                         </div>
-                    </div>
+                    </article>
                 @endforeach
             </div>
             @if($progress['total'] > 0 && $progress['verified'] >= $progress['total'])
