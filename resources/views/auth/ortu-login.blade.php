@@ -22,7 +22,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('ortu.login.post') }}" class="space-y-3.5 sm:space-y-4">
+    <form method="POST" action="{{ route('ortu.login.post') }}" class="space-y-3.5 sm:space-y-4" data-auth-login-form>
         @csrf
 
         <div>

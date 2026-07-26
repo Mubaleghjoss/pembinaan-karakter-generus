@@ -736,6 +736,7 @@ class WebAuthnController extends Controller
     private function translateWebAuthnError(WebAuthnException $exception, string $fallback): string
     {
         return match ($exception->getMessage()) {
+            'challenge not found',
             'invalid challenge' => 'Sesi biometrik sudah kedaluwarsa. Coba lagi.',
             'invalid origin' => 'Permintaan biometrik berasal dari origin yang tidak valid.',
             'invalid signature' => 'Tanda tangan biometrik tidak valid.',

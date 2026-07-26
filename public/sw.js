@@ -1,5 +1,5 @@
 // PKG Presensi Service Worker
-const CACHE_NAME = 'pkg-presensi-v12';
+const CACHE_NAME = 'pkg-presensi-v13';
 const urlsToCache = [
     '/',
     '/manifest.json',
@@ -44,6 +44,12 @@ self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
 
     const requestUrl = new URL(event.request.url);
+
+    // Token sesi tidak boleh disimpan di Cache API karena berubah setelah logout/login.
+    if (requestUrl.pathname === '/csrf-token') {
+        event.respondWith(fetch(event.request, { cache: 'no-store' }));
+        return;
+    }
 
     // Always use the network for full page navigations so old Blade HTML is not served from cache.
     if (event.request.mode === 'navigate') {

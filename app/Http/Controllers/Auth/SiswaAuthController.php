@@ -26,7 +26,11 @@ class SiswaAuthController extends Controller
             return redirect()->route('siswa.dashboard');
         }
         
-        return view('auth.siswa-login');
+        return response()
+            ->view('auth.siswa-login')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**

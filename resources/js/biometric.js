@@ -22,15 +22,93 @@ function bufferToBase64Url(buffer) {
     return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
+const csrfRefreshUrl = '/csrf-token';
+const biometricChallengeExpiredMessage = 'Sesi biometrik sudah kedaluwarsa';
+let csrfRefreshPromise = null;
+let authSessionRecoveryMounted = false;
+let authSessionRefreshTimer = null;
+const activeBiometricLoginButtons = new WeakSet();
+
 async function parseJsonResponse(response) {
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
         const message = payload.error || payload.message || 'Permintaan biometrik gagal.';
-        throw new Error(message);
+        const error = new Error(message);
+        error.status = response.status;
+        error.payload = payload;
+        throw error;
     }
 
     return payload;
+}
+
+function updateCsrfToken(token) {
+    if (!token) {
+        return;
+    }
+
+    document.querySelector('meta[name="csrf-token"]')?.setAttribute('content', token);
+    document.querySelectorAll('input[name="_token"]').forEach((input) => {
+        input.value = token;
+    });
+}
+
+function currentCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+async function refreshCsrfToken() {
+    if (csrfRefreshPromise) {
+        return csrfRefreshPromise;
+    }
+
+    csrfRefreshPromise = fetch(csrfRefreshUrl, {
+        method: 'GET',
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+        cache: 'no-store',
+    })
+        .then(parseJsonResponse)
+        .then((payload) => {
+            updateCsrfToken(payload.token);
+            return payload.token || '';
+        })
+        .finally(() => {
+            csrfRefreshPromise = null;
+        });
+
+    return csrfRefreshPromise;
+}
+
+async function fetchWithFreshCsrf(url, options = {}, { refreshBefore = false } = {}) {
+    if (refreshBefore) {
+        await refreshCsrfToken();
+    }
+
+    const request = {
+        ...options,
+        headers: new Headers(options.headers || {}),
+        credentials: options.credentials || 'same-origin',
+        cache: 'no-store',
+    };
+
+    request.headers.set('X-CSRF-TOKEN', currentCsrfToken());
+
+    let response = await fetch(url, request);
+
+    if (response.status !== 419) {
+        return response;
+    }
+
+    await refreshCsrfToken();
+    request.headers.set('X-CSRF-TOKEN', currentCsrfToken());
+    response = await fetch(url, request);
+
+    return response;
 }
 
 function normalizePublicKeyOptions(options) {
@@ -78,14 +156,30 @@ function setButtonBusy(button, html) {
         return () => {};
     }
 
-    const previous = button.innerHTML;
+    if (typeof button.__pkgBiometricInitialHtml !== 'string') {
+        button.__pkgBiometricInitialHtml = button.innerHTML;
+    }
+
     button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    button.dataset.biometricBusy = 'true';
     button.innerHTML = html;
 
-    return () => {
-        button.disabled = false;
-        button.innerHTML = previous;
-    };
+    return () => resetBiometricButton(button);
+}
+
+function resetBiometricButton(button) {
+    if (!button) {
+        return;
+    }
+
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    delete button.dataset.biometricBusy;
+
+    if (typeof button.__pkgBiometricInitialHtml === 'string') {
+        button.innerHTML = button.__pkgBiometricInitialHtml;
+    }
 }
 
 function showBiometricDialog({
@@ -280,56 +374,69 @@ async function loginWithBiometric({
     );
 
     try {
-        const optionsResponse = await fetch(optionsUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                Accept: 'application/json',
-            },
-            credentials: 'same-origin',
-        });
-        const options = normalizePublicKeyOptions(await parseJsonResponse(optionsResponse));
+        let challengeRetryCount = 0;
 
-        const credential = await navigator.credentials.get({
-            publicKey: {
-                challenge: base64UrlToBuffer(options.challenge),
-                rpId: options.rpId,
-                timeout: options.timeout,
-                userVerification: options.userVerification,
-                allowCredentials: Array.isArray(options.allowCredentials)
-                    ? options.allowCredentials.map((item) => ({
-                          ...item,
-                          id: base64UrlToBuffer(item.id),
-                      }))
-                    : [],
-            },
-        });
+        while (challengeRetryCount <= 1) {
+            try {
+                const optionsResponse = await fetchWithFreshCsrf(optionsUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                    },
+                }, { refreshBefore: true });
+                const options = normalizePublicKeyOptions(await parseJsonResponse(optionsResponse));
 
-        const loginResponse = await fetch(loginUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                Accept: 'application/json',
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-                credential_id: bufferToBase64Url(credential.rawId),
-                response: {
-                    clientDataJSON: bufferToBase64Url(credential.response.clientDataJSON),
-                    authenticatorData: bufferToBase64Url(credential.response.authenticatorData),
-                    signature: bufferToBase64Url(credential.response.signature),
-                    userHandle: credential.response.userHandle
-                        ? bufferToBase64Url(credential.response.userHandle)
-                        : null,
-                },
-            }),
-        });
+                const credential = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: base64UrlToBuffer(options.challenge),
+                        rpId: options.rpId,
+                        timeout: options.timeout,
+                        userVerification: options.userVerification,
+                        allowCredentials: Array.isArray(options.allowCredentials)
+                            ? options.allowCredentials.map((item) => ({
+                                  ...item,
+                                  id: base64UrlToBuffer(item.id),
+                              }))
+                            : [],
+                    },
+                });
 
-        const result = await parseJsonResponse(loginResponse);
-        button.innerHTML = successHtml;
-        window.location.href = result.redirect || fallbackRedirect;
+                const loginResponse = await fetchWithFreshCsrf(loginUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({
+                        credential_id: bufferToBase64Url(credential.rawId),
+                        response: {
+                            clientDataJSON: bufferToBase64Url(credential.response.clientDataJSON),
+                            authenticatorData: bufferToBase64Url(credential.response.authenticatorData),
+                            signature: bufferToBase64Url(credential.response.signature),
+                            userHandle: credential.response.userHandle
+                                ? bufferToBase64Url(credential.response.userHandle)
+                                : null,
+                        },
+                    }),
+                });
+
+                const result = await parseJsonResponse(loginResponse);
+                button.innerHTML = successHtml;
+                window.location.href = result.redirect || fallbackRedirect;
+                return true;
+            } catch (error) {
+                const challengeExpired = error.status === 422
+                    && error.message?.includes(biometricChallengeExpiredMessage);
+
+                if (!challengeExpired || challengeRetryCount >= 1) {
+                    throw error;
+                }
+
+                challengeRetryCount += 1;
+                await refreshCsrfToken();
+            }
+        }
     } catch (error) {
         restoreButton();
 
@@ -543,38 +650,156 @@ function mountBiometricLogins() {
     sections.forEach((section) => {
         const button = section.querySelector('[data-biometric-login]');
 
+        if (!button || button.dataset.biometricMounted === 'true') {
+            return;
+        }
+
+        button.dataset.biometricMounted = 'true';
+        if (typeof button.__pkgBiometricInitialHtml !== 'string') {
+            button.__pkgBiometricInitialHtml = button.innerHTML;
+        }
+
         ensurePlatformAuthenticator().then((available) => {
             if (!available) {
                 section.classList.add('hidden');
             }
         });
 
-        button?.addEventListener('click', async () => {
-            await loginWithBiometric({
-                button,
-                optionsUrl: button.dataset.optionsUrl,
-                loginUrl: button.dataset.loginUrl,
-                fallbackRedirect: button.dataset.fallbackRedirect,
-                unknownCredentialHtml: button.dataset.unknownCredentialHtml,
-                infoColor: button.dataset.infoColor || '#0f766e',
-                errorColor: button.dataset.errorColor || '#0f766e',
-            });
+        button.addEventListener('click', async () => {
+            if (activeBiometricLoginButtons.has(button)) {
+                return;
+            }
+
+            activeBiometricLoginButtons.add(button);
+
+            try {
+                await loginWithBiometric({
+                    button,
+                    optionsUrl: button.dataset.optionsUrl,
+                    loginUrl: button.dataset.loginUrl,
+                    fallbackRedirect: button.dataset.fallbackRedirect,
+                    unknownCredentialHtml: button.dataset.unknownCredentialHtml,
+                    infoColor: button.dataset.infoColor || '#0f766e',
+                    errorColor: button.dataset.errorColor || '#0f766e',
+                });
+            } finally {
+                activeBiometricLoginButtons.delete(button);
+            }
         });
     });
+}
+
+function mountAuthLoginForms() {
+    document.querySelectorAll('[data-auth-login-form]').forEach((form) => {
+        if (form.dataset.authSessionMounted === 'true') {
+            return;
+        }
+
+        form.dataset.authSessionMounted = 'true';
+        form.addEventListener('submit', async (event) => {
+            if (form.dataset.authSessionSubmitting === 'true') {
+                return;
+            }
+
+            event.preventDefault();
+            form.dataset.authSessionSubmitting = 'true';
+
+            const submitButton = event.submitter || form.querySelector('button[type="submit"]');
+            const initialHtml = submitButton?.innerHTML;
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span>Memproses...</span>';
+            }
+
+            try {
+                await refreshCsrfToken();
+            } catch (error) {
+                console.error('Failed to refresh login session token', error);
+            }
+
+            HTMLFormElement.prototype.submit.call(form);
+
+            if (submitButton && typeof initialHtml === 'string') {
+                window.setTimeout(() => {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = initialHtml;
+                    delete form.dataset.authSessionSubmitting;
+                }, 5000);
+            }
+        });
+    });
+}
+
+function recoverAuthSession({ resetButtons = true } = {}) {
+    const loginSections = document.querySelectorAll('[data-biometric-login-section]');
+    const loginForms = document.querySelectorAll('[data-auth-login-form]');
+
+    if (loginSections.length === 0 && loginForms.length === 0) {
+        return;
+    }
+
+    mountBiometricLogins();
+    mountAuthLoginForms();
+
+    if (resetButtons) {
+        loginSections.forEach((section) => {
+            const button = section.querySelector('[data-biometric-login]');
+            if (button && !activeBiometricLoginButtons.has(button)) {
+                resetBiometricButton(button);
+            }
+        });
+    }
+
+    refreshCsrfToken().catch((error) => {
+        console.error('Failed to recover authentication session', error);
+    });
+}
+
+function mountAuthSessionRecovery() {
+    if (authSessionRecoveryMounted) {
+        return;
+    }
+
+    authSessionRecoveryMounted = true;
+
+    window.addEventListener('pageshow', () => {
+        recoverAuthSession({ resetButtons: true });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') {
+            return;
+        }
+
+        recoverAuthSession({ resetButtons: true });
+    });
+
+    authSessionRefreshTimer = window.setInterval(() => {
+        recoverAuthSession({ resetButtons: false });
+    }, 600000);
 }
 
 document.addEventListener('DOMContentLoaded', mountBiometricPrompt);
 document.addEventListener('DOMContentLoaded', mountBiometricSettings);
 document.addEventListener('DOMContentLoaded', mountBiometricLogins);
+document.addEventListener('DOMContentLoaded', mountAuthLoginForms);
+document.addEventListener('DOMContentLoaded', () => {
+    mountAuthSessionRecovery();
+    recoverAuthSession({ resetButtons: false });
+});
 
 window.PKGBiometric = {
     base64UrlToBuffer,
     bufferToBase64Url,
     ensurePlatformAuthenticator,
+    refreshCsrfToken,
     registerDevice,
     loginWithBiometric,
     removeCredential,
     mountBiometricPrompt,
     mountBiometricSettings,
     mountBiometricLogins,
+    mountAuthLoginForms,
+    recoverAuthSession,
 };

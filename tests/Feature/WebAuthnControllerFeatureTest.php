@@ -18,6 +18,10 @@ class WebAuthnControllerFeatureTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('logging.channels.auth', [
+            'driver' => 'monolog',
+            'handler' => \Monolog\Handler\NullHandler::class,
+        ]);
         $this->withoutMiddleware(VerifyCsrfToken::class);
         $this->setUpMinimalSchema();
     }
@@ -109,6 +113,54 @@ class WebAuthnControllerFeatureTest extends TestCase
     }
 
     #[Test]
+    public function login_without_an_active_challenge_returns_a_recoverable_session_message(): void
+    {
+        $siswa = $this->createSiswa();
+
+        WebAuthnCredential::create([
+            'user_id' => $siswa->id,
+            'user_type' => 'siswa',
+            'credential_id' => 'credential-without-challenge',
+            'credential_public_key' => 'public-key',
+            'signature_counter' => 1,
+            'device_name' => 'Android',
+        ]);
+
+        $response = $this->postJson(route('siswa.webauthn.login'), [
+            'credential_id' => 'credential-without-challenge',
+            'response' => [
+                'clientDataJSON' => 'Zm9v',
+                'authenticatorData' => 'YmFy',
+                'signature' => 'YmF6',
+                'userHandle' => null,
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Sesi biometrik sudah kedaluwarsa. Coba lagi.',
+            ]);
+    }
+
+    #[Test]
+    public function authentication_session_endpoints_are_not_cacheable(): void
+    {
+        $csrfResponse = $this->getJson('/csrf-token');
+
+        $csrfResponse->assertOk()
+            ->assertJsonStructure(['token']);
+        $this->assertStringContainsString('no-store', (string) $csrfResponse->headers->get('Cache-Control'));
+
+        foreach ([route('login'), route('siswa.login'), route('ortu.login')] as $loginUrl) {
+            $loginResponse = $this->get($loginUrl);
+
+            $loginResponse->assertOk();
+            $this->assertStringContainsString('no-store', (string) $loginResponse->headers->get('Cache-Control'));
+        }
+    }
+
+    #[Test]
     public function settings_page_provides_environment_warning_metadata(): void
     {
         config()->set('app.url', 'https://pkg.example.com');
@@ -186,6 +238,7 @@ class WebAuthnControllerFeatureTest extends TestCase
             $table->text('alamat')->nullable();
             $table->string('ortu_username')->nullable();
             $table->string('ortu_password')->nullable();
+            $table->string('status')->default('active');
             $table->boolean('is_active')->default(true);
             $table->string('qr_secret_salt')->nullable();
             $table->timestamp('last_login_at')->nullable();

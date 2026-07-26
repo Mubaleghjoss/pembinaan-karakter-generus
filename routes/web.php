@@ -149,7 +149,11 @@ Route::middleware('guest')->group(function () {
 
 // CSRF Token refresh endpoint
 Route::get('/csrf-token', function () {
-    return response()->json(['token' => csrf_token()]);
+    return response()
+        ->json(['token' => csrf_token()])
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
 });
 
 // Shared WebAuthn biometric routes (public - no auth needed for login flow)

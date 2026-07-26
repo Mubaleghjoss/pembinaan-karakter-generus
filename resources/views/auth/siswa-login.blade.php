@@ -22,7 +22,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('siswa.login.post') }}" class="space-y-3.5 sm:space-y-4">
+    <form method="POST" action="{{ route('siswa.login.post') }}" class="space-y-3.5 sm:space-y-4" data-auth-login-form>
         @csrf
 
         <div>
@@ -87,71 +87,4 @@
             <span>Login dengan Sidik Jari</span>
         </button>
     </div>
-
 @endsection
-
-@push('scripts')
-    <script src="/js/csrf-handler.js"></script>
-    <script>
-        async function refreshCsrfToken() {
-            try {
-                const response = await fetch('/csrf-token');
-                const data = await response.json();
-                if (data.token) {
-                    document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.token);
-                    document.querySelector('input[name="_token"]').value = data.token;
-                }
-            } catch (error) {
-                console.error('Failed to refresh CSRF token:', error);
-            }
-        }
-
-        refreshCsrfToken();
-        setInterval(refreshCsrfToken, 600000);
-
-        const loginForm = document.querySelector('form');
-        loginForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const form = this;
-            const submitButton = form.querySelector('button[type="submit"]');
-            const originalText = submitButton.textContent;
-
-            submitButton.disabled = true;
-            submitButton.textContent = 'Memproses...';
-
-            await refreshCsrfToken();
-
-            try {
-                const formData = new FormData(form);
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'same-origin',
-                    redirect: 'follow'
-                });
-
-                if (response.redirected || response.url !== window.location.href) {
-                    window.location.href = response.url;
-                    return;
-                }
-
-                if (response.ok) {
-                    window.location.href = '/siswa/dashboard';
-                } else if (response.status === 419) {
-                    await refreshCsrfToken();
-                    form.submit();
-                } else {
-                    submitButton.disabled = false;
-                    submitButton.textContent = originalText;
-                    form.submit();
-                }
-            } catch (error) {
-                console.error('Login submission error:', error);
-                submitButton.disabled = false;
-                submitButton.textContent = originalText;
-                form.submit();
-            }
-        });
-    </script>
-@endpush
