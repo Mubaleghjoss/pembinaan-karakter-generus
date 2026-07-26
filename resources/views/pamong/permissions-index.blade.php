@@ -76,6 +76,7 @@
             <span class="text-sm text-gray-500 dark:text-gray-400">Total: {{ count($pamongList) }} akun tim</span>
         </div>
         
+        <div class="pkg-mobile-table">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
@@ -89,11 +90,11 @@
             <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($pamongList as $p)
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td class="px-4 py-4">
+                    <td class="px-4 py-4" data-label="Pilih">
                         <input type="checkbox" :value="{{ $p->id }}" x-model="selectedPamong"
                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
                     </td>
-                    <td class="px-4 py-4">
+                    <td class="pkg-mobile-main px-4 py-4" data-label="Akun tim">
                         <div class="flex items-center">
                             <div class="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
                                 <span class="text-white font-medium">{{ strtoupper(substr($p->username, 0, 1)) }}</span>
@@ -104,7 +105,7 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-4">
+                    <td class="px-4 py-4" data-label="Status akses">
                         @if($p->pamongPermission?->is_excluded)
                             <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                                 Full Access (Dikecualikan)
@@ -119,7 +120,7 @@
                             </span>
                         @endif
                     </td>
-                    <td class="px-4 py-4">
+                    <td class="px-4 py-4" data-label="Menu diizinkan">
                         @if($p->pamongPermission?->is_excluded)
                             <span class="text-sm text-orange-600 dark:text-orange-400">Semua Menu</span>
                         @elseif($p->pamongPermission?->menu_permissions)
@@ -139,7 +140,7 @@
                             <span class="text-sm text-gray-500 dark:text-gray-400">Semua Menu (Default)</span>
                         @endif
                     </td>
-                    <td class="px-4 py-4 text-right">
+                    <td class="pkg-mobile-actions px-4 py-4 text-right" data-label="Aksi">
                         <a href="{{ route('pamong.permissions', $p) }}" class="text-orange-600 hover:text-orange-900 dark:text-orange-400">
                             Edit Hak Akses
                         </a>
@@ -147,13 +148,14 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="5" class="pkg-mobile-empty px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                         Tidak ada akun tim ditemukan.
                     </td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
+        </div>
     </div>
 
     <!-- Legend -->

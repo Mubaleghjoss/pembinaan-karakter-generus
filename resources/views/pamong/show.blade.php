@@ -61,6 +61,7 @@
         </div>
         
         @if($assignedStudents->count() > 0)
+        <div class="pkg-mobile-table">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
@@ -73,16 +74,16 @@
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 @foreach($assignedStudents as $assignment)
                 <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="pkg-mobile-main px-6 py-4 whitespace-nowrap" data-label="Siswa">
                         <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $assignment->siswa->nama }}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" data-label="NIS">
                         {{ $assignment->siswa->nis }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" data-label="Kelas">
                         {{ $assignment->siswa->kelas->nama ?? '-' }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <td class="pkg-mobile-actions px-6 py-4 whitespace-nowrap text-right" data-label="Aksi">
                         <form action="{{ route('pamong.remove-assignment', [$pamong, $assignment->siswa]) }}" method="POST" class="inline" data-confirm="Yakin ingin menghapus siswa ini dari penugasan?" data-confirm-title="Hapus penugasan siswa" data-confirm-button="Hapus" data-confirm-tone="danger">
                             @csrf
                             @method('DELETE')
@@ -93,6 +94,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
             {{ $assignedStudents->links() }}
         </div>

@@ -72,7 +72,7 @@
         </div>
 
         <!-- Table -->
-        <div x-show="!qrLoading && qrPamong.length > 0" class="overflow-x-auto">
+        <div x-show="!qrLoading && qrPamong.length > 0" class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-[760px] divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -90,13 +90,13 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="pamong in qrPamong" :key="pamong.id">
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-4" data-label="Pilih">
                                 <input type="checkbox" 
                                        :value="pamong.id"
                                        x-model="selectedQrPamong"
                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="pkg-mobile-main px-4 py-4" data-label="Pamong">
                                 <div class="flex items-center">
                                     <div class="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
                                         <span class="text-white font-semibold text-sm" x-text="pamong.username?.charAt(0).toUpperCase()"></span>
@@ -107,8 +107,8 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400" x-text="pamong.email"></td>
-                            <td class="px-4 py-4 text-right">
+                            <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400" data-label="Email" x-text="pamong.email"></td>
+                            <td class="pkg-mobile-actions px-4 py-4 text-right" data-label="Aksi">
                                 <button @click="downloadQR(pamong)" class="text-purple-600 hover:text-purple-900 dark:text-purple-400" title="Lihat Kartu QR">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>

@@ -105,7 +105,7 @@
         </div>
 
         <!-- Table -->
-        <div x-show="!permissionsLoading && permissionsPamong.length > 0" class="overflow-x-auto">
+        <div x-show="!permissionsLoading && permissionsPamong.length > 0" class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-[860px] divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -124,13 +124,13 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="pamong in permissionsPamong" :key="pamong.id">
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-4" data-label="Pilih">
                                 <input type="checkbox" 
                                        :value="pamong.id"
                                        x-model.number="selectedPermissions"
                                        class="pkg-check">
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="pkg-mobile-main px-4 py-4" data-label="Pamong">
                                 <div class="flex items-center">
                                     <div class="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
                                         <span class="text-white font-semibold text-sm" x-text="pamong.username?.charAt(0).toUpperCase()"></span>
@@ -141,7 +141,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-4" data-label="Status akses">
                                 <template x-if="pamong.pamong_permission?.is_excluded">
                                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                                         Full Access
@@ -153,7 +153,7 @@
                                     </span>
                                 </template>
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-4" data-label="Menu diizinkan">
                                 <template x-if="pamong.pamong_permission?.is_excluded">
                                     <span class="text-sm text-gray-500 dark:text-gray-400">Semua menu</span>
                                 </template>
@@ -173,7 +173,7 @@
                                     </div>
                                 </template>
                             </td>
-                            <td class="px-4 py-4 text-right">
+                            <td class="pkg-mobile-actions px-4 py-4 text-right" data-label="Aksi">
                                 <div class="flex items-center justify-end space-x-2">
                                     <button @click="toggleExcluded(pamong)" 
                                             class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"

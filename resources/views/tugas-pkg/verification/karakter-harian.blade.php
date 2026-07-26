@@ -185,7 +185,7 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -199,11 +199,11 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($checklists as $checklist)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="pkg-mobile-main px-6 py-4 whitespace-nowrap" data-label="Siswa">
                             <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $checklist->siswa->nama }}</div>
                             <div class="text-sm text-gray-500 dark:text-gray-300">{{ $checklist->siswa->nis }}</div>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4" data-label="Tugas PKG">
                             <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $checklist->karakter->nama }}</div>
                             <div class="text-xs text-gray-500 dark:text-gray-300">
                                 <span class="pkg-status-badge pkg-status-neutral">{{ $checklist->karakter->kategori_label }}</span>
@@ -229,10 +229,10 @@
                                 </div>
                                 @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-label="Tanggal">
                             {{ $checklist->checked_at->isoFormat('D MMM YYYY HH:mm') }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-6 py-4 whitespace-nowrap" data-label="Status">
                             @if($checklist->isVerified())
                             <span class="pkg-status-badge pkg-status-success">
                                 Terverifikasi
@@ -246,7 +246,7 @@
                             </span>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <td class="pkg-mobile-actions px-6 py-4 whitespace-nowrap text-sm" data-label="Aksi">
                             @if(!$checklist->isVerified())
                             <button onclick="openVerifyModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}')" class="btn-success mr-3 rounded-lg px-3 py-1.5 text-xs text-white">
                                 Verifikasi
@@ -263,7 +263,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-0">
+                        <td colspan="5" class="pkg-mobile-empty px-6 py-0">
                             <div class="pkg-empty-state py-8">
                                 <h3 class="pkg-empty-title">Tidak ada data checklist</h3>
                                 <p class="pkg-empty-copy">Belum ada checklist yang cocok dengan filter saat ini.</p>

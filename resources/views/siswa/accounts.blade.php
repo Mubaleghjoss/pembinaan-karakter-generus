@@ -74,7 +74,7 @@
             <p class="text-sm text-gray-500">Dicetak: {{ now()->format('d M Y H:i') }}</p>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -88,15 +88,15 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($siswaList as $index => $siswa)
                     <tr>
-                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $index + 1 }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $siswa->nama }}</td>
-                        <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white">{{ $siswa->nis }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $siswa->kelas->nama ?? '-' }}</td>
-                        <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white">{{ $siswa->nis }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="No">{{ $index + 1 }}</td>
+                        <td class="pkg-mobile-main px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Siswa">{{ $siswa->nama }}</td>
+                        <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white" data-label="NIS">{{ $siswa->nis }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Kelas">{{ $siswa->kelas->nama ?? '-' }}</td>
+                        <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white" data-label="Password awal">{{ $siswa->nis }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                        <td colspan="5" class="pkg-mobile-empty px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                             Tidak ada data siswa
                         </td>
                     </tr>

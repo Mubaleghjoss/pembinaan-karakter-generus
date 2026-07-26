@@ -22,21 +22,7 @@
             </div>
         </div>
 
-        {{-- Quick Navigation --}}
-        <div class="pkg-filter-bar mb-6 flex flex-wrap gap-3">
-            <a href="{{ route('admin.gamification.badges') }}" class="pkg-tab-link text-sm font-medium">
-                Pin Penghargaan
-            </a>
-            <a href="{{ route('admin.gamification.levels') }}" class="pkg-tab-link text-sm font-medium">
-                Kelola Level
-            </a>
-            <a href="{{ route('admin.gamification.analytics') }}" class="pkg-tab-link text-sm font-medium">
-                Analitik
-            </a>
-            <a href="{{ route('admin.gamification.transactions') }}" class="pkg-btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium shadow-sm">
-                Riwayat Transaksi
-            </a>
-        </div>
+        @include('admin.gamification.partials.navigation')
 
         {{-- Flash Message --}}
         @if(session('success'))
@@ -421,7 +407,7 @@
 
         {{-- Transaction Table --}}
         <div class="pkg-panel overflow-hidden">
-            <div class="overflow-x-auto">
+            <div class="pkg-mobile-table overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -440,39 +426,39 @@
                         <tr x-data="{ editing: false }" class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
                             {{-- View Mode --}}
                             <template x-if="!editing">
-                                <td class="px-4 py-3 text-gray-400 font-mono text-xs">#{{ $t->id }}</td>
+                                <td class="px-4 py-3 text-gray-400 font-mono text-xs" data-label="ID">#{{ $t->id }}</td>
                             </template>
                             <template x-if="!editing">
-                                <td class="px-4 py-3">
+                                <td class="pkg-mobile-main px-4 py-3" data-label="Siswa">
                                     <p class="font-medium text-gray-800 dark:text-white">{{ $t->siswa->nama ?? '-' }}</p>
                                     <p class="text-xs text-gray-400">{{ $t->siswa->nis ?? '' }}</p>
                                 </td>
                             </template>
                             <template x-if="!editing">
-                                <td class="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs truncate">{{ $t->description }}</td>
+                                <td class="px-4 py-3 text-gray-700 dark:text-gray-300 sm:max-w-xs sm:truncate" data-label="Deskripsi">{{ $t->description }}</td>
                             </template>
                             <template x-if="!editing">
-                                <td class="px-4 py-3 text-center">
+                                <td class="px-4 py-3 text-center" data-label="Sumber">
                                     <span class="text-lg" title="{{ $t->source }}">{{ $t->icon }}</span>
                                     <span class="block text-xs text-gray-400 capitalize">{{ $t->source_label }}</span>
                                 </td>
                             </template>
                             <template x-if="!editing">
-                                <td class="px-4 py-3 text-right font-bold {{ $t->color }}">{{ $t->formatted_points }}</td>
+                                <td class="px-4 py-3 text-right font-bold {{ $t->color }}" data-label="Poin">{{ $t->formatted_points }}</td>
                             </template>
                             <template x-if="!editing">
-                                <td class="px-4 py-3 text-xs text-gray-500">
+                                <td class="px-4 py-3 text-xs text-gray-500" data-label="Periode">
                                     {{ data_get($t->metadata, 'period_name') ?? '-' }}
                                 </td>
                             </template>
                             <template x-if="!editing">
-                                <td class="px-4 py-3 text-xs text-gray-500">
+                                <td class="px-4 py-3 text-xs text-gray-500" data-label="Waktu">
                                     {{ $t->created_at->format('d M Y') }}
                                     <br>{{ $t->created_at->format('H:i') }}
                                 </td>
                             </template>
                             <template x-if="!editing">
-                                <td class="px-4 py-3 text-center">
+                                <td class="pkg-mobile-actions px-4 py-3 text-center" data-label="Aksi">
                                     <div class="flex items-center justify-center gap-1">
                                         <button @click="editing = true" class="rounded-lg p-1.5 transition hover:bg-blue-50 dark:hover:bg-blue-900/20" title="Edit">
                                             <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -489,13 +475,13 @@
 
                             {{-- Edit Mode --}}
                             <template x-if="editing">
-                                <td colspan="8" class="px-4 py-3">
-                                    <form action="{{ route('admin.gamification.transactions.update', $t->id) }}" method="POST" class="flex items-center gap-3 flex-wrap">
+                                <td colspan="8" class="pkg-mobile-main px-4 py-3">
+                                    <form action="{{ route('admin.gamification.transactions.update', $t->id) }}" method="POST" class="grid gap-3 sm:flex sm:flex-wrap sm:items-center">
                                         @csrf @method('PUT')
                                         <span class="text-xs text-gray-400 font-mono">#{{ $t->id }}</span>
                                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t->siswa->nama ?? '-' }}</span>
                                         <input type="text" name="description" value="{{ $t->description }}" required
-                                            class="flex-1 min-w-[200px] px-3 py-1.5 text-sm pkg-field">
+                                            class="w-full px-3 py-1.5 text-sm pkg-field sm:min-w-[200px] sm:flex-1">
                                         <input type="number" name="points" value="{{ $t->points }}" required
                                             class="w-24 px-3 py-1.5 text-sm pkg-field text-right">
                                         <span class="text-xs text-gray-400">poin</span>
@@ -507,7 +493,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-0">
+                            <td colspan="8" class="pkg-mobile-empty px-4 py-0">
                                 <div class="pkg-empty-state">
                                     <h3 class="pkg-empty-title">Tidak ada transaksi ditemukan</h3>
                                     <p class="pkg-empty-copy">Ubah filter periode, siswa, sumber, tipe, atau kata kunci untuk melihat hasil lain.</p>

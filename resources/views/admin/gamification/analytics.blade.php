@@ -24,21 +24,7 @@
             </div>
         </div>
 
-        {{-- Quick Navigation --}}
-        <div class="flex flex-wrap gap-3 mb-6">
-            <a href="{{ route('admin.gamification.badges') }}" class="pkg-tab-link text-sm font-medium">
-                Pin Penghargaan
-            </a>
-            <a href="{{ route('admin.gamification.levels') }}" class="pkg-tab-link text-sm font-medium">
-                Kelola Level
-            </a>
-            <a href="{{ route('admin.gamification.analytics') }}" class="pkg-btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium shadow-sm">
-                Analitik
-            </a>
-            <a href="{{ route('admin.gamification.transactions') }}" class="pkg-tab-link text-sm font-medium">
-                Riwayat Transaksi
-            </a>
-        </div>
+        @include('admin.gamification.partials.navigation')
 
         <!-- Overview Stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -205,7 +191,7 @@
                     </a>
                 </div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="pkg-mobile-table overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -220,27 +206,27 @@
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @foreach($dailyConsistency as $index => $item)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">{{ $index + 1 }}</td>
-                            <td class="px-4 py-3">
+                            <td class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400" data-label="Peringkat">{{ $index + 1 }}</td>
+                            <td class="pkg-mobile-main px-4 py-3" data-label="Siswa">
                                 <a href="{{ route('tugas-pkg.history', $item->siswa_id) }}" class="group">
                                     <p class="font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-800 dark:group-hover:text-indigo-300 transition">{{ $item->siswa->nama ?? '-' }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $item->siswa->nis ?? '-' }}</p>
                                 </a>
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="px-4 py-3 text-center" data-label="Hari aktif">
                                 <span class="text-sm font-bold text-green-600 dark:text-green-400">{{ $item->active_days }}</span>
                                 <span class="text-xs text-gray-400"> / {{ $item->total_span_days }}</span>
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="px-4 py-3 text-center" data-label="Hari terlewat">
                                 <span class="text-sm font-medium {{ $item->skip_days > $item->active_days ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-300' }}">{{ $item->skip_days }}</span>
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="px-4 py-3 text-center" data-label="Rata-rata per minggu">
                                 <span class="text-sm font-bold {{ $item->days_per_week >= 3 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400' }}">
                                     {{ $item->days_per_week }}
                                 </span>
                                 <span class="text-xs text-gray-400">hari</span>
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="px-4 py-3 text-center" data-label="Status">
                                 @if($item->is_consistent)
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Rutin</span>
                                 @else
@@ -265,7 +251,7 @@
                 </div>
                 <a href="{{ route('admin.gamification.export-analytics', ['type' => 'ranking']) }}" class="text-xs text-purple-600 hover:text-purple-800 font-medium">CSV</a>
             </div>
-            <div class="overflow-x-auto">
+            <div class="pkg-mobile-table overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -279,26 +265,26 @@
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @foreach($studentTaskStats as $index => $stat)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-6 py-4 text-center">
+                            <td class="px-6 py-4 text-center" data-label="Peringkat">
                                 @if($index < 3)
                                 <span class="text-xs font-semibold">{{ ['P1','P2','P3'][$index] }}</span>
                                 @else
                                 <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $index + 1 }}</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="pkg-mobile-main px-6 py-4" data-label="Siswa">
                                 <a href="{{ route('tugas-pkg.history', $stat->siswa_id) }}" class="group">
                                     <p class="font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-800 dark:group-hover:text-indigo-300 transition">{{ $stat->siswa->nama ?? '-' }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $stat->siswa->nis ?? '-' }}</p>
                                 </a>
                             </td>
-                            <td class="px-6 py-4 text-center">
+                            <td class="px-6 py-4 text-center" data-label="Total tugas">
                                 <span class="text-lg font-bold text-blue-600">{{ $stat->total_tasks }}</span>
                             </td>
-                            <td class="px-6 py-4 text-center">
+                            <td class="px-6 py-4 text-center" data-label="Terverifikasi">
                                 <span class="text-lg font-bold text-green-600">{{ $stat->verified_tasks }}</span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4" data-label="Progres">
                                 @php
                                     $verifyPercent = $stat->total_tasks > 0 ? round(($stat->verified_tasks / $stat->total_tasks) * 100) : 0;
                                 @endphp
@@ -352,7 +338,7 @@
             <div class="p-6 border-b dark:border-gray-700">
                 <h2 class="text-lg font-bold text-gray-800 dark:text-white">Aktivitas Terbaru</h2>
             </div>
-            <div class="overflow-x-auto">
+            <div class="pkg-mobile-table overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -366,13 +352,13 @@
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($recentActivity as $activity)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400" data-label="Waktu">
                                 {{ $activity->created_at->format('d/m/Y H:i') }}
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="pkg-mobile-main px-6 py-4" data-label="Siswa">
                                 <p class="font-medium text-gray-800 dark:text-white">{{ $activity->siswa->nama ?? '-' }}</p>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4" data-label="Tipe">
                                 <span class="px-2 py-1 text-xs font-medium rounded-full
                                     {{ $activity->type === 'attendance' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200' : 
                                        ($activity->type === 'character' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200' : 
@@ -380,10 +366,10 @@
                                     {{ ucfirst($activity->type) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300" data-label="Deskripsi">
                                 {{ $activity->description }}
                             </td>
-                            <td class="px-6 py-4 text-right">
+                            <td class="px-6 py-4 text-right" data-label="Poin">
                                 <span class="font-bold {{ $activity->points >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ $activity->points >= 0 ? '+' : '' }}{{ $activity->points }}
                                 </span>
@@ -391,7 +377,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="5" class="pkg-mobile-empty px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                 Belum ada aktivitas
                             </td>
                         </tr>

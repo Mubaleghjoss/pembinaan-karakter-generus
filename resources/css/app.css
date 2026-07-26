@@ -1261,6 +1261,21 @@ html.reveal-ready [data-reveal].is-visible {
     display: none;
 }
 
+.pkg-subnav-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 0.25rem;
+    border: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.24));
+    border-radius: 0.875rem;
+    background: var(--pkg-surface, #ffffff);
+    scrollbar-width: none;
+}
+
+.pkg-subnav-scroll::-webkit-scrollbar {
+    display: none;
+}
+
 .pkg-task-evidence[open] summary svg {
     transform: rotate(180deg);
 }

@@ -135,6 +135,91 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('data-label="Target"', $materi);
     }
 
+    public function test_interactive_tables_use_mobile_cards_or_an_explicit_mobile_alternative(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $viewsRoot = $root.'/resources/views';
+        $unexpected = [];
+
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($viewsRoot));
+
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $path = str_replace('\\', '/', $file->getPathname());
+            $relativePath = str_replace(str_replace('\\', '/', $viewsRoot).'/', '', $path);
+            $source = file_get_contents($file->getPathname());
+
+            if (! str_contains($source, '<table')) {
+                continue;
+            }
+
+            if (str_contains($relativePath, '/pdf.blade.php')
+                || str_contains($relativePath, 'export-pdf.blade.php')
+                || str_contains($source, 'pkg-mobile-table')
+                || (str_contains($source, 'lg:hidden') && str_contains($source, 'lg:block'))) {
+                continue;
+            }
+
+            if ($relativePath === 'materi-targets/index.blade.php') {
+                $this->assertStringContainsString('overflow-x-auto', $source);
+                $this->assertStringContainsString('sticky left-0', $source);
+
+                continue;
+            }
+
+            $unexpected[] = $relativePath;
+        }
+
+        $this->assertSame([], $unexpected, 'Tabel interaktif berikut belum memiliki tata letak mobile: '.implode(', ', $unexpected));
+    }
+
+    public function test_audited_admin_menu_views_use_compact_mobile_patterns(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $mobileTableViews = [
+            'admin/chat-groups/index',
+            'admin/gamification/analytics',
+            'admin/gamification/badges',
+            'admin/gamification/levels',
+            'admin/gamification/transactions',
+            'pamong/activity-log',
+            'pamong/permissions-index',
+            'pamong/partials/akun',
+            'pamong/partials/data',
+            'pamong/partials/permissions',
+            'pamong/partials/qr',
+            'pamong/show',
+            'settings/backup',
+            'siswa/accounts',
+            'tugas-pkg/verification/karakter-harian',
+        ];
+
+        foreach ($mobileTableViews as $view) {
+            $source = file_get_contents($root."/resources/views/{$view}.blade.php");
+
+            $this->assertStringContainsString('pkg-mobile-table', $source, "Pola kartu mobile hilang dari {$view}.");
+            $this->assertStringContainsString('data-label=', $source, "Label mobile hilang dari {$view}.");
+        }
+
+        $news = file_get_contents($root.'/resources/views/berita/index.blade.php');
+        $this->assertStringContainsString('pkg-page-header', $news);
+        $this->assertStringContainsString('pkg-filter-bar', $news);
+        $this->assertStringContainsString('pkg-card', $news);
+
+        $gamificationNavigation = file_get_contents($root.'/resources/views/admin/gamification/partials/navigation.blade.php');
+        $styles = file_get_contents($root.'/resources/css/app.css');
+        $this->assertStringContainsString('pkg-subnav-scroll', $gamificationNavigation);
+        $this->assertStringContainsString('.pkg-subnav-scroll', $styles);
+
+        foreach (['analytics', 'badges', 'levels', 'transactions'] as $view) {
+            $source = file_get_contents($root."/resources/views/admin/gamification/{$view}.blade.php");
+            $this->assertStringContainsString("@include('admin.gamification.partials.navigation')", $source);
+        }
+    }
+
     public function test_attendance_schedule_cards_stay_inside_the_mobile_viewport(): void
     {
         $index = file_get_contents(dirname(__DIR__, 2).'/resources/views/attendance-schedule/index.blade.php');

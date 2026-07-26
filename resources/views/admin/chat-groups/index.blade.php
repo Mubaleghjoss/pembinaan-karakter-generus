@@ -20,6 +20,7 @@
     </div>
 
     <div class="pkg-panel overflow-hidden">
+        <div class="pkg-mobile-table">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
@@ -33,11 +34,11 @@
             <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($groups as $group)
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td class="px-6 py-4">
+                    <td class="pkg-mobile-main px-6 py-4" data-label="Nama grup">
                         <div class="font-medium text-gray-900 dark:text-white">{{ $group->name }}</div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">{{ Str::limit($group->description, 50) }}</div>
                     </td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4" data-label="Tipe">
                         <span class="px-2 py-1 text-xs rounded-full 
                             @if($group->type === 'custom') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
                             @elseif($group->type === 'all_pamong') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
@@ -46,9 +47,9 @@
                             {{ ucfirst(str_replace('_', ' ', $group->type)) }}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-gray-900 dark:text-white">{{ $group->members->count() }}</td>
-                    <td class="px-6 py-4 text-gray-500 dark:text-gray-400">{{ $group->created_at->format('d M Y') }}</td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4 text-gray-900 dark:text-white" data-label="Anggota">{{ $group->members->count() }}</td>
+                    <td class="px-6 py-4 text-gray-500 dark:text-gray-400" data-label="Dibuat">{{ $group->created_at->format('d M Y') }}</td>
+                    <td class="pkg-mobile-actions px-6 py-4" data-label="Aksi">
                         <div class="flex gap-2">
                             <a href="{{ route('chat-groups.show', $group) }}" class="btn-secondary !px-3 !py-2" aria-label="Detail grup">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,7 +66,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-10">
+                    <td colspan="5" class="pkg-mobile-empty px-6 py-10">
                         <div class="pkg-empty-state">
                             <svg class="pkg-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -79,6 +80,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
         @if($groups->hasPages())
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
             {{ $groups->links() }}

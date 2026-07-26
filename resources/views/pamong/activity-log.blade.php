@@ -117,7 +117,7 @@
         </div>
 
         @if($logs->count() > 0)
-        <div class="overflow-x-auto">
+        <div class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -131,22 +131,22 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($logs as $log)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="px-4 py-3 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap" data-label="Waktu">
                             <div class="text-sm text-gray-900 dark:text-white">{{ $log->created_at->format('d M Y') }}</div>
                             <div class="text-xs text-gray-500 dark:text-gray-400">{{ $log->created_at->format('H:i:s') }}</div>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap" data-label="Aksi">
                             <span class="text-sm">{{ $log->action_label }}</span>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap" data-label="Modul">
                             <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                                 {{ $log->module_label }}
                             </span>
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="pkg-mobile-main px-4 py-3" data-label="Deskripsi">
                             <span class="text-sm text-gray-700 dark:text-gray-300">{{ $log->description }}</span>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap" data-label="Alamat IP">
                             <span class="text-xs font-mono text-gray-500 dark:text-gray-400">{{ $log->ip_address ?? '-' }}</span>
                         </td>
                     </tr>

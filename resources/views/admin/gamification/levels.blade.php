@@ -23,21 +23,7 @@
             </div>
         </div>
 
-        {{-- Quick Navigation --}}
-        <div class="flex flex-wrap gap-3 mb-6">
-            <a href="{{ route('admin.gamification.badges') }}" class="pkg-tab-link text-sm font-medium">
-                Pin Penghargaan
-            </a>
-            <a href="{{ route('admin.gamification.levels') }}" class="pkg-btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium shadow-sm">
-                Kelola Level
-            </a>
-            <a href="{{ route('admin.gamification.analytics') }}" class="pkg-tab-link text-sm font-medium">
-                Analitik
-            </a>
-            <a href="{{ route('admin.gamification.transactions') }}" class="pkg-tab-link text-sm font-medium">
-                Riwayat Transaksi
-            </a>
-        </div>
+        @include('admin.gamification.partials.navigation')
 
         @if(session('success'))
         <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
@@ -334,7 +320,7 @@
                 </div>
             </form>
 
-            <div class="mt-6 overflow-x-auto">
+            <div class="pkg-mobile-table mt-6 overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-50">
                         <tr>
@@ -351,33 +337,33 @@
                         @php($periodConfig = $period->resolved_point_settings)
                         @php($summary = $periodSummaries[$period->id] ?? ['transaction_count' => 0, 'siswa_count' => 0, 'total_points' => 0, 'incoming_points' => 0, 'outgoing_points' => 0, 'task_count' => 0, 'verified_task_count' => 0, 'pending_task_count' => 0, 'pending_task_siswa_count' => 0])
                         <tr>
-                            <td class="px-4 py-3">
+                            <td class="pkg-mobile-main px-4 py-3" data-label="Periode">
                                 <p class="font-semibold text-gray-800">{{ $period->name }}</p>
                                 @if($period->notes)
                                 <p class="mt-1 text-xs text-gray-500">{{ $period->notes }}</p>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-gray-600">
+                            <td class="px-4 py-3 text-gray-600" data-label="Rentang">
                                 {{ $period->start_date?->format('d M Y') ?? '-' }}
                                 <span class="mx-1">|</span>
                                 {{ $period->end_date?->format('d M Y') ?? 'Berjalan' }}
                             </td>
-                            <td class="px-4 py-3">
+                            <td class="px-4 py-3" data-label="Status">
                                 <span class="pkg-status-badge {{ $period->status === 'active' ? 'pkg-status-success' : ($period->status === 'closed' ? 'pkg-status-neutral' : 'pkg-status-warning') }}">
                                     {{ strtoupper($period->status) }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-xs text-gray-600">
+                            <td class="px-4 py-3 text-xs text-gray-600" data-label="Ringkasan">
                                 <p>Total {{ number_format($summary['total_points']) }} poin</p>
                                 <p>{{ number_format($summary['siswa_count']) }} siswa | {{ number_format($summary['transaction_count']) }} transaksi</p>
                                 <p>{{ number_format($summary['pending_task_count']) }} tugas menunggu pamong</p>
                             </td>
-                            <td class="px-4 py-3 text-xs text-gray-600">
+                            <td class="px-4 py-3 text-xs text-gray-600" data-label="Konfigurasi">
                                 Hadir {{ $periodConfig['points_hadir'] ?? 10 }} |
                                 Karakter {{ $periodConfig['points_karakter'] ?? 5 }} |
                                 Streak 7 {{ $periodConfig['points_streak_7'] ?? 20 }}
                             </td>
-                            <td class="px-4 py-3">
+                            <td class="pkg-mobile-actions px-4 py-3" data-label="Aksi">
                                 <div class="flex justify-end gap-2">
                                     <a href="{{ route('tugas-pkg.verification', array_filter([
                                         'tab' => 'verification',
@@ -417,7 +403,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <td colspan="6" class="pkg-mobile-empty px-4 py-8 text-center text-gray-500">
                                 Belum ada periode poin. Buat periode bulanan pertama untuk mulai pemantauan per bulan.
                             </td>
                         </tr>

@@ -15,21 +15,7 @@
             </button>
         </div>
 
-        {{-- Quick Navigation --}}
-        <div class="flex flex-wrap gap-3 mb-6">
-            <a href="{{ route('admin.gamification.badges') }}" class="pkg-btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium shadow-sm">
-                Pin Penghargaan
-            </a>
-            <a href="{{ route('admin.gamification.levels') }}" class="pkg-tab-link text-sm font-medium">
-                Kelola Level
-            </a>
-            <a href="{{ route('admin.gamification.analytics') }}" class="pkg-tab-link text-sm font-medium">
-                Analitik
-            </a>
-            <a href="{{ route('admin.gamification.transactions') }}" class="pkg-tab-link text-sm font-medium">
-                Riwayat Transaksi
-            </a>
-        </div>
+        @include('admin.gamification.partials.navigation')
         <!-- Info Box -->
         <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
             <p class="text-sm text-blue-800 dark:text-blue-300">
@@ -117,7 +103,7 @@
                 
                 <!-- Full leaderboard (collapsible) -->
                 <div x-show="showLeaderboard" x-collapse x-cloak>
-                    <div class="overflow-x-auto">
+                    <div class="pkg-mobile-table overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
@@ -133,19 +119,19 @@
                             <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                                 @foreach($leaderboard as $index => $sp)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 {{ $index < 3 ? 'font-semibold' : '' }}">
-                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Peringkat">
                                         @if($index < 3)
                                             {{ ['P1', 'P2', 'P3'][$index] }}
                                         @else
                                             #{{ $index + 1 }}
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $sp->siswa->nama ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $sp->siswa->kelas->nama ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-sm text-center text-indigo-600 dark:text-indigo-400 font-medium">{{ $sp->level }}</td>
-                                    <td class="px-4 py-3 text-sm text-center text-blue-600 dark:text-blue-400">{{ number_format($sp->attendance_points) }}</td>
-                                    <td class="px-4 py-3 text-sm text-center text-green-600 dark:text-green-400">{{ number_format($sp->character_points) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right font-bold text-gray-900 dark:text-white">{{ number_format($sp->total_points) }}</td>
+                                    <td class="pkg-mobile-main px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Siswa">{{ $sp->siswa->nama ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400" data-label="Kelas">{{ $sp->siswa->kelas->nama ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-sm text-center text-indigo-600 dark:text-indigo-400 font-medium" data-label="Level">{{ $sp->level }}</td>
+                                    <td class="px-4 py-3 text-sm text-center text-blue-600 dark:text-blue-400" data-label="Kehadiran">{{ number_format($sp->attendance_points) }}</td>
+                                    <td class="px-4 py-3 text-sm text-center text-green-600 dark:text-green-400" data-label="Tugas PKG">{{ number_format($sp->character_points) }}</td>
+                                    <td class="px-4 py-3 text-sm text-right font-bold text-gray-900 dark:text-white" data-label="Total poin">{{ number_format($sp->total_points) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
