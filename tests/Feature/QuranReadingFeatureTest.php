@@ -1,0 +1,247 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\QuranReadingEntry;
+use App\Models\QuranReadingSheet;
+use App\Models\PamongPermission;
+use App\Models\PamongSiswa;
+use App\Models\Role;
+use App\Models\Siswa;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Tests\TestCase;
+
+class QuranReadingFeatureTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_student_submission_is_pending_and_admin_can_verify_it(): void
+    {
+        $siswa = Siswa::factory()->create();
+
+        $this->actingAs($siswa, 'siswa')
+            ->post(route('siswa.quran.store'), $this->entryPayload())
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $entry = QuranReadingEntry::firstOrFail();
+        $this->assertSame(QuranReadingEntry::STATUS_PENDING, $entry->status);
+        $this->assertSame('siswa', $entry->submitted_by_type);
+
+        $admin = $this->admin();
+        $this->actingAs($admin)
+            ->patch(route('quran.verify', $entry), ['verification_notes' => 'Bacaan sesuai.'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $entry->refresh();
+        $this->assertSame(QuranReadingEntry::STATUS_VERIFIED, $entry->status);
+        $this->assertSame($admin->id, $entry->verified_by);
+
+        $this->actingAs($admin)
+            ->put(route('quran.update', $entry), $this->entryPayload(['page_end' => 4]))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame(4, $entry->fresh()->page_end);
+        $this->actingAs($admin)
+            ->patch(route('quran.verify', $entry))
+            ->assertStatus(409);
+    }
+
+    public function test_student_cannot_update_another_students_entry_or_verified_entry(): void
+    {
+        $owner = Siswa::factory()->create();
+        $other = Siswa::factory()->create();
+        $entry = QuranReadingEntry::create($this->entryPayload() + [
+            'siswa_id' => $owner->id,
+            'source' => 'manual',
+            'submitted_by_type' => 'siswa',
+            'submitted_by_id' => $owner->id,
+            'status' => QuranReadingEntry::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($other, 'siswa')
+            ->put(route('siswa.quran.update', $entry), $this->entryPayload(['page_end' => 4]))
+            ->assertForbidden();
+
+        $entry->update(['status' => QuranReadingEntry::STATUS_VERIFIED]);
+        $this->actingAs($owner, 'siswa')
+            ->put(route('siswa.quran.update', $entry), $this->entryPayload(['page_end' => 4]))
+            ->assertStatus(409);
+    }
+
+    public function test_parent_only_sees_verified_entries_for_their_child(): void
+    {
+        $siswa = Siswa::factory()->create();
+        QuranReadingEntry::create($this->entryPayload(['notes' => 'Catatan Terverifikasi']) + [
+            'siswa_id' => $siswa->id,
+            'source' => 'manual',
+            'submitted_by_type' => 'user',
+            'submitted_by_id' => 1,
+            'status' => QuranReadingEntry::STATUS_VERIFIED,
+        ]);
+        QuranReadingEntry::create($this->entryPayload(['notes' => 'Catatan Rahasia Pending']) + [
+            'siswa_id' => $siswa->id,
+            'source' => 'manual',
+            'submitted_by_type' => 'siswa',
+            'submitted_by_id' => $siswa->id,
+            'status' => QuranReadingEntry::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($siswa, 'ortu')
+            ->get(route('ortu.quran.index'))
+            ->assertOk()
+            ->assertSee('Catatan Terverifikasi')
+            ->assertDontSee('Catatan Rahasia Pending');
+    }
+
+    public function test_invalid_ayah_for_selected_surah_is_rejected(): void
+    {
+        $siswa = Siswa::factory()->create();
+
+        $this->actingAs($siswa, 'siswa')
+            ->from(route('siswa.quran.index'))
+            ->post(route('siswa.quran.store'), $this->entryPayload([
+                'surah_start' => 1,
+                'ayah_start' => 8,
+            ]))
+            ->assertSessionHasErrors('ayah_start');
+    }
+
+    public function test_admin_can_download_private_report_and_structured_sheet(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $admin = $this->admin();
+        QuranReadingEntry::create($this->entryPayload() + [
+            'siswa_id' => $siswa->id,
+            'source' => 'manual',
+            'submitted_by_type' => 'user',
+            'submitted_by_id' => $admin->id,
+            'status' => QuranReadingEntry::STATUS_VERIFIED,
+            'verified_by' => $admin->id,
+            'verified_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->get(route('quran.report', $siswa))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->actingAs($admin)->get(route('quran.sheet', $siswa))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->assertDatabaseHas('quran_reading_sheets', ['siswa_id' => $siswa->id, 'row_count' => 12]);
+    }
+
+    public function test_structured_scan_requires_valid_sheet_qr_and_confirms_rows_idempotently(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        Storage::fake('local');
+        $siswa = Siswa::factory()->create();
+        $admin = $this->admin();
+        $token = Str::random(48);
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id,
+            'public_id' => (string) Str::uuid(),
+            'token_hash' => hash('sha256', $token),
+            'status' => 'active',
+            'row_count' => 12,
+            'generated_by' => $admin->id,
+        ]);
+
+        $upload = $this->actingAs($admin)->post(route('quran.scan.upload', $siswa), [
+            'sheet_payload' => 'PKGQURAN:'.$sheet->public_id.':'.$token,
+            'scan_image' => UploadedFile::fake()->image('lembar.jpg', 800, 1200),
+        ]);
+
+        $scan = \App\Models\QuranReadingScan::firstOrFail();
+        $upload->assertRedirect(route('quran.scan.confirm', [$siswa, $scan]));
+        Storage::disk('local')->assertExists($scan->original_path);
+
+        $this->actingAs($admin)->get(route('quran.scan.confirm', [$siswa, $scan]))->assertOk();
+        $this->actingAs($admin)->post(route('quran.scan.confirm.store', [$siswa, $scan]), [
+            'rows' => [1 => $this->entryPayload(['row_number' => 1])],
+        ])->assertRedirect(route('quran.index', ['siswa_id' => $siswa->id]));
+
+        $this->assertDatabaseHas('quran_reading_entries', [
+            'sheet_id' => $sheet->id,
+            'sheet_row_number' => 1,
+            'status' => QuranReadingEntry::STATUS_VERIFIED,
+        ]);
+        $this->assertSame(1, QuranReadingEntry::where('sheet_id', $sheet->id)->count());
+
+        $this->actingAs($admin)->post(route('quran.scan.confirm.store', [$siswa, $scan]), [
+            'rows' => [1 => $this->entryPayload(['row_number' => 1])],
+        ])->assertStatus(409);
+        $this->assertSame(1, QuranReadingEntry::where('sheet_id', $sheet->id)->count());
+    }
+
+    public function test_scanner_is_hidden_until_the_photo_pilot_is_enabled(): void
+    {
+        $siswa = Siswa::factory()->create();
+
+        $this->actingAs($siswa, 'siswa')
+            ->get(route('siswa.quran.scan'))
+            ->assertNotFound();
+    }
+
+    public function test_pamong_only_sees_assigned_students_and_guru_isolated_from_operational_tracer(): void
+    {
+        $assigned = Siswa::factory()->create(['nama' => 'Generus Binaan']);
+        $outside = Siswa::factory()->create(['nama' => 'Generus Luar']);
+        $teacherRole = Role::query()->firstOrCreate(['name' => User::ROLE_TEACHER], [
+            'display_name' => 'Pamong', 'permissions' => [], 'is_active' => true,
+        ]);
+        $pamong = User::factory()->create(['role_id' => $teacherRole->id]);
+        PamongPermission::create([
+            'user_id' => $pamong->id,
+            'menu_permissions' => ['dashboard', 'tracer_bacaan_quran'],
+            'crud_permissions' => ['tracer_bacaan_quran' => ['view', 'create', 'verify', 'export']],
+        ]);
+        PamongSiswa::create(['pamong_id' => $pamong->id, 'siswa_id' => $assigned->id]);
+
+        $this->actingAs($pamong)->get(route('quran.index'))
+            ->assertOk()
+            ->assertSee('Generus Binaan')
+            ->assertDontSee('Generus Luar');
+
+        $this->actingAs($pamong)->get(route('quran.report', $outside))->assertForbidden();
+
+        $guruRole = Role::query()->firstOrCreate(['name' => User::ROLE_GURU], [
+            'display_name' => 'Guru', 'permissions' => [], 'is_active' => true,
+        ]);
+        $guru = User::factory()->create(['role_id' => $guruRole->id]);
+        $this->actingAs($guru)->get(route('quran.index'))->assertRedirect();
+    }
+
+    private function entryPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'reading_date' => now()->toDateString(),
+            'page_start' => 1,
+            'page_end' => 3,
+            'surah_start' => 1,
+            'ayah_start' => 1,
+            'surah_end' => 2,
+            'ayah_end' => 5,
+            'mushaf_label' => 'Mushaf Madinah',
+            'notes' => 'Latihan tartil',
+        ], $overrides);
+    }
+
+    private function admin(): User
+    {
+        $role = Role::query()->firstOrCreate(['name' => User::ROLE_ADMIN], [
+            'display_name' => 'Administrator',
+            'permissions' => ['*'],
+            'is_active' => true,
+        ]);
+
+        return User::factory()->create(['role_id' => $role->id]);
+    }
+}

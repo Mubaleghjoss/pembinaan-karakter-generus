@@ -163,10 +163,12 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             || request()->routeIs('calendar.*');
                         $tugasPkgGroupVisible = auth()->user()->hasPamongMenuAccess('pr')
                             || auth()->user()->hasPamongMenuAccess('tracer_karakter')
+                            || auth()->user()->hasPamongMenuAccess('tracer_bacaan_quran')
                             || auth()->user()->hasPamongMenuAccess('tugas_pkg')
                             || auth()->user()->hasPamongMenuAccess('laporan_penyaksian');
                         $tugasPkgGroupActive = request()->routeIs('tugas-pkg.*')
                             || request()->routeIs('tracer-karakter.*')
+                            || request()->routeIs('quran.*')
                             || request()->routeIs('karakter.*')
                             || request()->routeIs('laporan-penyaksian.*')
                             || request()->routeIs('pr.*');
@@ -409,6 +411,11 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                                 @if(($pendingPkgVerificationCount ?? 0) > 0)
                                     <span class="ml-auto inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">{{ $pendingPkgVerificationCount }}</span>
                                 @endif
+                            </a>
+                            @endif
+                            @if(auth()->user()->hasPamongMenuAccess('tracer_bacaan_quran'))
+                            <a href="{{ route('quran.index') }}" class="nav-item @if(request()->routeIs('quran.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Tracer Bacaan Al-Qur'an</span>
                             </a>
                             @endif
                             @if(auth()->user()->hasPamongMenuAccess('tugas_pkg'))

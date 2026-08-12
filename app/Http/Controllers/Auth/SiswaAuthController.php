@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Siswa;
+use App\Services\Auth\LoginThrottle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,9 @@ use Illuminate\Support\Str;
  */
 class SiswaAuthController extends Controller
 {
+    public function __construct(private readonly LoginThrottle $loginThrottle)
+    {
+    }
     /**
      * Show the siswa login form.
      * 
@@ -46,23 +50,16 @@ class SiswaAuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        $identity = (string) $request->input('nis');
+        $this->loginThrottle->ensureNotLimited($request, 'siswa', $identity, 'nis');
+
         $siswa = Siswa::where('nis', $request->nis)->first();
 
-        if (!$siswa) {
-            return redirect()->route('siswa.login', ['error' => 'NIS tidak ditemukan.'])
-                ->withErrors(['nis' => 'NIS tidak ditemukan.'])
-                ->withInput($request->only('nis'));
-        }
+        if (! $siswa || ! $siswa->isActive() || ! Hash::check($request->password, $siswa->password)) {
+            $this->loginThrottle->recordFailure($request, 'siswa', $identity);
 
-        if (!$siswa->isActive()) {
-            return redirect()->route('siswa.login', ['error' => 'Akun siswa tidak aktif. Hubungi admin.'])
-                ->withErrors(['nis' => 'Akun siswa tidak aktif. Hubungi admin.'])
-                ->withInput($request->only('nis'));
-        }
-
-        if (!Hash::check($request->password, $siswa->password)) {
-            return redirect()->route('siswa.login', ['error' => 'Password salah.'])
-                ->withErrors(['password' => 'Password salah.'])
+            return redirect()->route('siswa.login', ['error' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
+                ->withErrors(['nis' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
                 ->withInput($request->only('nis'));
         }
 
@@ -72,6 +69,7 @@ class SiswaAuthController extends Controller
         $siswa->update(['last_login_at' => now()]);
 
         $request->session()->regenerate();
+        $this->loginThrottle->clearIdentity($request, 'siswa', $identity);
 
         return redirect()->intended(route('siswa.dashboard'));
     }

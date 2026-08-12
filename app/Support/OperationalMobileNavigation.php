@@ -143,6 +143,15 @@ class OperationalMobileNavigation
             $can('tracer_karakter'),
             $verificationBadge
         );
+        $add(
+            'Tugas PKG',
+            'quran_reading',
+            "Tracer Bacaan Al-Qur'an",
+            'book',
+            route('quran.index'),
+            $request->routeIs('quran.*'),
+            $can('tracer_bacaan_quran')
+        );
         $add('Tugas PKG', 'task_master', 'Buat Tugas PKG', 'journal', route('tugas-pkg.master'), $request->routeIs('tugas-pkg.master') || $request->routeIs('karakter.*'), $can('tugas_pkg'));
         $add(
             'Tugas PKG',

@@ -213,9 +213,21 @@ fi
 
 cat > "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
 RewriteEngine On
+RewriteRule ^\.well-known/acme-challenge/ - [L]
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L,NE]
 RewriteRule ^storage/materi/pdf(?:/|$) - [F,L,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [QSA,L]
+
+<IfModule mod_headers.c>
+  Header always unset X-Powered-By
+</IfModule>
+
+<IfModule mod_php.c>
+  php_flag expose_php Off
+</IfModule>
 
 <IfModule mime_module>
   AddType application/javascript .mjs

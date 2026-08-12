@@ -4,17 +4,18 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Auth\LoginThrottle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
-    protected ?string $failedLoginField = null;
-    protected ?string $failedLoginMessage = null;
+    public function __construct(private readonly LoginThrottle $loginThrottle)
+    {
+    }
 
     /**
      * Show the login form.
@@ -35,18 +36,13 @@ class LoginController extends Controller
     {
         $this->validateLogin($request);
 
-        // Check rate limiting
-        if (RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
-            $seconds = RateLimiter::availableIn($this->throttleKey($request));
-            throw ValidationException::withMessages([
-                'login' => ['Terlalu banyak percobaan login. Silakan coba lagi dalam '.$seconds.' detik.'],
-            ]);
-        }
+        $identity = (string) $request->input('login');
+        $this->loginThrottle->ensureNotLimited($request, 'operasional', $identity, 'login');
 
         // Attempt to log the user in
         if ($this->attemptLogin($request)) {
             $request->session()->regenerate();
-            RateLimiter::clear($this->throttleKey($request));
+            $this->loginThrottle->clearIdentity($request, 'operasional', $identity);
 
             // Record login activity
             $user = Auth::user();
@@ -57,7 +53,7 @@ class LoginController extends Controller
 
         // If the login attempt was unsuccessful we will increment the number of attempts
         // to login and redirect the user back to the login form with an error message
-        RateLimiter::hit($this->throttleKey($request));
+        $this->loginThrottle->recordFailure($request, 'operasional', $identity);
 
         return $this->sendFailedLoginResponse($request);
     }
@@ -102,23 +98,17 @@ class LoginController extends Controller
         }
 
         if (! $user) {
-            $this->failedLoginField = 'login';
-            $this->failedLoginMessage = 'Username/No HP/Email tidak ditemukan.';
             return false;
         }
 
         // Check if user is active
         if (! $user->isActive()) {
-            throw ValidationException::withMessages([
-                'login' => ['Akun Anda tidak aktif. Silakan hubungi administrator.'],
-            ]);
+            return false;
         }
 
         // Check if account is locked
         if ($user->isLocked()) {
-            throw ValidationException::withMessages([
-                'login' => ['Akun Anda terkunci karena terlalu banyak percobaan login yang gagal.'],
-            ]);
+            return false;
         }
 
         // Verify password
@@ -131,8 +121,6 @@ class LoginController extends Controller
                 $user->lockAccount();
             }
 
-            $this->failedLoginField = 'password';
-            $this->failedLoginMessage = 'Password salah.';
             return false;
         }
 
@@ -181,8 +169,8 @@ class LoginController extends Controller
      */
     protected function sendFailedLoginResponse(Request $request)
     {
-        $field = $this->failedLoginField ?: 'login';
-        $message = $this->failedLoginMessage ?: 'Username/No HP/Email atau password salah.';
+        $field = 'login';
+        $message = 'Data login tidak cocok atau akun tidak dapat digunakan.';
 
         // Fallback: redirect with query param if session fails
         if (!$request->expectsJson()) {
@@ -226,11 +214,4 @@ class LoginController extends Controller
             ]);
     }
 
-    /**
-     * Get the throttle key for the given request.
-     */
-    protected function throttleKey(Request $request)
-    {
-        return strtolower($request->input('login')).'|'.$request->ip();
-    }
 }

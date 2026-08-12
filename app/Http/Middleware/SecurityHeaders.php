@@ -23,6 +23,7 @@ class SecurityHeaders
         $response->headers->set('X-XSS-Protection', '0');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(self)');
+        $response->headers->remove('X-Powered-By');
 
         // Content Security Policy
         $csp = "default-src 'self'; ".
@@ -38,11 +39,25 @@ class SecurityHeaders
                "connect-src 'self'; ".
                "frame-ancestors 'none';";
 
-        $cspHeader = (config('app.debug') || app()->environment('local'))
-            ? 'Content-Security-Policy-Report-Only'
-            : 'Content-Security-Policy';
+        $response->headers->set('Content-Security-Policy', $csp);
 
-        $response->headers->set($cspHeader, $csp);
+        $strictReportOnlyCsp = "default-src 'self'; ".
+            "base-uri 'self'; ".
+            "object-src 'none'; ".
+            "form-action 'self'; ".
+            "script-src 'self'; ".
+            "style-src 'self' https://fonts.googleapis.com; ".
+            "font-src 'self' blob: https://fonts.gstatic.com; ".
+            "img-src 'self' data: blob: https:; ".
+            "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://drive.google.com https://docs.google.com; ".
+            "worker-src 'self' blob:; ".
+            "connect-src 'self'; ".
+            "frame-ancestors 'none'; ".
+            "report-uri /security/csp-report; ".
+            "report-to csp-endpoint;";
+
+        $response->headers->set('Content-Security-Policy-Report-Only', $strictReportOnlyCsp);
+        $response->headers->set('Reporting-Endpoints', 'csp-endpoint="/security/csp-report"');
 
         // HSTS for HTTPS
         if ($request->isSecure()) {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Siswa;
+use App\Services\Auth\LoginThrottle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -11,6 +12,9 @@ use Illuminate\Support\Str;
 
 class OrtuAuthController extends Controller
 {
+    public function __construct(private readonly LoginThrottle $loginThrottle)
+    {
+    }
     public function showLoginForm()
     {
         if (Auth::guard('ortu')->check()) {
@@ -31,18 +35,17 @@ class OrtuAuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        $identity = (string) $request->input('username');
+        $this->loginThrottle->ensureNotLimited($request, 'orang-tua', $identity, 'username');
+
         // Find siswa by ortu_username
         $siswa = Siswa::where('ortu_username', $request->username)->first();
 
-        if (!$siswa) {
-            return redirect()->route('ortu.login', ['error' => 'Username tidak ditemukan.'])
-                ->withErrors(['username' => 'Username tidak ditemukan.'])
-                ->withInput($request->only('username'));
-        }
+        if (! $siswa || ! $siswa->isActive()) {
+            $this->loginThrottle->recordFailure($request, 'orang-tua', $identity);
 
-        if (!$siswa->isActive()) {
-            return redirect()->route('ortu.login', ['error' => 'Akun tidak aktif. Hubungi admin.'])
-                ->withErrors(['username' => 'Akun tidak aktif. Hubungi admin.'])
+            return redirect()->route('ortu.login', ['error' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
+                ->withErrors(['username' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
                 ->withInput($request->only('username'));
         }
 
@@ -54,8 +57,10 @@ class OrtuAuthController extends Controller
             $siswa->save();
         }
         if (!Hash::check($request->password, $siswa->ortu_password)) {
-            return redirect()->route('ortu.login', ['error' => 'Password salah.'])
-                ->withErrors(['password' => 'Password salah.'])
+            $this->loginThrottle->recordFailure($request, 'orang-tua', $identity);
+
+            return redirect()->route('ortu.login', ['error' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
+                ->withErrors(['username' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
                 ->withInput($request->only('username'));
         }
 
@@ -64,6 +69,7 @@ class OrtuAuthController extends Controller
         $siswa->update(['ortu_last_login_at' => now()]);
 
         $request->session()->regenerate();
+        $this->loginThrottle->clearIdentity($request, 'orang-tua', $identity);
 
         return redirect()->intended(route('ortu.dashboard'));
     }

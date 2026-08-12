@@ -156,11 +156,15 @@ Route::get('/csrf-token', function () {
         ->header('Expires', '0');
 });
 
+Route::post('/security/csp-report', App\Http\Controllers\Security\CspReportController::class)
+    ->middleware('throttle:csp-report')
+    ->name('security.csp-report');
+
 // Shared WebAuthn biometric routes (public - no auth needed for login flow)
 Route::prefix('webauthn')->name('webauthn.')->group(function () {
-    Route::post('/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->name('login-options');
-    Route::post('/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->name('login');
-    Route::get('/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->name('has-credentials');
+    Route::post('/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('login-options');
+    Route::post('/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('login');
+    Route::get('/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('has-credentials');
 });
 
 // Siswa Authentication routes
@@ -170,9 +174,9 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
     Route::post('/logout', [App\Http\Controllers\Auth\SiswaAuthController::class, 'logout'])->name('logout');
 
     // WebAuthn biometric routes (public - no auth needed for login flow)
-    Route::post('/webauthn/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->name('webauthn.login-options');
-    Route::post('/webauthn/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->name('webauthn.login');
-    Route::get('/webauthn/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->name('webauthn.has-credentials');
+    Route::post('/webauthn/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('webauthn.login-options');
+    Route::post('/webauthn/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('webauthn.login');
+    Route::get('/webauthn/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('webauthn.has-credentials');
     
     // Protected siswa routes
     Route::middleware('auth.siswa')->group(function () {
@@ -233,6 +237,19 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
         
         // Kehadiran PKG
         Route::get('/kehadiran', [App\Http\Controllers\CekKehadiranController::class, 'siswaIndex'])->name('kehadiran.index');
+
+        Route::prefix('bacaan-quran')->name('quran.')->group(function () {
+            Route::get('/', [App\Http\Controllers\QuranReadingController::class, 'studentIndex'])->name('index');
+            Route::post('/', [App\Http\Controllers\QuranReadingController::class, 'studentStore'])->name('store');
+            Route::get('/laporan', [App\Http\Controllers\QuranReadingController::class, 'studentReport'])->name('report');
+            Route::get('/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'studentSheet'])->name('sheet');
+            Route::get('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanForm'])->name('scan');
+            Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->name('scan.upload');
+            Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'studentScanConfirmForm'])->name('scan.confirm');
+            Route::post('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'studentScanConfirm'])->name('scan.confirm.store');
+            Route::get('/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'studentScanImage'])->name('scan.image');
+            Route::put('/{entry}', [App\Http\Controllers\QuranReadingController::class, 'studentUpdate'])->name('update');
+        });
         
         // Profile routes
         Route::get('/profile', [App\Http\Controllers\SiswaDashboardController::class, 'profile'])->name('profile');
@@ -297,9 +314,9 @@ Route::prefix('ortu')->name('ortu.')->group(function () {
     Route::post('/logout', [App\Http\Controllers\Auth\OrtuAuthController::class, 'logout'])->name('logout');
 
     // WebAuthn biometric routes (public - no auth needed for login flow)
-    Route::post('/webauthn/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->name('webauthn.login-options');
-    Route::post('/webauthn/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->name('webauthn.login');
-    Route::get('/webauthn/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->name('webauthn.has-credentials');
+    Route::post('/webauthn/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('webauthn.login-options');
+    Route::post('/webauthn/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('webauthn.login');
+    Route::get('/webauthn/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('webauthn.has-credentials');
 
     // Protected ortu routes
     Route::middleware('auth.ortu')->group(function () {
@@ -325,6 +342,9 @@ Route::prefix('ortu')->name('ortu.')->group(function () {
 
         // Kehadiran PKG
         Route::get('/kehadiran', [App\Http\Controllers\CekKehadiranController::class, 'ortuIndex'])->name('kehadiran');
+
+        Route::get('/bacaan-quran', [App\Http\Controllers\QuranReadingController::class, 'parentIndex'])->name('quran.index');
+        Route::get('/bacaan-quran/laporan', [App\Http\Controllers\QuranReadingController::class, 'parentReport'])->name('quran.report');
 
         // Chat Pamong
         Route::get('/chat', [App\Http\Controllers\OrtuChatController::class, 'index'])->name('chat');
@@ -767,6 +787,22 @@ Route::middleware('auth')->group(function () {
     Route::get('/karakter-harian', [App\Http\Controllers\TracerKarakterController::class, 'karakterHarian'])->name('karakter-harian.index');
 
     // Tracer Karakter
+
+    Route::prefix('tracer-bacaan-quran')->name('quran.')->middleware('pamong.permission:tracer_bacaan_quran,view')->group(function () {
+        Route::get('/', [App\Http\Controllers\QuranReadingController::class, 'operationalIndex'])->name('index');
+        Route::post('/', [App\Http\Controllers\QuranReadingController::class, 'operationalStore'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('store');
+        Route::put('/catatan/{entry}', [App\Http\Controllers\QuranReadingController::class, 'operationalUpdate'])->middleware('pamong.permission:tracer_bacaan_quran,edit')->name('update');
+        Route::patch('/catatan/{entry}/verifikasi', [App\Http\Controllers\QuranReadingController::class, 'verify'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('verify');
+        Route::patch('/catatan/{entry}/tolak', [App\Http\Controllers\QuranReadingController::class, 'reject'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('reject');
+        Route::get('/{siswa}/laporan', [App\Http\Controllers\QuranReadingController::class, 'operationalReport'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('report');
+        Route::get('/{siswa}/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'operationalSheet'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('sheet');
+        Route::get('/{siswa}/scan', [App\Http\Controllers\QuranReadingController::class, 'scanForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan');
+        Route::post('/{siswa}/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.upload');
+        Route::get('/{siswa}/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'scanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm');
+        Route::post('/{siswa}/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'scanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm.store');
+        Route::get('/{siswa}/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'scanImage'])->name('scan.image');
+    });
+
     Route::get('/tracer-karakter', [App\Http\Controllers\TracerKarakterController::class, 'index'])->name('tracer-karakter.index');
     Route::get('/tracer-karakter/rekap', [App\Http\Controllers\TracerKarakterController::class, 'rekap'])->name('tracer-karakter.rekap');
     Route::get('/tracer-karakter/detail-siswa', [App\Http\Controllers\TracerKarakterController::class, 'detailSiswa'])->name('tracer-karakter.detail-siswa');
@@ -1061,11 +1097,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/persiapan-acara/{persiapanAcara}', [App\Http\Controllers\PersiapanAcaraController::class, 'destroy'])->name('persiapan-acara.destroy');
 });
 
-// Fallback route for SPA-like behavior
 Route::fallback(function () {
-    if (auth()->check()) {
-        return redirect()->route('dashboard');
-    }
-
-    return redirect()->route('login');
+    abort(404);
 });

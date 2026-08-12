@@ -102,5 +102,16 @@ class RateLimitServiceProvider extends ServiceProvider
                     ], 429, $headers);
                 });
         });
+
+        RateLimiter::for('biometric', function (Request $request) {
+            return [
+                Limit::perMinute(10)->by('biometric-minute:'.$request->ip()),
+                Limit::perHour(60)->by('biometric-hour:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('csp-report', function (Request $request) {
+            return Limit::perMinute(20)->by('csp:'.$request->ip());
+        });
     }
 }

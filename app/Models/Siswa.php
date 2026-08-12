@@ -312,6 +312,16 @@ class Siswa extends Authenticatable
         return $this->hasMany(TracerKarakter::class);
     }
 
+    public function quranReadingEntries(): HasMany
+    {
+        return $this->hasMany(QuranReadingEntry::class);
+    }
+
+    public function quranReadingSheets(): HasMany
+    {
+        return $this->hasMany(QuranReadingSheet::class);
+    }
+
     public function biometricCredentials(): HasMany
     {
         return $this->hasMany(WebAuthnCredential::class, 'user_id')

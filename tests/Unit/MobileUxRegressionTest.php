@@ -157,6 +157,7 @@ class MobileUxRegressionTest extends TestCase
             }
 
             if (str_contains($relativePath, '/pdf.blade.php')
+                || str_contains($relativePath, '/pdf/')
                 || str_contains($relativePath, 'export-pdf.blade.php')
                 || str_contains($source, 'pkg-mobile-table')
                 || (str_contains($source, 'lg:hidden') && str_contains($source, 'lg:block'))) {

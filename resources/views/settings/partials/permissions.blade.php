@@ -401,6 +401,24 @@
                     <!-- Cek Kehadiran CRUD -->
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
                         <div class="flex items-center justify-between mb-3">
+                            <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Tracer Bacaan Al-Qur'an</h5>
+                            <button type="button" @click="toggleModuleCrud('tracer_bacaan_quran')" class="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium">
+                                <span x-text="isModuleFullySelected('tracer_bacaan_quran') ? 'Hapus' : 'Pilih Semua'"></span>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                            <template x-for="op in availableCrud.tracer_bacaan_quran || ['view', 'create', 'edit', 'verify', 'export']" :key="'tracer_bacaan_quran-'+op">
+                                <label class="flex items-center p-2 bg-white dark:bg-gray-700 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    <input type="checkbox" :name="'crud_permissions[tracer_bacaan_quran][]'" :value="op" :checked="isCrudSelected('tracer_bacaan_quran', op)" @change="toggleCrud('tracer_bacaan_quran', op)" class="pkg-check">
+                                    <span class="ml-1 text-xs text-gray-700 dark:text-gray-300" x-text="getCrudLabel(op)"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Cek Kehadiran CRUD -->
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
+                        <div class="flex items-center justify-between mb-3">
                             <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Cek Kehadiran</h5>
                             <button type="button" @click="toggleModuleCrud('cek_kehadiran')" 
                                     class="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium">

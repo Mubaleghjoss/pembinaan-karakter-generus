@@ -37,6 +37,10 @@
     "file": "assets/news-slider-hXc9paC5.css",
     "src": "_news-slider-hXc9paC5.css"
   },
+  "_preload-helper-I4rgV-VL.js": {
+    "file": "assets/preload-helper-I4rgV-VL.js",
+    "name": "preload-helper"
+  },
   "_presentation-canvas-C3Kf7BQy.css": {
     "file": "assets/presentation-canvas-C3Kf7BQy.css",
     "src": "_presentation-canvas-C3Kf7BQy.css"
@@ -76,10 +80,13 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-D9DDkNeK.js",
+    "file": "assets/app-BIj3zObJ.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
+    "imports": [
+      "_preload-helper-I4rgV-VL.js"
+    ],
     "dynamicImports": [
       "resources/js/rpg-3d.js",
       "_react-vendor-WxYsAmz8.js",
@@ -97,7 +104,7 @@
       "_browser-C8KFpyF2.js"
     ],
     "css": [
-      "assets/app-D-9va0lo.css"
+      "assets/app-Bmw2s6Qc.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -123,7 +130,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-Bj-dLMK5.js",
+    "file": "assets/QRScanner-ilf1KpS2.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -132,6 +139,7 @@
       "_qr-scanner-B4zfAtOc.js",
       "resources/js/app.js",
       "resources/js/components/AttendanceSuccess.jsx",
+      "_preload-helper-I4rgV-VL.js",
       "_icon-pack-D8t0f58e.js"
     ]
   },
@@ -187,6 +195,18 @@
     "isEntry": true,
     "imports": [
       "_browser-C8KFpyF2.js",
+      "_qr-scanner-B4zfAtOc.js"
+    ]
+  },
+  "resources/js/quran-scan.js": {
+    "file": "assets/quran-scan-Be3yTkW7.js",
+    "name": "quran-scan",
+    "src": "resources/js/quran-scan.js",
+    "isEntry": true,
+    "imports": [
+      "_preload-helper-I4rgV-VL.js"
+    ],
+    "dynamicImports": [
       "_qr-scanner-B4zfAtOc.js"
     ]
   },

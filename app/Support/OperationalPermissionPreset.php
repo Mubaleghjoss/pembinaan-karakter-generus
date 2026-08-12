@@ -30,10 +30,11 @@ class OperationalPermissionPreset
             'operator_data' => [
                 'label' => 'Operator Data',
                 'description' => 'Mengelola data siswa, tracer, tugas PKG, laporan penyaksian, dan ekspor operasional.',
-                'menu_permissions' => ['dashboard', 'siswa', 'tracer_karakter', 'pr', 'laporan_penyaksian', 'calendar', 'export'],
+                'menu_permissions' => ['dashboard', 'siswa', 'tracer_karakter', 'tracer_bacaan_quran', 'pr', 'laporan_penyaksian', 'calendar', 'export'],
                 'crud_permissions' => [
                     'siswa' => ['view', 'create', 'edit', 'import', 'export'],
                     'tracer_karakter' => ['view', 'create', 'edit', 'export'],
+                    'tracer_bacaan_quran' => ['view', 'create', 'edit', 'verify', 'export'],
                     'pr' => ['view', 'create', 'edit', 'verify'],
                     'laporan_penyaksian' => ['view', 'tindak_lanjut'],
                     'export' => ['view', 'siswa'],

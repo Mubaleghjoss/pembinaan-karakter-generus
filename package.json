@@ -26,7 +26,7 @@
     "@fullcalendar/list": "^6.1.20",
     "@vladmandic/human": "^3.3.6",
     "alpinejs": "^3.15.11",
-    "axios": "^1.15.0",
+    "axios": "^1.19.0",
     "chart.js": "^4.5.1",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.554.0",
