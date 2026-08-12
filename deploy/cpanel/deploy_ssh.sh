@@ -215,7 +215,6 @@ cat > "$PUBLIC_ROOT/.htaccess" <<'HTACCESS'
 RewriteEngine On
 RewriteRule ^\.well-known/acme-challenge/ - [L]
 RewriteCond %{HTTPS} !=on
-RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L,NE]
 RewriteRule ^storage/materi/pdf(?:/|$) - [F,L,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -233,6 +232,13 @@ RewriteRule ^ index.php [QSA,L]
   AddType application/javascript .mjs
 </IfModule>
 HTACCESS
+
+touch "$PUBLIC_ROOT/.user.ini"
+if grep -Eq '^[[:space:]]*expose_php[[:space:]]*=' "$PUBLIC_ROOT/.user.ini"; then
+  sed -i 's/^[[:space:]]*expose_php[[:space:]]*=.*/expose_php=Off/' "$PUBLIC_ROOT/.user.ini"
+else
+  printf '\nexpose_php=Off\n' >> "$PUBLIC_ROOT/.user.ini"
+fi
 
 handler_written=0
 if [ -n "$htaccess_backup" ]; then

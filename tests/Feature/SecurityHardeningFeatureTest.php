@@ -84,4 +84,15 @@ class SecurityHardeningFeatureTest extends TestCase
             ],
         ])->assertNoContent();
     }
+
+    public function test_cpanel_front_controller_and_rewrite_enforce_server_level_hardening(): void
+    {
+        $deployScript = file_get_contents(base_path('deploy/cpanel/deploy_ssh.sh'));
+        $frontController = file_get_contents(base_path('deploy/cpanel/public_html_index.pembinaan-karakter-generus.php.example'));
+
+        $this->assertStringContainsString('RewriteCond %{HTTPS} !=on', $deployScript);
+        $this->assertStringNotContainsString('HTTP:X-Forwarded-Proto', $deployScript);
+        $this->assertStringContainsString('expose_php=Off', $deployScript);
+        $this->assertStringContainsString("header_remove('X-Powered-By')", $frontController);
+    }
 }
