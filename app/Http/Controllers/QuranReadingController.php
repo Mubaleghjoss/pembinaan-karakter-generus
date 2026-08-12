@@ -209,16 +209,17 @@ class QuranReadingController extends Controller
     {
         $this->ensureScanEnabled();
 
-        if (Auth::guard('siswa')->check()) {
-            $siswa = Auth::guard('siswa')->user();
-            $layout = 'siswa';
-        } else {
-            abort_unless($siswa, 404);
-            $this->authorizeOperationalStudent($request->user(), $siswa);
-            $layout = 'operational';
+        if ($this->isStudentRoute($request)) {
+            return redirect()->to(route('siswa.quran.index', ['tab' => 'scan']).'#scan');
         }
 
-        return view('quran-reading.scan', compact('siswa', 'layout'));
+        abort_unless($siswa, 404);
+        $this->authorizeOperationalStudent($request->user(), $siswa);
+
+        return redirect()->to(route('quran.index', [
+            'tab' => 'scan',
+            'siswa_id' => $siswa->id,
+        ]).'#scan');
     }
 
     public function scanUpload(Request $request, ?Siswa $siswa = null)
@@ -259,40 +260,40 @@ class QuranReadingController extends Controller
 
     public function studentScanConfirmForm(Request $request, QuranReadingScan $scan)
     {
-        return $this->renderScanConfirm($request, $scan, null);
+        return $this->renderScanConfirm($request, $scan, null, true);
     }
 
     public function scanConfirmForm(Request $request, Siswa $siswa, QuranReadingScan $scan)
     {
-        return $this->renderScanConfirm($request, $scan, $siswa);
+        return $this->renderScanConfirm($request, $scan, $siswa, false);
     }
 
-    private function renderScanConfirm(Request $request, QuranReadingScan $scan, ?Siswa $siswa)
+    private function renderScanConfirm(Request $request, QuranReadingScan $scan, ?Siswa $siswa, bool $isStudent)
     {
         $this->ensureScanEnabled();
-        $this->authorizeScan($request, $scan, $siswa);
+        $this->authorizeScan($request, $scan, $siswa, $isStudent);
 
         return view('quran-reading.scan-confirm', [
             'scan' => $scan->load('siswa'),
             'surahOptions' => QuranCatalog::options(),
-            'isStudent' => Auth::guard('siswa')->check(),
+            'isStudent' => $isStudent,
         ]);
     }
 
     public function studentScanConfirm(Request $request, QuranReadingScan $scan)
     {
-        return $this->confirmScanResponse($request, $scan, null);
+        return $this->confirmScanResponse($request, $scan, null, true);
     }
 
     public function scanConfirm(Request $request, Siswa $siswa, QuranReadingScan $scan)
     {
-        return $this->confirmScanResponse($request, $scan, $siswa);
+        return $this->confirmScanResponse($request, $scan, $siswa, false);
     }
 
-    private function confirmScanResponse(Request $request, QuranReadingScan $scan, ?Siswa $siswa)
+    private function confirmScanResponse(Request $request, QuranReadingScan $scan, ?Siswa $siswa, bool $isStudent)
     {
         $this->ensureScanEnabled();
-        $this->authorizeScan($request, $scan, $siswa);
+        $this->authorizeScan($request, $scan, $siswa, $isStudent);
         abort_if($scan->status === 'confirmed', 409, 'Hasil scan ini sudah dikonfirmasi.');
         $rows = $request->validate([
             'rows' => ['required', 'array', 'min:1', 'max:12'],
@@ -307,8 +308,7 @@ class QuranReadingController extends Controller
             'rows.*.notes' => ['nullable', 'string', 'max:1000'],
         ])['rows'];
 
-        $isStudent = Auth::guard('siswa')->check();
-        $actor = $isStudent ? Auth::guard('siswa')->user() : $request->user();
+        $actor = $isStudent ? $request->user('siswa') : $request->user();
 
         DB::transaction(function () use ($rows, $scan, $isStudent, $actor) {
             foreach ($rows as $row) {
@@ -338,24 +338,28 @@ class QuranReadingController extends Controller
             $scan->update(['status' => 'confirmed', 'extracted_rows' => $rows, 'confirmed_at' => now()]);
         });
 
-        return redirect()->route($isStudent ? 'siswa.quran.index' : 'quran.index', $isStudent ? [] : ['siswa_id' => $scan->siswa_id])
+        $target = $isStudent
+            ? route('siswa.quran.index', ['tab' => 'rekap']).'#rekap'
+            : route('quran.index', ['tab' => 'rekap', 'siswa_id' => $scan->siswa_id]).'#rekap';
+
+        return redirect()->to($target)
             ->with('success', $isStudent ? 'Hasil scan dikirim untuk verifikasi Pamong.' : 'Hasil scan disimpan dan terverifikasi.');
     }
 
     public function studentScanImage(Request $request, QuranReadingScan $scan)
     {
-        return $this->scanImageResponse($request, $scan, null);
+        return $this->scanImageResponse($request, $scan, null, true);
     }
 
     public function scanImage(Request $request, Siswa $siswa, QuranReadingScan $scan)
     {
-        return $this->scanImageResponse($request, $scan, $siswa);
+        return $this->scanImageResponse($request, $scan, $siswa, false);
     }
 
-    private function scanImageResponse(Request $request, QuranReadingScan $scan, ?Siswa $siswa)
+    private function scanImageResponse(Request $request, QuranReadingScan $scan, ?Siswa $siswa, bool $isStudent)
     {
         $this->ensureScanEnabled();
-        $this->authorizeScan($request, $scan, $siswa);
+        $this->authorizeScan($request, $scan, $siswa, $isStudent);
         abort_unless(Storage::disk('local')->exists($scan->original_path), 404);
 
         return Storage::disk('local')->response($scan->original_path, null, [
@@ -476,8 +480,8 @@ class QuranReadingController extends Controller
 
     private function resolveScanActor(Request $request, ?Siswa $siswa): array
     {
-        if (Auth::guard('siswa')->check()) {
-            $student = Auth::guard('siswa')->user();
+        if ($this->isStudentRoute($request)) {
+            $student = $request->user('siswa');
 
             return ['siswa', $student->id, $student];
         }
@@ -488,10 +492,10 @@ class QuranReadingController extends Controller
         return ['user', $request->user()->id, $siswa];
     }
 
-    private function authorizeScan(Request $request, QuranReadingScan $scan, ?Siswa $siswa): void
+    private function authorizeScan(Request $request, QuranReadingScan $scan, ?Siswa $siswa, bool $isStudent): void
     {
-        if (Auth::guard('siswa')->check()) {
-            abort_unless((int) $scan->siswa_id === (int) Auth::guard('siswa')->id() && $scan->uploaded_by_type === 'siswa', 403);
+        if ($isStudent) {
+            abort_unless((int) $scan->siswa_id === (int) $request->user('siswa')?->id && $scan->uploaded_by_type === 'siswa', 403);
 
             return;
         }
@@ -504,5 +508,10 @@ class QuranReadingController extends Controller
     private function ensureScanEnabled(): void
     {
         abort_unless((bool) config('quran-reading.scan_enabled'), 404);
+    }
+
+    private function isStudentRoute(Request $request): bool
+    {
+        return str_starts_with((string) $request->route()?->getName(), 'siswa.quran.');
     }
 }

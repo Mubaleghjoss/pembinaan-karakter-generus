@@ -135,6 +135,26 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('data-label="Target"', $materi);
     }
 
+    public function test_quran_tracer_uses_shared_tabs_and_mobile_safe_scan_forms(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $student = file_get_contents($root.'/resources/views/quran-reading/student-index.blade.php');
+        $operational = file_get_contents($root.'/resources/views/quran-reading/operational-index.blade.php');
+        $scan = file_get_contents($root.'/resources/views/quran-reading/partials/scan-form.blade.php');
+
+        $this->assertStringContainsString('<x-tabs', $student);
+        $this->assertStringContainsString(':sync-query="true"', $student);
+        $this->assertStringContainsString("id=\"rekap\"", $student);
+        $this->assertStringContainsString("id=\"input\"", $student);
+        $this->assertStringContainsString("id=\"scan\"", $student);
+        $this->assertStringContainsString('<x-tabs', $operational);
+        $this->assertStringContainsString(':sync-query="true"', $operational);
+        $this->assertStringContainsString("\$capabilities['create']", $operational);
+        $this->assertStringContainsString('capture="environment"', $scan);
+        $this->assertStringContainsString('maksimal 8 MB', $scan);
+        $this->assertStringNotContainsString('overflow-x-auto', $scan);
+    }
+
     public function test_interactive_tables_use_mobile_cards_or_an_explicit_mobile_alternative(): void
     {
         $root = dirname(__DIR__, 2);

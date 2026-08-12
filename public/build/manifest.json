@@ -80,7 +80,7 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-BIj3zObJ.js",
+    "file": "assets/app-DgAlOBTN.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -104,7 +104,7 @@
       "_browser-C8KFpyF2.js"
     ],
     "css": [
-      "assets/app-Bmw2s6Qc.css"
+      "assets/app-8KFK3gAq.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -130,7 +130,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-ilf1KpS2.js",
+    "file": "assets/QRScanner-CG6mbLt8.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -199,7 +199,7 @@
     ]
   },
   "resources/js/quran-scan.js": {
-    "file": "assets/quran-scan-Be3yTkW7.js",
+    "file": "assets/quran-scan-BQhISJGR.js",
     "name": "quran-scan",
     "src": "resources/js/quran-scan.js",
     "isEntry": true,

@@ -2,6 +2,7 @@
     'tabs' => [],
     'defaultTab' => null,
     'persistKey' => null,
+    'syncQuery' => false,
     'contentClass' => '',
 ])
 
@@ -28,6 +29,7 @@
     activeTab: '{{ $defaultTab }}',
     persistKey: {{ $persistKeyJs }},
     validTabs: {{ $validTabIds }},
+    syncQuery: {{ $syncQuery ? 'true' : 'false' }},
     
     init() {
         // Check URL hash first
@@ -54,7 +56,14 @@
     
     setActiveTab(tab) {
         this.activeTab = tab;
-        window.location.hash = tab;
+        if (this.syncQuery) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tab);
+            url.hash = tab;
+            window.history.replaceState({}, '', url);
+        } else {
+            window.location.hash = tab;
+        }
         if (this.persistKey) {
             localStorage.setItem('tab_' + this.persistKey, tab);
         }

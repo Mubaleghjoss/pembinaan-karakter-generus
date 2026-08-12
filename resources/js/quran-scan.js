@@ -11,7 +11,7 @@ if (forms.length) {
             const status = form.querySelector('[data-quran-scan-status]');
             const submit = form.querySelector('[data-quran-scan-submit]');
             const readerId = `quran-qr-reader-${index}`;
-            const hiddenReader = form.querySelector('#quran-qr-reader-hidden');
+            const hiddenReader = form.querySelector('[data-quran-qr-reader]');
             hiddenReader.id = readerId;
             const reader = new Html5Qrcode(readerId, { verbose: false });
 

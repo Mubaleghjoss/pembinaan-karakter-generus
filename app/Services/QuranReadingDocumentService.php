@@ -13,6 +13,9 @@ use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\Response;
 
 class QuranReadingDocumentService
@@ -24,7 +27,7 @@ class QuranReadingDocumentService
             'entries' => $entries,
             'filters' => $filters,
             'catalog' => QuranCatalog::class,
-        ], 'riwayat-bacaan-quran-'.str($siswa->nama)->slug().'.pdf');
+        ], $this->filename($siswa, 'Laporan Bacaan Al-Quran'));
     }
 
     public function sheet(QuranReadingSheet $sheet, string $plainToken): Response
@@ -37,7 +40,7 @@ class QuranReadingDocumentService
             'siswa' => $sheet->siswa,
             'qrDataUri' => $this->qrDataUri($payload),
             'catalog' => QuranCatalog::class,
-        ], 'lembar-lanjutan-bacaan-quran-'.str($sheet->siswa->nama)->slug().'.pdf');
+        ], $this->filename($sheet->siswa, 'Lembar Lanjutan Bacaan Al-Quran'));
     }
 
     private function render(string $view, array $data, string $filename): Response
@@ -55,9 +58,21 @@ class QuranReadingDocumentService
 
         return response($dompdf->output(), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                ResponseHeaderBag::DISPOSITION_ATTACHMENT,
+                $filename,
+                Str::ascii($filename),
+            ),
             'Cache-Control' => 'private, no-store, max-age=0',
         ]);
+    }
+
+    private function filename(Siswa $siswa, string $document): string
+    {
+        $name = preg_replace('/[\\\\\/:*?"<>|%\x00-\x1F\x7F]+/u', ' ', trim((string) $siswa->nama));
+        $name = preg_replace('/\s+/u', ' ', (string) $name);
+
+        return ($name !== '' ? $name : 'Generus').' - '.$document.'.pdf';
     }
 
     private function qrDataUri(string $payload): string
