@@ -2896,6 +2896,121 @@ html.dark [class~="dark:border-purple-700"] {
 }
 
 /* Responsive navigation */
+.pkg-public-scan-mode {
+    color: rgb(71 85 105);
+    transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.pkg-public-scan-mode[aria-selected="true"] {
+    background: rgb(5 150 105);
+    color: white;
+    box-shadow: 0 8px 20px rgb(5 150 105 / 0.22);
+}
+
+.dark .pkg-public-scan-mode {
+    color: rgb(203 213 225);
+}
+
+.dark .pkg-public-scan-mode[aria-selected="true"] {
+    background: rgb(5 150 105);
+    color: white;
+}
+
+.pkg-quran-scanner {
+    min-width: 0;
+}
+
+.pkg-quran-camera__viewport,
+.pkg-quran-preview {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    border: 1px solid rgb(51 65 85 / 0.45);
+    border-radius: 1rem;
+    background: rgb(2 6 23);
+    aspect-ratio: 3 / 4;
+    touch-action: none;
+}
+
+.pkg-quran-camera__viewport video,
+.pkg-quran-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.pkg-quran-camera__guide {
+    position: absolute;
+    inset: 5%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    border: 2px solid rgb(52 211 153 / 0.9);
+    border-radius: 0.75rem;
+    box-shadow: 0 0 0 999px rgb(2 6 23 / 0.25);
+    pointer-events: none;
+}
+
+.pkg-quran-camera__guide span {
+    margin-bottom: 0.75rem;
+    border-radius: 999px;
+    background: rgb(15 23 42 / 0.82);
+    padding: 0.4rem 0.75rem;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.pkg-quran-crop {
+    position: absolute;
+    top: 4%;
+    right: 3%;
+    width: 28%;
+    aspect-ratio: 1;
+    min-width: 64px;
+    min-height: 64px;
+    cursor: move;
+    border: 3px solid rgb(251 191 36);
+    border-radius: 0.5rem;
+    background: rgb(251 191 36 / 0.08);
+    box-shadow: 0 0 0 999px rgb(2 6 23 / 0.2);
+    touch-action: none;
+}
+
+.pkg-quran-crop::after {
+    position: absolute;
+    right: -8px;
+    bottom: -8px;
+    width: 22px;
+    height: 22px;
+    border: 3px solid white;
+    border-radius: 999px;
+    background: rgb(245 158 11);
+    content: "";
+    cursor: nwse-resize;
+}
+
+.pkg-quran-confidence-high {
+    border-color: rgb(16 185 129 / 0.65) !important;
+}
+
+.pkg-quran-confidence-medium {
+    border-color: rgb(245 158 11 / 0.85) !important;
+    background-color: rgb(255 251 235) !important;
+}
+
+.dark .pkg-quran-confidence-medium {
+    background-color: rgb(69 26 3 / 0.25) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pkg-public-scan-mode,
+    [data-quran-progress-bar] {
+        transition: none;
+    }
+}
+
 @media (max-width: 768px) {
     .mobile-menu {
         @apply block;

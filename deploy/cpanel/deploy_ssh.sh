@@ -301,6 +301,19 @@ mkdir -p \
 rm -f "$PUBLIC_ROOT/hot"
 
 echo "Refresh cache Laravel..."
+if grep -q '^QURAN_READING_SCAN_ENABLED=' "$APP_ROOT/.env"; then
+  sed -i 's/^QURAN_READING_SCAN_ENABLED=.*/QURAN_READING_SCAN_ENABLED=true/' "$APP_ROOT/.env"
+else
+  printf '\nQURAN_READING_SCAN_ENABLED=true\n' >> "$APP_ROOT/.env"
+fi
+
+if grep -q '^QURAN_READING_OCR_ENABLED=' "$APP_ROOT/.env"; then
+  sed -i 's/^QURAN_READING_OCR_ENABLED=.*/QURAN_READING_OCR_ENABLED=true/' "$APP_ROOT/.env"
+else
+  printf 'QURAN_READING_OCR_ENABLED=true\n' >> "$APP_ROOT/.env"
+fi
+
+"$php_cmd" artisan migrate --force
 "$php_cmd" artisan optimize:clear
 "$php_cmd" artisan config:cache
 "$php_cmd" artisan route:cache

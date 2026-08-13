@@ -205,17 +205,17 @@ class QuranReadingFeatureTest extends TestCase
             'generated_by' => $admin->id,
         ]);
 
-        $upload = $this->actingAs($admin)->post(route('quran.scan.upload', $siswa), [
+        $upload = $this->actingAs($admin)->post(route('quran.scan.upload'), [
             'sheet_payload' => 'PKGQURAN:'.$sheet->public_id.':'.$token,
             'scan_image' => UploadedFile::fake()->image('lembar.jpg', 800, 1200),
         ]);
 
         $scan = QuranReadingScan::firstOrFail();
-        $upload->assertRedirect(route('quran.scan.confirm', [$siswa, $scan]));
+        $upload->assertRedirect(route('quran.scan.confirm', $scan));
         Storage::disk('local')->assertExists($scan->original_path);
 
-        $this->actingAs($admin)->get(route('quran.scan.confirm', [$siswa, $scan]))->assertOk();
-        $this->actingAs($admin)->post(route('quran.scan.confirm.store', [$siswa, $scan]), [
+        $this->actingAs($admin)->get(route('quran.scan.confirm', $scan))->assertOk();
+        $this->actingAs($admin)->post(route('quran.scan.confirm.store', $scan), [
             'rows' => [1 => $this->entryPayload(['row_number' => 1])],
         ])->assertRedirect(route('quran.index', ['tab' => 'rekap', 'siswa_id' => $siswa->id]).'#rekap');
 
@@ -226,18 +226,18 @@ class QuranReadingFeatureTest extends TestCase
         ]);
         $this->assertSame(1, QuranReadingEntry::where('sheet_id', $sheet->id)->count());
 
-        $this->actingAs($admin)->post(route('quran.scan.confirm.store', [$siswa, $scan]), [
+        $this->actingAs($admin)->post(route('quran.scan.confirm.store', $scan), [
             'rows' => [1 => $this->entryPayload(['row_number' => 1])],
         ])->assertStatus(409);
         $this->assertSame(1, QuranReadingEntry::where('sheet_id', $sheet->id)->count());
 
-        $secondUpload = $this->actingAs($admin)->post(route('quran.scan.upload', $siswa), [
+        $secondUpload = $this->actingAs($admin)->post(route('quran.scan.upload'), [
             'sheet_payload' => 'PKGQURAN:'.$sheet->public_id.':'.$token,
             'scan_image' => UploadedFile::fake()->image('lembar-ulang.jpg', 800, 1200),
         ]);
         $secondScan = QuranReadingScan::latest('id')->firstOrFail();
-        $secondUpload->assertRedirect(route('quran.scan.confirm', [$siswa, $secondScan]));
-        $this->actingAs($admin)->post(route('quran.scan.confirm.store', [$siswa, $secondScan]), [
+        $secondUpload->assertRedirect(route('quran.scan.confirm', $secondScan));
+        $this->actingAs($admin)->post(route('quran.scan.confirm.store', $secondScan), [
             'rows' => [1 => $this->entryPayload(['row_number' => 1, 'page_end' => 9])],
         ])->assertRedirect();
         $this->assertSame(3, QuranReadingEntry::where('sheet_id', $sheet->id)->firstOrFail()->page_end);
@@ -276,14 +276,104 @@ class QuranReadingFeatureTest extends TestCase
             'sheet_id' => $sheet->id,
             'status' => QuranReadingEntry::STATUS_PENDING,
         ]);
+
+        $admin = $this->admin();
+        $this->actingAs($admin)
+            ->get(route('quran.scan.image', $scan))
+            ->assertOk()
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+        $this->actingAs($admin)
+            ->get(route('quran.index'))
+            ->assertOk()
+            ->assertSee(route('quran.scan.image', $scan), false);
     }
 
-    public function test_scan_rejects_invalid_foreign_and_oversized_uploads(): void
+    public function test_public_scanner_accepts_compact_sheet_qr_and_creates_pending_entry_after_confirmation(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        Storage::fake('local');
+        $siswa = Siswa::factory()->create(['nama' => 'Generus Scan Publik']);
+        $token = bin2hex(random_bytes(16));
+        $publicId = (string) Str::uuid();
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id,
+            'public_id' => $publicId,
+            'token_hash' => hash('sha256', $token),
+            'status' => 'active',
+            'row_count' => 12,
+            'template_version' => 2,
+        ]);
+        $payload = 'PKGQ:'.strtoupper(str_replace('-', '', $publicId)).':'.strtoupper($token);
+
+        $this->get(route('public.scanner', ['mode' => 'quran']))
+            ->assertOk()
+            ->assertSee('data-public-scan-mode="quran"', false)
+            ->assertSee('data-quran-scan-root', false);
+
+        $upload = $this->post(route('public.quran.scan.upload'), [
+            'sheet_payload' => $payload,
+            'scan_image' => UploadedFile::fake()->image('lembar-publik.jpg', 1200, 1800),
+            'ocr_suggestion' => json_encode([[
+                'row_number' => 1,
+                'reading_date' => now()->toDateString(),
+                'page_start' => 1,
+                'page_end' => 2,
+                'surah_start' => 1,
+                'ayah_start' => 1,
+                'surah_end' => 1,
+                'ayah_end' => 7,
+                'confidence' => ['page_start' => 91],
+            ]]),
+        ]);
+
+        $scan = QuranReadingScan::firstOrFail();
+        $this->assertNull($scan->uploaded_by_id);
+        $upload->assertRedirect(route('public.quran.scan.confirm', $scan));
+        $this->get(route('public.quran.scan.confirm', $scan))
+            ->assertOk()
+            ->assertSee('Generus Scan Publik')
+            ->assertSee('value="1"', false);
+
+        $this->post(route('public.quran.scan.confirm.store', $scan), [
+            'rows' => [1 => $this->entryPayload(['row_number' => 1])],
+        ])->assertRedirect(route('public.scanner', ['mode' => 'quran']).'#quran');
+
+        $this->assertDatabaseHas('quran_reading_entries', [
+            'sheet_id' => $sheet->id,
+            'sheet_row_number' => 1,
+            'submitted_by_type' => 'public',
+            'submitted_by_id' => null,
+            'status' => QuranReadingEntry::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('quran.scan.image', $scan))
+            ->assertOk();
+    }
+
+    public function test_public_scan_confirmation_is_bound_to_the_uploading_session(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        Storage::fake('local');
+        $siswa = Siswa::factory()->create();
+        $scan = QuranReadingScan::create([
+            'siswa_id' => $siswa->id,
+            'uploaded_by_type' => 'public',
+            'uploaded_by_id' => null,
+            'original_path' => 'quran-reading-scans/private.jpg',
+            'status' => 'awaiting_confirmation',
+        ]);
+        Storage::disk('local')->put($scan->original_path, 'private');
+
+        $this->get(route('public.quran.scan.confirm', $scan))->assertForbidden();
+        $this->get(route('public.quran.scan.image', $scan))->assertForbidden();
+    }
+
+    public function test_scan_rejects_oversized_uploads(): void
     {
         config()->set('quran-reading.scan_enabled', true);
         Storage::fake('local');
         $owner = Siswa::factory()->create();
-        $other = Siswa::factory()->create();
         $admin = $this->admin();
         $token = Str::random(48);
         $sheet = QuranReadingSheet::create([
@@ -294,14 +384,8 @@ class QuranReadingFeatureTest extends TestCase
             'row_count' => 12,
         ]);
 
-        $this->actingAs($admin)->from(route('quran.index', ['tab' => 'scan', 'siswa_id' => $other->id]))
-            ->post(route('quran.scan.upload', $other), [
-                'sheet_payload' => 'PKGQURAN:'.$sheet->public_id.':'.$token,
-                'scan_image' => UploadedFile::fake()->image('lembar.jpg'),
-            ])->assertSessionHasErrors('sheet_payload');
-
         $this->actingAs($admin)->from(route('quran.index', ['tab' => 'scan', 'siswa_id' => $owner->id]))
-            ->post(route('quran.scan.upload', $owner), [
+            ->post(route('quran.scan.upload'), [
                 'sheet_payload' => 'PKGQURAN:'.$sheet->public_id.':'.$token,
                 'scan_image' => UploadedFile::fake()->create('terlalu-besar.jpg', 8193, 'image/jpeg'),
             ])->assertSessionHasErrors('scan_image');

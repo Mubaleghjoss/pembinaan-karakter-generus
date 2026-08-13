@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ConfirmQuranReadingScanRequest;
+use App\Http\Requests\StoreQuranReadingScanRequest;
 use App\Models\Kelas;
 use App\Models\QuranReadingEntry;
 use App\Models\QuranReadingScan;
 use App\Models\QuranReadingSheet;
 use App\Models\Siswa;
+use App\Models\ThemeSetting;
 use App\Services\QuranReadingDocumentService;
+use App\Services\QuranReadingScanService;
 use App\Support\QuranCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -19,8 +23,10 @@ use Illuminate\Validation\ValidationException;
 
 class QuranReadingController extends Controller
 {
-    public function __construct(private readonly QuranReadingDocumentService $documents)
-    {
+    public function __construct(
+        private readonly QuranReadingDocumentService $documents,
+        private readonly QuranReadingScanService $scans,
+    ) {
     }
 
     public function studentIndex(Request $request)
@@ -101,7 +107,7 @@ class QuranReadingController extends Controller
         }
 
         $siswaList = $siswaQuery->paginate(20)->withQueryString();
-        $pendingQuery = QuranReadingEntry::with(['siswa:id,nis,nama,kelas_id', 'siswa.kelas:id,nama'])
+        $pendingQuery = QuranReadingEntry::with(['siswa:id,nis,nama,kelas_id', 'siswa.kelas:id,nama', 'scan:id,siswa_id'])
             ->where('status', QuranReadingEntry::STATUS_PENDING)
             ->latest('reading_date');
         if ($user->isTeacher()) {
@@ -222,95 +228,116 @@ class QuranReadingController extends Controller
         ]).'#scan');
     }
 
-    public function scanUpload(Request $request, ?Siswa $siswa = null)
+    public function scanUpload(StoreQuranReadingScanRequest $request, ?Siswa $siswa = null)
     {
         $this->ensureScanEnabled();
+        $data = $request->validated();
+        $sheet = $this->scans->resolveSheet($data['sheet_payload']);
+        [$actorType, $actorId] = $this->resolveScanActor($request, $siswa, $sheet);
 
-        [$actorType, $actorId, $siswa] = $this->resolveScanActor($request, $siswa);
-        $data = $request->validate([
-            'sheet_payload' => ['required', 'string', 'max:500', 'regex:/^PKGQURAN:[0-9a-f-]{36}:[A-Za-z0-9]+$/i'],
-            'scan_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
-            'ocr_suggestion' => ['nullable', 'json', 'max:12000'],
-        ]);
+        $scan = $this->scans->create(
+            $sheet,
+            $request->file('scan_image'),
+            $request->file('processed_image'),
+            $actorType,
+            $actorId,
+            $data['ocr_suggestion'] ?? null,
+        );
 
-        [, $publicId, $token] = explode(':', $data['sheet_payload'], 3);
-        $sheet = QuranReadingSheet::where('public_id', $publicId)->first();
-        if (! $sheet || (int) $sheet->siswa_id !== (int) $siswa->id || ! $sheet->verifyToken($token)) {
-            throw ValidationException::withMessages(['sheet_payload' => 'QR lembar tidak valid, sudah dicabut, atau bukan milik siswa ini.']);
-        }
+        return redirect()->route(
+            $actorType === 'siswa' ? 'siswa.quran.scan.confirm' : 'quran.scan.confirm',
+            $actorType === 'siswa' ? $scan : $scan,
+        );
+    }
 
-        $path = $request->file('scan_image')->store('quran-reading-scans', 'local');
-        $scan = QuranReadingScan::create([
-            'siswa_id' => $siswa->id,
-            'sheet_id' => $sheet->id,
-            'uploaded_by_type' => $actorType,
-            'uploaded_by_id' => $actorId,
-            'original_path' => $path,
-            'status' => 'awaiting_confirmation',
-            'metadata' => [
-                'original_name' => mb_substr($request->file('scan_image')->getClientOriginalName(), 0, 200),
-                'mime' => $request->file('scan_image')->getMimeType(),
-                'size' => $request->file('scan_image')->getSize(),
-                'ocr_suggestion' => $data['ocr_suggestion'] ?? null,
-            ],
-        ]);
+    public function publicScanUpload(StoreQuranReadingScanRequest $request)
+    {
+        $this->ensureScanEnabled();
+        $data = $request->validated();
+        $sheet = $this->scans->resolveSheet($data['sheet_payload']);
+        $scan = $this->scans->create(
+            $sheet,
+            $request->file('scan_image'),
+            $request->file('processed_image'),
+            'public',
+            null,
+            $data['ocr_suggestion'] ?? null,
+        );
 
-        return redirect()->route($actorType === 'siswa' ? 'siswa.quran.scan.confirm' : 'quran.scan.confirm', $actorType === 'siswa' ? $scan : [$siswa, $scan]);
+        $request->session()->put('quran_public_scans.'.$scan->id, true);
+
+        return redirect()->route('public.quran.scan.confirm', $scan);
     }
 
     public function studentScanConfirmForm(Request $request, QuranReadingScan $scan)
     {
-        return $this->renderScanConfirm($request, $scan, null, true);
+        return $this->renderScanConfirm($request, $scan, true);
     }
 
     public function scanConfirmForm(Request $request, Siswa $siswa, QuranReadingScan $scan)
     {
-        return $this->renderScanConfirm($request, $scan, $siswa, false);
+        abort_unless((int) $scan->siswa_id === (int) $siswa->id, 404);
+
+        return $this->renderScanConfirm($request, $scan, false, false);
     }
 
-    private function renderScanConfirm(Request $request, QuranReadingScan $scan, ?Siswa $siswa, bool $isStudent)
+    public function operationalScanConfirmForm(Request $request, QuranReadingScan $scan)
+    {
+        return $this->renderScanConfirm($request, $scan, false, false);
+    }
+
+    public function publicScanConfirmForm(Request $request, QuranReadingScan $scan)
+    {
+        return $this->renderScanConfirm($request, $scan, false, true);
+    }
+
+    private function renderScanConfirm(Request $request, QuranReadingScan $scan, bool $isStudent, bool $isPublic = false)
     {
         $this->ensureScanEnabled();
-        $this->authorizeScan($request, $scan, $siswa, $isStudent);
+        $this->authorizeScan($request, $scan, $isStudent, $isPublic);
 
         return view('quran-reading.scan-confirm', [
-            'scan' => $scan->load('siswa'),
+            'scan' => $scan->load('siswa.kelas'),
             'surahOptions' => QuranCatalog::options(),
             'isStudent' => $isStudent,
+            'isPublic' => $isPublic,
+            'theme' => $isPublic ? ThemeSetting::current() : null,
         ]);
     }
 
-    public function studentScanConfirm(Request $request, QuranReadingScan $scan)
+    public function studentScanConfirm(ConfirmQuranReadingScanRequest $request, QuranReadingScan $scan)
     {
-        return $this->confirmScanResponse($request, $scan, null, true);
+        return $this->confirmScanResponse($request, $scan, true, false);
     }
 
-    public function scanConfirm(Request $request, Siswa $siswa, QuranReadingScan $scan)
+    public function scanConfirm(ConfirmQuranReadingScanRequest $request, Siswa $siswa, QuranReadingScan $scan)
     {
-        return $this->confirmScanResponse($request, $scan, $siswa, false);
+        abort_unless((int) $scan->siswa_id === (int) $siswa->id, 404);
+
+        return $this->confirmScanResponse($request, $scan, false, false);
     }
 
-    private function confirmScanResponse(Request $request, QuranReadingScan $scan, ?Siswa $siswa, bool $isStudent)
+    public function operationalScanConfirm(ConfirmQuranReadingScanRequest $request, QuranReadingScan $scan)
+    {
+        return $this->confirmScanResponse($request, $scan, false, false);
+    }
+
+    public function publicScanConfirm(ConfirmQuranReadingScanRequest $request, QuranReadingScan $scan)
+    {
+        return $this->confirmScanResponse($request, $scan, false, true);
+    }
+
+    private function confirmScanResponse(ConfirmQuranReadingScanRequest $request, QuranReadingScan $scan, bool $isStudent, bool $isPublic)
     {
         $this->ensureScanEnabled();
-        $this->authorizeScan($request, $scan, $siswa, $isStudent);
+        $this->authorizeScan($request, $scan, $isStudent, $isPublic);
         abort_if($scan->status === 'confirmed', 409, 'Hasil scan ini sudah dikonfirmasi.');
-        $rows = $request->validate([
-            'rows' => ['required', 'array', 'min:1', 'max:12'],
-            'rows.*.row_number' => ['required', 'integer', 'between:1,12'],
-            'rows.*.reading_date' => ['required', 'date', 'before_or_equal:today'],
-            'rows.*.page_start' => ['required', 'integer', 'between:1,1000'],
-            'rows.*.page_end' => ['required', 'integer', 'between:1,1000'],
-            'rows.*.surah_start' => ['required', 'integer', 'between:1,114'],
-            'rows.*.ayah_start' => ['required', 'integer', 'between:1,286'],
-            'rows.*.surah_end' => ['required', 'integer', 'between:1,114'],
-            'rows.*.ayah_end' => ['required', 'integer', 'between:1,286'],
-            'rows.*.notes' => ['nullable', 'string', 'max:1000'],
-        ])['rows'];
+        $rows = $request->validated()['rows'];
 
-        $actor = $isStudent ? $request->user('siswa') : $request->user();
+        $actor = $isPublic ? null : ($isStudent ? $request->user('siswa') : $request->user());
+        $needsVerification = $isStudent || $isPublic;
 
-        DB::transaction(function () use ($rows, $scan, $isStudent, $actor) {
+        DB::transaction(function () use ($rows, $scan, $needsVerification, $isStudent, $isPublic, $actor) {
             foreach ($rows as $row) {
                 $this->validateReadingRange($row);
                 $existing = QuranReadingEntry::where('sheet_id', $scan->sheet_id)
@@ -327,42 +354,59 @@ class QuranReadingController extends Controller
                     'siswa_id' => $scan->siswa_id,
                     'source' => 'scan',
                     'scan_id' => $scan->id,
-                    'submitted_by_type' => $isStudent ? 'siswa' : 'user',
-                    'submitted_by_id' => $actor->id,
-                    'status' => $isStudent ? QuranReadingEntry::STATUS_PENDING : QuranReadingEntry::STATUS_VERIFIED,
-                    'verified_by' => $isStudent ? null : $actor->id,
-                    'verified_at' => $isStudent ? null : now(),
+                    'submitted_by_type' => $isPublic ? 'public' : ($isStudent ? 'siswa' : 'user'),
+                    'submitted_by_id' => $actor?->id,
+                    'status' => $needsVerification ? QuranReadingEntry::STATUS_PENDING : QuranReadingEntry::STATUS_VERIFIED,
+                    'verified_by' => $needsVerification ? null : $actor?->id,
+                    'verified_at' => $needsVerification ? null : now(),
                 ]);
             }
 
             $scan->update(['status' => 'confirmed', 'extracted_rows' => $rows, 'confirmed_at' => now()]);
         });
 
-        $target = $isStudent
-            ? route('siswa.quran.index', ['tab' => 'rekap']).'#rekap'
-            : route('quran.index', ['tab' => 'rekap', 'siswa_id' => $scan->siswa_id]).'#rekap';
+        $target = match (true) {
+            $isPublic => route('public.scanner', ['mode' => 'quran']).'#quran',
+            $isStudent => route('siswa.quran.index', ['tab' => 'rekap']).'#rekap',
+            default => route('quran.index', ['tab' => 'rekap', 'siswa_id' => $scan->siswa_id]).'#rekap',
+        };
 
         return redirect()->to($target)
-            ->with('success', $isStudent ? 'Hasil scan dikirim untuk verifikasi Pamong.' : 'Hasil scan disimpan dan terverifikasi.');
+            ->with('success', $needsVerification ? 'Hasil scan dikirim untuk verifikasi Pamong.' : 'Hasil scan disimpan dan terverifikasi.');
     }
 
     public function studentScanImage(Request $request, QuranReadingScan $scan)
     {
-        return $this->scanImageResponse($request, $scan, null, true);
+        return $this->scanImageResponse($request, $scan, true);
     }
 
     public function scanImage(Request $request, Siswa $siswa, QuranReadingScan $scan)
     {
-        return $this->scanImageResponse($request, $scan, $siswa, false);
+        abort_unless((int) $scan->siswa_id === (int) $siswa->id, 404);
+
+        return $this->scanImageResponse($request, $scan, false, false);
     }
 
-    private function scanImageResponse(Request $request, QuranReadingScan $scan, ?Siswa $siswa, bool $isStudent)
+    public function operationalScanImage(Request $request, QuranReadingScan $scan)
+    {
+        return $this->scanImageResponse($request, $scan, false, false);
+    }
+
+    public function publicScanImage(Request $request, QuranReadingScan $scan)
+    {
+        return $this->scanImageResponse($request, $scan, false, true);
+    }
+
+    private function scanImageResponse(Request $request, QuranReadingScan $scan, bool $isStudent, bool $isPublic = false)
     {
         $this->ensureScanEnabled();
-        $this->authorizeScan($request, $scan, $siswa, $isStudent);
-        abort_unless(Storage::disk('local')->exists($scan->original_path), 404);
+        $this->authorizeScan($request, $scan, $isStudent, $isPublic);
+        $path = $request->boolean('original') || ! $scan->processed_path
+            ? $scan->original_path
+            : $scan->processed_path;
+        abort_unless(Storage::disk('local')->exists($path), 404);
 
-        return Storage::disk('local')->response($scan->original_path, null, [
+        return Storage::disk('local')->response($path, null, [
             'Cache-Control' => 'private, no-store, max-age=0',
             'X-Content-Type-Options' => 'nosniff',
         ]);
@@ -451,13 +495,14 @@ class QuranReadingController extends Controller
     private function newSheet(Siswa $siswa, ?int $generatedBy)
     {
         $latest = $siswa->quranReadingEntries()->where('status', QuranReadingEntry::STATUS_VERIFIED)->latest('reading_date')->first();
-        $plainToken = Str::random(48);
+        $plainToken = bin2hex(random_bytes(16));
         $sheet = QuranReadingSheet::create([
             'siswa_id' => $siswa->id,
             'public_id' => (string) Str::uuid(),
             'token_hash' => hash('sha256', $plainToken),
             'status' => 'active',
             'row_count' => 12,
+            'template_version' => 2,
             'generated_by' => $generatedBy,
             'last_position' => $latest ? [
                 'reading_date' => $latest->reading_date?->toDateString(),
@@ -478,31 +523,41 @@ class QuranReadingController extends Controller
         }
     }
 
-    private function resolveScanActor(Request $request, ?Siswa $siswa): array
+    private function resolveScanActor(Request $request, ?Siswa $siswa, QuranReadingSheet $sheet): array
     {
         if ($this->isStudentRoute($request)) {
             $student = $request->user('siswa');
+            abort_unless((int) $sheet->siswa_id === (int) $student?->id, 403, 'QR lembar bukan milik akun ini.');
 
             return ['siswa', $student->id, $student];
         }
 
-        abort_unless($siswa, 404);
-        $this->authorizeOperationalStudent($request->user(), $siswa);
+        $target = $sheet->siswa;
+        if ($siswa && (int) $siswa->id !== (int) $target->id) {
+            throw ValidationException::withMessages(['sheet_payload' => 'QR lembar bukan milik Generus yang dipilih.']);
+        }
+        abort_unless($request->user(), 401);
+        $this->authorizeOperationalStudent($request->user(), $target);
 
-        return ['user', $request->user()->id, $siswa];
+        return ['user', $request->user()->id, $target];
     }
 
-    private function authorizeScan(Request $request, QuranReadingScan $scan, ?Siswa $siswa, bool $isStudent): void
+    private function authorizeScan(Request $request, QuranReadingScan $scan, bool $isStudent, bool $isPublic = false): void
     {
+        if ($isPublic) {
+            abort_unless($scan->uploaded_by_type === 'public' && $request->session()->has('quran_public_scans.'.$scan->id), 403);
+
+            return;
+        }
+
         if ($isStudent) {
             abort_unless((int) $scan->siswa_id === (int) $request->user('siswa')?->id && $scan->uploaded_by_type === 'siswa', 403);
 
             return;
         }
 
-        $target = $siswa ?: $scan->siswa;
-        abort_unless((int) $scan->siswa_id === (int) $target->id, 403);
-        $this->authorizeOperationalStudent($request->user(), $target);
+        abort_unless(in_array($scan->uploaded_by_type, ['user', 'siswa', 'public'], true), 403);
+        $this->authorizeOperationalStudent($request->user(), $scan->siswa);
     }
 
     private function ensureScanEnabled(): void

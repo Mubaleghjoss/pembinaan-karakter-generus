@@ -1,10 +1,10 @@
 {
-  "_browser-C8KFpyF2.js": {
-    "file": "assets/browser-C8KFpyF2.js",
+  "_browser-BmwtkHN9.js": {
+    "file": "assets/browser-BmwtkHN9.js",
     "name": "browser",
     "isDynamicEntry": true,
     "imports": [
-      "_qr-scanner-B4zfAtOc.js"
+      "_qr-scanner-B2gaC3aA.js"
     ]
   },
   "_calendar-vendor-YihmpX6A.js": {
@@ -12,22 +12,35 @@
     "name": "calendar-vendor",
     "isDynamicEntry": true
   },
+  "_document-scanner-CCXDc1P6.js": {
+    "file": "assets/document-scanner-CCXDc1P6.js",
+    "name": "document-scanner",
+    "isDynamicEntry": true,
+    "imports": [
+      "_qr-scanner-B2gaC3aA.js"
+    ]
+  },
   "_face-scanner-CjmZw9SX.js": {
     "file": "assets/face-scanner-CjmZw9SX.js",
     "name": "face-scanner"
   },
-  "_icon-pack-D8t0f58e.js": {
-    "file": "assets/icon-pack-D8t0f58e.js",
+  "_icon-pack-w7FTVuyW.js": {
+    "file": "assets/icon-pack-w7FTVuyW.js",
     "name": "icon-pack",
     "imports": [
-      "_react-vendor-WxYsAmz8.js"
+      "_react-vendor-CqLdzo4J.js"
     ]
   },
-  "_news-slider-D0xxsmi7.js": {
-    "file": "assets/news-slider-D0xxsmi7.js",
+  "_index-qEfrVXE3.js": {
+    "file": "assets/index-qEfrVXE3.js",
+    "name": "index",
+    "isDynamicEntry": true
+  },
+  "_news-slider-Bamaow8u.js": {
+    "file": "assets/news-slider-Bamaow8u.js",
     "name": "news-slider",
     "imports": [
-      "_react-vendor-WxYsAmz8.js"
+      "_react-vendor-CqLdzo4J.js"
     ],
     "css": [
       "assets/news-slider-hXc9paC5.css"
@@ -52,17 +65,17 @@
       "assets/presentation-canvas-C3Kf7BQy.css"
     ]
   },
-  "_qr-scanner-B4zfAtOc.js": {
-    "file": "assets/qr-scanner-B4zfAtOc.js",
+  "_qr-scanner-B2gaC3aA.js": {
+    "file": "assets/qr-scanner-B2gaC3aA.js",
     "name": "qr-scanner",
     "isDynamicEntry": true
   },
-  "_react-vendor-WxYsAmz8.js": {
-    "file": "assets/react-vendor-WxYsAmz8.js",
+  "_react-vendor-CqLdzo4J.js": {
+    "file": "assets/react-vendor-CqLdzo4J.js",
     "name": "react-vendor",
     "isDynamicEntry": true,
     "imports": [
-      "_qr-scanner-B4zfAtOc.js"
+      "_qr-scanner-B2gaC3aA.js"
     ]
   },
   "_three-vendor-Bi-aTaoL.js": {
@@ -80,7 +93,7 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-DgAlOBTN.js",
+    "file": "assets/app-ZwtXhbOi.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -89,8 +102,8 @@
     ],
     "dynamicImports": [
       "resources/js/rpg-3d.js",
-      "_react-vendor-WxYsAmz8.js",
-      "_react-vendor-WxYsAmz8.js",
+      "_react-vendor-CqLdzo4J.js",
+      "_react-vendor-CqLdzo4J.js",
       "resources/js/components/NewsSlider.jsx",
       "resources/js/components/QRScanner.jsx",
       "resources/js/components/AttendanceSuccess.jsx",
@@ -99,48 +112,48 @@
       "_calendar-vendor-YihmpX6A.js",
       "_calendar-vendor-YihmpX6A.js",
       "_calendar-vendor-YihmpX6A.js",
-      "_qr-scanner-B4zfAtOc.js",
+      "_qr-scanner-B2gaC3aA.js",
       "node_modules/chart.js/auto/auto.js",
-      "_browser-C8KFpyF2.js"
+      "_browser-BmwtkHN9.js"
     ],
     "css": [
-      "assets/app-8KFK3gAq.css"
+      "assets/app-zt8olUC4.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
-    "file": "assets/AttendanceSuccess-CR0s311Q.js",
+    "file": "assets/AttendanceSuccess-REH50xPU.js",
     "name": "AttendanceSuccess",
     "src": "resources/js/components/AttendanceSuccess.jsx",
     "isDynamicEntry": true,
     "imports": [
-      "_react-vendor-WxYsAmz8.js",
-      "_icon-pack-D8t0f58e.js",
-      "_qr-scanner-B4zfAtOc.js"
+      "_react-vendor-CqLdzo4J.js",
+      "_icon-pack-w7FTVuyW.js",
+      "_qr-scanner-B2gaC3aA.js"
     ]
   },
   "resources/js/components/NewsSlider.jsx": {
-    "file": "assets/NewsSlider-CO4isV3w.js",
+    "file": "assets/NewsSlider-B7r-nyhZ.js",
     "name": "NewsSlider",
     "src": "resources/js/components/NewsSlider.jsx",
     "isDynamicEntry": true,
     "imports": [
-      "_react-vendor-WxYsAmz8.js",
-      "_news-slider-D0xxsmi7.js",
-      "_qr-scanner-B4zfAtOc.js"
+      "_react-vendor-CqLdzo4J.js",
+      "_news-slider-Bamaow8u.js",
+      "_qr-scanner-B2gaC3aA.js"
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-CG6mbLt8.js",
+    "file": "assets/QRScanner-e3Ewbw_S.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
     "imports": [
-      "_react-vendor-WxYsAmz8.js",
-      "_qr-scanner-B4zfAtOc.js",
+      "_react-vendor-CqLdzo4J.js",
+      "_qr-scanner-B2gaC3aA.js",
       "resources/js/app.js",
       "resources/js/components/AttendanceSuccess.jsx",
       "_preload-helper-I4rgV-VL.js",
-      "_icon-pack-D8t0f58e.js"
+      "_icon-pack-w7FTVuyW.js"
     ]
   },
   "resources/js/face-attendance.js": {
@@ -180,26 +193,26 @@
     ]
   },
   "resources/js/public-scanner.js": {
-    "file": "assets/public-scanner-BJR0ztSR.js",
+    "file": "assets/public-scanner-Cc_OeG0E.js",
     "name": "public-scanner",
     "src": "resources/js/public-scanner.js",
     "isEntry": true,
     "imports": [
-      "_qr-scanner-B4zfAtOc.js"
+      "_qr-scanner-B2gaC3aA.js"
     ]
   },
   "resources/js/qr-print.js": {
-    "file": "assets/qr-print-Ds8GU4fw.js",
+    "file": "assets/qr-print-IKX3IRJY.js",
     "name": "qr-print",
     "src": "resources/js/qr-print.js",
     "isEntry": true,
     "imports": [
-      "_browser-C8KFpyF2.js",
-      "_qr-scanner-B4zfAtOc.js"
+      "_browser-BmwtkHN9.js",
+      "_qr-scanner-B2gaC3aA.js"
     ]
   },
   "resources/js/quran-scan.js": {
-    "file": "assets/quran-scan-BQhISJGR.js",
+    "file": "assets/quran-scan-Bz2oz3Ei.js",
     "name": "quran-scan",
     "src": "resources/js/quran-scan.js",
     "isEntry": true,
@@ -207,7 +220,10 @@
       "_preload-helper-I4rgV-VL.js"
     ],
     "dynamicImports": [
-      "_qr-scanner-B4zfAtOc.js"
+      "_document-scanner-CCXDc1P6.js",
+      "resources/js/vendor/jscanify-client.js",
+      "_index-qEfrVXE3.js",
+      "_qr-scanner-B2gaC3aA.js"
     ]
   },
   "resources/js/rpg-3d.js": {
@@ -227,5 +243,11 @@
     "imports": [
       "_three-vendor-Bi-aTaoL.js"
     ]
+  },
+  "resources/js/vendor/jscanify-client.js": {
+    "file": "assets/jscanify-client-CPy77aAs.js",
+    "name": "jscanify-client",
+    "src": "resources/js/vendor/jscanify-client.js",
+    "isDynamicEntry": true
   }
 }

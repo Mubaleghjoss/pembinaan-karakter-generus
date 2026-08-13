@@ -20,6 +20,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class QuranReadingDocumentService
 {
+    public function __construct(private readonly QuranReadingScanService $scanner)
+    {
+    }
+
     public function report(Siswa $siswa, Collection $entries, array $filters = []): Response
     {
         return $this->render('quran-reading.pdf.report', [
@@ -33,7 +37,7 @@ class QuranReadingDocumentService
     public function sheet(QuranReadingSheet $sheet, string $plainToken): Response
     {
         $sheet->loadMissing('siswa.kelas');
-        $payload = 'PKGQURAN:'.$sheet->public_id.':'.$plainToken;
+        $payload = $this->scanner->payload($sheet, $plainToken);
 
         return $this->render('quran-reading.pdf.sheet', [
             'sheet' => $sheet,
@@ -82,8 +86,8 @@ class QuranReadingDocumentService
             ->data($payload)
             ->encoding(new Encoding('UTF-8'))
             ->errorCorrectionLevel(ErrorCorrectionLevel::Quartile)
-            ->size(220)
-            ->margin(8)
+            ->size(300)
+            ->margin(18)
             ->roundBlockSizeMode(RoundBlockSizeMode::Margin)
             ->build();
 

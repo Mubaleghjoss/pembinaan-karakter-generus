@@ -113,5 +113,18 @@ class RateLimitServiceProvider extends ServiceProvider
         RateLimiter::for('csp-report', function (Request $request) {
             return Limit::perMinute(20)->by('csp:'.$request->ip());
         });
+
+        RateLimiter::for('quran-public-scan', function (Request $request) {
+            $payload = trim((string) $request->input('sheet_payload', ''));
+            $scan = $request->route('scan');
+            $sheetKey = $payload !== ''
+                ? hash('sha256', mb_substr($payload, 0, 500))
+                : 'scan:'.(is_object($scan) ? ($scan->sheet_id ?? $scan->id ?? 'unknown') : ($scan ?: 'unknown'));
+
+            return [
+                Limit::perMinutes(10, 5)->by('quran-public-ip:'.$request->ip()),
+                Limit::perHour(3)->by('quran-public-sheet:'.$sheetKey),
+            ];
+        });
     }
 }

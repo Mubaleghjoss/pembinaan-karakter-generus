@@ -39,6 +39,12 @@
 @section('content')
 <div class="min-h-screen py-4 sm:py-8">
     <div class="mx-auto flex max-w-4xl flex-col px-4 sm:px-6 lg:px-8">
+        <div class="mb-5 grid grid-cols-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900" data-public-scan-mode-root data-initial-mode="{{ request('mode') === 'quran' ? 'quran' : 'presence' }}">
+            <button type="button" class="pkg-public-scan-mode min-h-12 rounded-xl px-3 text-sm font-bold" data-public-scan-mode="presence">Presensi</button>
+            <button type="button" class="pkg-public-scan-mode min-h-12 rounded-xl px-3 text-sm font-bold" data-public-scan-mode="quran">Bacaan Al-Qur'an</button>
+        </div>
+
+        <div class="flex flex-col" data-public-scan-panel="presence">
         <!-- Active Attendance Activities -->
         <div class="order-2 mt-8 pkg-surface rounded-2xl p-6 border-2 {{ $isOpen ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800' }}" data-reveal="up">
             <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -339,6 +345,23 @@
                 </div>
             </div>
         </div>
+        </div>
+
+        <div id="quran" class="hidden" data-public-scan-panel="quran">
+            <section class="pkg-panel-lg border-emerald-200 dark:border-emerald-900">
+                @if(session('success'))<div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200" role="status">{{ session('success') }}</div>@endif
+                <div class="mb-5">
+                    <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Tracer Bacaan Al-Qur'an</p>
+                    <h1 class="mt-1 text-2xl font-bold text-slate-950 dark:text-white">Scan lembar bacaan</h1>
+                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Tidak perlu login. QR rahasia pada lembar mengenali Generus, dan hasil scan akan menunggu verifikasi Pamong.</p>
+                </div>
+                @if(config('quran-reading.scan_enabled'))
+                    @include('quran-reading.partials.scan-form', ['layout' => 'public'])
+                @else
+                    <div class="pkg-empty-state"><p class="pkg-empty-title">Scanner bacaan belum aktif</p><p class="pkg-empty-copy">Silakan gunakan input manual dari Portal Siswa.</p></div>
+                @endif
+            </section>
+        </div>
     </div>
 </div>
 
@@ -635,6 +658,9 @@
 @endsection
 
 @push('scripts')
+    @if(config('quran-reading.scan_enabled'))
+        @vite('resources/js/quran-scan.js')
+    @endif
     @if($publicScannerManifestFileExists)
         @vite([$publicScannerEntry])
     @elseif($publicScannerFallbackUrl)

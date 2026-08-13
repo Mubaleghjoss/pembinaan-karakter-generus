@@ -12,12 +12,13 @@ class QuranReadingSheet extends Model
     use HasFactory;
 
     protected $fillable = [
-        'siswa_id', 'public_id', 'token_hash', 'status', 'row_count', 'last_position',
+        'siswa_id', 'public_id', 'token_hash', 'status', 'row_count', 'template_version', 'last_position',
         'generated_by', 'revoked_at',
     ];
 
     protected $casts = [
         'last_position' => 'array',
+        'template_version' => 'integer',
         'revoked_at' => 'datetime',
     ];
 

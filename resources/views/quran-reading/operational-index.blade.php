@@ -43,7 +43,7 @@
                         @foreach($pendingEntries as $entry)
                             <article class="p-4 sm:p-5">
                                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                                    <div><p class="font-bold">{{ $entry->siswa->nama }} <span class="font-normal text-gray-500">&middot; {{ $entry->siswa->nis }}</span></p><p class="mt-1 text-sm">{{ $entry->reading_date->isoFormat('D MMM YYYY') }} &middot; Hal. {{ $entry->page_start }}&ndash;{{ $entry->page_end }} &middot; {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }}&ndash;{{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>@if($entry->notes)<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $entry->notes }}</p>@endif</div>
+                                    <div><p class="font-bold">{{ $entry->siswa->nama }} <span class="font-normal text-gray-500">&middot; {{ $entry->siswa->nis }}</span></p><p class="mt-1 text-sm">{{ $entry->reading_date->isoFormat('D MMM YYYY') }} &middot; Hal. {{ $entry->page_start }}&ndash;{{ $entry->page_end }} &middot; {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }}&ndash;{{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>@if($entry->notes)<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $entry->notes }}</p>@endif @if($entry->scan)<a class="mt-2 inline-flex min-h-11 items-center font-semibold text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-300" href="{{ route('quran.scan.image', $entry->scan) }}" target="_blank" rel="noopener">Lihat foto scan</a>@endif</div>
                                     @if($capabilities['verify'])
                                         <div class="grid gap-2 sm:grid-cols-2 lg:w-[440px]">
                                             <form method="POST" action="{{ route('quran.verify', $entry) }}" class="flex flex-col gap-2 sm:flex-row">@csrf @method('PATCH')<input name="verification_notes" class="pkg-field min-h-11 min-w-0 flex-1" placeholder="Catatan opsional"><button class="btn-success min-h-11 justify-center">Verifikasi</button></form>
@@ -116,22 +116,12 @@
 
             @if(config('quran-reading.scan_enabled'))
                 <x-tab-panel id="scan">
-                    <div class="grid gap-5 lg:grid-cols-[minmax(0,0.75fr)_minmax(360px,1fr)]">
-                        @include('quran-reading.partials.student-picker', ['targetTab' => 'scan'])
-                        <aside>
-                            @if($selectedSiswa)
-                                <section class="pkg-panel-lg space-y-5">
-                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div><h2 class="font-bold">Scan lembar {{ $selectedSiswa->nama }}</h2><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">QR dibaca otomatis. Semua baris tetap diperiksa sebelum disimpan.</p></div>
-                                        @if($capabilities['export'])<a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.sheet', $selectedSiswa) }}">Unduh Lembar PDF</a>@endif
-                                    </div>
-                                    @include('quran-reading.partials.scan-form', ['layout' => 'operational', 'siswa' => $selectedSiswa])
-                                </section>
-                            @else
-                                <div class="pkg-empty-state pkg-panel"><p class="pkg-empty-title">Pilih Generus untuk scan</p><p class="pkg-empty-copy">QR akan diverifikasi agar tidak tertukar dengan lembar milik Generus lain.</p></div>
-                            @endif
-                        </aside>
-                    </div>
+                    <section class="pkg-panel-lg">
+                        <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
+                            Tidak perlu memilih Generus. QR pada lembar akan mengenali akun yang benar, lalu hasilnya ditampilkan untuk konfirmasi sebelum langsung diverifikasi.
+                        </div>
+                        @include('quran-reading.partials.scan-form', ['layout' => 'operational'])
+                    </section>
                 </x-tab-panel>
             @endif
         @endif

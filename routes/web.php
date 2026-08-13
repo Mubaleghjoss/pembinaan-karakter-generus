@@ -43,6 +43,16 @@ Route::get('/berita/{slug}', [App\Http\Controllers\PublicController::class, 'ber
     ->where('slug', '(?!create$)[A-Za-z0-9-]+')
     ->name('public.berita');
 Route::get('/scan-presensi', [App\Http\Controllers\PublicController::class, 'scanner'])->name('public.scanner');
+Route::post('/scan-presensi/bacaan-quran', [App\Http\Controllers\QuranReadingController::class, 'publicScanUpload'])
+    ->middleware('throttle:quran-public-scan')
+    ->name('public.quran.scan.upload');
+Route::get('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'publicScanConfirmForm'])
+    ->name('public.quran.scan.confirm');
+Route::post('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'publicScanConfirm'])
+    ->middleware('throttle:quran-public-scan')
+    ->name('public.quran.scan.confirm.store');
+Route::get('/scan-presensi/bacaan-quran/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'publicScanImage'])
+    ->name('public.quran.scan.image');
 Route::get('/materi', [App\Http\Controllers\PublicController::class, 'materiIndex'])->name('materi.index');
 Route::get('/materi-publik/{materi}/pdf/{index}', [App\Http\Controllers\PublicController::class, 'materiPdfView'])
     ->whereNumber('index')
@@ -796,11 +806,15 @@ Route::middleware('auth')->group(function () {
         Route::patch('/catatan/{entry}/tolak', [App\Http\Controllers\QuranReadingController::class, 'reject'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('reject');
         Route::get('/{siswa}/laporan', [App\Http\Controllers\QuranReadingController::class, 'operationalReport'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('report');
         Route::get('/{siswa}/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'operationalSheet'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('sheet');
+        Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.upload');
+        Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm');
+        Route::post('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm.store');
+        Route::get('/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'operationalScanImage'])->name('scan.image');
         Route::get('/{siswa}/scan', [App\Http\Controllers\QuranReadingController::class, 'scanForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan');
-        Route::post('/{siswa}/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.upload');
-        Route::get('/{siswa}/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'scanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm');
-        Route::post('/{siswa}/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'scanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm.store');
-        Route::get('/{siswa}/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'scanImage'])->name('scan.image');
+        Route::post('/{siswa}/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.upload');
+        Route::get('/{siswa}/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'scanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.confirm');
+        Route::post('/{siswa}/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'scanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.confirm.store');
+        Route::get('/{siswa}/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'scanImage'])->name('scan.legacy.image');
     });
 
     Route::get('/tracer-karakter', [App\Http\Controllers\TracerKarakterController::class, 'index'])->name('tracer-karakter.index');

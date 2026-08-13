@@ -5,4 +5,5 @@ RewriteRule ^ index.php [QSA,L]
 
 <IfModule mime_module>
   AddType application/javascript .mjs
+  AddType application/wasm .wasm
 </IfModule>

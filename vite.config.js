@@ -31,6 +31,10 @@ export default defineConfig({
                         return 'qr-scanner';
                     }
 
+                    if (id.includes('@techstark/opencv-js')) {
+                        return 'document-scanner';
+                    }
+
                     if (id.includes('@vladmandic/human')) {
                         return 'face-scanner';
                     }
