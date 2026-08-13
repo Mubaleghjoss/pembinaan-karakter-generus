@@ -10,10 +10,12 @@ use App\Models\PamongSiswa;
 use App\Models\Role;
 use App\Models\Siswa;
 use App\Models\User;
+use App\Services\QuranReadingScanService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Mockery;
 use Tests\TestCase;
 
 class QuranReadingFeatureTest extends TestCase
@@ -139,7 +141,11 @@ class QuranReadingFeatureTest extends TestCase
         $sheetResponse->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->assertStringContainsString("filename*=utf-8''Nur%20%C3%81isyah%20Putri%20-%20Lembar%20Lanjutan%20Bacaan%20Al-Quran.pdf", (string) $sheetResponse->headers->get('content-disposition'));
 
-        $this->assertDatabaseHas('quran_reading_sheets', ['siswa_id' => $siswa->id, 'row_count' => 12]);
+        $this->assertDatabaseHas('quran_reading_sheets', [
+            'siswa_id' => $siswa->id,
+            'row_count' => 7,
+            'template_version' => 3,
+        ]);
 
         $sheet = QuranReadingSheet::latest('id')->firstOrFail();
         $html = view('quran-reading.pdf.sheet', [
@@ -224,6 +230,10 @@ class QuranReadingFeatureTest extends TestCase
             'sheet_row_number' => 1,
             'status' => QuranReadingEntry::STATUS_VERIFIED,
         ]);
+        $scan->refresh();
+        $this->assertNull($scan->original_path);
+        $this->assertNotNull($scan->files_purged_at);
+        $this->actingAs($admin)->get(route('quran.scan.image', $scan))->assertStatus(410);
         $this->assertSame(1, QuranReadingEntry::where('sheet_id', $sheet->id)->count());
 
         $this->actingAs($admin)->post(route('quran.scan.confirm.store', $scan), [
@@ -268,7 +278,10 @@ class QuranReadingFeatureTest extends TestCase
         $this->actingAs($other, 'siswa')->get(route('siswa.quran.scan.image', $scan))->assertForbidden();
 
         $this->actingAs($siswa, 'siswa')->post(route('siswa.quran.scan.confirm.store', $scan), [
-            'rows' => [1 => $this->entryPayload(['row_number' => 1])],
+            'rows' => [
+                1 => $this->entryPayload(['row_number' => 1]),
+                2 => $this->entryPayload(['row_number' => 2, 'page_start' => 4, 'page_end' => 5]),
+            ],
         ])->assertRedirect(route('siswa.quran.index', ['tab' => 'rekap']).'#rekap');
 
         $this->assertDatabaseHas('quran_reading_entries', [
@@ -286,6 +299,20 @@ class QuranReadingFeatureTest extends TestCase
             ->get(route('quran.index'))
             ->assertOk()
             ->assertSee(route('quran.scan.image', $scan), false);
+
+        $entries = QuranReadingEntry::where('scan_id', $scan->id)->orderBy('sheet_row_number')->get();
+        $this->actingAs($admin)->patch(route('quran.verify', $entries[0]))->assertRedirect();
+        $scan->refresh();
+        Storage::disk('local')->assertExists($scan->original_path);
+        $this->assertNull($scan->files_purged_at);
+
+        $this->actingAs($admin)->patch(route('quran.reject', $entries[1]), [
+            'verification_notes' => 'Angka pada baris kedua tidak sesuai.',
+        ])->assertRedirect();
+        $scan->refresh();
+        $this->assertNull($scan->original_path);
+        $this->assertNotNull($scan->files_purged_at);
+        $this->actingAs($admin)->get(route('quran.scan.image', $scan))->assertStatus(410);
     }
 
     public function test_public_scanner_accepts_compact_sheet_qr_and_creates_pending_entry_after_confirmation(): void
@@ -332,7 +359,9 @@ class QuranReadingFeatureTest extends TestCase
         $this->get(route('public.quran.scan.confirm', $scan))
             ->assertOk()
             ->assertSee('Generus Scan Publik')
-            ->assertSee('value="1"', false);
+            ->assertSee('"page_start":1', false)
+            ->assertSee('data-quran-confirm-rows', false)
+            ->assertSee('Tambah Baris');
 
         $this->post(route('public.quran.scan.confirm.store', $scan), [
             'rows' => [1 => $this->entryPayload(['row_number' => 1])],
@@ -389,6 +418,61 @@ class QuranReadingFeatureTest extends TestCase
                 'sheet_payload' => 'PKGQURAN:'.$sheet->public_id.':'.$token,
                 'scan_image' => UploadedFile::fake()->create('terlalu-besar.jpg', 8193, 'image/jpeg'),
             ])->assertSessionHasErrors('scan_image');
+    }
+
+    public function test_cleanup_command_purges_unconfirmed_scans_older_than_one_day(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        Storage::fake('local');
+        $siswa = Siswa::factory()->create();
+        $scan = QuranReadingScan::create([
+            'siswa_id' => $siswa->id,
+            'uploaded_by_type' => 'public',
+            'uploaded_by_id' => null,
+            'original_path' => 'quran-reading-scans/expired-original.jpg',
+            'processed_path' => 'quran-reading-scans/expired-processed.jpg',
+            'status' => 'awaiting_confirmation',
+        ]);
+        Storage::disk('local')->put($scan->original_path, 'original');
+        Storage::disk('local')->put($scan->processed_path, 'processed');
+        $scan->forceFill([
+            'created_at' => now()->subHours(25),
+            'updated_at' => now()->subHours(25),
+        ])->saveQuietly();
+
+        $this->artisan('quran-scans:cleanup')->assertExitCode(0);
+
+        $scan->refresh();
+        $this->assertSame('expired', $scan->status);
+        $this->assertNull($scan->original_path);
+        $this->assertNull($scan->processed_path);
+        $this->assertNotNull($scan->files_purged_at);
+        Storage::disk('local')->assertMissing('quran-reading-scans/expired-original.jpg');
+        Storage::disk('local')->assertMissing('quran-reading-scans/expired-processed.jpg');
+        $this->actingAs($this->admin())->get(route('quran.scan.image', $scan))->assertStatus(410);
+    }
+
+    public function test_failed_storage_cleanup_keeps_paths_for_the_next_retry(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $scan = QuranReadingScan::create([
+            'siswa_id' => $siswa->id,
+            'uploaded_by_type' => 'user',
+            'uploaded_by_id' => $this->admin()->id,
+            'original_path' => 'quran-reading-scans/retry.jpg',
+            'status' => 'confirmed',
+            'confirmed_at' => now(),
+        ]);
+        $disk = Mockery::mock();
+        $disk->shouldReceive('exists')->once()->with($scan->original_path)->andReturnTrue();
+        $disk->shouldReceive('delete')->once()->with($scan->original_path)->andReturnFalse();
+        Storage::shouldReceive('disk')->twice()->with('local')->andReturn($disk);
+
+        $this->assertFalse(app(QuranReadingScanService::class)->purgeFiles($scan));
+
+        $scan->refresh();
+        $this->assertSame('quran-reading-scans/retry.jpg', $scan->original_path);
+        $this->assertNull($scan->files_purged_at);
     }
 
     public function test_scanner_is_hidden_until_the_photo_pilot_is_enabled(): void

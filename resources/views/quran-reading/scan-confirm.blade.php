@@ -4,7 +4,6 @@
 
 @section('content')
 @php
-    $suggestedRows = collect($scan->metadata['ocr_suggestion'] ?? [])->keyBy('row_number');
     $imageRoute = match (true) {
         $isPublic => route('public.quran.scan.image', $scan),
         $isStudent => route('siswa.quran.scan.image', $scan),
@@ -15,53 +14,62 @@
         $isStudent => route('siswa.quran.scan.confirm.store', $scan),
         default => route('quran.scan.confirm.store', $scan),
     };
+    $suggestions = collect(old('rows', $scan->metadata['ocr_suggestion'] ?? []))->values()->all();
+    $maxRows = max(1, min(12, (int) ($scan->sheet?->row_count ?: 12)));
 @endphp
-<div class="mx-auto max-w-6xl space-y-5 px-4 py-4 sm:px-6 sm:py-6">
+<div
+    class="mx-auto max-w-6xl space-y-5 px-4 py-4 sm:px-6 sm:py-6"
+    data-quran-confirm-root
+    data-image-original="{{ $imageRoute }}?original=1"
+    data-image-processed="{{ $scan->processed_path ? $imageRoute : '' }}"
+    data-max-rows="{{ $maxRows }}"
+    data-ocr-enabled="{{ config('quran-reading.ocr_enabled') ? 'true' : 'false' }}"
+    data-tesseract-worker="{{ asset('vendor/tesseract/worker.min.js') }}"
+    data-tesseract-core="{{ asset('vendor/tesseract/core') }}"
+    data-tesseract-lang="{{ asset('vendor/tesseract/lang') }}"
+>
+    <script type="application/json" data-quran-confirm-suggestions>{!! json_encode($suggestions, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!}</script>
+    <script type="application/json" data-quran-confirm-surahs>{!! json_encode($surahOptions, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!}</script>
+
     <div class="pkg-page-header">
         <div>
-            <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ $scan->siswa->nama }} · {{ $scan->siswa->kelas?->nama ?? 'Tanpa kelas' }}</p>
-            <h1 class="pkg-page-heading">Konfirmasi hasil scan</h1>
-            <p class="pkg-page-subheading">Cocokkan semua angka dengan foto. Warna kuning berarti hasil pembacaan perlu perhatian lebih.</p>
+            <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ $scan->siswa->nama }} &middot; {{ $scan->siswa->kelas?->nama ?? 'Tanpa kelas' }}</p>
+            <h1 class="pkg-page-heading">Periksa hasil scan</h1>
+            <p class="pkg-page-subheading">Hanya baris yang terdeteksi ditampilkan. Cocokkan angka dengan foto sebelum menyimpan.</p>
         </div>
     </div>
     @if($errors->any())<div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200" role="alert">{{ $errors->first() }}</div>@endif
+
     <div class="grid gap-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.2fr)]">
         <aside class="pkg-panel-lg lg:sticky lg:top-24 lg:self-start">
-            <div class="flex items-center justify-between gap-3"><h2 class="font-bold">Foto yang sudah diluruskan</h2><a href="{{ $imageRoute }}?original=1" target="_blank" class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Lihat asli</a></div>
-            <img src="{{ $imageRoute }}" alt="Foto lembar bacaan yang diunggah" class="mt-3 max-h-[70vh] w-full rounded-xl border border-gray-200 object-contain dark:border-gray-700">
-            <div class="mt-3 flex flex-wrap gap-2 text-xs"><span class="rounded-full border border-emerald-300 px-2.5 py-1">Hijau: cukup jelas</span><span class="rounded-full border border-amber-300 px-2.5 py-1">Kuning: periksa ulang</span></div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-bold">Foto lembar</h2>
+                <div class="flex gap-2" role="group" aria-label="Pilih tampilan foto">
+                    <button type="button" class="pkg-tab-link min-h-11" data-quran-image-mode="original">Asli</button>
+                    @if($scan->processed_path)<button type="button" class="pkg-tab-link min-h-11" data-quran-image-mode="processed">Diluruskan</button>@endif
+                </div>
+            </div>
+            <img src="{{ $scan->processed_path ? $imageRoute : $imageRoute.'?original=1' }}" alt="Foto lembar bacaan yang diunggah" class="mt-3 max-h-[70vh] w-full rounded-xl border border-gray-200 object-contain dark:border-gray-700" data-quran-confirm-image crossorigin="same-origin">
+            <button type="button" class="btn-secondary mt-3 min-h-11 w-full justify-center" data-quran-reread>Baca Ulang Angka</button>
+            <div class="mt-3 hidden" data-quran-reread-progress role="status" aria-live="polite"></div>
         </aside>
-        <form method="POST" action="{{ $formRoute }}" class="space-y-3">@csrf
-            @for($i = 1; $i <= 12; $i++)
-                @php
-                    $suggestion = $suggestedRows->get($i, []);
-                    $hasSuggestion = collect($suggestion)->only(['reading_date','page_start','page_end','surah_start','ayah_start','surah_end','ayah_end'])->filter(fn($value) => $value !== null && $value !== '')->isNotEmpty();
-                    $confidence = $suggestion['confidence'] ?? [];
-                    $confidenceClass = function (string $field) use ($confidence) {
-                        $score = (int) ($confidence[$field] ?? 0);
-                        return $score >= 85 ? 'pkg-quran-confidence-high' : ($score >= 60 ? 'pkg-quran-confidence-medium' : '');
-                    };
-                @endphp
-                <fieldset class="pkg-panel p-4" x-data="{ used: {{ ($hasSuggestion || $i === 1) ? 'true' : 'false' }} }">
-                    <div class="mb-3 flex items-center justify-between gap-3">
-                        <legend class="font-bold">Baris {{ $i }}</legend>
-                        <label class="flex min-h-11 cursor-pointer items-center gap-2"><input type="checkbox" class="pkg-check" x-model="used"><span class="text-sm">Baris terisi</span></label>
-                    </div>
-                    <input type="hidden" name="rows[{{ $i }}][row_number]" value="{{ $i }}" :disabled="!used">
-                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        <label class="col-span-2 sm:col-span-1"><span class="mb-1 block text-xs font-semibold">Tanggal</span><input type="date" name="rows[{{ $i }}][reading_date]" value="{{ old("rows.$i.reading_date", $suggestion['reading_date'] ?? '') }}" class="pkg-field min-h-11 {{ $confidenceClass('reading_date') }}" :disabled="!used" :required="used"></label>
-                        <label><span class="mb-1 block text-xs font-semibold">Hal. awal</span><input type="number" inputmode="numeric" name="rows[{{ $i }}][page_start]" value="{{ old("rows.$i.page_start", $suggestion['page_start'] ?? '') }}" min="1" max="1000" class="pkg-field min-h-11 {{ $confidenceClass('page_start') }}" :disabled="!used" :required="used"></label>
-                        <label><span class="mb-1 block text-xs font-semibold">Hal. akhir</span><input type="number" inputmode="numeric" name="rows[{{ $i }}][page_end]" value="{{ old("rows.$i.page_end", $suggestion['page_end'] ?? '') }}" min="1" max="1000" class="pkg-field min-h-11 {{ $confidenceClass('page_end') }}" :disabled="!used" :required="used"></label>
-                        <label><span class="mb-1 block text-xs font-semibold">Surat awal</span><select name="rows[{{ $i }}][surah_start]" class="pkg-field min-h-11 {{ $confidenceClass('surah_start') }}" :disabled="!used" :required="used"><option value="">Pilih</option>@foreach($surahOptions as $number=>$label)<option value="{{ $number }}" @selected((string) old("rows.$i.surah_start", $suggestion['surah_start'] ?? '') === (string) $number)>{{ $label }}</option>@endforeach</select></label>
-                        <label><span class="mb-1 block text-xs font-semibold">Ayat awal</span><input type="number" inputmode="numeric" name="rows[{{ $i }}][ayah_start]" value="{{ old("rows.$i.ayah_start", $suggestion['ayah_start'] ?? '') }}" min="1" max="286" class="pkg-field min-h-11 {{ $confidenceClass('ayah_start') }}" :disabled="!used" :required="used"></label>
-                        <label><span class="mb-1 block text-xs font-semibold">Surat akhir</span><select name="rows[{{ $i }}][surah_end]" class="pkg-field min-h-11 {{ $confidenceClass('surah_end') }}" :disabled="!used" :required="used"><option value="">Pilih</option>@foreach($surahOptions as $number=>$label)<option value="{{ $number }}" @selected((string) old("rows.$i.surah_end", $suggestion['surah_end'] ?? '') === (string) $number)>{{ $label }}</option>@endforeach</select></label>
-                        <label><span class="mb-1 block text-xs font-semibold">Ayat akhir</span><input type="number" inputmode="numeric" name="rows[{{ $i }}][ayah_end]" value="{{ old("rows.$i.ayah_end", $suggestion['ayah_end'] ?? '') }}" min="1" max="286" class="pkg-field min-h-11 {{ $confidenceClass('ayah_end') }}" :disabled="!used" :required="used"></label>
-                        <label class="col-span-2 sm:col-span-4"><span class="mb-1 block text-xs font-semibold">Catatan</span><input name="rows[{{ $i }}][notes]" value="{{ old("rows.$i.notes", $suggestion['notes'] ?? '') }}" maxlength="1000" class="pkg-field min-h-11" :disabled="!used"></label>
-                    </div>
-                </fieldset>
-            @endfor
+
+        <form method="POST" action="{{ $formRoute }}" class="space-y-4" data-quran-confirm-form>@csrf
+            <input type="hidden" name="ocr_suggestion" value="{{ json_encode($suggestions) }}" data-quran-confirm-ocr>
+            <section class="pkg-card-soft p-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div><p class="font-bold"><span data-quran-detected-count>0</span> baris ditemukan</p><p class="mt-1 text-sm text-slate-600 dark:text-slate-300" data-quran-quality-summary>Periksa nilai berwarna kuning atau yang masih kosong.</p></div>
+                    <button type="button" class="btn-secondary min-h-11 justify-center" data-quran-add-row>Tambah Baris</button>
+                </div>
+            </section>
+            <div class="space-y-3" data-quran-confirm-rows></div>
+            <div class="pkg-empty-state pkg-panel hidden" data-quran-no-rows><p class="pkg-empty-title">Tidak ada angka yang terbaca</p><p class="pkg-empty-copy">Satu baris kosong sudah disiapkan. Isi sesuai foto atau tekan Baca Ulang Angka.</p></div>
             <button class="btn-primary min-h-12 w-full justify-center">{{ ($isStudent || $isPublic) ? 'Kirim untuk Verifikasi Pamong' : 'Simpan sebagai Terverifikasi' }}</button>
         </form>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+    @vite('resources/js/quran-scan.js')
+@endpush

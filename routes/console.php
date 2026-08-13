@@ -17,3 +17,7 @@ Schedule::command('pwa:notify-teacher-schedules')
     ->everyFiveMinutes()
     ->between('05:00', '21:00')
     ->withoutOverlapping();
+
+Schedule::command('quran-scans:cleanup')
+    ->hourly()
+    ->withoutOverlapping();

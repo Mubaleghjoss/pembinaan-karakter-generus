@@ -86,8 +86,8 @@ class QuranReadingDocumentService
             ->data($payload)
             ->encoding(new Encoding('UTF-8'))
             ->errorCorrectionLevel(ErrorCorrectionLevel::Quartile)
-            ->size(300)
-            ->margin(18)
+            ->size(480)
+            ->margin(28)
             ->roundBlockSizeMode(RoundBlockSizeMode::Margin)
             ->build();
 

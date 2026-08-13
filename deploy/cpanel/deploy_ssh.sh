@@ -314,6 +314,7 @@ else
 fi
 
 "$php_cmd" artisan migrate --force
+"$php_cmd" artisan quran-scans:cleanup || true
 "$php_cmd" artisan optimize:clear
 "$php_cmd" artisan config:cache
 "$php_cmd" artisan route:cache

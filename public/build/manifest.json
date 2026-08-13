@@ -93,7 +93,7 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-ZwtXhbOi.js",
+    "file": "assets/app-wC3plMOb.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -117,7 +117,7 @@
       "_browser-BmwtkHN9.js"
     ],
     "css": [
-      "assets/app-zt8olUC4.css"
+      "assets/app-BzDuMPm1.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -143,7 +143,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-e3Ewbw_S.js",
+    "file": "assets/QRScanner-D1cMDuCs.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -212,7 +212,7 @@
     ]
   },
   "resources/js/quran-scan.js": {
-    "file": "assets/quran-scan-Bz2oz3Ei.js",
+    "file": "assets/quran-scan-DsKkbunA.js",
     "name": "quran-scan",
     "src": "resources/js/quran-scan.js",
     "isEntry": true,
@@ -245,7 +245,7 @@
     ]
   },
   "resources/js/vendor/jscanify-client.js": {
-    "file": "assets/jscanify-client-CPy77aAs.js",
+    "file": "assets/jscanify-client-DvgSimOp.js",
     "name": "jscanify-client",
     "src": "resources/js/vendor/jscanify-client.js",
     "isDynamicEntry": true

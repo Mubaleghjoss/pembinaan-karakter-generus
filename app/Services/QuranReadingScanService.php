@@ -6,6 +6,7 @@ use App\Models\QuranReadingScan;
 use App\Models\QuranReadingSheet;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -56,7 +57,7 @@ class QuranReadingScanService
                 'mime' => 'image/jpeg',
                 'original_size' => $image->getSize(),
                 'ocr_suggestion' => $decodedOcr,
-                'scanner_version' => 2,
+                'scanner_version' => 3,
                 'template_version' => (int) ($sheet->template_version ?: 1),
             ],
         ]);
@@ -69,6 +70,83 @@ class QuranReadingScanService
         }
 
         return 'PKGQURAN:'.$sheet->public_id.':'.$plainToken;
+    }
+
+    public function purgeFilesIfComplete(QuranReadingScan $scan): bool
+    {
+        $scan->loadMissing('entries:id,scan_id,status');
+        if ($scan->entries->contains('status', 'pending')) {
+            return false;
+        }
+        if ($scan->entries->isEmpty() && ! $scan->confirmed_at && $scan->status !== 'confirmed') {
+            return false;
+        }
+
+        return $this->purgeFiles($scan);
+    }
+
+    public function purgeFiles(QuranReadingScan $scan): bool
+    {
+        if ($scan->files_purged_at) {
+            return true;
+        }
+
+        $paths = array_values(array_unique(array_filter([$scan->original_path, $scan->processed_path])));
+        try {
+            foreach ($paths as $path) {
+                if (Storage::disk('local')->exists($path) && ! Storage::disk('local')->delete($path)) {
+                    throw new \RuntimeException("Gagal menghapus file scan {$path}");
+                }
+            }
+
+            $scan->forceFill([
+                'original_path' => null,
+                'processed_path' => null,
+                'files_purged_at' => now(),
+            ])->save();
+
+            return true;
+        } catch (\Throwable $exception) {
+            Log::warning('Gagal membersihkan file scan bacaan Al-Quran.', [
+                'scan_id' => $scan->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    public function cleanup(): array
+    {
+        $summary = ['completed' => 0, 'expired' => 0, 'failed' => 0];
+
+        QuranReadingScan::query()
+            ->whereNull('files_purged_at')
+            ->whereNotNull('confirmed_at')
+            ->whereDoesntHave('entries', fn ($query) => $query->where('status', 'pending'))
+            ->with('entries:id,scan_id,status')
+            ->chunkById(100, function ($scans) use (&$summary) {
+                foreach ($scans as $scan) {
+                    $this->purgeFilesIfComplete($scan) ? $summary['completed']++ : $summary['failed']++;
+                }
+            });
+
+        QuranReadingScan::query()
+            ->whereNull('files_purged_at')
+            ->whereNull('confirmed_at')
+            ->where('created_at', '<=', now()->subDay())
+            ->chunkById(100, function ($scans) use (&$summary) {
+                foreach ($scans as $scan) {
+                    if ($this->purgeFiles($scan)) {
+                        $scan->forceFill(['status' => 'expired'])->save();
+                        $summary['expired']++;
+                    } else {
+                        $summary['failed']++;
+                    }
+                }
+            });
+
+        return $summary;
     }
 
     private function parsePayload(string $payload): array

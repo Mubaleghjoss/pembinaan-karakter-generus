@@ -178,6 +178,9 @@ class QuranReadingController extends Controller
             'verified_at' => now(),
             'verification_notes' => $request->validate(['verification_notes' => 'nullable|string|max:1000'])['verification_notes'] ?? null,
         ]);
+        if ($entry->scan_id) {
+            $this->scans->purgeFilesIfComplete($entry->scan()->with('entries:id,scan_id,status')->firstOrFail());
+        }
 
         return back()->with('success', 'Catatan bacaan telah diverifikasi.');
     }
@@ -193,6 +196,9 @@ class QuranReadingController extends Controller
             'verified_at' => now(),
             'verification_notes' => $data['verification_notes'],
         ]);
+        if ($entry->scan_id) {
+            $this->scans->purgeFilesIfComplete($entry->scan()->with('entries:id,scan_id,status')->firstOrFail());
+        }
 
         return back()->with('success', 'Catatan bacaan ditolak dengan keterangan.');
     }
@@ -295,9 +301,10 @@ class QuranReadingController extends Controller
     {
         $this->ensureScanEnabled();
         $this->authorizeScan($request, $scan, $isStudent, $isPublic);
+        abort_if($scan->status === 'expired', 410, 'Foto scan kedaluwarsa dan sudah dibersihkan. Silakan unggah ulang lembar.');
 
         return view('quran-reading.scan-confirm', [
-            'scan' => $scan->load('siswa.kelas'),
+            'scan' => $scan->load(['siswa.kelas', 'sheet:id,row_count,template_version']),
             'surahOptions' => QuranCatalog::options(),
             'isStudent' => $isStudent,
             'isPublic' => $isPublic,
@@ -331,13 +338,24 @@ class QuranReadingController extends Controller
     {
         $this->ensureScanEnabled();
         $this->authorizeScan($request, $scan, $isStudent, $isPublic);
+        abort_if($scan->status === 'expired', 410, 'Foto scan kedaluwarsa dan sudah dibersihkan. Silakan unggah ulang lembar.');
         abort_if($scan->status === 'confirmed', 409, 'Hasil scan ini sudah dikonfirmasi.');
         $rows = $request->validated()['rows'];
+        $ocrSuggestion = json_decode((string) ($request->validated()['ocr_suggestion'] ?? ''), true);
+        if (! is_array($ocrSuggestion)) {
+            $ocrSuggestion = $scan->metadata['ocr_suggestion'] ?? [];
+        }
+        $maximumRow = max(1, min(12, (int) ($scan->sheet?->row_count ?: 12)));
+        if (collect($rows)->contains(fn ($row) => (int) $row['row_number'] > $maximumRow)) {
+            throw ValidationException::withMessages([
+                'rows' => "Nomor baris tidak boleh melebihi {$maximumRow} untuk lembar ini.",
+            ]);
+        }
 
         $actor = $isPublic ? null : ($isStudent ? $request->user('siswa') : $request->user());
         $needsVerification = $isStudent || $isPublic;
 
-        DB::transaction(function () use ($rows, $scan, $needsVerification, $isStudent, $isPublic, $actor) {
+        DB::transaction(function () use ($rows, $ocrSuggestion, $scan, $needsVerification, $isStudent, $isPublic, $actor) {
             foreach ($rows as $row) {
                 $this->validateReadingRange($row);
                 $existing = QuranReadingEntry::where('sheet_id', $scan->sheet_id)
@@ -362,8 +380,19 @@ class QuranReadingController extends Controller
                 ]);
             }
 
-            $scan->update(['status' => 'confirmed', 'extracted_rows' => $rows, 'confirmed_at' => now()]);
+            $metadata = $scan->metadata ?? [];
+            $metadata['ocr_suggestion'] = $ocrSuggestion;
+            $scan->update([
+                'status' => 'confirmed',
+                'extracted_rows' => $rows,
+                'metadata' => $metadata,
+                'confirmed_at' => now(),
+            ]);
         });
+
+        if (! $needsVerification) {
+            $this->scans->purgeFilesIfComplete($scan->fresh('entries:id,scan_id,status'));
+        }
 
         $target = match (true) {
             $isPublic => route('public.scanner', ['mode' => 'quran']).'#quran',
@@ -401,6 +430,7 @@ class QuranReadingController extends Controller
     {
         $this->ensureScanEnabled();
         $this->authorizeScan($request, $scan, $isStudent, $isPublic);
+        abort_if($scan->files_purged_at || (! $scan->original_path && ! $scan->processed_path), 410, 'Foto scan sudah dibersihkan setelah proses verifikasi selesai.');
         $path = $request->boolean('original') || ! $scan->processed_path
             ? $scan->original_path
             : $scan->processed_path;
@@ -501,8 +531,8 @@ class QuranReadingController extends Controller
             'public_id' => (string) Str::uuid(),
             'token_hash' => hash('sha256', $plainToken),
             'status' => 'active',
-            'row_count' => 12,
-            'template_version' => 2,
+            'row_count' => 7,
+            'template_version' => 3,
             'generated_by' => $generatedBy,
             'last_position' => $latest ? [
                 'reading_date' => $latest->reading_date?->toDateString(),

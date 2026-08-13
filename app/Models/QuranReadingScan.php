@@ -13,13 +13,14 @@ class QuranReadingScan extends Model
 
     protected $fillable = [
         'siswa_id', 'sheet_id', 'uploaded_by_type', 'uploaded_by_id', 'original_path',
-        'processed_path', 'status', 'extracted_rows', 'metadata', 'confirmed_at',
+        'processed_path', 'status', 'extracted_rows', 'metadata', 'confirmed_at', 'files_purged_at',
     ];
 
     protected $casts = [
         'extracted_rows' => 'array',
         'metadata' => 'array',
         'confirmed_at' => 'datetime',
+        'files_purged_at' => 'datetime',
     ];
 
     public function siswa(): BelongsTo

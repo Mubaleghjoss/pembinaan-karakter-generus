@@ -80,6 +80,16 @@
             <button type="button" class="btn-secondary mt-3 min-h-11 w-full justify-center" data-quran-crop-retry>Coba Baca Area QR</button>
         </div>
 
+        <div class="mt-4 hidden rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30" data-quran-document-corners>
+            <h3 class="font-bold text-amber-900 dark:text-amber-100">Rapikan batas kertas</h3>
+            <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">Geser empat penanda ke sudut kertas, lalu luruskan sebelum membaca angka.</p>
+            <div class="pkg-quran-corners mt-3" data-quran-corners-stage>
+                <img alt="Foto asli untuk mengatur empat sudut kertas" data-quran-corners-image>
+                @foreach(['tl','tr','bl','br'] as $corner)<button type="button" class="pkg-quran-corner pkg-quran-corner--{{ $corner }}" aria-label="Geser sudut {{ $corner }}" data-quran-corner="{{ $corner }}"></button>@endforeach
+            </div>
+            <button type="button" class="btn-primary mt-3 min-h-11 w-full justify-center" data-quran-corners-apply>Luruskan dan Baca Angka</button>
+        </div>
+
         <div class="mt-4 rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-700" data-quran-scan-status role="status" aria-live="polite">
             Pilih kamera atau galeri untuk mulai memindai.
         </div>

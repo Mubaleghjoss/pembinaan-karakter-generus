@@ -15,6 +15,7 @@ class ConfirmQuranReadingScanRequest extends FormRequest
     {
         return [
             'rows' => ['required', 'array', 'min:1', 'max:12'],
+            'ocr_suggestion' => ['nullable', 'json', 'max:60000'],
             'rows.*.row_number' => ['required', 'integer', 'between:1,12', 'distinct'],
             'rows.*.reading_date' => ['required', 'date', 'before_or_equal:today'],
             'rows.*.page_start' => ['required', 'integer', 'between:1,1000'],

@@ -5,13 +5,13 @@ export default class Jscanify {
     findPaperContour(img) {
         const gray = new cv.Mat();
         const blur = new cv.Mat();
-        const threshold = new cv.Mat();
+        const edges = new cv.Mat();
         const contours = new cv.MatVector();
         const hierarchy = new cv.Mat();
-        cv.Canny(img, gray, 50, 200);
+        cv.cvtColor(img, gray, cv.COLOR_RGBA2GRAY);
         cv.GaussianBlur(gray, blur, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
-        cv.threshold(blur, threshold, 0, 255, cv.THRESH_OTSU);
-        cv.findContours(threshold, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
+        cv.Canny(blur, edges, 50, 180);
+        cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
         let maxArea = 0;
         let maxContour = null;
         for (let index = 0; index < contours.size(); index += 1) {
@@ -24,7 +24,7 @@ export default class Jscanify {
             }
             contour.delete();
         }
-        gray.delete(); blur.delete(); threshold.delete(); contours.delete(); hierarchy.delete();
+        gray.delete(); blur.delete(); edges.delete(); contours.delete(); hierarchy.delete();
         return maxContour;
     }
 
@@ -44,12 +44,23 @@ export default class Jscanify {
     }
 
     extractPaper(image, width, height) {
+        return this.extractPaperWithMeta(image, width, height)?.canvas || null;
+    }
+
+    extractPaperWithMeta(image, width, height) {
         const source = cv.imread(image);
         const contour = this.findPaperContour(source);
         if (!contour) { source.delete(); return null; }
+        const areaRatio = cv.contourArea(contour) / Math.max(1, source.cols * source.rows);
         const corners = this.getCornerPoints(contour);
         contour.delete();
         if (Object.keys(corners).length !== 4) { source.delete(); return null; }
+        const top = distance(corners.topLeftCorner, corners.topRightCorner);
+        const bottom = distance(corners.bottomLeftCorner, corners.bottomRightCorner);
+        const left = distance(corners.topLeftCorner, corners.bottomLeftCorner);
+        const right = distance(corners.topRightCorner, corners.bottomRightCorner);
+        const ratio = ((top + bottom) / 2) / Math.max(1, (left + right) / 2);
+        if (areaRatio < 0.38 || ratio < 0.45 || ratio > 0.95) { source.delete(); return null; }
         const destination = new cv.Mat();
         const sourcePoints = cv.matFromArray(4, 1, cv.CV_32FC2, [
             corners.topLeftCorner.x, corners.topLeftCorner.y,
@@ -63,6 +74,6 @@ export default class Jscanify {
         const canvas = document.createElement('canvas');
         cv.imshow(canvas, destination);
         source.delete(); destination.delete(); sourcePoints.delete(); destinationPoints.delete(); transform.delete();
-        return canvas;
+        return { canvas, corners, areaRatio, ratio };
     }
 }
