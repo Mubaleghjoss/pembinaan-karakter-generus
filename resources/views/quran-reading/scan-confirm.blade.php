@@ -15,7 +15,7 @@
         default => route('quran.scan.confirm.store', $scan),
     };
     $suggestions = collect(old('rows', $scan->metadata['ocr_suggestion'] ?? []))->values()->all();
-    $maxRows = max(1, min(12, (int) ($scan->sheet?->row_count ?: 12)));
+    $maxRows = max(1, min(31, (int) ($scan->sheet?->row_count ?: 12)));
 @endphp
 <div
     class="mx-auto max-w-6xl space-y-5 px-4 py-4 sm:px-6 sm:py-6"
@@ -23,6 +23,7 @@
     data-image-original="{{ $imageRoute }}?original=1"
     data-image-processed="{{ $scan->processed_path ? $imageRoute : '' }}"
     data-max-rows="{{ $maxRows }}"
+    data-document-type="{{ $scan->sheet?->sheet_type ?: 'weekly' }}"
     data-ocr-enabled="{{ config('quran-reading.ocr_enabled') ? 'true' : 'false' }}"
     data-tesseract-worker="{{ asset('vendor/tesseract/worker.min.js') }}"
     data-tesseract-core="{{ asset('vendor/tesseract/core') }}"

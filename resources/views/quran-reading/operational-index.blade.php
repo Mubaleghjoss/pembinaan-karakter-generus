@@ -39,7 +39,7 @@
 
     <x-tabs :tabs="$tabs" :default-tab="$activeTab" :sync-query="true">
         <x-tab-panel id="rekap" class="space-y-5">
-            <div class="space-y-5" data-quran-bulk-root data-storage-key="pkg-quran-bulk-{{ auth()->id() }}">
+            <div class="space-y-5" data-quran-bulk-root data-storage-key="pkg-quran-bulk-{{ auth()->id() }}" data-filtered-count="{{ min(50, $siswaList->total()) }}">
             @if($pendingEntries->isNotEmpty())
                 <section class="pkg-panel overflow-hidden">
                     <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700"><h2 class="font-bold">Antrean verifikasi <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{{ $pendingEntries->count() }}</span></h2></div>
@@ -63,13 +63,20 @@
 
             @if($capabilities['export'])
                 <section class="pkg-panel-lg">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h2 class="font-bold">Cetak Massal</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Gabungkan maksimal 100 halaman dalam satu PDF siap cetak.</p></div><span class="rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"><span data-quran-bulk-count>0</span> dipilih</span></div>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div><h2 class="font-bold">Cetak Massal</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Maksimal 50 Generus. PDF dirender bertahap agar aman di server.</p></div>
+                        <div class="flex flex-wrap gap-2"><span class="rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"><span data-quran-bulk-count>0</span> dipilih</span><span class="rounded-full border border-gray-200 px-3 py-1.5 text-sm font-semibold dark:border-gray-700"><span data-quran-bulk-pages>0</span> halaman</span></div>
+                    </div>
                     <div class="mt-4 flex flex-wrap gap-2"><button type="button" class="btn-secondary min-h-11" data-quran-bulk-page>Pilih Halaman Ini</button><button type="button" class="btn-secondary min-h-11" data-quran-bulk-clear>Hapus Pilihan</button></div>
-                    <form method="POST" action="{{ route('quran.bulk-sheets') }}" class="mt-4 grid gap-4 sm:grid-cols-2">@csrf
+                    <form method="POST" action="{{ route('quran.bulk-sheets') }}" class="mt-4 grid gap-4 sm:grid-cols-2" data-quran-bulk-form>@csrf
                         <input type="hidden" name="search" value="{{ request('search') }}"><input type="hidden" name="kelas_id" value="{{ request('kelas_id') }}"><input type="hidden" name="kelompok" value="{{ request('kelompok') }}"><span data-quran-bulk-hidden></span>
-                        <fieldset><legend class="mb-2 text-xs font-semibold">Jenis dokumen</legend><div class="grid gap-2"><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="document_type" value="weekly" checked> Lembar Lanjutan Mingguan</label><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="document_type" value="surah_map"> Peta Khatam Al-Qur'an</label></div></fieldset>
-                        <fieldset><legend class="mb-2 text-xs font-semibold">Cakupan Generus</legend><div class="grid gap-2"><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="selection_mode" value="selected" data-quran-selection-mode="selected" disabled> Generus Terpilih</label><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="selection_mode" value="filtered" data-quran-selection-mode="filtered" checked> Semua Sesuai Filter</label></div></fieldset>
-                        <button class="btn-primary min-h-12 justify-center sm:col-span-2">Unduh PDF Gabungan</button>
+                        <fieldset><legend class="mb-2 text-xs font-semibold">Jenis dokumen</legend><div class="grid gap-2">
+                            <label class="flex min-h-12 items-start gap-3 rounded-xl border border-gray-200 px-3 py-3 dark:border-gray-700"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="monthly" checked><span><strong class="block text-sm">Lembar Bacaan Bulanan</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Satu halaman, 31 baris, dapat dipindai.</span></span></label>
+                            <label class="flex min-h-12 items-start gap-3 rounded-xl border border-gray-200 px-3 py-3 dark:border-gray-700"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="surah_reference"><span><strong class="block text-sm">Peta Khatam</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Referensi 114 surat dan checklist manual.</span></span></label>
+                            <label class="flex min-h-12 items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50/60 px-3 py-3 dark:border-emerald-800 dark:bg-emerald-950/20"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="duplex"><span><strong class="block text-sm">Paket Bolak-Balik</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Depan bulanan, belakang Peta Khatam.</span></span></label>
+                        </div></fieldset>
+                        <fieldset><legend class="mb-2 text-xs font-semibold">Cakupan Generus</legend><div class="grid gap-2"><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="selection_mode" value="selected" data-quran-selection-mode="selected" disabled> Generus Terpilih</label><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="selection_mode" value="filtered" data-quran-selection-mode="filtered" checked> Semua Sesuai Filter</label></div><p class="mt-3 rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">Untuk paket dua sisi: cetak landscape, aktifkan bolak-balik, lalu pilih <strong>balik sisi pendek</strong>.</p></fieldset>
+                        <button class="btn-primary min-h-12 justify-center sm:col-span-2" data-quran-bulk-submit>Unduh PDF Gabungan</button>
                     </form>
                 </section>
             @endif
@@ -83,7 +90,9 @@
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Laporan hanya memuat catatan yang sudah terverifikasi.</p>
                             @if($capabilities['export'])
                                 <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                                    <a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.sheet', $selectedSiswa) }}">Lembar PDF</a>
+                                    <a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.sheet', $selectedSiswa) }}">Lembar Bulanan</a>
+                                    <a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.khatam-map', $selectedSiswa) }}">Peta Khatam</a>
+                                    <a class="btn-success min-h-11 justify-center" href="{{ route('quran.duplex', $selectedSiswa) }}">Paket Bolak-Balik</a>
                                     <a class="btn-primary min-h-11 justify-center" href="{{ route('quran.report', $selectedSiswa) }}">Laporan PDF</a>
                                 </div>
                             @else

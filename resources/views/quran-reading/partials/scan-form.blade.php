@@ -24,7 +24,7 @@
             </p>
         </div>
         @if($scanLayout !== 'public' && isset($siswa) && $siswa)
-            <a href="{{ $scanLayout === 'siswa' ? route('siswa.quran.sheet') : route('quran.sheet', $siswa) }}" class="btn-secondary min-h-11 shrink-0 justify-center">Unduh Lembar PDF</a>
+            <a href="{{ $scanLayout === 'siswa' ? route('siswa.quran.sheet') : route('quran.sheet', $siswa) }}" class="btn-secondary min-h-11 shrink-0 justify-center">Unduh Lembar Bulanan</a>
         @endif
     </div>
 

@@ -1,8 +1,8 @@
 @php($completed = collect($khatam['completed_surahs'] ?? []))
 <section class="pkg-panel-lg space-y-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div><h2 class="text-lg font-bold">Peta Khatam Al-Qur'an</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Siklus {{ $khatam['cycle']?->cycle_number ?? 1 }} &middot; progres surat tidak dapat berkurang melalui hasil scan.</p></div>
-        @if($downloadUrl ?? null)<a href="{{ $downloadUrl }}" class="btn-primary min-h-11 shrink-0 justify-center">Unduh Peta A4</a>@endif
+        <div><h2 class="text-lg font-bold">Peta Khatam dan Referensi 114 Surat</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">PDF baru dipakai sebagai referensi dan checklist manual. Progres digital lama tetap tersimpan pada siklus {{ $khatam['cycle']?->cycle_number ?? 1 }}.</p></div>
+        @if($downloadUrl ?? null)<a href="{{ $downloadUrl }}" class="btn-primary min-h-11 shrink-0 justify-center">Unduh Referensi A4</a>@endif
     </div>
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div class="pkg-card-soft p-3"><p class="text-xs text-gray-500 dark:text-gray-400">Surat selesai</p><p class="mt-1 text-2xl font-bold tabular-nums">{{ $khatam['completed_count'] ?? 0 }}<span class="text-sm font-normal">/114</span></p></div>

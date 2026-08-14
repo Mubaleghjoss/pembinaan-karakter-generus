@@ -1,10 +1,21 @@
 const roots = new Set();
-const QR_PATTERN = /^(?:PKGQURAN:[0-9a-f-]{36}:[A-Za-z0-9]+|PKGQ:[0-9A-F]{32}:[0-9A-F]{32}|PKGQM:[0-9A-F]{32}:[0-9A-F]{32})$/i;
+const QR_PATTERN = /^(?:PKGQURAN:[0-9a-f-]{36}:[A-Za-z0-9]+|PKGQ:[0-9A-F]{32}:[0-9A-F]{32}|PKGQMB:[0-9A-F]{32}:[0-9A-F]{32}|PKGQM:[0-9A-F]{32}:[0-9A-F]{32})$/i;
 const A4_WIDTH = 1654;
 const A4_HEIGHT = 2339;
 const A4_LANDSCAPE_WIDTH = 2339;
 const A4_LANDSCAPE_HEIGHT = 1654;
 let cvPromise;
+
+function documentTypeFromPayload(payload) {
+    const normalized = String(payload || '').toUpperCase();
+    if (normalized.startsWith('PKGQM:')) return 'surah_map';
+    if (normalized.startsWith('PKGQMB:')) return 'monthly';
+    return 'weekly';
+}
+
+function isLandscapeDocument(documentType) {
+    return documentType === 'monthly' || documentType === 'surah_map';
+}
 
 function loadOpenCv() {
     if (!cvPromise) {
@@ -101,9 +112,9 @@ export async function deskewDocument(source, documentType = 'weekly') {
         window.cv = cv;
         const { default: Jscanify } = await import('./vendor/jscanify-client.js');
         const scanner = new Jscanify();
-        const landscape = documentType === 'surah_map';
+        const landscape = isLandscapeDocument(documentType);
         const result = scanner.extractPaperWithMeta(source, landscape ? A4_LANDSCAPE_WIDTH : A4_WIDTH, landscape ? A4_LANDSCAPE_HEIGHT : A4_HEIGHT);
-        const grid = result ? (landscape ? { detected: true, rowCount: 38 } : detectTableGrid(result.canvas)) : null;
+        const grid = result ? (documentType === 'surah_map' ? { detected: true, rowCount: 38 } : detectTableGrid(result.canvas, documentType === 'monthly' ? 31 : null)) : null;
         return result
             && grid
             ? { canvas: result.canvas, corrected: true, quality: result.areaRatio, grid }
@@ -124,8 +135,8 @@ async function perspectiveFromCorners(source, points, documentType = 'weekly') {
         points.bl.x * source.width, points.bl.y * source.height,
         points.br.x * source.width, points.br.y * source.height,
     ]);
-    const width = documentType === 'surah_map' ? A4_LANDSCAPE_WIDTH : A4_WIDTH;
-    const height = documentType === 'surah_map' ? A4_LANDSCAPE_HEIGHT : A4_HEIGHT;
+    const width = isLandscapeDocument(documentType) ? A4_LANDSCAPE_WIDTH : A4_WIDTH;
+    const height = isLandscapeDocument(documentType) ? A4_LANDSCAPE_HEIGHT : A4_HEIGHT;
     const destinationPoints = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, width, 0, 0, height, width, height]);
     const transform = cv.getPerspectiveTransform(sourcePoints, destinationPoints);
     cv.warpPerspective(input, output, transform, new cv.Size(width, height), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(255, 255, 255, 255));
@@ -233,10 +244,12 @@ function arithmeticSequence(lines, minimumCount) {
     return best.length >= minimumCount ? best : [];
 }
 
-function detectTableGrid(canvas) {
+function detectTableGrid(canvas, expectedRowCount = null) {
     const xLines = projectionLines(canvas, 'x', 0.025, 0.98, 0.26);
-    const horizontal = arithmeticSequence(projectionLines(canvas, 'y', 0.16, 0.88, 0.42), 8);
-    const rowCount = horizontal.length >= 13 ? 12 : (horizontal.length >= 8 ? 7 : 0);
+    const horizontal = arithmeticSequence(projectionLines(canvas, 'y', 0.15, 0.94, 0.42), expectedRowCount === 31 ? 32 : 8);
+    const rowCount = expectedRowCount === 31
+        ? (horizontal.length >= 32 ? 31 : 0)
+        : (horizontal.length >= 13 ? 12 : (horizontal.length >= 8 ? 7 : 0));
     const rows = rowCount ? horizontal.slice(0, rowCount + 1) : [];
     if (xLines.length < 10 || rows.length < 8) return null;
 
@@ -256,8 +269,8 @@ function fallbackGrid(canvas, rowCount = 7) {
     const right = canvas.width * 0.953;
     const cumulative = [0, 0.04, 0.15, 0.23, 0.31, 0.41, 0.50, 0.60, 0.69, 1];
     const verticals = cumulative.map((ratio) => Math.round(left + (right - left) * ratio));
-    const first = canvas.height * (rowCount === 7 ? 0.254 : 0.207);
-    const rowHeight = canvas.height * (rowCount === 7 ? 0.052 : 0.0354);
+    const first = canvas.height * (rowCount === 31 ? 0.27 : (rowCount === 7 ? 0.254 : 0.207));
+    const rowHeight = canvas.height * (rowCount === 31 ? 0.0178 : (rowCount === 7 ? 0.052 : 0.0354));
     const rows = Array.from({ length: rowCount + 1 }, (_, index) => Math.round(first + rowHeight * index));
     return { verticals, rows, rowCount, detected: false };
 }
@@ -321,16 +334,18 @@ async function createOcrWorker(root, onProgress) {
     return worker;
 }
 
-export async function recognizeRows(root, canvas, progressCallback = null) {
+export async function recognizeRows(root, canvas, progressCallback = null, documentType = 'weekly') {
     if (root.dataset.ocrEnabled !== 'true') return [];
     const notify = progressCallback || ((label, value) => setProgress(root, label, value));
     const worker = await createOcrWorker(root, (label, progress) => notify(`Membaca angka: ${label}`, 35 + progress * 55));
     const fields = ['reading_date', 'page_start', 'page_end', 'surah_start', 'ayah_start', 'surah_end', 'ayah_end'];
-    const grid = detectTableGrid(canvas) || fallbackGrid(canvas, 7);
+    const expectedRows = documentType === 'monthly' ? 31 : null;
+    const grid = detectTableGrid(canvas, expectedRows) || fallbackGrid(canvas, expectedRows || 7);
     const rows = [];
 
     try {
         for (let row = 0; row < grid.rowCount; row += 1) {
+            notify(`Membaca baris ${row + 1} dari ${grid.rowCount}`, 35 + (row / grid.rowCount) * 55);
             const y1 = grid.rows[row] + 5;
             const y2 = grid.rows[row + 1] - 5;
             if (inkRatio(canvas, grid.verticals[1] + 5, y1, grid.verticals[8] - grid.verticals[1] - 10, y2 - y1) < 0.006) continue;
@@ -488,11 +503,11 @@ function initCrop(root, state) {
             setStatus(root, 'Membaca ulang area QR...', 'progress');
             const qr = await readQr(state.reader, state.source, state.deskewed, crop);
             state.payload = qr.payload;
-            state.documentType = qr.payload.toUpperCase().startsWith('PKGQM:') ? 'surah_map' : 'weekly';
+            state.documentType = documentTypeFromPayload(qr.payload);
             root.querySelector('[data-quran-sheet-payload]').value = state.payload;
             root.querySelector('[data-quran-manual-crop]').classList.add('hidden');
             box.classList.add('hidden');
-            if (state.documentType === 'surah_map' && state.source.height > state.source.width) state.source = rotateCanvas(state.source, 90);
+            if (isLandscapeDocument(state.documentType) && state.source.height > state.source.width) state.source = rotateCanvas(state.source, 90);
             const correction = await deskewDocument(state.source, state.documentType);
             state.deskewed = correction.canvas;
             state.corrected = correction.corrected;
@@ -553,7 +568,7 @@ async function finishDocument(root, state) {
     try {
         suggestions = state.documentType === 'surah_map'
             ? await recognizeKhatamMap(root, state.deskewed || state.source)
-            : await recognizeRows(root, state.deskewed || state.source);
+            : await recognizeRows(root, state.deskewed || state.source, null, state.documentType);
     } catch (error) {
         console.warn('OCR suggestion failed:', error);
         setStatus(root, 'QR berhasil dibaca. Pembacaan angka belum optimal; semua kolom tetap dapat diisi pada layar konfirmasi.', 'success');
@@ -594,11 +609,11 @@ async function processFile(root, state, file) {
 
     try {
         const qr = await readQr(state.reader, state.source, state.deskewed);
-        state.documentType = qr.payload.toUpperCase().startsWith('PKGQM:') ? 'surah_map' : 'weekly';
+        state.documentType = documentTypeFromPayload(qr.payload);
         if (qr.rotation) {
             state.source = rotateCanvas(state.source, qr.rotation);
         }
-        if (state.documentType === 'surah_map' && state.source.height > state.source.width) state.source = rotateCanvas(state.source, 90);
+        if (isLandscapeDocument(state.documentType) && state.source.height > state.source.width) state.source = rotateCanvas(state.source, 90);
         if (state.documentType === 'weekly' && state.source.width > state.source.height) state.source = rotateCanvas(state.source, 90);
         const orientedCorrection = await deskewDocument(state.source, state.documentType);
         state.deskewed = orientedCorrection.canvas;
@@ -807,7 +822,7 @@ function initConfirmation(root) {
         try {
             if (!image.complete) await image.decode();
             const source = canvasFromImage(image);
-            const reread = await recognizeRows(root, source, (label, value) => { progress.textContent = `${label} ${Math.round(value)}%`; });
+            const reread = await recognizeRows(root, source, (label, value) => { progress.textContent = `${label} ${Math.round(value)}%`; }, root.dataset.documentType || 'weekly');
             if (!reread.length) throw new Error('Belum ada baris yang terbaca. Gunakan gambar asli atau isi satu baris secara manual.');
             rows = reread;
             suggestions.splice(0, suggestions.length, ...reread);

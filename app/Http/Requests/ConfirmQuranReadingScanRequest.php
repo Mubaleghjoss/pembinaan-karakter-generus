@@ -26,10 +26,12 @@ class ConfirmQuranReadingScanRequest extends FormRequest
             ];
         }
 
+        $maxRows = max(1, min(31, (int) ($this->route('scan')?->sheet?->row_count ?: 12)));
+
         return [
-            'rows' => ['required', 'array', 'min:1', 'max:12'],
+            'rows' => ['required', 'array', 'min:1', 'max:'.$maxRows],
             'ocr_suggestion' => ['nullable', 'json', 'max:60000'],
-            'rows.*.row_number' => ['required', 'integer', 'between:1,12', 'distinct'],
+            'rows.*.row_number' => ['required', 'integer', 'between:1,'.$maxRows, 'distinct'],
             'rows.*.reading_date' => ['required', 'date', 'before_or_equal:today'],
             'rows.*.page_start' => ['required', 'integer', 'between:1,1000'],
             'rows.*.page_end' => ['required', 'integer', 'between:1,1000'],

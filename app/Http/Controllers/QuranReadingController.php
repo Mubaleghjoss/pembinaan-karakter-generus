@@ -6,15 +6,15 @@ use App\Http\Requests\ConfirmQuranReadingScanRequest;
 use App\Http\Requests\StoreQuranReadingScanRequest;
 use App\Models\Kelas;
 use App\Models\QuranProgressSubmission;
-use App\Models\QuranReadingEntry;
 use App\Models\QuranReadingCycle;
-use App\Models\QuranSurahProgress;
+use App\Models\QuranReadingEntry;
 use App\Models\QuranReadingScan;
 use App\Models\QuranReadingSheet;
+use App\Models\QuranSurahProgress;
 use App\Models\Siswa;
 use App\Models\ThemeSetting;
-use App\Services\QuranReadingDocumentService;
 use App\Services\QuranKhatamService;
+use App\Services\QuranReadingDocumentService;
 use App\Services\QuranReadingScanService;
 use App\Support\QuranCatalog;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,8 +31,7 @@ class QuranReadingController extends Controller
         private readonly QuranReadingDocumentService $documents,
         private readonly QuranReadingScanService $scans,
         private readonly QuranKhatamService $khatam,
-    ) {
-    }
+    ) {}
 
     public function studentIndex(Request $request)
     {
@@ -79,7 +78,12 @@ class QuranReadingController extends Controller
 
     public function studentKhatamMap()
     {
-        return $this->newKhatamMap(Auth::guard('siswa')->user(), null);
+        return $this->documents->surahReference(Auth::guard('siswa')->user());
+    }
+
+    public function studentDuplex()
+    {
+        return $this->newDuplex(Auth::guard('siswa')->user(), null);
     }
 
     public function parentIndex(Request $request)
@@ -117,7 +121,9 @@ class QuranReadingController extends Controller
             $pendingProgressQuery->whereIn('siswa_id', $user->getAssignedSiswaIds());
         }
         $pendingProgressSubmissions = $pendingProgressQuery->limit(30)->get();
-        $selectedSiswa = $request->filled('siswa_id') ? Siswa::find($request->integer('siswa_id')) : null;
+        $selectedSiswa = $request->filled('siswa_id')
+            ? Siswa::with('pamongAssignments.pamong:id,name')->find($request->integer('siswa_id'))
+            : null;
         if ($selectedSiswa) {
             $this->authorizeOperationalStudent($user, $selectedSiswa);
         }
@@ -310,7 +316,14 @@ class QuranReadingController extends Controller
     {
         $this->authorizeOperationalStudent($request->user(), $siswa);
 
-        return $this->newKhatamMap($siswa, $request->user()->id);
+        return $this->documents->surahReference($siswa);
+    }
+
+    public function operationalDuplex(Request $request, Siswa $siswa)
+    {
+        $this->authorizeOperationalStudent($request->user(), $siswa);
+
+        return $this->newDuplex($siswa, $request->user()->id);
     }
 
     public function bulkSheets(Request $request)
@@ -319,14 +332,19 @@ class QuranReadingController extends Controller
             $request->merge(['selected_ids' => []]);
         }
         $data = $request->validate([
-            'document_type' => ['required', 'in:weekly,surah_map'],
+            'document_type' => ['required', 'in:monthly,surah_reference,duplex,weekly,surah_map'],
             'selection_mode' => ['required', 'in:selected,filtered'],
-            'selected_ids' => ['nullable', 'array', 'max:100'],
+            'selected_ids' => ['nullable', 'array', 'max:50'],
             'selected_ids.*' => ['integer', 'distinct', 'exists:siswa,id'],
             'search' => ['nullable', 'string', 'max:120'],
             'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
             'kelompok' => ['nullable', 'string', 'max:80'],
         ]);
+        $documentType = match ($data['document_type']) {
+            'weekly' => 'monthly',
+            'surah_map' => 'surah_reference',
+            default => $data['document_type'],
+        };
 
         $query = $this->operationalStudentQuery($request)->orderBy('nama');
         if ($data['selection_mode'] === 'selected') {
@@ -337,31 +355,36 @@ class QuranReadingController extends Controller
             $query->whereIn('id', $ids);
         }
 
-        $students = $query->limit(101)->get();
+        $students = $query->limit(51)->get();
         if ($students->isEmpty()) {
             throw ValidationException::withMessages(['selected_ids' => 'Tidak ada Generus yang sesuai pilihan dan izin akun.']);
         }
-        if ($students->count() > 100) {
-            throw ValidationException::withMessages(['selected_ids' => 'Maksimal 100 Generus per PDF. Persempit filter terlebih dahulu.']);
+        if ($students->count() > 50) {
+            throw ValidationException::withMessages(['selected_ids' => 'Maksimal 50 Generus per PDF. Persempit filter terlebih dahulu.']);
         }
 
         $createdSheets = collect();
         try {
-            $pages = $students->map(function (Siswa $siswa) use ($data, $createdSheets, $request) {
-                $page = $data['document_type'] === 'surah_map'
-                    ? $this->createKhatamSheet($siswa, $request->user()->id)
-                    : $this->createWeeklySheet($siswa, $request->user()->id);
-                $createdSheets->push($page['sheet']);
+            $pages = [];
+            foreach ($students as $siswa) {
+                if (in_array($documentType, ['monthly', 'duplex'], true)) {
+                    $monthly = $this->createMonthlySheet($siswa, $request->user()->id);
+                    $createdSheets->push($monthly['sheet']);
+                    $pages[] = $this->documents->monthlyPage($monthly['sheet'], $monthly['token']);
+                }
+                if (in_array($documentType, ['surah_reference', 'duplex'], true)) {
+                    $pages[] = $this->documents->referencePage($siswa);
+                }
+            }
 
-                return $page;
-            })->all();
-
-            $label = $data['document_type'] === 'surah_map' ? 'Peta-Khatam' : 'Lembar-Mingguan';
+            $label = match ($documentType) {
+                'surah_reference' => 'Peta-Referensi-Khatam',
+                'duplex' => 'Paket-Bolak-Balik-Bacaan-Quran',
+                default => 'Lembar-Bacaan-Bulanan',
+            };
             $filename = $label.'-'.$students->count().'-Generus-'.now()->format('Y-m-d').'.pdf';
 
-            return $data['document_type'] === 'surah_map'
-                ? $this->documents->bulkKhatamMaps($pages, $filename)
-                : $this->documents->bulkWeekly($pages, $filename);
+            return $this->documents->bulkDocuments($pages, $filename);
         } catch (\Throwable $exception) {
             QuranReadingSheet::whereIn('id', $createdSheets->pluck('id'))->whereDoesntHave('scans')->delete();
             throw $exception;
@@ -511,7 +534,7 @@ class QuranReadingController extends Controller
         if (! is_array($ocrSuggestion)) {
             $ocrSuggestion = $scan->metadata['ocr_suggestion'] ?? [];
         }
-        $maximumRow = max(1, min(12, (int) ($scan->sheet?->row_count ?: 12)));
+        $maximumRow = max(1, min(31, (int) ($scan->sheet?->row_count ?: 12)));
         if (collect($rows)->contains(fn ($row) => (int) $row['row_number'] > $maximumRow)) {
             throw ValidationException::withMessages([
                 'rows' => "Nomor baris tidak boleh melebihi {$maximumRow} untuk lembar ini.",
@@ -747,12 +770,19 @@ class QuranReadingController extends Controller
 
     private function newSheet(Siswa $siswa, ?int $generatedBy)
     {
-        $page = $this->createWeeklySheet($siswa, $generatedBy);
+        $page = $this->createMonthlySheet($siswa, $generatedBy);
 
         return $this->documents->sheet($page['sheet'], $page['token']);
     }
 
-    private function createWeeklySheet(Siswa $siswa, ?int $generatedBy): array
+    private function newDuplex(Siswa $siswa, ?int $generatedBy)
+    {
+        $page = $this->createMonthlySheet($siswa, $generatedBy);
+
+        return $this->documents->duplex($page['sheet'], $page['token']);
+    }
+
+    private function createMonthlySheet(Siswa $siswa, ?int $generatedBy): array
     {
         $latest = $siswa->quranReadingEntries()->where('status', QuranReadingEntry::STATUS_VERIFIED)->latest('reading_date')->first();
         $plainToken = bin2hex(random_bytes(16));
@@ -761,9 +791,9 @@ class QuranReadingController extends Controller
             'public_id' => (string) Str::uuid(),
             'token_hash' => hash('sha256', $plainToken),
             'status' => 'active',
-            'row_count' => 7,
-            'template_version' => 3,
-            'sheet_type' => 'weekly',
+            'row_count' => 31,
+            'template_version' => 4,
+            'sheet_type' => 'monthly',
             'generated_by' => $generatedBy,
             'last_position' => $latest ? [
                 'reading_date' => $latest->reading_date?->toDateString(),
@@ -776,41 +806,11 @@ class QuranReadingController extends Controller
         return ['sheet' => $sheet, 'token' => $plainToken];
     }
 
-    private function newKhatamMap(Siswa $siswa, ?int $generatedBy)
-    {
-        $page = $this->createKhatamSheet($siswa, $generatedBy);
-
-        return $this->documents->khatamMap($page['sheet'], $page['token'], $page['summary']);
-    }
-
-    private function createKhatamSheet(Siswa $siswa, ?int $generatedBy): array
-    {
-        $cycle = $this->khatam->activeCycle($siswa, $generatedBy);
-        $summary = $this->khatam->summary($cycle);
-        $plainToken = bin2hex(random_bytes(16));
-        $sheet = QuranReadingSheet::create([
-            'siswa_id' => $siswa->id,
-            'public_id' => (string) Str::uuid(),
-            'token_hash' => hash('sha256', $plainToken),
-            'status' => 'active',
-            'row_count' => 114,
-            'template_version' => 1,
-            'sheet_type' => 'surah_map',
-            'cycle_id' => $cycle->id,
-            'generated_by' => $generatedBy,
-            'metadata' => [
-                'baseline_completed_surahs' => $summary['completed_surahs'],
-                'baseline_active_surah' => $summary['active_surah'],
-                'baseline_active_ayah' => $summary['active_ayah'],
-            ],
-        ]);
-
-        return ['sheet' => $sheet, 'token' => $plainToken, 'cycle' => $cycle, 'summary' => $summary];
-    }
-
     private function operationalStudentQuery(Request $request): Builder
     {
-        $query = Siswa::active()->with('kelas:id,nama')->orderBy('nama');
+        $query = Siswa::active()
+            ->with(['kelas:id,nama', 'pamongAssignments.pamong:id,name'])
+            ->orderBy('nama');
         $user = $request->user();
         if ($user?->isTeacher()) {
             $query->whereIn('id', $user->getAssignedSiswaIds());

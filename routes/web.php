@@ -254,6 +254,7 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
             Route::get('/laporan', [App\Http\Controllers\QuranReadingController::class, 'studentReport'])->name('report');
             Route::get('/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'studentSheet'])->name('sheet');
             Route::get('/peta-khatam', [App\Http\Controllers\QuranReadingController::class, 'studentKhatamMap'])->name('khatam-map');
+            Route::get('/paket-bolak-balik', [App\Http\Controllers\QuranReadingController::class, 'studentDuplex'])->name('duplex');
             Route::get('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanForm'])->name('scan');
             Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->name('scan.upload');
             Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'studentScanConfirmForm'])->name('scan.confirm');
@@ -812,6 +813,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{siswa}/laporan', [App\Http\Controllers\QuranReadingController::class, 'operationalReport'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('report');
         Route::get('/{siswa}/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'operationalSheet'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('sheet');
         Route::get('/{siswa}/peta-khatam', [App\Http\Controllers\QuranReadingController::class, 'operationalKhatamMap'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('khatam-map');
+        Route::get('/{siswa}/paket-bolak-balik', [App\Http\Controllers\QuranReadingController::class, 'operationalDuplex'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('duplex');
         Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.upload');
         Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm');
         Route::post('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm.store');

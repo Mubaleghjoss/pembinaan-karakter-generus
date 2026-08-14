@@ -2,23 +2,25 @@
 
 namespace Tests\Feature;
 
-use App\Models\QuranReadingEntry;
-use App\Models\QuranProgressSubmission;
-use App\Models\QuranReadingCycle;
-use App\Models\QuranReadingScan;
-use App\Models\QuranReadingSheet;
 use App\Models\PamongPermission;
 use App\Models\PamongSiswa;
+use App\Models\QuranProgressSubmission;
+use App\Models\QuranReadingCycle;
+use App\Models\QuranReadingEntry;
+use App\Models\QuranReadingScan;
+use App\Models\QuranReadingSheet;
 use App\Models\Role;
 use App\Models\Siswa;
 use App\Models\User;
-use App\Services\QuranReadingScanService;
 use App\Services\QuranKhatamService;
+use App\Services\QuranReadingScanService;
+use App\Support\QuranCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mockery;
+use setasign\Fpdi\Fpdi;
 use Tests\TestCase;
 
 class QuranReadingFeatureTest extends TestCase
@@ -142,24 +144,34 @@ class QuranReadingFeatureTest extends TestCase
 
         $sheetResponse = $this->actingAs($admin)->get(route('quran.sheet', $siswa));
         $sheetResponse->assertOk()->assertHeader('content-type', 'application/pdf');
-        $this->assertStringContainsString("filename*=utf-8''Nur%20%C3%81isyah%20Putri%20-%20Lembar%20Lanjutan%20Bacaan%20Al-Quran.pdf", (string) $sheetResponse->headers->get('content-disposition'));
+        $this->assertStringContainsString("filename*=utf-8''Nur%20%C3%81isyah%20Putri%20-%20Lembar%20Bacaan%20Al-Quran%20Bulanan.pdf", (string) $sheetResponse->headers->get('content-disposition'));
+        $this->assertSame(1, $this->pdfPageCount($sheetResponse->getContent()));
 
         $this->assertDatabaseHas('quran_reading_sheets', [
             'siswa_id' => $siswa->id,
-            'row_count' => 7,
-            'template_version' => 3,
+            'sheet_type' => 'monthly',
+            'row_count' => 31,
+            'template_version' => 4,
         ]);
 
         $sheet = QuranReadingSheet::latest('id')->firstOrFail();
-        $html = view('quran-reading.pdf.sheet', [
-            'sheet' => $sheet,
-            'siswa' => $siswa->load('kelas'),
-            'qrDataUri' => 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
-            'catalog' => \App\Support\QuranCatalog::class,
+        $html = view('quran-reading.pdf.document', [
+            'pages' => [[
+                'type' => 'monthly',
+                'sheet' => $sheet,
+                'siswa' => $siswa->load('kelas'),
+                'pamongNames' => 'Pamong Penguji',
+                'qrDataUri' => 'data:image/png;base64,aW1hZ2U=',
+            ]],
+            'logoDataUri' => null,
+            'catalog' => QuranCatalog::class,
         ])->render();
         $this->assertStringContainsString('Nur Áisyah Putri', $html);
         $this->assertStringContainsString('*********3456', $html);
         $this->assertStringNotContainsString('PKG2607123456', $html);
+        $this->assertSame(31, substr_count($html, '<td class="no">'));
+        $this->assertStringContainsString('Pamong Penguji', $html);
+        $this->assertStringContainsString('وَرَتِّلِ الْقُرْاٰنَ تَرْتِيْلًاۗ', $html);
     }
 
     public function test_student_and_operational_tracer_use_permission_aware_deep_link_tabs(): void
@@ -255,6 +267,55 @@ class QuranReadingFeatureTest extends TestCase
         ])->assertRedirect();
         $this->assertSame(3, QuranReadingEntry::where('sheet_id', $sheet->id)->firstOrFail()->page_end);
         $this->assertSame(1, QuranReadingEntry::where('sheet_id', $sheet->id)->count());
+    }
+
+    public function test_monthly_sheet_qr_accepts_row_thirty_one_and_rejects_row_thirty_two(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        Storage::fake('local');
+        $siswa = Siswa::factory()->create();
+        $admin = $this->admin();
+        $token = bin2hex(random_bytes(16));
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id,
+            'public_id' => (string) Str::uuid(),
+            'token_hash' => hash('sha256', $token),
+            'status' => 'active',
+            'sheet_type' => 'monthly',
+            'row_count' => 31,
+            'template_version' => 4,
+            'generated_by' => $admin->id,
+        ]);
+        $payload = app(QuranReadingScanService::class)->payload($sheet, $token);
+        $this->assertStringStartsWith('PKGQMB:', $payload);
+
+        $this->actingAs($admin)->post(route('quran.scan.upload'), [
+            'sheet_payload' => $payload,
+            'scan_image' => UploadedFile::fake()->image('bulanan.jpg', 1800, 1200),
+        ])->assertRedirect();
+        $scan = QuranReadingScan::firstOrFail();
+
+        $this->actingAs($admin)->post(route('quran.scan.confirm.store', $scan), [
+            'rows' => [31 => $this->entryPayload(['row_number' => 31])],
+        ])->assertRedirect();
+        $this->assertDatabaseHas('quran_reading_entries', [
+            'sheet_id' => $sheet->id,
+            'sheet_row_number' => 31,
+            'status' => QuranReadingEntry::STATUS_VERIFIED,
+        ]);
+
+        $this->actingAs($admin)->post(route('quran.scan.upload'), [
+            'sheet_payload' => $payload,
+            'scan_image' => UploadedFile::fake()->image('bulanan-ulang.jpg', 1800, 1200),
+        ])->assertRedirect();
+        $secondScan = QuranReadingScan::latest('id')->firstOrFail();
+        $this->actingAs($admin)
+            ->from(route('quran.scan.confirm', $secondScan))
+            ->post(route('quran.scan.confirm.store', $secondScan), [
+                'rows' => [32 => $this->entryPayload(['row_number' => 32])],
+            ])
+            ->assertRedirect(route('quran.scan.confirm', $secondScan))
+            ->assertSessionHasErrors('rows.32.row_number');
     }
 
     public function test_student_scan_is_pending_and_private_image_cannot_be_opened_by_another_student(): void
@@ -540,55 +601,82 @@ class QuranReadingFeatureTest extends TestCase
         $this->actingAs($pamong)->get(route('quran.scan', $assigned))->assertRedirect();
     }
 
-    public function test_admin_can_download_bulk_weekly_and_khatam_documents_for_selected_students(): void
+    public function test_admin_can_download_bulk_monthly_reference_and_duplex_documents_for_selected_students(): void
     {
         $admin = $this->admin();
         $students = Siswa::factory()->count(2)->create();
 
-        $weekly = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
+        $monthly = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
+            'document_type' => 'monthly',
+            'selection_mode' => 'selected',
+            'selected_ids' => $students->pluck('id')->all(),
+        ]);
+        $monthly->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(2, $this->pdfPageCount($monthly->getContent()));
+        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'monthly')->count());
+        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'monthly')->distinct('public_id')->count('public_id'));
+
+        $reference = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
+            'document_type' => 'surah_reference',
+            'selection_mode' => 'selected',
+            'selected_ids' => $students->pluck('id')->all(),
+        ]);
+        $reference->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(2, $this->pdfPageCount($reference->getContent()));
+        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'monthly')->count());
+
+        $duplex = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
+            'document_type' => 'duplex',
+            'selection_mode' => 'selected',
+            'selected_ids' => $students->pluck('id')->all(),
+        ]);
+        $duplex->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(4, $this->pdfPageCount($duplex->getContent()));
+        $this->assertSame(4, QuranReadingSheet::where('sheet_type', 'monthly')->count());
+
+        $legacyAlias = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
             'document_type' => 'weekly',
             'selection_mode' => 'selected',
-            'selected_ids' => $students->pluck('id')->all(),
+            'selected_ids' => [$students->first()->id],
         ]);
-        $weekly->assertOk()->assertHeader('content-type', 'application/pdf');
-        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'weekly')->count());
-        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'weekly')->distinct('public_id')->count('public_id'));
+        $legacyAlias->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(1, $this->pdfPageCount($legacyAlias->getContent()));
+        $this->assertSame(5, QuranReadingSheet::where('sheet_type', 'monthly')->count());
+    }
 
-        $map = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
-            'document_type' => 'surah_map',
+    public function test_bulk_duplex_pdf_handles_forty_five_students_with_a_256_mb_limit(): void
+    {
+        $admin = $this->admin();
+        $students = Siswa::factory()->count(45)->create();
+
+        $response = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
+            'document_type' => 'duplex',
             'selection_mode' => 'selected',
             'selected_ids' => $students->pluck('id')->all(),
         ]);
-        $map->assertOk()->assertHeader('content-type', 'application/pdf');
-        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'surah_map')->count());
-        $this->assertSame(2, QuranReadingCycle::where('status', 'active')->count());
+
+        $response->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(90, $this->pdfPageCount($response->getContent()));
+        $this->assertSame(45, QuranReadingSheet::where('sheet_type', 'monthly')->count());
+        $this->assertSame([], glob(storage_path('app/private/quran-pdf-temp/*')) ?: []);
     }
 
-    public function test_khatam_map_has_114_surahs_in_three_columns_and_masked_nis(): void
+    public function test_surah_reference_has_114_surahs_in_three_columns_and_masked_nis_without_qr(): void
     {
         $siswa = Siswa::factory()->create(['nama' => 'Generus Peta', 'nis' => 'PKG12345678']);
-        $cycle = app(QuranKhatamService::class)->activeCycle($siswa);
-        $sheet = QuranReadingSheet::create([
-            'siswa_id' => $siswa->id,
-            'public_id' => (string) Str::uuid(),
-            'token_hash' => hash('sha256', 'token'),
-            'status' => 'active',
-            'row_count' => 114,
-            'template_version' => 1,
-            'sheet_type' => 'surah_map',
-            'cycle_id' => $cycle->id,
-        ]);
-        $summary = app(QuranKhatamService::class)->summary($cycle);
-        $html = view('quran-reading.pdf.khatam-map', [
-            'pages' => [['sheet' => $sheet, 'siswa' => $siswa, 'cycle' => $cycle, 'summary' => $summary, 'qrDataUri' => 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=']],
-            'catalog' => \App\Support\QuranCatalog::class,
+        $html = view('quran-reading.pdf.document', [
+            'pages' => [['type' => 'reference', 'siswa' => $siswa, 'pamongNames' => 'Pamong Peta']],
+            'catalog' => QuranCatalog::class,
+            'logoDataUri' => null,
         ])->render();
 
-        $this->assertSame(114, substr_count($html, 'class="omr '));
+        $this->assertSame(114, substr_count($html, 'class="check-box"'));
         $this->assertSame(3, substr_count($html, 'class="column"'));
         $this->assertStringContainsString('*******5678', $html);
         $this->assertStringNotContainsString('PKG12345678', $html);
-        $this->assertStringContainsString('class="no">114</td><td>An-Nas', $html);
+        $this->assertStringContainsString('>114</td>', $html);
+        $this->assertStringContainsString('An-Nas', $html);
+        $this->assertStringNotContainsString('qrDataUri', $html);
     }
 
     public function test_map_scan_by_student_is_pending_then_verification_updates_progress_and_purges_image(): void
@@ -671,6 +759,18 @@ class QuranReadingFeatureTest extends TestCase
             'mushaf_label' => 'Mushaf Madinah',
             'notes' => 'Latihan tartil',
         ], $overrides);
+    }
+
+    private function pdfPageCount(string $contents): int
+    {
+        $path = tempnam(sys_get_temp_dir(), 'pkg-quran-pdf-');
+        file_put_contents($path, $contents);
+
+        try {
+            return (new Fpdi)->setSourceFile($path);
+        } finally {
+            @unlink($path);
+        }
     }
 
     private function admin(): User

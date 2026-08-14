@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\QuranReadingScan;
 use App\Models\QuranReadingSheet;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -68,6 +68,10 @@ class QuranReadingScanService
     {
         if ($sheet->sheet_type === 'surah_map') {
             return 'PKGQM:'.strtoupper(str_replace('-', '', (string) $sheet->public_id)).':'.strtoupper($plainToken);
+        }
+
+        if ($sheet->sheet_type === 'monthly') {
+            return 'PKGQMB:'.strtoupper(str_replace('-', '', (string) $sheet->public_id)).':'.strtoupper($plainToken);
         }
 
         if ((int) $sheet->template_version >= 2) {
@@ -160,6 +164,10 @@ class QuranReadingScanService
 
     private function parsePayload(string $payload): array
     {
+        if (preg_match('/^PKGQMB:([0-9A-F]{32}):([0-9A-F]{32})$/i', trim($payload), $matches)) {
+            return [$this->uuidFromHex($matches[1]), strtolower($matches[2])];
+        }
+
         if (preg_match('/^PKGQM:([0-9A-F]{32}):([0-9A-F]{32})$/i', trim($payload), $matches)) {
             return [$this->uuidFromHex($matches[1]), strtolower($matches[2])];
         }

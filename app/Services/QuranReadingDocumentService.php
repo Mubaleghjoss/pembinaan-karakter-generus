@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\QuranReadingSheet;
+use App\Models\Setting;
 use App\Models\Siswa;
+use App\Models\ThemeSetting;
 use App\Support\QuranCatalog;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -11,18 +13,22 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
-use Endroid\QrCode\Writer\SvgWriter;
+use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
+use setasign\Fpdi\Fpdi;
 use Symfony\Component\HttpFoundation\HeaderUtils;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 class QuranReadingDocumentService
 {
-    public function __construct(private readonly QuranReadingScanService $scanner)
-    {
-    }
+    private const RENDER_CHUNK_SIZE = 6;
+
+    public function __construct(private readonly QuranReadingScanService $scanner) {}
 
     public function report(Siswa $siswa, Collection $entries, array $filters = []): Response
     {
@@ -36,65 +42,122 @@ class QuranReadingDocumentService
 
     public function sheet(QuranReadingSheet $sheet, string $plainToken): Response
     {
-        $sheet->loadMissing('siswa.kelas');
-        $payload = $this->scanner->payload($sheet, $plainToken);
+        return $this->renderPages(
+            [$this->monthlyPage($sheet, $plainToken)],
+            $this->filename($sheet->siswa, 'Lembar Bacaan Al-Quran Bulanan'),
+        );
+    }
 
-        return $this->render('quran-reading.pdf.sheet', [
+    public function surahReference(Siswa $siswa): Response
+    {
+        return $this->renderPages(
+            [$this->referencePage($siswa)],
+            $this->filename($siswa, 'Peta dan Referensi Khatam Al-Quran'),
+        );
+    }
+
+    public function duplex(QuranReadingSheet $sheet, string $plainToken): Response
+    {
+        return $this->renderPages([
+            $this->monthlyPage($sheet, $plainToken),
+            $this->referencePage($sheet->siswa),
+        ], $this->filename($sheet->siswa, 'Paket Bacaan Bulanan dan Peta Khatam'));
+    }
+
+    public function bulkDocuments(array $pages, string $filename): Response
+    {
+        return $this->renderPages($pages, $filename);
+    }
+
+    public function monthlyPage(QuranReadingSheet $sheet, string $plainToken): array
+    {
+        $sheet->loadMissing(['siswa.pamongAssignments.pamong:id,name']);
+
+        return [
+            'type' => 'monthly',
             'sheet' => $sheet,
             'siswa' => $sheet->siswa,
-            'qrDataUri' => $this->qrDataUri($payload),
-            'catalog' => QuranCatalog::class,
-        ], $this->filename($sheet->siswa, 'Lembar Lanjutan Bacaan Al-Quran'));
+            'pamongNames' => $this->pamongNames($sheet->siswa),
+            'qrDataUri' => $this->qrDataUri($this->scanner->payload($sheet, $plainToken)),
+        ];
     }
 
-    public function khatamMap(QuranReadingSheet $sheet, string $plainToken, array $summary): Response
+    public function referencePage(Siswa $siswa): array
     {
-        $sheet->loadMissing(['siswa.kelas', 'cycle']);
+        $siswa->loadMissing('pamongAssignments.pamong:id,name');
 
-        return $this->render('quran-reading.pdf.khatam-map', [
-            'pages' => [[
-                'sheet' => $sheet,
-                'siswa' => $sheet->siswa,
-                'cycle' => $sheet->cycle,
-                'summary' => $summary,
-                'qrDataUri' => $this->qrDataUri($this->scanner->payload($sheet, $plainToken)),
-            ]],
-            'catalog' => QuranCatalog::class,
-        ], $this->filename($sheet->siswa, 'Peta Khatam Al-Quran'), 'landscape');
+        return [
+            'type' => 'reference',
+            'siswa' => $siswa,
+            'pamongNames' => $this->pamongNames($siswa),
+        ];
     }
 
-    public function bulkWeekly(array $pages, string $filename): Response
+    private function renderPages(array $pages, string $filename): Response
     {
-        foreach ($pages as &$page) {
-            $page['sheet']->loadMissing('siswa.kelas');
-            $page['siswa'] = $page['sheet']->siswa;
-            $page['qrDataUri'] = $this->qrDataUri($this->scanner->payload($page['sheet'], $page['token']));
+        abort_unless(class_exists(Dompdf::class), 503, 'Generator PDF belum tersedia di server.');
+
+        if (count($pages) <= self::RENDER_CHUNK_SIZE) {
+            return $this->pdfResponse($this->renderPageChunk($pages), $filename);
         }
 
-        return $this->render('quran-reading.pdf.bulk-weekly', compact('pages') + [
-            'catalog' => QuranCatalog::class,
-        ], $filename, 'portrait');
+        abort_unless(class_exists(Fpdi::class), 503, 'Penggabung PDF belum tersedia di server.');
+        $jobDirectory = storage_path('app/private/quran-pdf-temp/'.Str::uuid());
+        File::ensureDirectoryExists($jobDirectory);
+
+        try {
+            $chunkFiles = [];
+            foreach (array_chunk($pages, self::RENDER_CHUNK_SIZE) as $index => $chunk) {
+                $path = $jobDirectory.'/chunk-'.str_pad((string) $index, 3, '0', STR_PAD_LEFT).'.pdf';
+                File::put($path, $this->renderPageChunk($chunk));
+                $chunkFiles[] = $path;
+            }
+
+            $merger = new Fpdi('L', 'mm', 'A4');
+            $merger->SetAutoPageBreak(false);
+            foreach ($chunkFiles as $path) {
+                $pageCount = $merger->setSourceFile($path);
+                for ($pageNumber = 1; $pageNumber <= $pageCount; $pageNumber++) {
+                    $template = $merger->importPage($pageNumber);
+                    $size = $merger->getTemplateSize($template);
+                    $orientation = $size['width'] > $size['height'] ? 'L' : 'P';
+                    $merger->AddPage($orientation, [$size['width'], $size['height']]);
+                    $merger->useTemplate($template);
+                }
+            }
+
+            return $this->pdfResponse($merger->Output('S'), $filename);
+        } finally {
+            File::deleteDirectory($jobDirectory);
+        }
     }
 
-    public function bulkKhatamMaps(array $pages, string $filename): Response
+    private function renderPageChunk(array $pages): string
     {
-        foreach ($pages as &$page) {
-            $page['sheet']->loadMissing(['siswa.kelas', 'cycle']);
-            $page['siswa'] = $page['sheet']->siswa;
-            $page['cycle'] = $page['sheet']->cycle;
-            $page['qrDataUri'] = $this->qrDataUri($this->scanner->payload($page['sheet'], $page['token']));
-        }
+        $options = new Options;
+        $options->set('isRemoteEnabled', false);
+        $options->set('defaultFont', 'DejaVu Sans');
 
-        return $this->render('quran-reading.pdf.khatam-map', compact('pages') + [
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml(view('quran-reading.pdf.document', [
+            'pages' => $pages,
             'catalog' => QuranCatalog::class,
-        ], $filename, 'landscape');
+            'logoDataUri' => $this->logoDataUri(),
+        ])->render(), 'UTF-8');
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        $output = $dompdf->output();
+        unset($dompdf);
+        gc_collect_cycles();
+
+        return $output;
     }
 
     private function render(string $view, array $data, string $filename, string $orientation = 'portrait'): Response
     {
         abort_unless(class_exists(Dompdf::class), 503, 'Generator PDF belum tersedia di server.');
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', false);
         $options->set('defaultFont', 'DejaVu Sans');
 
@@ -103,7 +166,12 @@ class QuranReadingDocumentService
         $dompdf->setPaper('A4', $orientation);
         $dompdf->render();
 
-        return response($dompdf->output(), 200, [
+        return $this->pdfResponse($dompdf->output(), $filename);
+    }
+
+    private function pdfResponse(string $contents, string $filename): Response
+    {
+        return response($contents, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => HeaderUtils::makeDisposition(
                 ResponseHeaderBag::DISPOSITION_ATTACHMENT,
@@ -122,18 +190,57 @@ class QuranReadingDocumentService
         return ($name !== '' ? $name : 'Generus').' - '.$document.'.pdf';
     }
 
+    private function pamongNames(Siswa $siswa): string
+    {
+        $names = $siswa->pamongAssignments
+            ->pluck('pamong.name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->implode(', ');
+
+        return $names !== '' ? $names : 'Belum ditetapkan';
+    }
+
     private function qrDataUri(string $payload): string
     {
-        $result = Builder::create()
-            ->writer(new SvgWriter())
+        return Builder::create()
+            ->writer(new PngWriter)
             ->data($payload)
             ->encoding(new Encoding('UTF-8'))
             ->errorCorrectionLevel(ErrorCorrectionLevel::Quartile)
-            ->size(480)
-            ->margin(28)
+            ->size(420)
+            ->margin(24)
             ->roundBlockSizeMode(RoundBlockSizeMode::Margin)
-            ->build();
+            ->build()
+            ->getDataUri();
+    }
 
-        return 'data:image/svg+xml;base64,'.base64_encode($result->getString());
+    private function logoDataUri(): ?string
+    {
+        $configured = Setting::get('site_logo') ?: ThemeSetting::current()->logo_path;
+        if ($configured && Storage::disk('public')->exists($configured)) {
+            return $this->fileDataUri(Storage::disk('public')->path($configured));
+        }
+
+        $fallback = public_path('images/icons/pkg-logo-192.png');
+
+        return File::exists($fallback) ? $this->fileDataUri($fallback) : null;
+    }
+
+    private function fileDataUri(string $path): string
+    {
+        $contents = File::get($path);
+        $mime = File::mimeType($path) ?: match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'svg' => 'image/svg+xml',
+            'jpg', 'jpeg' => 'image/jpeg',
+            default => 'image/png',
+        };
+
+        if ($contents === '') {
+            throw new RuntimeException('Berkas logo PKG kosong.');
+        }
+
+        return 'data:'.$mime.';base64,'.base64_encode($contents);
     }
 }
