@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\QuranReadingEntry;
+use App\Models\QuranProgressSubmission;
+use App\Models\QuranReadingCycle;
 use App\Models\QuranReadingScan;
 use App\Models\QuranReadingSheet;
 use App\Models\PamongPermission;
@@ -11,6 +13,7 @@ use App\Models\Role;
 use App\Models\Siswa;
 use App\Models\User;
 use App\Services\QuranReadingScanService;
+use App\Services\QuranKhatamService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -535,6 +538,124 @@ class QuranReadingFeatureTest extends TestCase
             ->assertDontSee('Scan Lembar');
 
         $this->actingAs($pamong)->get(route('quran.scan', $assigned))->assertRedirect();
+    }
+
+    public function test_admin_can_download_bulk_weekly_and_khatam_documents_for_selected_students(): void
+    {
+        $admin = $this->admin();
+        $students = Siswa::factory()->count(2)->create();
+
+        $weekly = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
+            'document_type' => 'weekly',
+            'selection_mode' => 'selected',
+            'selected_ids' => $students->pluck('id')->all(),
+        ]);
+        $weekly->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'weekly')->count());
+        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'weekly')->distinct('public_id')->count('public_id'));
+
+        $map = $this->actingAs($admin)->post(route('quran.bulk-sheets'), [
+            'document_type' => 'surah_map',
+            'selection_mode' => 'selected',
+            'selected_ids' => $students->pluck('id')->all(),
+        ]);
+        $map->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(2, QuranReadingSheet::where('sheet_type', 'surah_map')->count());
+        $this->assertSame(2, QuranReadingCycle::where('status', 'active')->count());
+    }
+
+    public function test_khatam_map_has_114_surahs_in_three_columns_and_masked_nis(): void
+    {
+        $siswa = Siswa::factory()->create(['nama' => 'Generus Peta', 'nis' => 'PKG12345678']);
+        $cycle = app(QuranKhatamService::class)->activeCycle($siswa);
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id,
+            'public_id' => (string) Str::uuid(),
+            'token_hash' => hash('sha256', 'token'),
+            'status' => 'active',
+            'row_count' => 114,
+            'template_version' => 1,
+            'sheet_type' => 'surah_map',
+            'cycle_id' => $cycle->id,
+        ]);
+        $summary = app(QuranKhatamService::class)->summary($cycle);
+        $html = view('quran-reading.pdf.khatam-map', [
+            'pages' => [['sheet' => $sheet, 'siswa' => $siswa, 'cycle' => $cycle, 'summary' => $summary, 'qrDataUri' => 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=']],
+            'catalog' => \App\Support\QuranCatalog::class,
+        ])->render();
+
+        $this->assertSame(114, substr_count($html, 'class="omr '));
+        $this->assertSame(3, substr_count($html, 'class="column"'));
+        $this->assertStringContainsString('*******5678', $html);
+        $this->assertStringNotContainsString('PKG12345678', $html);
+        $this->assertStringContainsString('class="no">114</td><td>An-Nas', $html);
+    }
+
+    public function test_map_scan_by_student_is_pending_then_verification_updates_progress_and_purges_image(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        Storage::fake('local');
+        $siswa = Siswa::factory()->create();
+        $cycle = app(QuranKhatamService::class)->activeCycle($siswa);
+        $token = bin2hex(random_bytes(16));
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id, 'public_id' => (string) Str::uuid(),
+            'token_hash' => hash('sha256', $token), 'status' => 'active', 'row_count' => 114,
+            'template_version' => 1, 'sheet_type' => 'surah_map', 'cycle_id' => $cycle->id,
+            'metadata' => ['baseline_completed_surahs' => []],
+        ]);
+        $payload = app(QuranReadingScanService::class)->payload($sheet, $token);
+
+        $this->actingAs($siswa, 'siswa')->post(route('siswa.quran.scan.upload'), [
+            'sheet_payload' => $payload,
+            'scan_image' => UploadedFile::fake()->image('peta.jpg', 1600, 1000),
+            'ocr_suggestion' => json_encode(['type' => 'surah_map', 'completed_surahs' => [1, 2], 'ambiguous_surahs' => [3]]),
+        ])->assertRedirect();
+        $scan = QuranReadingScan::firstOrFail();
+
+        $this->actingAs($siswa, 'siswa')->get(route('siswa.quran.scan.confirm', $scan))
+            ->assertOk()->assertSee('Periksa Peta Khatam')->assertSee('Al-Fatihah');
+        $this->actingAs($siswa, 'siswa')->post(route('siswa.quran.scan.confirm.store', $scan), [
+            'completed_surahs' => [1, 2], 'active_surah' => 3, 'active_ayah' => 10,
+            'marked_on' => now()->toDateString(),
+        ])->assertRedirect(route('siswa.quran.index', ['tab' => 'khatam']).'#khatam');
+
+        $submission = QuranProgressSubmission::firstOrFail();
+        $this->assertSame(QuranProgressSubmission::STATUS_PENDING, $submission->status);
+        Storage::disk('local')->assertExists($scan->fresh()->original_path);
+
+        $admin = $this->admin();
+        $this->actingAs($admin)->patch(route('quran.progress.verify', $submission))->assertRedirect();
+        $this->assertDatabaseHas('quran_surah_progress', ['cycle_id' => $cycle->id, 'surah_number' => 1, 'last_ayah' => 7]);
+        $this->assertDatabaseHas('quran_surah_progress', ['cycle_id' => $cycle->id, 'surah_number' => 3, 'last_ayah' => 10]);
+        $this->assertNotNull($scan->fresh()->files_purged_at);
+    }
+
+    public function test_completed_khatam_cycle_creates_a_new_cycle_without_erasing_history(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $admin = $this->admin();
+        $service = app(QuranKhatamService::class);
+        $first = $service->activeCycle($siswa, $admin->id);
+        $submission = QuranProgressSubmission::create([
+            'siswa_id' => $siswa->id,
+            'cycle_id' => $first->id,
+            'marked_on' => now()->toDateString(),
+            'completed_surahs' => range(1, 114),
+            'status' => QuranProgressSubmission::STATUS_PENDING,
+            'submitted_by_type' => 'user',
+            'submitted_by_id' => $admin->id,
+        ]);
+
+        $service->applySubmission($submission, $admin->id);
+        $this->assertSame(QuranReadingCycle::STATUS_COMPLETED, $first->fresh()->status);
+        $this->assertSame(114, $first->progress()->whereNotNull('completed_at')->count());
+
+        $second = $service->activeCycle($siswa, $admin->id);
+        $this->assertSame(2, $second->cycle_number);
+        $this->assertSame(QuranReadingCycle::STATUS_ACTIVE, $second->status);
+        $this->assertSame(0, $second->progress()->count());
+        $this->assertSame(2, $siswa->quranReadingCycles()->count());
     }
 
     private function entryPayload(array $overrides = []): array

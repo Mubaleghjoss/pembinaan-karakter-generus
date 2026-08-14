@@ -17,7 +17,7 @@ class StoreQuranReadingScanRequest extends FormRequest
         $maxDimension = (int) config('quran-reading.max_image_dimension', 8000);
 
         return [
-            'sheet_payload' => ['required', 'string', 'max:500', 'regex:/^(?:PKGQURAN:[0-9a-f-]{36}:[A-Za-z0-9]+|PKGQ:[0-9A-F]{32}:[0-9A-F]{32})$/i'],
+            'sheet_payload' => ['required', 'string', 'max:500', 'regex:/^(?:PKGQURAN:[0-9a-f-]{36}:[A-Za-z0-9]+|PKGQ:[0-9A-F]{32}:[0-9A-F]{32}|PKGQM:[0-9A-F]{32}:[0-9A-F]{32})$/i'],
             'scan_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:'.$maxKb, 'dimensions:max_width='.$maxDimension.',max_height='.$maxDimension],
             'processed_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:'.$maxKb, 'dimensions:max_width='.$maxDimension.',max_height='.$maxDimension],
             'ocr_suggestion' => ['nullable', 'json', 'max:60000'],

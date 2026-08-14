@@ -12,12 +12,13 @@ class QuranReadingSheet extends Model
     use HasFactory;
 
     protected $fillable = [
-        'siswa_id', 'public_id', 'token_hash', 'status', 'row_count', 'template_version', 'last_position',
-        'generated_by', 'revoked_at',
+        'siswa_id', 'public_id', 'token_hash', 'status', 'row_count', 'template_version', 'sheet_type',
+        'cycle_id', 'last_position', 'metadata', 'generated_by', 'revoked_at',
     ];
 
     protected $casts = [
         'last_position' => 'array',
+        'metadata' => 'array',
         'template_version' => 'integer',
         'revoked_at' => 'datetime',
     ];
@@ -35,6 +36,11 @@ class QuranReadingSheet extends Model
     public function scans(): HasMany
     {
         return $this->hasMany(QuranReadingScan::class, 'sheet_id');
+    }
+
+    public function cycle(): BelongsTo
+    {
+        return $this->belongsTo(QuranReadingCycle::class, 'cycle_id');
     }
 
     public function verifyToken(string $token): bool

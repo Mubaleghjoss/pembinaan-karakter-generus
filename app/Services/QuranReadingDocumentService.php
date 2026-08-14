@@ -47,7 +47,50 @@ class QuranReadingDocumentService
         ], $this->filename($sheet->siswa, 'Lembar Lanjutan Bacaan Al-Quran'));
     }
 
-    private function render(string $view, array $data, string $filename): Response
+    public function khatamMap(QuranReadingSheet $sheet, string $plainToken, array $summary): Response
+    {
+        $sheet->loadMissing(['siswa.kelas', 'cycle']);
+
+        return $this->render('quran-reading.pdf.khatam-map', [
+            'pages' => [[
+                'sheet' => $sheet,
+                'siswa' => $sheet->siswa,
+                'cycle' => $sheet->cycle,
+                'summary' => $summary,
+                'qrDataUri' => $this->qrDataUri($this->scanner->payload($sheet, $plainToken)),
+            ]],
+            'catalog' => QuranCatalog::class,
+        ], $this->filename($sheet->siswa, 'Peta Khatam Al-Quran'), 'landscape');
+    }
+
+    public function bulkWeekly(array $pages, string $filename): Response
+    {
+        foreach ($pages as &$page) {
+            $page['sheet']->loadMissing('siswa.kelas');
+            $page['siswa'] = $page['sheet']->siswa;
+            $page['qrDataUri'] = $this->qrDataUri($this->scanner->payload($page['sheet'], $page['token']));
+        }
+
+        return $this->render('quran-reading.pdf.bulk-weekly', compact('pages') + [
+            'catalog' => QuranCatalog::class,
+        ], $filename, 'portrait');
+    }
+
+    public function bulkKhatamMaps(array $pages, string $filename): Response
+    {
+        foreach ($pages as &$page) {
+            $page['sheet']->loadMissing(['siswa.kelas', 'cycle']);
+            $page['siswa'] = $page['sheet']->siswa;
+            $page['cycle'] = $page['sheet']->cycle;
+            $page['qrDataUri'] = $this->qrDataUri($this->scanner->payload($page['sheet'], $page['token']));
+        }
+
+        return $this->render('quran-reading.pdf.khatam-map', compact('pages') + [
+            'catalog' => QuranCatalog::class,
+        ], $filename, 'landscape');
+    }
+
+    private function render(string $view, array $data, string $filename, string $orientation = 'portrait'): Response
     {
         abort_unless(class_exists(Dompdf::class), 503, 'Generator PDF belum tersedia di server.');
 
@@ -57,7 +100,7 @@ class QuranReadingDocumentService
 
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml(view($view, $data)->render(), 'UTF-8');
-        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->setPaper('A4', $orientation);
         $dompdf->render();
 
         return response($dompdf->output(), 200, [

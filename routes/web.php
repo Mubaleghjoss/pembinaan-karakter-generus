@@ -253,6 +253,7 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
             Route::post('/', [App\Http\Controllers\QuranReadingController::class, 'studentStore'])->name('store');
             Route::get('/laporan', [App\Http\Controllers\QuranReadingController::class, 'studentReport'])->name('report');
             Route::get('/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'studentSheet'])->name('sheet');
+            Route::get('/peta-khatam', [App\Http\Controllers\QuranReadingController::class, 'studentKhatamMap'])->name('khatam-map');
             Route::get('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanForm'])->name('scan');
             Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->name('scan.upload');
             Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'studentScanConfirmForm'])->name('scan.confirm');
@@ -804,8 +805,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/catatan/{entry}', [App\Http\Controllers\QuranReadingController::class, 'operationalUpdate'])->middleware('pamong.permission:tracer_bacaan_quran,edit')->name('update');
         Route::patch('/catatan/{entry}/verifikasi', [App\Http\Controllers\QuranReadingController::class, 'verify'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('verify');
         Route::patch('/catatan/{entry}/tolak', [App\Http\Controllers\QuranReadingController::class, 'reject'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('reject');
+        Route::patch('/progres/{submission}/verifikasi', [App\Http\Controllers\QuranReadingController::class, 'verifyProgress'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('progress.verify');
+        Route::patch('/progres/{submission}/tolak', [App\Http\Controllers\QuranReadingController::class, 'rejectProgress'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('progress.reject');
+        Route::put('/{siswa}/progres-khatam', [App\Http\Controllers\QuranReadingController::class, 'correctKhatamProgress'])->middleware('pamong.permission:tracer_bacaan_quran,edit')->name('progress.correct');
+        Route::post('/lembar-massal', [App\Http\Controllers\QuranReadingController::class, 'bulkSheets'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('bulk-sheets');
         Route::get('/{siswa}/laporan', [App\Http\Controllers\QuranReadingController::class, 'operationalReport'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('report');
         Route::get('/{siswa}/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'operationalSheet'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('sheet');
+        Route::get('/{siswa}/peta-khatam', [App\Http\Controllers\QuranReadingController::class, 'operationalKhatamMap'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('khatam-map');
         Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.upload');
         Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm');
         Route::post('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm.store');

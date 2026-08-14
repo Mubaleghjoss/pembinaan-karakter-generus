@@ -322,6 +322,16 @@ class Siswa extends Authenticatable
         return $this->hasMany(QuranReadingSheet::class);
     }
 
+    public function quranReadingCycles(): HasMany
+    {
+        return $this->hasMany(QuranReadingCycle::class);
+    }
+
+    public function quranProgressSubmissions(): HasMany
+    {
+        return $this->hasMany(QuranProgressSubmission::class);
+    }
+
     public function biometricCredentials(): HasMany
     {
         return $this->hasMany(WebAuthnCredential::class, 'user_id')

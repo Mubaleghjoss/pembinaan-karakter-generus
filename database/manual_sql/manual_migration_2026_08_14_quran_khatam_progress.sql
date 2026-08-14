@@ -1,0 +1,75 @@
+CREATE TABLE `quran_reading_cycles` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `siswa_id` bigint unsigned NOT NULL,
+  `cycle_number` smallint unsigned NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'active',
+  `started_at` date NOT NULL,
+  `completed_at` date DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `quran_cycle_student_number_unique` (`siswa_id`,`cycle_number`),
+  KEY `quran_reading_cycles_siswa_id_status_index` (`siswa_id`,`status`),
+  KEY `quran_reading_cycles_created_by_foreign` (`created_by`),
+  CONSTRAINT `quran_reading_cycles_siswa_id_foreign` FOREIGN KEY (`siswa_id`) REFERENCES `siswa` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `quran_reading_cycles_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `quran_reading_sheets`
+  ADD `sheet_type` varchar(24) NOT NULL DEFAULT 'weekly' AFTER `template_version`,
+  ADD `cycle_id` bigint unsigned DEFAULT NULL AFTER `sheet_type`,
+  ADD `metadata` json DEFAULT NULL AFTER `last_position`,
+  ADD KEY `quran_reading_sheets_sheet_type_index` (`sheet_type`),
+  ADD KEY `quran_reading_sheets_cycle_id_foreign` (`cycle_id`),
+  ADD CONSTRAINT `quran_reading_sheets_cycle_id_foreign` FOREIGN KEY (`cycle_id`) REFERENCES `quran_reading_cycles` (`id`) ON DELETE SET NULL;
+
+CREATE TABLE `quran_surah_progress` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cycle_id` bigint unsigned NOT NULL,
+  `surah_number` tinyint unsigned NOT NULL,
+  `last_ayah` smallint unsigned NOT NULL DEFAULT 0,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `source` varchar(24) NOT NULL DEFAULT 'manual',
+  `updated_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `quran_cycle_surah_unique` (`cycle_id`,`surah_number`),
+  KEY `quran_surah_progress_updated_by_foreign` (`updated_by`),
+  CONSTRAINT `quran_surah_progress_cycle_id_foreign` FOREIGN KEY (`cycle_id`) REFERENCES `quran_reading_cycles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `quran_surah_progress_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `quran_progress_submissions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `siswa_id` bigint unsigned NOT NULL,
+  `cycle_id` bigint unsigned NOT NULL,
+  `sheet_id` bigint unsigned DEFAULT NULL,
+  `scan_id` bigint unsigned DEFAULT NULL,
+  `marked_on` date DEFAULT NULL,
+  `completed_surahs` json DEFAULT NULL,
+  `ambiguous_surahs` json DEFAULT NULL,
+  `active_surah` tinyint unsigned DEFAULT NULL,
+  `active_ayah` smallint unsigned DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'pending',
+  `submitted_by_type` varchar(20) NOT NULL,
+  `submitted_by_id` bigint unsigned DEFAULT NULL,
+  `reviewed_by` bigint unsigned DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `review_notes` text DEFAULT NULL,
+  `metadata` json DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `quran_progress_submissions_scan_id_unique` (`scan_id`),
+  KEY `quran_progress_submissions_siswa_id_status_index` (`siswa_id`,`status`),
+  KEY `quran_progress_submissions_cycle_id_status_index` (`cycle_id`,`status`),
+  KEY `quran_progress_submissions_sheet_id_foreign` (`sheet_id`),
+  KEY `quran_progress_submissions_reviewed_by_foreign` (`reviewed_by`),
+  CONSTRAINT `quran_progress_submissions_siswa_id_foreign` FOREIGN KEY (`siswa_id`) REFERENCES `siswa` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `quran_progress_submissions_cycle_id_foreign` FOREIGN KEY (`cycle_id`) REFERENCES `quran_reading_cycles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `quran_progress_submissions_sheet_id_foreign` FOREIGN KEY (`sheet_id`) REFERENCES `quran_reading_sheets` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `quran_progress_submissions_scan_id_foreign` FOREIGN KEY (`scan_id`) REFERENCES `quran_reading_scans` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `quran_progress_submissions_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

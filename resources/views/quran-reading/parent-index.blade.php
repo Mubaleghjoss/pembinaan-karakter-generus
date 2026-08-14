@@ -8,6 +8,7 @@
         <div><h1 class="pkg-page-heading">Bacaan Al-Qur'an</h1><p class="pkg-page-subheading">Riwayat bacaan terverifikasi milik {{ $siswa->nama }}.</p></div>
         <div class="pkg-page-actions"><a href="{{ route('ortu.quran.report') }}" class="btn-primary min-h-11">Unduh PDF</a></div>
     </div>
+    @include('quran-reading.partials.khatam-card', ['downloadUrl' => null])
     <section class="pkg-panel overflow-hidden">
         <div class="divide-y divide-gray-200 dark:divide-gray-700">
             @forelse($entries as $entry)

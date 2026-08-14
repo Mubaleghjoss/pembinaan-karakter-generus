@@ -93,7 +93,7 @@
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
   "resources/js/app.js": {
-    "file": "assets/app-wC3plMOb.js",
+    "file": "assets/app-Cvrs0fZ5.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -117,7 +117,7 @@
       "_browser-BmwtkHN9.js"
     ],
     "css": [
-      "assets/app-BzDuMPm1.css"
+      "assets/app-CSeEu90T.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -143,7 +143,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-D1cMDuCs.js",
+    "file": "assets/QRScanner-BdZq_KKk.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -211,8 +211,14 @@
       "_qr-scanner-B2gaC3aA.js"
     ]
   },
+  "resources/js/quran-bulk-print.js": {
+    "file": "assets/quran-bulk-print-Crszo0lF.js",
+    "name": "quran-bulk-print",
+    "src": "resources/js/quran-bulk-print.js",
+    "isEntry": true
+  },
   "resources/js/quran-scan.js": {
-    "file": "assets/quran-scan-DsKkbunA.js",
+    "file": "assets/quran-scan-DWCU1aVn.js",
     "name": "quran-scan",
     "src": "resources/js/quran-scan.js",
     "isEntry": true,

@@ -37,4 +37,9 @@ class QuranReadingScan extends Model
     {
         return $this->hasMany(QuranReadingEntry::class, 'scan_id');
     }
+
+    public function progressSubmission()
+    {
+        return $this->hasOne(QuranProgressSubmission::class, 'scan_id');
+    }
 }

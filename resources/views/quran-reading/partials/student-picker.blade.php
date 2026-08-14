@@ -11,13 +11,18 @@
                     'siswa_id' => $siswa->id,
                 ])).'#'.$targetTab;
             @endphp
-            <a href="{{ $studentUrl }}" class="flex min-h-16 items-center justify-between gap-3 px-4 py-3 transition hover:bg-gray-50 dark:hover:bg-gray-800/50 {{ $selectedSiswa?->id === $siswa->id ? 'bg-emerald-50 dark:bg-emerald-950/30' : '' }}">
+            <div class="flex min-h-16 items-center gap-2 px-3 transition hover:bg-gray-50 dark:hover:bg-gray-800/50 {{ $selectedSiswa?->id === $siswa->id ? 'bg-emerald-50 dark:bg-emerald-950/30' : '' }}">
+                @if($bulkSelectable ?? false)
+                    <label class="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center" aria-label="Pilih {{ $siswa->nama }} untuk cetak massal"><input type="checkbox" class="pkg-check" value="{{ $siswa->id }}" data-quran-bulk-student></label>
+                @endif
+                <a href="{{ $studentUrl }}" class="flex min-w-0 flex-1 items-center justify-between gap-3 py-3">
                 <div class="min-w-0">
                     <p class="truncate font-semibold">{{ $siswa->nama }}</p>
                     <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $siswa->nis }} &middot; {{ $siswa->kelas?->nama ?? 'Tanpa kelas' }} &middot; {{ $siswa->kelompok_label ?? $siswa->kelompok ?? '-' }}</p>
                 </div>
                 <span aria-hidden="true">&rarr;</span>
-            </a>
+                </a>
+            </div>
         @empty
             <div class="pkg-empty-state"><p class="pkg-empty-title">Generus tidak ditemukan</p></div>
         @endforelse

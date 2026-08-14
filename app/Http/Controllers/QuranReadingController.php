@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ConfirmQuranReadingScanRequest;
 use App\Http\Requests\StoreQuranReadingScanRequest;
 use App\Models\Kelas;
+use App\Models\QuranProgressSubmission;
 use App\Models\QuranReadingEntry;
+use App\Models\QuranReadingCycle;
+use App\Models\QuranSurahProgress;
 use App\Models\QuranReadingScan;
 use App\Models\QuranReadingSheet;
 use App\Models\Siswa;
 use App\Models\ThemeSetting;
 use App\Services\QuranReadingDocumentService;
+use App\Services\QuranKhatamService;
 use App\Services\QuranReadingScanService;
 use App\Support\QuranCatalog;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,6 +30,7 @@ class QuranReadingController extends Controller
     public function __construct(
         private readonly QuranReadingDocumentService $documents,
         private readonly QuranReadingScanService $scans,
+        private readonly QuranKhatamService $khatam,
     ) {
     }
 
@@ -72,12 +77,20 @@ class QuranReadingController extends Controller
         return $this->newSheet(Auth::guard('siswa')->user(), null);
     }
 
+    public function studentKhatamMap()
+    {
+        return $this->newKhatamMap(Auth::guard('siswa')->user(), null);
+    }
+
     public function parentIndex(Request $request)
     {
         $siswa = Auth::guard('ortu')->user();
         $entries = $this->verifiedQuery($siswa, $request)->paginate(20)->withQueryString();
 
-        return view('quran-reading.parent-index', compact('siswa', 'entries'));
+        return view('quran-reading.parent-index', compact('siswa', 'entries') + [
+            'khatam' => $this->khatam->summaryForStudent($siswa),
+            'cycleHistory' => $siswa->quranReadingCycles()->latest('cycle_number')->get(),
+        ]);
     }
 
     public function parentReport(Request $request)
@@ -88,25 +101,7 @@ class QuranReadingController extends Controller
     public function operationalIndex(Request $request)
     {
         $user = $request->user();
-        $siswaQuery = Siswa::active()->with('kelas:id,nama')->orderBy('nama');
-        if ($user->isTeacher()) {
-            $siswaQuery->whereIn('id', $user->getAssignedSiswaIds());
-        }
-
-        if ($request->filled('kelas_id')) {
-            $siswaQuery->where('kelas_id', $request->integer('kelas_id'));
-        }
-        if ($request->filled('kelompok')) {
-            $siswaQuery->where('kelompok', $request->string('kelompok'));
-        }
-        if ($request->filled('search')) {
-            $search = trim($request->string('search'));
-            $siswaQuery->where(fn (Builder $query) => $query
-                ->where('nama', 'like', "%{$search}%")
-                ->orWhere('nis', 'like', "%{$search}%"));
-        }
-
-        $siswaList = $siswaQuery->paginate(20)->withQueryString();
+        $siswaList = $this->operationalStudentQuery($request)->paginate(20)->withQueryString();
         $pendingQuery = QuranReadingEntry::with(['siswa:id,nis,nama,kelas_id', 'siswa.kelas:id,nama', 'scan:id,siswa_id'])
             ->where('status', QuranReadingEntry::STATUS_PENDING)
             ->latest('reading_date');
@@ -115,6 +110,13 @@ class QuranReadingController extends Controller
         }
 
         $pendingEntries = $pendingQuery->limit(30)->get();
+        $pendingProgressQuery = QuranProgressSubmission::with(['siswa:id,nis,nama,kelas_id', 'siswa.kelas:id,nama', 'scan:id,siswa_id'])
+            ->where('status', QuranProgressSubmission::STATUS_PENDING)
+            ->latest();
+        if ($user->isTeacher()) {
+            $pendingProgressQuery->whereIn('siswa_id', $user->getAssignedSiswaIds());
+        }
+        $pendingProgressSubmissions = $pendingProgressQuery->limit(30)->get();
         $selectedSiswa = $request->filled('siswa_id') ? Siswa::find($request->integer('siswa_id')) : null;
         if ($selectedSiswa) {
             $this->authorizeOperationalStudent($user, $selectedSiswa);
@@ -127,9 +129,12 @@ class QuranReadingController extends Controller
         return view('quran-reading.operational-index', [
             'siswaList' => $siswaList,
             'pendingEntries' => $pendingEntries,
+            'pendingProgressSubmissions' => $pendingProgressSubmissions,
             'selectedSiswa' => $selectedSiswa,
             'recentEntries' => $recentEntries,
             'surahOptions' => QuranCatalog::options(),
+            'khatam' => $selectedSiswa ? $this->khatam->summaryForStudent($selectedSiswa) : null,
+            'cycleHistory' => $selectedSiswa ? $selectedSiswa->quranReadingCycles()->latest('cycle_number')->get() : collect(),
             'kelasOptions' => Kelas::where('is_active', true)->orderBy('nama')->get(['id', 'nama']),
             'kelompokOptions' => Siswa::kelompokOptions(),
             'capabilities' => [
@@ -203,6 +208,90 @@ class QuranReadingController extends Controller
         return back()->with('success', 'Catatan bacaan ditolak dengan keterangan.');
     }
 
+    public function verifyProgress(Request $request, QuranProgressSubmission $submission)
+    {
+        $this->authorizeOperationalStudent($request->user(), $submission->siswa);
+        abort_unless($submission->status === QuranProgressSubmission::STATUS_PENDING, 409, 'Hanya progres yang menunggu yang dapat diverifikasi.');
+        $notes = $request->validate(['review_notes' => ['nullable', 'string', 'max:1000']])['review_notes'] ?? null;
+        if ($notes) {
+            $submission->update(['review_notes' => $notes]);
+        }
+        $this->khatam->applySubmission($submission, $request->user()->id);
+        if ($submission->scan_id) {
+            $this->scans->purgeFilesIfComplete($submission->scan()->with(['entries:id,scan_id,status', 'progressSubmission:id,scan_id,status'])->firstOrFail());
+        }
+
+        return back()->with('success', 'Progres Peta Khatam telah diverifikasi.');
+    }
+
+    public function rejectProgress(Request $request, QuranProgressSubmission $submission)
+    {
+        $this->authorizeOperationalStudent($request->user(), $submission->siswa);
+        abort_unless($submission->status === QuranProgressSubmission::STATUS_PENDING, 409, 'Hanya progres yang menunggu yang dapat ditolak.');
+        $data = $request->validate(['review_notes' => ['required', 'string', 'min:3', 'max:1000']]);
+        $submission->update([
+            'status' => QuranProgressSubmission::STATUS_REJECTED,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+            'review_notes' => $data['review_notes'],
+        ]);
+        if ($submission->scan_id) {
+            $this->scans->purgeFilesIfComplete($submission->scan()->with(['entries:id,scan_id,status', 'progressSubmission:id,scan_id,status'])->firstOrFail());
+        }
+
+        return back()->with('success', 'Pengajuan Peta Khatam ditolak dengan keterangan.');
+    }
+
+    public function correctKhatamProgress(Request $request, Siswa $siswa)
+    {
+        $this->authorizeOperationalStudent($request->user(), $siswa);
+        $data = $request->validate([
+            'cycle_id' => ['required', 'integer', 'exists:quran_reading_cycles,id'],
+            'surah_number' => ['required', 'integer', 'between:1,114'],
+            'state' => ['required', 'in:completed,active,reset'],
+            'last_ayah' => ['nullable', 'integer', 'min:0', 'max:286'],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+        $cycle = QuranReadingCycle::whereKey($data['cycle_id'])->where('siswa_id', $siswa->id)->firstOrFail();
+        $number = (int) $data['surah_number'];
+        $maximumAyah = QuranCatalog::ayahCount($number);
+        if ($data['state'] === 'active' && ((int) ($data['last_ayah'] ?? 0) < 1 || (int) $data['last_ayah'] > $maximumAyah)) {
+            throw ValidationException::withMessages(['last_ayah' => "Ayat harus antara 1 dan {$maximumAyah} untuk surat ini."]);
+        }
+        if ($data['state'] === 'reset' && QuranReadingCycle::where('siswa_id', $siswa->id)->where('cycle_number', '>', $cycle->cycle_number)->exists()) {
+            throw ValidationException::withMessages(['state' => 'Progres siklus lama tidak dapat diturunkan setelah siklus berikutnya dibuat.']);
+        }
+
+        DB::transaction(function () use ($data, $cycle, $siswa, $number, $maximumAyah, $request) {
+            $progress = QuranSurahProgress::firstOrNew(['cycle_id' => $cycle->id, 'surah_number' => $number]);
+            $before = ['last_ayah' => (int) $progress->last_ayah, 'completed' => $progress->completed_at !== null];
+            if ($data['state'] === 'completed') {
+                $progress->fill(['last_ayah' => $maximumAyah, 'completed_at' => now(), 'source' => 'manual_correction', 'updated_by' => $request->user()->id])->save();
+            } elseif ($data['state'] === 'active') {
+                $progress->fill(['last_ayah' => (int) $data['last_ayah'], 'completed_at' => null, 'source' => 'manual_correction', 'updated_by' => $request->user()->id])->save();
+            } else {
+                $progress->delete();
+            }
+            if ($data['state'] !== 'completed' && $cycle->status === QuranReadingCycle::STATUS_COMPLETED) {
+                $cycle->update(['status' => QuranReadingCycle::STATUS_ACTIVE, 'completed_at' => null]);
+            } elseif ($data['state'] === 'completed' && $cycle->progress()->whereNotNull('completed_at')->count() === 114) {
+                $cycle->update(['status' => QuranReadingCycle::STATUS_COMPLETED, 'completed_at' => now()->toDateString()]);
+            }
+            QuranProgressSubmission::create([
+                'siswa_id' => $siswa->id, 'cycle_id' => $cycle->id, 'marked_on' => now()->toDateString(),
+                'completed_surahs' => $data['state'] === 'completed' ? [$number] : [],
+                'active_surah' => $data['state'] === 'active' ? $number : null,
+                'active_ayah' => $data['state'] === 'active' ? (int) $data['last_ayah'] : null,
+                'status' => QuranProgressSubmission::STATUS_VERIFIED, 'submitted_by_type' => 'user',
+                'submitted_by_id' => $request->user()->id, 'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(), 'review_notes' => $data['reason'],
+                'metadata' => ['manual_correction' => true, 'surah_number' => $number, 'before' => $before, 'state' => $data['state']],
+            ]);
+        });
+
+        return back()->with('success', 'Koreksi progres tersimpan beserta alasan audit.');
+    }
+
     public function operationalReport(Request $request, Siswa $siswa)
     {
         $this->authorizeOperationalStudent($request->user(), $siswa);
@@ -215,6 +304,68 @@ class QuranReadingController extends Controller
         $this->authorizeOperationalStudent($request->user(), $siswa);
 
         return $this->newSheet($siswa, $request->user()->id);
+    }
+
+    public function operationalKhatamMap(Request $request, Siswa $siswa)
+    {
+        $this->authorizeOperationalStudent($request->user(), $siswa);
+
+        return $this->newKhatamMap($siswa, $request->user()->id);
+    }
+
+    public function bulkSheets(Request $request)
+    {
+        if ($request->input('selection_mode') !== 'selected') {
+            $request->merge(['selected_ids' => []]);
+        }
+        $data = $request->validate([
+            'document_type' => ['required', 'in:weekly,surah_map'],
+            'selection_mode' => ['required', 'in:selected,filtered'],
+            'selected_ids' => ['nullable', 'array', 'max:100'],
+            'selected_ids.*' => ['integer', 'distinct', 'exists:siswa,id'],
+            'search' => ['nullable', 'string', 'max:120'],
+            'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
+            'kelompok' => ['nullable', 'string', 'max:80'],
+        ]);
+
+        $query = $this->operationalStudentQuery($request)->orderBy('nama');
+        if ($data['selection_mode'] === 'selected') {
+            $ids = $data['selected_ids'] ?? [];
+            if (! $ids) {
+                throw ValidationException::withMessages(['selected_ids' => 'Pilih minimal satu Generus.']);
+            }
+            $query->whereIn('id', $ids);
+        }
+
+        $students = $query->limit(101)->get();
+        if ($students->isEmpty()) {
+            throw ValidationException::withMessages(['selected_ids' => 'Tidak ada Generus yang sesuai pilihan dan izin akun.']);
+        }
+        if ($students->count() > 100) {
+            throw ValidationException::withMessages(['selected_ids' => 'Maksimal 100 Generus per PDF. Persempit filter terlebih dahulu.']);
+        }
+
+        $createdSheets = collect();
+        try {
+            $pages = $students->map(function (Siswa $siswa) use ($data, $createdSheets, $request) {
+                $page = $data['document_type'] === 'surah_map'
+                    ? $this->createKhatamSheet($siswa, $request->user()->id)
+                    : $this->createWeeklySheet($siswa, $request->user()->id);
+                $createdSheets->push($page['sheet']);
+
+                return $page;
+            })->all();
+
+            $label = $data['document_type'] === 'surah_map' ? 'Peta-Khatam' : 'Lembar-Mingguan';
+            $filename = $label.'-'.$students->count().'-Generus-'.now()->format('Y-m-d').'.pdf';
+
+            return $data['document_type'] === 'surah_map'
+                ? $this->documents->bulkKhatamMaps($pages, $filename)
+                : $this->documents->bulkWeekly($pages, $filename);
+        } catch (\Throwable $exception) {
+            QuranReadingSheet::whereIn('id', $createdSheets->pluck('id'))->whereDoesntHave('scans')->delete();
+            throw $exception;
+        }
     }
 
     public function scanForm(Request $request, ?Siswa $siswa = null)
@@ -303,8 +454,20 @@ class QuranReadingController extends Controller
         $this->authorizeScan($request, $scan, $isStudent, $isPublic);
         abort_if($scan->status === 'expired', 410, 'Foto scan kedaluwarsa dan sudah dibersihkan. Silakan unggah ulang lembar.');
 
+        $scan->load(['siswa.kelas', 'sheet.cycle']);
+        if ($scan->sheet?->sheet_type === 'surah_map') {
+            return view('quran-reading.khatam-scan-confirm', [
+                'scan' => $scan,
+                'isStudent' => $isStudent,
+                'isPublic' => $isPublic,
+                'theme' => $isPublic ? ThemeSetting::current() : null,
+                'catalog' => QuranCatalog::class,
+                'khatam' => $this->khatam->summary($scan->sheet->cycle),
+            ]);
+        }
+
         return view('quran-reading.scan-confirm', [
-            'scan' => $scan->load(['siswa.kelas', 'sheet:id,row_count,template_version']),
+            'scan' => $scan,
             'surahOptions' => QuranCatalog::options(),
             'isStudent' => $isStudent,
             'isPublic' => $isPublic,
@@ -340,6 +503,9 @@ class QuranReadingController extends Controller
         $this->authorizeScan($request, $scan, $isStudent, $isPublic);
         abort_if($scan->status === 'expired', 410, 'Foto scan kedaluwarsa dan sudah dibersihkan. Silakan unggah ulang lembar.');
         abort_if($scan->status === 'confirmed', 409, 'Hasil scan ini sudah dikonfirmasi.');
+        if ($scan->sheet?->sheet_type === 'surah_map') {
+            return $this->confirmKhatamScanResponse($request, $scan, $isStudent, $isPublic);
+        }
         $rows = $request->validated()['rows'];
         $ocrSuggestion = json_decode((string) ($request->validated()['ocr_suggestion'] ?? ''), true);
         if (! is_array($ocrSuggestion)) {
@@ -404,6 +570,61 @@ class QuranReadingController extends Controller
             ->with('success', $needsVerification ? 'Hasil scan dikirim untuk verifikasi Pamong.' : 'Hasil scan disimpan dan terverifikasi.');
     }
 
+    private function confirmKhatamScanResponse(ConfirmQuranReadingScanRequest $request, QuranReadingScan $scan, bool $isStudent, bool $isPublic)
+    {
+        $data = $request->validated();
+        $cycle = $scan->sheet?->cycle;
+        abort_unless($cycle && (int) $cycle->siswa_id === (int) $scan->siswa_id, 409, 'Siklus Peta Khatam tidak tersedia.');
+        if (! empty($data['active_surah']) && (int) ($data['active_ayah'] ?? 0) > QuranCatalog::ayahCount((int) $data['active_surah'])) {
+            throw ValidationException::withMessages(['active_ayah' => 'Ayat terakhir melebihi jumlah ayat surat yang dipilih.']);
+        }
+
+        $currentCompleted = $cycle->progress()->whereNotNull('completed_at')->pluck('surah_number');
+        $completed = collect($data['completed_surahs'] ?? [])->map(fn ($n) => (int) $n)->diff($currentCompleted)->unique()->sort()->values()->all();
+        $actor = $isPublic ? null : ($isStudent ? $request->user('siswa') : $request->user());
+        $needsVerification = $isStudent || $isPublic;
+        $ocrSuggestion = json_decode((string) ($data['ocr_suggestion'] ?? ''), true);
+        if (! is_array($ocrSuggestion)) {
+            $ocrSuggestion = $scan->metadata['ocr_suggestion'] ?? [];
+        }
+
+        $submission = DB::transaction(function () use ($data, $completed, $scan, $cycle, $actor, $isPublic, $isStudent, $ocrSuggestion) {
+            $submission = QuranProgressSubmission::create([
+                'siswa_id' => $scan->siswa_id,
+                'cycle_id' => $cycle->id,
+                'sheet_id' => $scan->sheet_id,
+                'scan_id' => $scan->id,
+                'marked_on' => $data['marked_on'] ?? now()->toDateString(),
+                'completed_surahs' => $completed,
+                'ambiguous_surahs' => collect($data['ambiguous_surahs'] ?? [])->map(fn ($n) => (int) $n)->unique()->values()->all(),
+                'active_surah' => $data['active_surah'] ?? null,
+                'active_ayah' => $data['active_ayah'] ?? null,
+                'status' => QuranProgressSubmission::STATUS_PENDING,
+                'submitted_by_type' => $isPublic ? 'public' : ($isStudent ? 'siswa' : 'user'),
+                'submitted_by_id' => $actor?->id,
+                'metadata' => ['ocr_suggestion' => $ocrSuggestion, 'baseline' => $scan->sheet->metadata],
+            ]);
+            $scan->update(['status' => 'confirmed', 'extracted_rows' => $data, 'confirmed_at' => now()]);
+
+            return $submission;
+        });
+
+        if (! $needsVerification) {
+            $this->khatam->applySubmission($submission, $actor->id);
+            $this->scans->purgeFilesIfComplete($scan->fresh(['entries:id,scan_id,status', 'progressSubmission:id,scan_id,status']));
+        }
+
+        $target = match (true) {
+            $isPublic => route('public.scanner', ['mode' => 'quran']).'#quran',
+            $isStudent => route('siswa.quran.index', ['tab' => 'khatam']).'#khatam',
+            default => route('quran.index', ['tab' => 'khatam', 'siswa_id' => $scan->siswa_id]).'#khatam',
+        };
+
+        return redirect()->to($target)->with('success', $needsVerification
+            ? 'Peta Khatam dikirim untuk verifikasi Pamong.'
+            : 'Progres Peta Khatam disimpan dan terverifikasi.');
+    }
+
     public function studentScanImage(Request $request, QuranReadingScan $scan)
     {
         return $this->scanImageResponse($request, $scan, true);
@@ -457,6 +678,8 @@ class QuranReadingController extends Controller
             'monthPages' => (clone $monthEntries)->selectRaw('COALESCE(SUM(page_end - page_start + 1), 0) as total')->value('total') ?? 0,
             'activeDays' => (clone $monthEntries)->distinct()->count('reading_date'),
             'pendingCount' => $siswa->quranReadingEntries()->where('status', QuranReadingEntry::STATUS_PENDING)->count(),
+            'khatam' => $this->khatam->summaryForStudent($siswa),
+            'cycleHistory' => $siswa->quranReadingCycles()->latest('cycle_number')->get(),
         ];
     }
 
@@ -524,6 +747,13 @@ class QuranReadingController extends Controller
 
     private function newSheet(Siswa $siswa, ?int $generatedBy)
     {
+        $page = $this->createWeeklySheet($siswa, $generatedBy);
+
+        return $this->documents->sheet($page['sheet'], $page['token']);
+    }
+
+    private function createWeeklySheet(Siswa $siswa, ?int $generatedBy): array
+    {
         $latest = $siswa->quranReadingEntries()->where('status', QuranReadingEntry::STATUS_VERIFIED)->latest('reading_date')->first();
         $plainToken = bin2hex(random_bytes(16));
         $sheet = QuranReadingSheet::create([
@@ -533,6 +763,7 @@ class QuranReadingController extends Controller
             'status' => 'active',
             'row_count' => 7,
             'template_version' => 3,
+            'sheet_type' => 'weekly',
             'generated_by' => $generatedBy,
             'last_position' => $latest ? [
                 'reading_date' => $latest->reading_date?->toDateString(),
@@ -542,7 +773,62 @@ class QuranReadingController extends Controller
             ] : null,
         ]);
 
-        return $this->documents->sheet($sheet, $plainToken);
+        return ['sheet' => $sheet, 'token' => $plainToken];
+    }
+
+    private function newKhatamMap(Siswa $siswa, ?int $generatedBy)
+    {
+        $page = $this->createKhatamSheet($siswa, $generatedBy);
+
+        return $this->documents->khatamMap($page['sheet'], $page['token'], $page['summary']);
+    }
+
+    private function createKhatamSheet(Siswa $siswa, ?int $generatedBy): array
+    {
+        $cycle = $this->khatam->activeCycle($siswa, $generatedBy);
+        $summary = $this->khatam->summary($cycle);
+        $plainToken = bin2hex(random_bytes(16));
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id,
+            'public_id' => (string) Str::uuid(),
+            'token_hash' => hash('sha256', $plainToken),
+            'status' => 'active',
+            'row_count' => 114,
+            'template_version' => 1,
+            'sheet_type' => 'surah_map',
+            'cycle_id' => $cycle->id,
+            'generated_by' => $generatedBy,
+            'metadata' => [
+                'baseline_completed_surahs' => $summary['completed_surahs'],
+                'baseline_active_surah' => $summary['active_surah'],
+                'baseline_active_ayah' => $summary['active_ayah'],
+            ],
+        ]);
+
+        return ['sheet' => $sheet, 'token' => $plainToken, 'cycle' => $cycle, 'summary' => $summary];
+    }
+
+    private function operationalStudentQuery(Request $request): Builder
+    {
+        $query = Siswa::active()->with('kelas:id,nama')->orderBy('nama');
+        $user = $request->user();
+        if ($user?->isTeacher()) {
+            $query->whereIn('id', $user->getAssignedSiswaIds());
+        }
+        if ($request->filled('kelas_id')) {
+            $query->where('kelas_id', $request->integer('kelas_id'));
+        }
+        if ($request->filled('kelompok')) {
+            $query->where('kelompok', $request->string('kelompok'));
+        }
+        if ($request->filled('search')) {
+            $search = trim((string) $request->string('search'));
+            $query->where(fn (Builder $studentQuery) => $studentQuery
+                ->where('nama', 'like', "%{$search}%")
+                ->orWhere('nis', 'like', "%{$search}%"));
+        }
+
+        return $query;
     }
 
     private function authorizeOperationalStudent($user, Siswa $siswa): void

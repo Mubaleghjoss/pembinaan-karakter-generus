@@ -7,6 +7,7 @@
     $tabs = [
         ['id' => 'rekap', 'label' => 'Riwayat'],
         ['id' => 'input', 'label' => 'Catat Bacaan'],
+        ['id' => 'khatam', 'label' => 'Peta Khatam'],
     ];
     if (config('quran-reading.scan_enabled')) {
         $tabs[] = ['id' => 'scan', 'label' => 'Scan Lembar'];
@@ -45,7 +46,7 @@
 
             <div class="grid gap-3 sm:grid-cols-2">
                 <a href="{{ route('siswa.quran.sheet') }}" class="pkg-card flex min-h-14 items-center justify-between gap-3 p-4 font-semibold transition hover:border-emerald-400">
-                    <span><span class="block">Unduh lembar lanjutan</span><span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">Cetak 12 baris untuk pencatatan di kertas.</span></span><span aria-hidden="true">PDF</span>
+                    <span><span class="block">Unduh lembar lanjutan</span><span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">Cetak 7 baris untuk satu minggu pencatatan.</span></span><span aria-hidden="true">PDF</span>
                 </a>
                 <a href="{{ route('siswa.quran.report') }}" class="pkg-card flex min-h-14 items-center justify-between gap-3 p-4 font-semibold transition hover:border-emerald-400">
                     <span><span class="block">Unduh laporan resmi</span><span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">Berisi catatan yang sudah terverifikasi.</span></span><span aria-hidden="true">PDF</span>
@@ -85,6 +86,11 @@
             </section>
         </x-tab-panel>
 
+        <x-tab-panel id="khatam" class="space-y-4">
+            @include('quran-reading.partials.khatam-card', ['downloadUrl' => route('siswa.quran.khatam-map')])
+            @if(config('quran-reading.scan_enabled'))<a href="{{ route('siswa.quran.index', ['tab' => 'scan']) }}#scan" class="btn-secondary min-h-11 w-full justify-center sm:w-auto">Scan Peta Khatam</a>@endif
+        </x-tab-panel>
+
         <x-tab-panel id="input">
             <section class="pkg-panel-lg">
                 <h2 class="text-lg font-bold">Catat bacaan baru</h2>
@@ -101,8 +107,8 @@
             <x-tab-panel id="scan">
                 <section class="pkg-panel-lg space-y-5">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div><h2 class="text-lg font-bold">Scan lembar lanjutan</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Unduh dan isi lembar lebih dahulu, lalu foto untuk diperiksa.</p></div>
-                        <a href="{{ route('siswa.quran.sheet') }}" class="btn-secondary min-h-11 justify-center">Unduh Lembar PDF</a>
+                        <div><h2 class="text-lg font-bold">Scan lembar bacaan</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Kamera mengenali QR Lembar Mingguan maupun Peta Khatam secara otomatis.</p></div>
+                        <div class="grid gap-2 sm:grid-cols-2"><a href="{{ route('siswa.quran.sheet') }}" class="btn-secondary min-h-11 justify-center">Lembar Mingguan</a><a href="{{ route('siswa.quran.khatam-map') }}" class="btn-secondary min-h-11 justify-center">Peta Khatam</a></div>
                     </div>
                     @include('quran-reading.partials.scan-form', ['layout' => 'siswa'])
                 </section>

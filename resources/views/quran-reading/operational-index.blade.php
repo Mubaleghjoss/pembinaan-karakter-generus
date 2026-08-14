@@ -4,7 +4,10 @@
 
 @section('content')
 @php
-    $tabs = [['id' => 'rekap', 'label' => 'Rekap & Verifikasi', 'badge' => $pendingEntries->count() ?: null]];
+    $tabs = [
+        ['id' => 'rekap', 'label' => 'Rekap & Verifikasi', 'badge' => ($pendingEntries->count() + $pendingProgressSubmissions->count()) ?: null],
+        ['id' => 'khatam', 'label' => 'Peta Khatam', 'badge' => $pendingProgressSubmissions->count() ?: null],
+    ];
     if ($capabilities['create']) {
         $tabs[] = ['id' => 'input', 'label' => 'Input Manual'];
         if (config('quran-reading.scan_enabled')) {
@@ -36,6 +39,7 @@
 
     <x-tabs :tabs="$tabs" :default-tab="$activeTab" :sync-query="true">
         <x-tab-panel id="rekap" class="space-y-5">
+            <div class="space-y-5" data-quran-bulk-root data-storage-key="pkg-quran-bulk-{{ auth()->id() }}">
             @if($pendingEntries->isNotEmpty())
                 <section class="pkg-panel overflow-hidden">
                     <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700"><h2 class="font-bold">Antrean verifikasi <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{{ $pendingEntries->count() }}</span></h2></div>
@@ -57,8 +61,21 @@
                 </section>
             @endif
 
+            @if($capabilities['export'])
+                <section class="pkg-panel-lg">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h2 class="font-bold">Cetak Massal</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Gabungkan maksimal 100 halaman dalam satu PDF siap cetak.</p></div><span class="rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"><span data-quran-bulk-count>0</span> dipilih</span></div>
+                    <div class="mt-4 flex flex-wrap gap-2"><button type="button" class="btn-secondary min-h-11" data-quran-bulk-page>Pilih Halaman Ini</button><button type="button" class="btn-secondary min-h-11" data-quran-bulk-clear>Hapus Pilihan</button></div>
+                    <form method="POST" action="{{ route('quran.bulk-sheets') }}" class="mt-4 grid gap-4 sm:grid-cols-2">@csrf
+                        <input type="hidden" name="search" value="{{ request('search') }}"><input type="hidden" name="kelas_id" value="{{ request('kelas_id') }}"><input type="hidden" name="kelompok" value="{{ request('kelompok') }}"><span data-quran-bulk-hidden></span>
+                        <fieldset><legend class="mb-2 text-xs font-semibold">Jenis dokumen</legend><div class="grid gap-2"><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="document_type" value="weekly" checked> Lembar Lanjutan Mingguan</label><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="document_type" value="surah_map"> Peta Khatam Al-Qur'an</label></div></fieldset>
+                        <fieldset><legend class="mb-2 text-xs font-semibold">Cakupan Generus</legend><div class="grid gap-2"><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="selection_mode" value="selected" data-quran-selection-mode="selected" disabled> Generus Terpilih</label><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="selection_mode" value="filtered" data-quran-selection-mode="filtered" checked> Semua Sesuai Filter</label></div></fieldset>
+                        <button class="btn-primary min-h-12 justify-center sm:col-span-2">Unduh PDF Gabungan</button>
+                    </form>
+                </section>
+            @endif
+
             <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.8fr)]">
-                @include('quran-reading.partials.student-picker', ['targetTab' => 'rekap'])
+                @include('quran-reading.partials.student-picker', ['targetTab' => 'rekap', 'bulkSelectable' => $capabilities['export']])
                 <aside class="space-y-5">
                     @if($selectedSiswa)
                         <section class="pkg-panel-lg">
@@ -93,6 +110,25 @@
                         <div class="pkg-empty-state pkg-panel"><p class="pkg-empty-title">Pilih salah satu Generus</p><p class="pkg-empty-copy">Dokumen dan riwayat akan muncul di sini.</p></div>
                     @endif
                 </aside>
+            </div>
+            </div>
+        </x-tab-panel>
+
+        <x-tab-panel id="khatam" class="space-y-5">
+            @if($pendingProgressSubmissions->isNotEmpty())
+                <section class="pkg-panel overflow-hidden">
+                    <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700"><h2 class="font-bold">Antrean Peta Khatam <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{{ $pendingProgressSubmissions->count() }}</span></h2></div>
+                    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($pendingProgressSubmissions as $submission)
+                            <article class="p-4 sm:p-5"><div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"><div><p class="font-bold">{{ $submission->siswa->nama }}</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ count($submission->completed_surahs ?? []) }} surat baru &middot; Posisi aktif {{ $submission->active_surah ? \App\Support\QuranCatalog::name($submission->active_surah).' ayat '.$submission->active_ayah : 'tidak diisi' }}</p>@if($submission->scan)<a class="mt-2 inline-flex min-h-11 items-center font-semibold text-emerald-700 hover:underline dark:text-emerald-300" href="{{ route('quran.scan.image', $submission->scan) }}" target="_blank" rel="noopener">Lihat foto scan</a>@endif</div>
+                            @if($capabilities['verify'])<div class="grid gap-2 sm:grid-cols-2 lg:w-[440px]"><form method="POST" action="{{ route('quran.progress.verify', $submission) }}" class="flex flex-col gap-2 sm:flex-row">@csrf @method('PATCH')<input name="review_notes" class="pkg-field min-h-11 min-w-0 flex-1" placeholder="Catatan opsional"><button class="btn-success min-h-11 justify-center">Verifikasi</button></form><form method="POST" action="{{ route('quran.progress.reject', $submission) }}" class="flex flex-col gap-2 sm:flex-row">@csrf @method('PATCH')<input name="review_notes" class="pkg-field min-h-11 min-w-0 flex-1" placeholder="Alasan penolakan" required><button class="btn-danger min-h-11 justify-center">Tolak</button></form></div>@endif</div></article>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+            <div class="grid gap-5 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
+                @include('quran-reading.partials.student-picker', ['targetTab' => 'khatam'])
+                <aside>@if($selectedSiswa)@include('quran-reading.partials.khatam-card', ['downloadUrl' => $capabilities['export'] ? route('quran.khatam-map', $selectedSiswa) : null, 'correctionRoute' => $capabilities['edit'] && $khatam['cycle'] ? route('quran.progress.correct', $selectedSiswa) : null])@else<div class="pkg-empty-state pkg-panel"><p class="pkg-empty-title">Pilih Generus</p><p class="pkg-empty-copy">Progres siklus dan Peta Khatam akan muncul di sini.</p></div>@endif</aside>
             </div>
         </x-tab-panel>
 
@@ -132,5 +168,11 @@
 @if($capabilities['create'] && config('quran-reading.scan_enabled'))
     @push('scripts')
         @vite('resources/js/quran-scan.js')
+    @endpush
+@endif
+
+@if($capabilities['export'])
+    @push('scripts')
+        @vite('resources/js/quran-bulk-print.js')
     @endpush
 @endif

@@ -57,14 +57,19 @@ class QuranReadingScanService
                 'mime' => 'image/jpeg',
                 'original_size' => $image->getSize(),
                 'ocr_suggestion' => $decodedOcr,
-                'scanner_version' => 3,
+                'scanner_version' => 4,
                 'template_version' => (int) ($sheet->template_version ?: 1),
+                'sheet_type' => $sheet->sheet_type ?: 'weekly',
             ],
         ]);
     }
 
     public function payload(QuranReadingSheet $sheet, string $plainToken): string
     {
+        if ($sheet->sheet_type === 'surah_map') {
+            return 'PKGQM:'.strtoupper(str_replace('-', '', (string) $sheet->public_id)).':'.strtoupper($plainToken);
+        }
+
         if ((int) $sheet->template_version >= 2) {
             return 'PKGQ:'.strtoupper(str_replace('-', '', (string) $sheet->public_id)).':'.strtoupper($plainToken);
         }
@@ -74,8 +79,11 @@ class QuranReadingScanService
 
     public function purgeFilesIfComplete(QuranReadingScan $scan): bool
     {
-        $scan->loadMissing('entries:id,scan_id,status');
+        $scan->loadMissing(['entries:id,scan_id,status', 'progressSubmission:id,scan_id,status']);
         if ($scan->entries->contains('status', 'pending')) {
+            return false;
+        }
+        if ($scan->progressSubmission?->status === 'pending') {
             return false;
         }
         if ($scan->entries->isEmpty() && ! $scan->confirmed_at && $scan->status !== 'confirmed') {
@@ -124,7 +132,8 @@ class QuranReadingScanService
             ->whereNull('files_purged_at')
             ->whereNotNull('confirmed_at')
             ->whereDoesntHave('entries', fn ($query) => $query->where('status', 'pending'))
-            ->with('entries:id,scan_id,status')
+            ->whereDoesntHave('progressSubmission', fn ($query) => $query->where('status', 'pending'))
+            ->with(['entries:id,scan_id,status', 'progressSubmission:id,scan_id,status'])
             ->chunkById(100, function ($scans) use (&$summary) {
                 foreach ($scans as $scan) {
                     $this->purgeFilesIfComplete($scan) ? $summary['completed']++ : $summary['failed']++;
@@ -151,17 +160,12 @@ class QuranReadingScanService
 
     private function parsePayload(string $payload): array
     {
-        if (preg_match('/^PKGQ:([0-9A-F]{32}):([0-9A-F]{32})$/i', trim($payload), $matches)) {
-            $hex = strtolower($matches[1]);
-            $publicId = sprintf('%s-%s-%s-%s-%s',
-                substr($hex, 0, 8),
-                substr($hex, 8, 4),
-                substr($hex, 12, 4),
-                substr($hex, 16, 4),
-                substr($hex, 20, 12),
-            );
+        if (preg_match('/^PKGQM:([0-9A-F]{32}):([0-9A-F]{32})$/i', trim($payload), $matches)) {
+            return [$this->uuidFromHex($matches[1]), strtolower($matches[2])];
+        }
 
-            return [$publicId, strtolower($matches[2])];
+        if (preg_match('/^PKGQ:([0-9A-F]{32}):([0-9A-F]{32})$/i', trim($payload), $matches)) {
+            return [$this->uuidFromHex($matches[1]), strtolower($matches[2])];
         }
 
         if (preg_match('/^PKGQURAN:([0-9a-f-]{36}):([A-Za-z0-9]+)$/i', trim($payload), $matches)) {
@@ -171,6 +175,16 @@ class QuranReadingScanService
         throw ValidationException::withMessages([
             'sheet_payload' => 'QR bukan lembar Tracer Bacaan Al-Qur’an PKG.',
         ]);
+    }
+
+    private function uuidFromHex(string $value): string
+    {
+        $hex = strtolower($value);
+
+        return sprintf('%s-%s-%s-%s-%s',
+            substr($hex, 0, 8), substr($hex, 8, 4), substr($hex, 12, 4),
+            substr($hex, 16, 4), substr($hex, 20, 12),
+        );
     }
 
     private function storeSanitizedImage(UploadedFile $file, string $suffix): string

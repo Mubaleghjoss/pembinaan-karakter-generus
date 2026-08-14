@@ -13,6 +13,19 @@ class ConfirmQuranReadingScanRequest extends FormRequest
 
     public function rules(): array
     {
+        if ($this->route('scan')?->sheet?->sheet_type === 'surah_map') {
+            return [
+                'completed_surahs' => ['nullable', 'array', 'max:114'],
+                'completed_surahs.*' => ['integer', 'between:1,114', 'distinct'],
+                'ambiguous_surahs' => ['nullable', 'array', 'max:114'],
+                'ambiguous_surahs.*' => ['integer', 'between:1,114', 'distinct'],
+                'active_surah' => ['nullable', 'integer', 'between:1,114', 'required_with:active_ayah'],
+                'active_ayah' => ['nullable', 'integer', 'between:1,286', 'required_with:active_surah'],
+                'marked_on' => ['nullable', 'date', 'before_or_equal:today'],
+                'ocr_suggestion' => ['nullable', 'json', 'max:60000'],
+            ];
+        }
+
         return [
             'rows' => ['required', 'array', 'min:1', 'max:12'],
             'ocr_suggestion' => ['nullable', 'json', 'max:60000'],

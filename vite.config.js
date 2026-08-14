@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/js/presentation-editor.js',
                 'resources/js/presentation-viewer.js',
                 'resources/js/quran-scan.js',
+                'resources/js/quran-bulk-print.js',
             ],
             refresh: true,
         }),

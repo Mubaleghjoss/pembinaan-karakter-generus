@@ -1,7 +1,9 @@
 const roots = new Set();
-const QR_PATTERN = /^(?:PKGQURAN:[0-9a-f-]{36}:[A-Za-z0-9]+|PKGQ:[0-9A-F]{32}:[0-9A-F]{32})$/i;
+const QR_PATTERN = /^(?:PKGQURAN:[0-9a-f-]{36}:[A-Za-z0-9]+|PKGQ:[0-9A-F]{32}:[0-9A-F]{32}|PKGQM:[0-9A-F]{32}:[0-9A-F]{32})$/i;
 const A4_WIDTH = 1654;
 const A4_HEIGHT = 2339;
+const A4_LANDSCAPE_WIDTH = 2339;
+const A4_LANDSCAPE_HEIGHT = 1654;
 let cvPromise;
 
 function loadOpenCv() {
@@ -93,14 +95,15 @@ function cropCanvas(source, xRatio, yRatio, widthRatio, heightRatio, upscale = 1
     return canvas;
 }
 
-export async function deskewDocument(source) {
+export async function deskewDocument(source, documentType = 'weekly') {
     try {
         const cv = await loadOpenCv();
         window.cv = cv;
         const { default: Jscanify } = await import('./vendor/jscanify-client.js');
         const scanner = new Jscanify();
-        const result = scanner.extractPaperWithMeta(source, A4_WIDTH, A4_HEIGHT);
-        const grid = result ? detectTableGrid(result.canvas) : null;
+        const landscape = documentType === 'surah_map';
+        const result = scanner.extractPaperWithMeta(source, landscape ? A4_LANDSCAPE_WIDTH : A4_WIDTH, landscape ? A4_LANDSCAPE_HEIGHT : A4_HEIGHT);
+        const grid = result ? (landscape ? { detected: true, rowCount: 38 } : detectTableGrid(result.canvas)) : null;
         return result
             && grid
             ? { canvas: result.canvas, corrected: true, quality: result.areaRatio, grid }
@@ -111,7 +114,7 @@ export async function deskewDocument(source) {
     }
 }
 
-async function perspectiveFromCorners(source, points) {
+async function perspectiveFromCorners(source, points, documentType = 'weekly') {
     const cv = await loadOpenCv();
     const input = cv.imread(source);
     const output = new cv.Mat();
@@ -121,9 +124,11 @@ async function perspectiveFromCorners(source, points) {
         points.bl.x * source.width, points.bl.y * source.height,
         points.br.x * source.width, points.br.y * source.height,
     ]);
-    const destinationPoints = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, A4_WIDTH, 0, 0, A4_HEIGHT, A4_WIDTH, A4_HEIGHT]);
+    const width = documentType === 'surah_map' ? A4_LANDSCAPE_WIDTH : A4_WIDTH;
+    const height = documentType === 'surah_map' ? A4_LANDSCAPE_HEIGHT : A4_HEIGHT;
+    const destinationPoints = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, width, 0, 0, height, width, height]);
     const transform = cv.getPerspectiveTransform(sourcePoints, destinationPoints);
-    cv.warpPerspective(input, output, transform, new cv.Size(A4_WIDTH, A4_HEIGHT), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(255, 255, 255, 255));
+    cv.warpPerspective(input, output, transform, new cv.Size(width, height), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(255, 255, 255, 255));
     const canvas = document.createElement('canvas');
     cv.imshow(canvas, output);
     input.delete(); output.delete(); sourcePoints.delete(); destinationPoints.delete(); transform.delete();
@@ -363,6 +368,59 @@ export async function recognizeRows(root, canvas, progressCallback = null) {
     return rows;
 }
 
+async function recognizeKhatamMap(root, canvas, progressCallback = null) {
+    const notify = progressCallback || ((label, value) => setProgress(root, label, value));
+    const completedSurahs = [];
+    const ambiguousSurahs = [];
+    const columnStarts = [0.024, 0.346, 0.668];
+    const rowTop = 0.267;
+    const rowStep = 0.0129;
+
+    for (let column = 0; column < 3; column += 1) {
+        for (let row = 0; row < 38; row += 1) {
+            const number = column * 38 + row + 1;
+            const x = Math.round(canvas.width * (columnStarts[column] + 0.286));
+            const y = Math.round(canvas.height * (rowTop + row * rowStep));
+            const ratio = inkRatio(canvas, x, y, Math.max(5, canvas.width * 0.006), Math.max(5, canvas.height * 0.009));
+            if (ratio >= 0.42) completedSurahs.push(number);
+            else if (ratio >= 0.16) ambiguousSurahs.push(number);
+        }
+        notify('Membaca tanda surat', 38 + (column + 1) * 12);
+    }
+
+    const suggestion = {
+        type: 'surah_map',
+        completed_surahs: completedSurahs,
+        ambiguous_surahs: ambiguousSurahs,
+        active_surah: '',
+        active_ayah: '',
+        marked_on: localDateString(),
+        confidence: {},
+    };
+
+    if (root.dataset.ocrEnabled !== 'true') return suggestion;
+    let worker;
+    try {
+        worker = await createOcrWorker(root, (label, progress) => notify(`Membaca posisi aktif: ${label}`, 74 + progress * 20));
+        const fields = [
+            ['active_surah', 0.10, 0.225, 0.115, 0.047],
+            ['active_ayah', 0.34, 0.225, 0.10, 0.047],
+            ['marked_on', 0.57, 0.225, 0.17, 0.047],
+        ];
+        for (const [field, x, y, width, height] of fields) {
+            const result = await worker.recognize(prepareCell(cropCanvas(canvas, x, y, width, height), 175));
+            const confidence = Math.round(Number(result.data.confidence || 0));
+            const raw = normalizeOcrText(result.data.text);
+            suggestion.confidence[field] = confidence;
+            if (confidence >= 60) suggestion[field] = field === 'marked_on' ? dateSuggestion(raw) : raw.replace(/\D/g, '');
+        }
+    } finally {
+        if (worker) await worker.terminate();
+    }
+
+    return suggestion;
+}
+
 function makeFileFromCanvas(canvas, name) {
     return new Promise((resolve, reject) => canvas.toBlob((blob) => {
         if (!blob) return reject(new Error('Hasil foto tidak dapat dibuat.'));
@@ -430,9 +488,14 @@ function initCrop(root, state) {
             setStatus(root, 'Membaca ulang area QR...', 'progress');
             const qr = await readQr(state.reader, state.source, state.deskewed, crop);
             state.payload = qr.payload;
+            state.documentType = qr.payload.toUpperCase().startsWith('PKGQM:') ? 'surah_map' : 'weekly';
             root.querySelector('[data-quran-sheet-payload]').value = state.payload;
             root.querySelector('[data-quran-manual-crop]').classList.add('hidden');
             box.classList.add('hidden');
+            if (state.documentType === 'surah_map' && state.source.height > state.source.width) state.source = rotateCanvas(state.source, 90);
+            const correction = await deskewDocument(state.source, state.documentType);
+            state.deskewed = correction.canvas;
+            state.corrected = correction.corrected;
             if (!state.corrected) {
                 state.showCornerEditor();
                 setStatus(root, 'QR terbaca. Atur empat sudut kertas sebelum angka dibaca.', 'progress');
@@ -469,7 +532,7 @@ function initDocumentCorners(root, state) {
     root.querySelector('[data-quran-corners-apply]').addEventListener('click', async () => {
         try {
             setStatus(root, 'Meluruskan kertas dari empat sudut...', 'progress');
-            state.deskewed = await perspectiveFromCorners(state.source, points);
+            state.deskewed = await perspectiveFromCorners(state.source, points, state.documentType);
             state.corrected = true;
             panel.classList.add('hidden');
             await finishDocument(root, state);
@@ -488,7 +551,9 @@ async function finishDocument(root, state) {
     setProgress(root, 'Menyiapkan pembacaan angka', 35);
     let suggestions = [];
     try {
-        suggestions = await recognizeRows(root, state.deskewed || state.source);
+        suggestions = state.documentType === 'surah_map'
+            ? await recognizeKhatamMap(root, state.deskewed || state.source)
+            : await recognizeRows(root, state.deskewed || state.source);
     } catch (error) {
         console.warn('OCR suggestion failed:', error);
         setStatus(root, 'QR berhasil dibaca. Pembacaan angka belum optimal; semua kolom tetap dapat diisi pada layar konfirmasi.', 'success');
@@ -498,14 +563,18 @@ async function finishDocument(root, state) {
     updateFileInput(root.querySelector('[data-quran-processed-file]'), processedFile);
     root.querySelector('[data-quran-scan-submit]').disabled = false;
     setProgress(root, 'Siap diperiksa', 100);
-    setStatus(root, suggestions.length
-        ? `${suggestions.length} baris terdeteksi. Unggah untuk memeriksa setiap angka sebelum disimpan.`
-        : 'QR valid terbaca. Unggah dan isi atau koreksi angka pada layar konfirmasi.', 'success');
+    const detectedCount = state.documentType === 'surah_map'
+        ? suggestions.completed_surahs?.length || 0
+        : suggestions.length;
+    setStatus(root, state.documentType === 'surah_map'
+        ? `${detectedCount} tanda surat terbaca. Unggah untuk memeriksa perubahan Peta Khatam.`
+        : (detectedCount ? `${detectedCount} baris terdeteksi. Unggah untuk memeriksa setiap angka sebelum disimpan.` : 'QR valid terbaca. Unggah dan isi atau koreksi angka pada layar konfirmasi.'), 'success');
 }
 
 async function processFile(root, state, file) {
     state.file = file;
     state.payload = '';
+    state.documentType = 'weekly';
     root.querySelector('[data-quran-sheet-payload]').value = '';
     root.querySelector('[data-quran-scan-submit]').disabled = true;
     root.querySelector('[data-quran-manual-crop]').classList.add('hidden');
@@ -518,19 +587,22 @@ async function processFile(root, state, file) {
     previewImage.src = state.source.toDataURL('image/jpeg', 0.86);
     root.querySelector('[data-quran-preview-panel]').classList.remove('hidden');
     setProgress(root, 'Meluruskan kertas', 20);
-    const correction = await deskewDocument(state.source);
+    const correction = await deskewDocument(state.source, 'weekly');
     state.deskewed = correction.canvas;
     state.corrected = correction.corrected;
     setProgress(root, 'Membaca QR', 30);
 
     try {
         const qr = await readQr(state.reader, state.source, state.deskewed);
+        state.documentType = qr.payload.toUpperCase().startsWith('PKGQM:') ? 'surah_map' : 'weekly';
         if (qr.rotation) {
             state.source = rotateCanvas(state.source, qr.rotation);
-            const orientedCorrection = await deskewDocument(state.source);
-            state.deskewed = orientedCorrection.canvas;
-            state.corrected = orientedCorrection.corrected;
         }
+        if (state.documentType === 'surah_map' && state.source.height > state.source.width) state.source = rotateCanvas(state.source, 90);
+        if (state.documentType === 'weekly' && state.source.width > state.source.height) state.source = rotateCanvas(state.source, 90);
+        const orientedCorrection = await deskewDocument(state.source, state.documentType);
+        state.deskewed = orientedCorrection.canvas;
+        state.corrected = orientedCorrection.corrected;
         state.payload = qr.payload;
         root.querySelector('[data-quran-sheet-payload]').value = state.payload;
         if (!state.corrected) {
@@ -555,7 +627,7 @@ async function initRoot(root, index) {
     hiddenReader.id = `quran-hidden-reader-${index}`;
     hiddenReader.className = 'sr-only';
     root.appendChild(hiddenReader);
-    const state = { reader: new Html5Qrcode(hiddenReader.id, { verbose: false }), source: null, deskewed: null, file: null };
+    const state = { reader: new Html5Qrcode(hiddenReader.id, { verbose: false }), source: null, deskewed: null, file: null, documentType: 'weekly' };
     root._quranState = state;
     initCrop(root, state);
     initDocumentCorners(root, state);
