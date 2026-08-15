@@ -14,6 +14,7 @@ use App\Models\Siswa;
 use App\Models\ThemeSetting;
 use App\Models\User;
 use App\Services\QuranKhatamService;
+use App\Services\QuranBarcodeFlowService;
 use App\Services\QuranReadingDocumentService;
 use App\Services\QuranReadingScanService;
 use App\Support\QuranCatalog;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class QuranReadingController extends Controller
 {
@@ -32,6 +34,7 @@ class QuranReadingController extends Controller
         private readonly QuranReadingDocumentService $documents,
         private readonly QuranReadingScanService $scans,
         private readonly QuranKhatamService $khatam,
+        private readonly QuranBarcodeFlowService $barcodeFlows,
     ) {}
 
     public function studentIndex(Request $request)
@@ -456,6 +459,167 @@ class QuranReadingController extends Controller
         );
     }
 
+    public function publicBarcodeIdentify(Request $request)
+    {
+        return $this->identifyBarcode($request, 'public');
+    }
+
+    public function studentBarcodeIdentify(Request $request)
+    {
+        return $this->identifyBarcode($request, 'siswa');
+    }
+
+    public function operationalBarcodeIdentify(Request $request)
+    {
+        return $this->identifyBarcode($request, 'operational');
+    }
+
+    public function publicBarcodeStore(Request $request)
+    {
+        return $this->storeBarcode($request, 'public');
+    }
+
+    public function studentBarcodeStore(Request $request)
+    {
+        return $this->storeBarcode($request, 'siswa');
+    }
+
+    public function operationalBarcodeStore(Request $request)
+    {
+        return $this->storeBarcode($request, 'operational');
+    }
+
+    private function identifyBarcode(Request $request, string $context)
+    {
+        $this->ensureScanEnabled();
+        $data = $request->validate([
+            'sheet_payload' => ['required', 'string', 'max:500'],
+        ], [
+            'sheet_payload.required' => 'Barcode belum terbaca. Scan barcode terlebih dahulu.',
+        ]);
+        $sheet = $this->scans->resolveSheet($data['sheet_payload']);
+        $sheet->load('siswa');
+        $this->authorizeBarcodeStudent($request, $sheet->siswa, $context);
+        $flow = $this->barcodeFlows->create($request, $sheet, $context);
+        $siswa = $sheet->siswa;
+
+        return response()->json([
+            'flow_id' => $flow['id'],
+            'expires_at' => $flow['expires_at'],
+            'student' => [
+                'name' => $siswa->nama,
+                'masked_nis' => $this->maskedNis($siswa->nis),
+                'school_grade' => $siswa->school_grade_label ?: 'Belum dikonfirmasi',
+                'group' => $siswa->kelompok_label ?: ($siswa->kelompok ?: 'Belum diisi'),
+            ],
+        ])->header('Cache-Control', 'private, no-store, max-age=0');
+    }
+
+    private function storeBarcode(Request $request, string $context)
+    {
+        $this->ensureScanEnabled();
+        $data = $request->validate([
+            'flow_id' => ['required', 'string', 'size:40', 'alpha_num'],
+            'surah_start' => ['required', 'integer', 'between:1,114'],
+            'ayah_start' => ['required', 'integer', 'between:1,286'],
+            'cross_surah' => ['nullable', 'boolean'],
+            'surah_end' => ['nullable', 'required_if:cross_surah,1', 'integer', 'between:1,114'],
+            'ayah_end' => ['required', 'integer', 'between:1,286'],
+            'page_start' => ['nullable', 'required_with:page_end', 'integer', 'between:1,1000'],
+            'page_end' => ['nullable', 'required_with:page_start', 'integer', 'between:1,1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $flow = $this->barcodeFlows->get($request, $data['flow_id'], $context);
+        $existing = ! empty($flow['completed_entry_id'])
+            ? QuranReadingEntry::query()->find($flow['completed_entry_id'])
+            : null;
+        if ($existing) {
+            return $this->barcodeStoredResponse($existing, $context);
+        }
+
+        $sheet = QuranReadingSheet::query()->with('siswa')->findOrFail($flow['sheet_id']);
+        abort_unless($sheet->status === 'active' && (int) $sheet->siswa_id === (int) $flow['siswa_id'], 404);
+        $this->authorizeBarcodeStudent($request, $sheet->siswa, $context);
+        $data['surah_end'] = $request->boolean('cross_surah') ? (int) $data['surah_end'] : (int) $data['surah_start'];
+        $data['page_start'] = isset($data['page_start']) ? (int) $data['page_start'] : null;
+        $data['page_end'] = isset($data['page_end']) ? (int) $data['page_end'] : null;
+        $data['reading_date'] = now()->toDateString();
+        $this->validateReadingRange($data);
+
+        $entry = DB::transaction(function () use ($request, $sheet, $context, $data) {
+            $isOperational = $context === 'operational';
+            $actorId = $context === 'siswa' ? $request->user('siswa')->id : ($isOperational ? $request->user()->id : null);
+
+            return $sheet->siswa->quranReadingEntries()->create([
+                'reading_date' => $data['reading_date'],
+                'page_start' => $data['page_start'],
+                'page_end' => $data['page_end'],
+                'surah_start' => $data['surah_start'],
+                'ayah_start' => $data['ayah_start'],
+                'surah_end' => $data['surah_end'],
+                'ayah_end' => $data['ayah_end'],
+                'notes' => $data['notes'] ?? null,
+                'source' => 'barcode_manual',
+                'submitted_by_type' => $context === 'siswa' ? 'siswa' : ($isOperational ? 'user' : 'public'),
+                'submitted_by_id' => $actorId,
+                'status' => $isOperational ? QuranReadingEntry::STATUS_VERIFIED : QuranReadingEntry::STATUS_PENDING,
+                'verified_by' => $isOperational ? $actorId : null,
+                'verified_at' => $isOperational ? now() : null,
+                'sheet_id' => $sheet->id,
+            ]);
+        });
+        $this->barcodeFlows->markCompleted($request, $data['flow_id'], $entry);
+
+        return $this->barcodeStoredResponse($entry, $context);
+    }
+
+    private function barcodeStoredResponse(QuranReadingEntry $entry, string $context)
+    {
+        $redirect = match ($context) {
+            'siswa' => route('siswa.quran.index', ['tab' => 'rekap']).'#rekap',
+            'operational' => route('quran.index', ['tab' => 'rekap', 'siswa_id' => $entry->siswa_id]).'#rekap',
+            default => route('public.scanner', ['mode' => 'quran']).'#quran',
+        };
+
+        return response()->json([
+            'message' => $context === 'operational'
+                ? 'Catatan bacaan tersimpan dan langsung terverifikasi.'
+                : 'Catatan bacaan berhasil dikirim untuk verifikasi.',
+            'redirect' => $redirect,
+            'entry_id' => $entry->id,
+        ], 201)->header('Cache-Control', 'private, no-store, max-age=0');
+    }
+
+    private function authorizeBarcodeStudent(Request $request, Siswa $siswa, string $context): void
+    {
+        if ($context === 'siswa') {
+            if ((int) $request->user('siswa')?->id !== (int) $siswa->id) {
+                throw new AccessDeniedHttpException('Barcode bukan milik akun ini.');
+            }
+        } elseif ($context === 'operational') {
+            $user = $request->user();
+            if (! $user || ($user->isTeacher() && ! in_array($siswa->id, $user->getAssignedSiswaIds(), true))) {
+                throw new AccessDeniedHttpException('Generus berada di luar binaan akun ini.');
+            }
+        }
+
+        if ($context !== 'operational') {
+            $this->ensureAlumniSubmissionEnabled($siswa);
+        }
+    }
+
+    private function maskedNis(?string $nis): string
+    {
+        $value = trim((string) $nis);
+        if ($value === '') {
+            return 'Belum tersedia';
+        }
+
+        $visible = mb_substr($value, -3);
+
+        return str_repeat('•', max(2, mb_strlen($value) - 3)).$visible;
+    }
+
     public function publicScanUpload(StoreQuranReadingScanRequest $request)
     {
         $this->ensureScanEnabled();
@@ -786,7 +950,7 @@ class QuranReadingController extends Controller
     private function validateReadingRange(array $data): void
     {
         $errors = [];
-        if ((int) $data['page_end'] < (int) $data['page_start']) {
+        if ($data['page_start'] !== null && $data['page_end'] !== null && (int) $data['page_end'] < (int) $data['page_start']) {
             $errors['page_end'] = 'Halaman akhir tidak boleh lebih kecil dari halaman awal.';
         }
         if ((int) $data['surah_end'] < (int) $data['surah_start']) {

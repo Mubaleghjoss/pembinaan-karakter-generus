@@ -50,6 +50,12 @@ Route::get('/scan-presensi', [App\Http\Controllers\PublicController::class, 'sca
 Route::post('/scan-presensi/bacaan-quran', [App\Http\Controllers\QuranReadingController::class, 'publicScanUpload'])
     ->middleware('throttle:quran-public-scan')
     ->name('public.quran.scan.upload');
+Route::post('/scan-presensi/bacaan-quran/barcode/identify', [App\Http\Controllers\QuranReadingController::class, 'publicBarcodeIdentify'])
+    ->middleware('throttle:quran-barcode')
+    ->name('public.quran.barcode.identify');
+Route::post('/scan-presensi/bacaan-quran/barcode/store', [App\Http\Controllers\QuranReadingController::class, 'publicBarcodeStore'])
+    ->middleware('throttle:quran-barcode')
+    ->name('public.quran.barcode.store');
 Route::get('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'publicScanConfirmForm'])
     ->name('public.quran.scan.confirm');
 Route::post('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'publicScanConfirm'])
@@ -261,6 +267,8 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
             Route::get('/paket-bolak-balik', [App\Http\Controllers\QuranReadingController::class, 'studentDuplex'])->name('duplex');
             Route::get('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanForm'])->name('scan');
             Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->name('scan.upload');
+            Route::post('/barcode/identify', [App\Http\Controllers\QuranReadingController::class, 'studentBarcodeIdentify'])->middleware('throttle:quran-barcode')->name('barcode.identify');
+            Route::post('/barcode/store', [App\Http\Controllers\QuranReadingController::class, 'studentBarcodeStore'])->middleware('throttle:quran-barcode')->name('barcode.store');
             Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'studentScanConfirmForm'])->name('scan.confirm');
             Route::post('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'studentScanConfirm'])->name('scan.confirm.store');
             Route::get('/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'studentScanImage'])->name('scan.image');
@@ -828,6 +836,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{siswa}/peta-khatam', [App\Http\Controllers\QuranReadingController::class, 'operationalKhatamMap'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('khatam-map');
         Route::get('/{siswa}/paket-bolak-balik', [App\Http\Controllers\QuranReadingController::class, 'operationalDuplex'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('duplex');
         Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.upload');
+        Route::post('/barcode/identify', [App\Http\Controllers\QuranReadingController::class, 'operationalBarcodeIdentify'])->middleware(['pamong.permission:tracer_bacaan_quran,create', 'throttle:quran-barcode'])->name('barcode.identify');
+        Route::post('/barcode/store', [App\Http\Controllers\QuranReadingController::class, 'operationalBarcodeStore'])->middleware(['pamong.permission:tracer_bacaan_quran,create', 'throttle:quran-barcode'])->name('barcode.store');
         Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm');
         Route::post('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm.store');
         Route::get('/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'operationalScanImage'])->name('scan.image');
@@ -1000,7 +1010,7 @@ Route::middleware('auth')->group(function () {
     // Service Worker
     Route::get('/sw.js', function () {
         $content = "
-const CACHE_NAME = 'pkg-presensi-v6';
+const CACHE_NAME = 'pkg-presensi-v17';
 const urlsToCache = [
     '/',
     '/dashboard',

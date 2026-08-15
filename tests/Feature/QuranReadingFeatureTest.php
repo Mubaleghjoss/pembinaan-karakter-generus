@@ -69,12 +69,112 @@ class QuranReadingFeatureTest extends TestCase
 
         $this->get(route('public.scanner', ['mode' => 'quran']))
             ->assertOk()
-            ->assertSee('Lembar sudah dikenali. Pilih foto atau PDF untuk diperiksa.')
-            ->assertSee('data-auto-submit="true"', false)
+            ->assertSee('Lembar sudah dikenali. Menyiapkan identitas Generus...')
+            ->assertSee('data-auto-submit="false"', false)
             ->assertSee('value="'.$payload.'"', false);
 
         $invalidCode = $scanner->publicCode($sheet, bin2hex(random_bytes(16)));
         $this->get(route('public.quran.scan.open', ['code' => $invalidCode]))->assertNotFound();
+    }
+
+    public function test_public_quick_barcode_creates_pending_entry_without_scan_file_or_pages(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        $siswa = Siswa::factory()->create(['nis' => 'PKG260712345']);
+        [$sheet, $payload] = $this->barcodeSheet($siswa);
+
+        $identify = $this->postJson(route('public.quran.barcode.identify'), ['sheet_payload' => $payload])
+            ->assertOk()
+            ->assertJsonPath('student.name', $siswa->nama)
+            ->assertJsonMissingPath('sheet_payload');
+        $flow = $identify->json('flow_id');
+
+        $this->postJson(route('public.quran.barcode.store'), [
+            'flow_id' => $flow,
+            'surah_start' => 2,
+            'ayah_start' => 5,
+            'ayah_end' => 12,
+            'cross_surah' => false,
+            'notes' => 'Dibaca setelah Maghrib.',
+        ])->assertCreated()->assertJsonPath('redirect', route('public.scanner', ['mode' => 'quran']).'#quran');
+
+        $entry = QuranReadingEntry::firstOrFail();
+        $this->assertSame($sheet->id, $entry->sheet_id);
+        $this->assertSame('barcode_manual', $entry->source);
+        $this->assertSame(QuranReadingEntry::STATUS_PENDING, $entry->status);
+        $this->assertNull($entry->page_start);
+        $this->assertNull($entry->page_end);
+        $this->assertSame(0, $entry->page_count);
+        $this->assertSame('Halaman tidak dicatat', $entry->page_range_label);
+        $this->assertSame(0, QuranReadingScan::count());
+
+        $this->postJson(route('public.quran.barcode.store'), [
+            'flow_id' => $flow,
+            'surah_start' => 2,
+            'ayah_start' => 5,
+            'ayah_end' => 12,
+            'cross_surah' => false,
+        ])->assertCreated();
+        $this->assertSame(1, QuranReadingEntry::count(), 'Pengulangan flow tidak boleh membuat catatan ganda.');
+    }
+
+    public function test_student_quick_barcode_rejects_another_student_and_operational_scan_is_verified(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        $owner = Siswa::factory()->create();
+        $other = Siswa::factory()->create();
+        [, $payload] = $this->barcodeSheet($owner);
+
+        $this->actingAs($other, 'siswa')
+            ->postJson(route('siswa.quran.barcode.identify'), ['sheet_payload' => $payload])
+            ->assertForbidden();
+
+        $admin = $this->admin();
+        $identify = $this->actingAs($admin)
+            ->postJson(route('quran.barcode.identify'), ['sheet_payload' => $payload])
+            ->assertOk();
+
+        $this->actingAs($admin)->postJson(route('quran.barcode.store'), [
+            'flow_id' => $identify->json('flow_id'),
+            'surah_start' => 2,
+            'ayah_start' => 280,
+            'cross_surah' => true,
+            'surah_end' => 3,
+            'ayah_end' => 10,
+            'page_start' => 49,
+            'page_end' => 51,
+        ])->assertCreated();
+
+        $entry = QuranReadingEntry::firstOrFail();
+        $this->assertSame(QuranReadingEntry::STATUS_VERIFIED, $entry->status);
+        $this->assertSame($admin->id, $entry->verified_by);
+        $this->assertSame(3, $entry->surah_end);
+        $this->assertSame(49, $entry->page_start);
+    }
+
+    public function test_quick_barcode_validates_ayah_limits_and_expired_flow(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        $siswa = Siswa::factory()->create();
+        [, $payload] = $this->barcodeSheet($siswa);
+        $flow = $this->postJson(route('public.quran.barcode.identify'), ['sheet_payload' => $payload])->json('flow_id');
+
+        $this->postJson(route('public.quran.barcode.store'), [
+            'flow_id' => $flow,
+            'surah_start' => 1,
+            'ayah_start' => 1,
+            'ayah_end' => 8,
+        ])->assertUnprocessable()->assertJsonValidationErrors('ayah_end');
+
+        $expired = Str::random(40);
+        $this->withSession(['quran_barcode_flows' => [
+            $expired => ['sheet_id' => 1, 'siswa_id' => $siswa->id, 'context' => 'public', 'created_at' => now()->subMinutes(31)->timestamp],
+        ]])->postJson(route('public.quran.barcode.store'), [
+            'flow_id' => $expired,
+            'surah_start' => 1,
+            'ayah_start' => 1,
+            'ayah_end' => 7,
+        ])->assertUnprocessable()->assertJsonValidationErrors('flow_id');
     }
 
     public function test_student_submission_is_pending_and_admin_can_verify_it(): void
@@ -844,6 +944,22 @@ class QuranReadingFeatureTest extends TestCase
             'mushaf_label' => 'Mushaf Madinah',
             'notes' => 'Latihan tartil',
         ], $overrides);
+    }
+
+    private function barcodeSheet(Siswa $siswa): array
+    {
+        $token = bin2hex(random_bytes(16));
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id,
+            'public_id' => (string) Str::uuid(),
+            'token_hash' => hash('sha256', $token),
+            'status' => 'active',
+            'sheet_type' => 'monthly',
+            'row_count' => 31,
+            'template_version' => 4,
+        ]);
+
+        return [$sheet, app(QuranReadingScanService::class)->payload($sheet, $token)];
     }
 
     private function pdfPageCount(string $contents): int

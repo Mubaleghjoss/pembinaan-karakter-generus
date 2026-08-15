@@ -104,7 +104,7 @@ class PublicController extends Controller
         $quranScanPrefill = $request->session()->pull('quran_scan_prefill');
         if (! is_array($quranScanPrefill)
             || ! isset($quranScanPrefill['payload'], $quranScanPrefill['created_at'])
-            || (int) $quranScanPrefill['created_at'] < now()->subMinutes(10)->timestamp) {
+              || (int) $quranScanPrefill['created_at'] < now()->subMinutes(30)->timestamp) {
             $quranScanPrefill = null;
         }
         $now = Carbon::now();

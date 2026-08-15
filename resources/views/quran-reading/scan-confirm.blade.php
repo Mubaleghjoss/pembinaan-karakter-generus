@@ -18,7 +18,7 @@
     $maxRows = max(1, min(31, (int) ($scan->sheet?->row_count ?: 12)));
 @endphp
 <div
-    class="mx-auto max-w-6xl space-y-5 px-4 py-4 sm:px-6 sm:py-6"
+    class="mx-auto min-w-0 max-w-6xl space-y-5 overflow-x-clip px-3 py-4 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6"
     data-quran-confirm-root
     data-image-original="{{ $imageRoute }}?original=1"
     data-image-processed="{{ $scan->processed_path ? $imageRoute : '' }}"
@@ -34,15 +34,15 @@
 
     <div class="pkg-page-header">
         <div>
-            <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ $scan->siswa->nama }} &middot; {{ $scan->siswa->kelas?->nama ?? 'Tanpa kelas' }}</p>
+            <p class="break-words text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ $scan->siswa->nama }} &middot; {{ $scan->siswa->school_grade_label ?? 'Kelas sekolah belum dikonfirmasi' }}</p>
             <h1 class="pkg-page-heading">Periksa hasil scan</h1>
             <p class="pkg-page-subheading">Hanya baris yang terdeteksi ditampilkan. Cocokkan angka dengan foto sebelum menyimpan.</p>
         </div>
     </div>
     @if($errors->any())<div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200" role="alert">{{ $errors->first() }}</div>@endif
 
-    <div class="grid gap-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.2fr)]">
-        <aside class="pkg-panel-lg lg:sticky lg:top-24 lg:self-start">
+    <div class="grid min-w-0 max-w-full gap-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.2fr)]">
+        <aside class="pkg-panel-lg min-w-0 max-w-full overflow-hidden lg:sticky lg:top-24 lg:self-start">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="font-bold">Foto lembar</h2>
                 <div class="flex gap-2" role="group" aria-label="Pilih tampilan foto">
@@ -55,7 +55,7 @@
             <div class="mt-3 hidden" data-quran-reread-progress role="status" aria-live="polite"></div>
         </aside>
 
-        <form method="POST" action="{{ $formRoute }}" class="space-y-4" data-quran-confirm-form>@csrf
+        <form method="POST" action="{{ $formRoute }}" class="min-w-0 max-w-full space-y-4" data-quran-confirm-form>@csrf
             <input type="hidden" name="ocr_suggestion" value="{{ json_encode($suggestions) }}" data-quran-confirm-ocr>
             <section class="pkg-card-soft p-4">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -63,7 +63,7 @@
                     <button type="button" class="btn-secondary min-h-11 justify-center" data-quran-add-row>Tambah Baris</button>
                 </div>
             </section>
-            <div class="space-y-3" data-quran-confirm-rows></div>
+            <div class="min-w-0 max-w-full space-y-3" data-quran-confirm-rows></div>
             <div class="pkg-empty-state pkg-panel hidden" data-quran-no-rows><p class="pkg-empty-title">Tidak ada angka yang terbaca</p><p class="pkg-empty-copy">Satu baris kosong sudah disiapkan. Isi sesuai foto atau tekan Baca Ulang Angka.</p></div>
             <button class="btn-primary min-h-12 w-full justify-center">{{ ($isStudent || $isPublic) ? 'Kirim untuk Verifikasi Pamong' : 'Simpan sebagai Terverifikasi' }}</button>
         </form>

@@ -3216,6 +3216,91 @@ html.dark [class~="dark:border-purple-700"] {
 
 .pkg-quran-scanner {
     min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pkg-quran-mode-switch {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .375rem;
+    padding: .375rem;
+    border: 1px solid rgb(148 163 184 / .3);
+    border-radius: .875rem;
+    background: rgb(148 163 184 / .08);
+}
+
+.pkg-quran-mode-button {
+    min-width: 0;
+    min-height: 44px;
+    border-radius: .65rem;
+    padding: .55rem .7rem;
+    color: rgb(71 85 105);
+    font-size: .8rem;
+    font-weight: 700;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.pkg-quran-mode-button[aria-selected="true"] {
+    background: rgb(5 150 105);
+    color: white;
+    box-shadow: 0 6px 16px rgb(5 150 105 / .18);
+}
+
+.dark .pkg-quran-mode-button { color: rgb(203 213 225); }
+.dark .pkg-quran-mode-button[aria-selected="true"] { color: white; }
+
+.pkg-quran-identity {
+    min-width: 0;
+    max-width: 100%;
+    border: 1px solid rgb(16 185 129 / .35);
+    border-radius: .875rem;
+    background: rgb(16 185 129 / .08);
+    padding: 1rem;
+}
+
+[data-quran-quick-reader],
+[data-quran-quick-reader] > div,
+[data-quran-quick-reader] video,
+[data-quran-quick-reader] canvas {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+.pkg-quran-quick-fields,
+.pkg-quran-confirm-fields {
+    display: grid;
+    min-width: 0;
+    max-width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .75rem;
+}
+
+.pkg-quran-confirm-fields > *,
+.pkg-quran-quick-fields > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+@media (min-width: 360px) {
+    .pkg-quran-quick-fields,
+    .pkg-quran-confirm-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pkg-quran-confirm-note { grid-column: 1 / -1; }
+}
+
+@media (min-width: 768px) {
+    .pkg-quran-quick-fields,
+    .pkg-quran-confirm-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 279px) {
+    .pkg-quran-mode-switch { grid-template-columns: minmax(0, 1fr); }
+    .pkg-quran-scanner { font-size: .875rem; }
 }
 
 .pkg-quran-camera__viewport,
@@ -3309,6 +3394,7 @@ html.dark [class~="dark:border-purple-700"] {
 
 @media (prefers-reduced-motion: reduce) {
     .pkg-public-scan-mode,
+    .pkg-quran-mode-button,
     [data-quran-progress-bar] {
         transition: none;
     }

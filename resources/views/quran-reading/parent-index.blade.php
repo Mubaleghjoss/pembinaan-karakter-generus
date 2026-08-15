@@ -14,7 +14,7 @@
             @forelse($entries as $entry)
                 <article class="p-4 sm:p-5">
                     <div class="flex flex-col gap-2 sm:flex-row sm:justify-between">
-                        <div><p class="font-bold">{{ $entry->reading_date->isoFormat('D MMMM YYYY') }}</p><p class="mt-1 text-sm">Hal. {{ $entry->page_start }}–{{ $entry->page_end }} · {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }} sampai {{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>@if($entry->notes)<p class="mt-2 text-sm text-gray-500">{{ $entry->notes }}</p>@endif</div>
+                        <div><p class="font-bold">{{ $entry->reading_date->isoFormat('D MMMM YYYY') }}</p><p class="mt-1 text-sm">{{ $entry->page_range_label }} · {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }} sampai {{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>@if($entry->notes)<p class="mt-2 text-sm text-gray-500">{{ $entry->notes }}</p>@endif</div>
                         @include('quran-reading.partials.status', ['status' => $entry->status])
                     </div>
                 </article>

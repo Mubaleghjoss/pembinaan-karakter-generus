@@ -130,5 +130,12 @@ class RateLimitServiceProvider extends ServiceProvider
         RateLimiter::for('quran-public-open', function (Request $request) {
             return Limit::perMinute(30)->by('quran-public-open:'.$request->ip());
         });
+
+        RateLimiter::for('quran-barcode', function (Request $request) {
+            return [
+                Limit::perMinute(20)->by('quran-barcode-minute:'.$request->ip()),
+                Limit::perHour(120)->by('quran-barcode-hour:'.$request->ip()),
+            ];
+        });
     }
 }

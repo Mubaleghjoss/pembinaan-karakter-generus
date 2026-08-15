@@ -49,7 +49,7 @@
                 <div class="pkg-card p-4">
                     <p class="text-xs text-gray-500 dark:text-gray-400">Bacaan terakhir</p>
                     <p class="mt-1 font-bold">{{ $lastVerified?->reading_date?->isoFormat('D MMM YYYY') ?? 'Belum ada' }}</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $lastVerified ? 'Hal. '.$lastVerified->page_end : 'Mulai catatan pertama' }}</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $lastVerified ? $lastVerified->page_range_label : 'Mulai catatan pertama' }}</p>
                 </div>
                 <div class="pkg-card p-4"><p class="text-xs text-gray-500 dark:text-gray-400">Halaman bulan ini</p><p class="mt-1 text-2xl font-bold tabular-nums">{{ number_format($monthPages) }}</p></div>
                 <div class="pkg-card p-4"><p class="text-xs text-gray-500 dark:text-gray-400">Hari aktif</p><p class="mt-1 text-2xl font-bold tabular-nums">{{ number_format($activeDays) }}</p></div>
@@ -79,7 +79,7 @@
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
                                     <p class="font-bold">{{ $entry->reading_date->isoFormat('dddd, D MMMM YYYY') }}</p>
-                                    <p class="mt-1 text-sm">Halaman {{ $entry->page_start }}&ndash;{{ $entry->page_end }} &middot; {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }} sampai {{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>
+                                    <p class="mt-1 text-sm">{{ $entry->page_range_label }} &middot; {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }} sampai {{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>
                                     @if($entry->notes)<p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $entry->notes }}</p>@endif
                                     @if($entry->verification_notes)<p class="mt-2 rounded-lg bg-gray-50 p-2 text-xs dark:bg-gray-800">Catatan pemeriksa: {{ $entry->verification_notes }}</p>@endif
                                 </div>

@@ -1,3 +1,5 @@
+import { fetchWithFreshCsrf, refreshCsrfToken } from './csrf-session';
+
 function base64UrlToBuffer(base64url) {
     const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
     const padding = '='.repeat((4 - (base64.length % 4)) % 4);
@@ -22,9 +24,7 @@ function bufferToBase64Url(buffer) {
     return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-const csrfRefreshUrl = '/csrf-token';
 const biometricChallengeExpiredMessage = 'Sesi biometrik sudah kedaluwarsa';
-let csrfRefreshPromise = null;
 let authSessionRecoveryMounted = false;
 let authSessionRefreshTimer = null;
 const activeBiometricLoginButtons = new WeakSet();
@@ -43,21 +43,6 @@ async function parseJsonResponse(response) {
     return payload;
 }
 
-function updateCsrfToken(token) {
-    if (!token) {
-        return;
-    }
-
-    document.querySelector('meta[name="csrf-token"]')?.setAttribute('content', token);
-    document.querySelectorAll('input[name="_token"]').forEach((input) => {
-        input.value = token;
-    });
-}
-
-function currentCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
-
 function isCredentialManagerUnknownError(error) {
     const message = String(error?.message || '').toLowerCase();
 
@@ -74,59 +59,6 @@ async function recoverCredentialManager() {
     }
 
     await new Promise((resolve) => window.setTimeout(resolve, 500));
-}
-
-async function refreshCsrfToken() {
-    if (csrfRefreshPromise) {
-        return csrfRefreshPromise;
-    }
-
-    csrfRefreshPromise = fetch(csrfRefreshUrl, {
-        method: 'GET',
-        headers: {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-        cache: 'no-store',
-    })
-        .then(parseJsonResponse)
-        .then((payload) => {
-            updateCsrfToken(payload.token);
-            return payload.token || '';
-        })
-        .finally(() => {
-            csrfRefreshPromise = null;
-        });
-
-    return csrfRefreshPromise;
-}
-
-async function fetchWithFreshCsrf(url, options = {}, { refreshBefore = false } = {}) {
-    if (refreshBefore) {
-        await refreshCsrfToken();
-    }
-
-    const request = {
-        ...options,
-        headers: new Headers(options.headers || {}),
-        credentials: options.credentials || 'same-origin',
-        cache: 'no-store',
-    };
-
-    request.headers.set('X-CSRF-TOKEN', currentCsrfToken());
-
-    let response = await fetch(url, request);
-
-    if (response.status !== 419) {
-        return response;
-    }
-
-    await refreshCsrfToken();
-    request.headers.set('X-CSRF-TOKEN', currentCsrfToken());
-    response = await fetch(url, request);
-
-    return response;
 }
 
 function normalizePublicKeyOptions(options) {

@@ -1,3 +1,5 @@
+import { fetchWithFreshCsrf, refreshCsrfToken } from './csrf-session';
+
 const roots = new Set();
 const QR_PATTERN = /^(?:PKGQURAN:[0-9a-f-]{36}:[A-Za-z0-9]+|PKGQ:[0-9A-F]{32}:[0-9A-F]{32}|PKGQMB:[0-9A-F]{32}:[0-9A-F]{32}|PKGQM:[0-9A-F]{32}:[0-9A-F]{32})$/i;
 const A4_WIDTH = 1654;
@@ -101,6 +103,174 @@ function setProgress(root, label, value) {
     root.querySelector('[data-quran-progress-label]').textContent = label;
     root.querySelector('[data-quran-progress-value]').textContent = `${percentage}%`;
     root.querySelector('[data-quran-progress-bar]').style.width = `${percentage}%`;
+}
+
+function setQuickStatus(root, message, tone = 'neutral') {
+    const status = root.querySelector('[data-quran-quick-status]');
+    if (!status) return;
+    const tones = {
+        neutral: 'border-slate-200 text-slate-700 dark:border-slate-700 dark:text-slate-200',
+        progress: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200',
+        success: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200',
+        error: 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200',
+    };
+    status.className = `mt-4 rounded-xl border p-4 text-sm ${tones[tone] || tones.neutral}`;
+    status.textContent = message;
+}
+
+async function responsePayload(response) {
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok) return payload;
+    const validation = payload.errors ? Object.values(payload.errors).flat().join(' ') : '';
+    const error = new Error(validation || payload.message || 'Permintaan tidak dapat diproses.');
+    error.status = response.status;
+    throw error;
+}
+
+function barcodeStorageKey(root) {
+    return `pkg-quran-barcode:${root.dataset.barcodeIdentifyUrl}`;
+}
+
+function cachedBarcode(root) {
+    try {
+        const cached = JSON.parse(sessionStorage.getItem(barcodeStorageKey(root)) || 'null');
+        if (!cached?.payload || Number(cached.savedAt || 0) < Date.now() - 30 * 60 * 1000) return null;
+        return cached.payload;
+    } catch {
+        return null;
+    }
+}
+
+async function initQuickScanner(root, state, Html5Qrcode, index) {
+    const readerElement = root.querySelector('[data-quran-quick-reader]');
+    readerElement.id ||= `quran-quick-reader-${index}`;
+    const quickReader = new Html5Qrcode(readerElement.id, { verbose: false });
+    const cameraPanel = root.querySelector('[data-quran-quick-camera-panel]');
+    const form = root.querySelector('[data-quran-quick-form]');
+    const errorBox = root.querySelector('[data-quran-quick-errors]');
+    let cameraRunning = false;
+    let identifying = false;
+
+    const stopQuickCamera = async () => {
+        if (!cameraRunning) return;
+        cameraRunning = false;
+        await quickReader.stop().catch(() => {});
+        cameraPanel.classList.add('hidden');
+    };
+    state.stopQuickCamera = stopQuickCamera;
+
+    const identify = async (rawPayload) => {
+        const payload = normalizeQrPayload(rawPayload);
+        if (!payload) throw new Error('Barcode bukan lembar Tracer Bacaan Al-Qur\'an PKG.');
+        if (identifying) return;
+        identifying = true;
+        setQuickStatus(root, 'Barcode terbaca. Memeriksa identitas Generus...', 'progress');
+        try {
+            const response = await fetchWithFreshCsrf(root.dataset.barcodeIdentifyUrl, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ sheet_payload: payload }),
+            }, { refreshBefore: true });
+            const result = await responsePayload(response);
+            sessionStorage.setItem(barcodeStorageKey(root), JSON.stringify({ payload, savedAt: Date.now() }));
+            form.querySelector('[data-quran-flow-id]').value = result.flow_id;
+            form.querySelector('[data-quran-student-name]').textContent = result.student.name;
+            form.querySelector('[data-quran-student-nis]').textContent = result.student.masked_nis;
+            form.querySelector('[data-quran-student-grade]').textContent = result.student.school_grade;
+            form.querySelector('[data-quran-student-group]').textContent = result.student.group;
+            form.classList.remove('hidden');
+            errorBox.classList.add('hidden');
+            setQuickStatus(root, 'Identitas sesuai. Isi surat dan ayat, lalu simpan.', 'success');
+            return result;
+        } finally {
+            identifying = false;
+        }
+    };
+
+    const identifySafely = async (payload) => {
+        try { await identify(payload); } catch (error) { setQuickStatus(root, error.message || 'Barcode tidak dapat dikenali.', 'error'); }
+    };
+
+    root.querySelector('[data-quran-quick-camera-open]').addEventListener('click', async () => {
+        await stopQuickCamera();
+        cameraPanel.classList.remove('hidden');
+        setQuickStatus(root, 'Kamera aktif. Arahkan ke barcode pada lembar.', 'progress');
+        try {
+            cameraRunning = true;
+            await quickReader.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: (width, height) => ({ width: Math.min(width, height) * .72, height: Math.min(width, height) * .72 }) },
+                async (decodedText) => {
+                    await stopQuickCamera();
+                    await identifySafely(decodedText);
+                },
+                () => {},
+            );
+        } catch {
+            cameraRunning = false;
+            cameraPanel.classList.add('hidden');
+            setQuickStatus(root, 'Kamera tidak dapat dibuka. Izinkan kamera atau pilih gambar barcode.', 'error');
+        }
+    });
+    root.querySelector('[data-quran-quick-camera-close]').addEventListener('click', stopQuickCamera);
+    root.querySelector('[data-quran-quick-file]').addEventListener('change', async (event) => {
+        const file = event.currentTarget.files?.[0];
+        if (!file) return;
+        await stopQuickCamera();
+        setQuickStatus(root, 'Membaca barcode dari gambar...', 'progress');
+        try {
+            const decoded = await quickReader.scanFile(file, true);
+            await identify(decoded);
+        } catch (error) {
+            setQuickStatus(root, error.message?.includes('Tracer') ? error.message : 'Barcode belum terbaca dari gambar. Potong gambar agar barcode terlihat lebih besar.', 'error');
+        } finally {
+            event.currentTarget.value = '';
+        }
+    });
+
+    const cross = form.querySelector('[data-quran-cross-surah]');
+    const endWrap = form.querySelector('[data-quran-end-surah-wrap]');
+    cross.addEventListener('change', () => {
+        endWrap.classList.toggle('hidden', !cross.checked);
+        endWrap.querySelector('select').required = cross.checked;
+    });
+
+    const submit = async (allowRecovery = true) => {
+        const button = form.querySelector('[data-quran-quick-submit]');
+        button.disabled = true;
+        button.textContent = 'Menyimpan...';
+        errorBox.classList.add('hidden');
+        try {
+            const data = new FormData(form);
+            data.set('cross_surah', cross.checked ? '1' : '0');
+            const response = await fetchWithFreshCsrf(root.dataset.barcodeStoreUrl, {
+                method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: data,
+            }, { refreshBefore: true });
+            const result = await responsePayload(response);
+            sessionStorage.removeItem(barcodeStorageKey(root));
+            setQuickStatus(root, result.message, 'success');
+            window.location.assign(result.redirect);
+        } catch (error) {
+            if (allowRecovery && error.status === 422 && /sesi barcode/i.test(error.message) && cachedBarcode(root)) {
+                await identify(cachedBarcode(root));
+                return submit(false);
+            }
+            errorBox.textContent = error.message || 'Catatan belum dapat disimpan.';
+            errorBox.classList.remove('hidden');
+            errorBox.scrollIntoView({ block: 'nearest' });
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Simpan Catatan Bacaan';
+        }
+    };
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        submit();
+    });
+
+    const initial = normalizeQrPayload(root.dataset.prefilledPayload || '') || cachedBarcode(root);
+    if (initial) identifySafely(initial);
 }
 
 async function imageFromFile(file) {
@@ -668,11 +838,6 @@ async function finishDocument(root, state) {
         : (detectedCount ? `${detectedCount} baris terdeteksi. Unggah untuk memeriksa setiap angka sebelum disimpan.` : 'QR valid terbaca. Unggah dan isi atau koreksi angka pada layar konfirmasi.');
     setStatus(root, [state.fileNotice, resultMessage].filter(Boolean).join(' '), 'success');
 
-    if (state.autoSubmit && !state.autoSubmitted) {
-        state.autoSubmitted = true;
-        setStatus(root, 'Hasil siap. Membuka halaman pemeriksaan...', 'progress');
-        root.querySelector('[data-quran-scan-form]').requestSubmit();
-    }
 }
 
 async function processFile(root, state, file, fileNotice = '') {
@@ -681,7 +846,6 @@ async function processFile(root, state, file, fileNotice = '') {
     }
     state.file = file;
     state.fileNotice = fileNotice;
-    state.autoSubmitted = false;
     state.payload = state.prefilledPayload || '';
     state.documentType = state.payload ? documentTypeFromPayload(state.payload) : 'weekly';
     root.querySelector('[data-quran-sheet-payload]').value = state.payload;
@@ -774,13 +938,19 @@ async function initRoot(root, index) {
         fileNotice: '',
         documentType: initialPayload ? documentTypeFromPayload(initialPayload) : 'weekly',
         prefilledPayload: initialPayload,
-        autoSubmit: root.dataset.autoSubmit === 'true' && Boolean(initialPayload),
-        autoSubmitted: false,
         maxUploadBytes: Number(root.dataset.maxUploadBytes || 8 * 1024 * 1024),
     };
     root._quranState = state;
+    await initQuickScanner(root, state, Html5Qrcode, index);
     initCrop(root, state);
     initDocumentCorners(root, state);
+
+    root.querySelectorAll('[data-quran-mode]').forEach((button) => button.addEventListener('click', async () => {
+        const mode = button.dataset.quranMode;
+        root.querySelectorAll('[data-quran-mode]').forEach((item) => item.setAttribute('aria-selected', item === button ? 'true' : 'false'));
+        root.querySelectorAll('[data-quran-mode-panel]').forEach((panel) => panel.classList.toggle('hidden', panel.dataset.quranModePanel !== mode));
+        if (mode === 'advanced') await state.stopQuickCamera?.(); else stopCamera(root);
+    }));
 
     const fileInput = root.querySelector('[data-quran-scan-file]');
     const pdfInput = root.querySelector('[data-quran-pdf-file]');
@@ -847,6 +1017,40 @@ async function initRoot(root, index) {
     root.querySelector('[data-quran-use-photo]').addEventListener('click', async () => {
         if (state.file) await processFile(root, state, state.file, state.fileNotice);
     });
+
+    root.querySelector('[data-quran-scan-form]').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const payload = form.querySelector('[data-quran-sheet-payload]').value.trim();
+        if (!payload) {
+            setStatus(root, 'Barcode belum terbaca. Scan barcode terlebih dahulu.', 'error');
+            return;
+        }
+        if (!form.querySelector('[data-quran-scan-file]').files?.length) {
+            setStatus(root, 'Pilih foto atau PDF lembar terlebih dahulu.', 'error');
+            return;
+        }
+        const submit = form.querySelector('[data-quran-scan-submit]');
+        submit.disabled = true;
+        submit.textContent = 'Mengunggah...';
+        try {
+            const response = await fetchWithFreshCsrf(form.action, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(form),
+            }, { refreshBefore: true });
+            if (response.redirected) {
+                window.location.assign(response.url);
+                return;
+            }
+            const result = await responsePayload(response);
+            if (result.redirect) window.location.assign(result.redirect);
+        } catch (error) {
+            setStatus(root, error.message || 'Hasil belum dapat diunggah. Data pada halaman tetap tersimpan.', 'error');
+            submit.disabled = false;
+            submit.textContent = 'Unggah dan Periksa Hasil';
+        }
+    });
 }
 
 function initPublicModes() {
@@ -902,25 +1106,25 @@ function initConfirmation(root) {
 
     function field(label, name, type, value, confidence, attributes = '') {
         const [className, status] = quality(confidence);
-        return `<label><span class="mb-1 flex items-center justify-between gap-2 text-xs font-semibold"><span>${label}</span><span class="font-normal text-slate-500 dark:text-slate-400">${status}</span></span><input type="${type}" inputmode="${type === 'number' ? 'numeric' : 'text'}" name="${name}" value="${safeText(value)}" class="pkg-field min-h-11 ${className}" required ${attributes}></label>`;
+        return `<label class="min-w-0 max-w-full"><span class="mb-1 flex min-w-0 flex-wrap items-center justify-between gap-1 text-xs font-semibold"><span>${label}</span><span class="font-normal text-slate-500 dark:text-slate-400">${status}</span></span><input type="${type}" inputmode="${type === 'number' ? 'numeric' : 'text'}" name="${name}" value="${safeText(value)}" class="pkg-field min-h-11 w-full min-w-0 max-w-full ${className}" required ${attributes}></label>`;
     }
 
     function render() {
         rows.sort((a, b) => Number(a.row_number) - Number(b.row_number));
         rowsContainer.innerHTML = rows.map((row, index) => {
             const confidence = row.confidence || {};
-            return `<fieldset class="pkg-panel p-4" data-confirm-row="${row.row_number}">
-                <div class="mb-3 flex items-center justify-between gap-3"><legend class="font-bold">Baris ${row.row_number}</legend><button type="button" class="btn-danger min-h-11 px-3" data-remove-row="${row.row_number}">Hapus Baris</button></div>
+            return `<fieldset class="pkg-panel min-w-0 max-w-full overflow-hidden p-3 sm:p-4" data-confirm-row="${row.row_number}">
+                <div class="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2"><legend class="font-bold">Baris ${row.row_number}</legend><button type="button" class="btn-danger min-h-11 max-w-full px-3" data-remove-row="${row.row_number}">Hapus Baris</button></div>
                 <input type="hidden" name="rows[${index}][row_number]" value="${row.row_number}">
-                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div class="pkg-quran-confirm-fields">
                     ${field('Tanggal', `rows[${index}][reading_date]`, 'date', row.reading_date, confidence.reading_date, 'max="'+localDateString()+'"')}
                     ${field('Hal. awal', `rows[${index}][page_start]`, 'number', row.page_start, confidence.page_start, 'min="1" max="1000"')}
                     ${field('Hal. akhir', `rows[${index}][page_end]`, 'number', row.page_end, confidence.page_end, 'min="1" max="1000"')}
-                    <label><span class="mb-1 flex items-center justify-between gap-2 text-xs font-semibold"><span>Surat awal</span><span class="font-normal text-slate-500 dark:text-slate-400">${quality(confidence.surah_start)[1]}</span></span><select name="rows[${index}][surah_start]" class="pkg-field min-h-11 ${quality(confidence.surah_start)[0]}" required>${selectOptions(row.surah_start)}</select></label>
+                    <label class="min-w-0 max-w-full"><span class="mb-1 flex flex-wrap items-center justify-between gap-1 text-xs font-semibold"><span>Surat awal</span><span class="font-normal text-slate-500 dark:text-slate-400">${quality(confidence.surah_start)[1]}</span></span><select name="rows[${index}][surah_start]" class="pkg-field min-h-11 w-full min-w-0 max-w-full ${quality(confidence.surah_start)[0]}" required>${selectOptions(row.surah_start)}</select></label>
                     ${field('Ayat awal', `rows[${index}][ayah_start]`, 'number', row.ayah_start, confidence.ayah_start, 'min="1" max="286"')}
-                    <label><span class="mb-1 flex items-center justify-between gap-2 text-xs font-semibold"><span>Surat akhir</span><span class="font-normal text-slate-500 dark:text-slate-400">${quality(confidence.surah_end)[1]}</span></span><select name="rows[${index}][surah_end]" class="pkg-field min-h-11 ${quality(confidence.surah_end)[0]}" required>${selectOptions(row.surah_end)}</select></label>
+                    <label class="min-w-0 max-w-full"><span class="mb-1 flex flex-wrap items-center justify-between gap-1 text-xs font-semibold"><span>Surat akhir</span><span class="font-normal text-slate-500 dark:text-slate-400">${quality(confidence.surah_end)[1]}</span></span><select name="rows[${index}][surah_end]" class="pkg-field min-h-11 w-full min-w-0 max-w-full ${quality(confidence.surah_end)[0]}" required>${selectOptions(row.surah_end)}</select></label>
                     ${field('Ayat akhir', `rows[${index}][ayah_end]`, 'number', row.ayah_end, confidence.ayah_end, 'min="1" max="286"')}
-                    <label class="col-span-2 sm:col-span-4"><span class="mb-1 block text-xs font-semibold">Catatan</span><input name="rows[${index}][notes]" value="${safeText(row.notes)}" maxlength="1000" class="pkg-field min-h-11"></label>
+                    <label class="min-w-0 max-w-full pkg-quran-confirm-note"><span class="mb-1 block text-xs font-semibold">Catatan</span><input name="rows[${index}][notes]" value="${safeText(row.notes)}" maxlength="1000" class="pkg-field min-h-11 w-full min-w-0 max-w-full"></label>
                 </div>
             </fieldset>`;
         }).join('');
@@ -1011,7 +1215,8 @@ Promise.all([...document.querySelectorAll('[data-quran-scan-root]')].map((root, 
 initPublicModes();
 document.querySelectorAll('[data-quran-confirm-root]').forEach(initConfirmation);
 
-window.addEventListener('pagehide', () => roots.forEach(stopCamera));
+window.addEventListener('pagehide', () => roots.forEach((root) => { stopCamera(root); root._quranState?.stopQuickCamera?.(); }));
+window.addEventListener('pageshow', () => refreshCsrfToken().catch(() => {}));
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) roots.forEach(stopCamera);
+    if (document.hidden) roots.forEach((root) => { stopCamera(root); root._quranState?.stopQuickCamera?.(); });
 });

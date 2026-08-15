@@ -48,6 +48,17 @@ class QuranReadingEntry extends Model
 
     public function getPageCountAttribute(): int
     {
-        return max(1, (int) $this->page_end - (int) $this->page_start + 1);
+        if ($this->page_start === null || $this->page_end === null) {
+            return 0;
+        }
+
+        return max(0, (int) $this->page_end - (int) $this->page_start + 1);
+    }
+
+    public function getPageRangeLabelAttribute(): string
+    {
+        return $this->page_start === null || $this->page_end === null
+            ? 'Halaman tidak dicatat'
+            : 'Halaman '.$this->page_start.'–'.$this->page_end;
     }
 }

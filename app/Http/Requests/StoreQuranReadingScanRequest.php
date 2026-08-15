@@ -27,6 +27,7 @@ class StoreQuranReadingScanRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'sheet_payload.required' => 'Barcode belum terbaca. Scan barcode terlebih dahulu.',
             'sheet_payload.regex' => 'QR bukan lembar Tracer Bacaan Al-Qur’an PKG.',
             'scan_image.required' => 'Ambil foto atau pilih foto lembar terlebih dahulu.',
             'scan_image.max' => 'Ukuran foto maksimal 8 MB.',

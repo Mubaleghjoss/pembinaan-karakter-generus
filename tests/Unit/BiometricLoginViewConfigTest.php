@@ -33,12 +33,14 @@ class BiometricLoginViewConfigTest extends TestCase
     {
         $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/auth/login.blade.php');
         $script = file_get_contents(dirname(__DIR__, 2) . '/resources/js/biometric.js');
+        $csrfScript = file_get_contents(dirname(__DIR__, 2) . '/resources/js/csrf-session.js');
         $serviceWorker = file_get_contents(dirname(__DIR__, 2) . '/public/sw.js');
 
         $this->assertStringContainsString('data-auth-login-form', $view);
         $this->assertStringNotContainsString('function refreshCsrfToken()', $view);
-        $this->assertStringContainsString("cache: 'no-store'", $script);
-        $this->assertStringContainsString('response.status !== 419', $script);
+        $this->assertStringContainsString("cache: 'no-store'", $csrfScript);
+        $this->assertStringContainsString('response.status !== 419', $csrfScript);
+        $this->assertStringContainsString("from './csrf-session'", $script);
         $this->assertStringContainsString("window.addEventListener('pageshow'", $script);
         $this->assertStringContainsString("document.addEventListener('visibilitychange'", $script);
         $this->assertStringContainsString('activeBiometricLoginButtons', $script);
