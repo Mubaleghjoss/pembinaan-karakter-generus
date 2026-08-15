@@ -164,8 +164,12 @@ class QuranReadingFeatureTest extends TestCase
                 'qrDataUri' => 'data:image/png;base64,aW1hZ2U=',
             ]],
             'logoDataUri' => null,
+            'verseImageDataUri' => 'data:image/png;base64,aW1hZ2U=',
             'catalog' => QuranCatalog::class,
         ])->render();
+        $this->assertStringContainsString('class="document-title">Lembar Bacaan Al-Qur\'an Bulanan', $html);
+        $this->assertStringContainsString('class="student-name">Nur Áisyah Putri', $html);
+        $this->assertStringContainsString('class="verse-image"', $html);
         $this->assertStringContainsString('Nur Áisyah Putri', $html);
         $this->assertStringContainsString('*********3456', $html);
         $this->assertStringNotContainsString('PKG2607123456', $html);

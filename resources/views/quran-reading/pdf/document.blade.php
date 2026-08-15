@@ -15,18 +15,24 @@
         .bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; }
         .br { bottom: 0; right: 0; border-width: 0 4px 4px 0; }
         .letterhead { width: 100%; border-bottom: 2.5px solid #087f5b; border-collapse: collapse; }
-        .letterhead td { vertical-align: middle; padding: 2px 5px 5px; }
-        .brand-logo { width: 17mm; height: 17mm; object-fit: contain; }
-        .brand-name { font-size: 15px; font-weight: 700; letter-spacing: .2px; }
-        .brand-subtitle { margin-top: 2px; font-size: 7px; color: #475569; }
-        .verse { margin-top: 3px; font-size: 13px; font-weight: 700; direction: rtl; text-align: left; }
-        .translation { margin-top: 1px; font-size: 6.5px; font-style: italic; }
-        .meaning { margin-top: 1px; max-width: 205mm; color: #475569; font-size: 5.8px; line-height: 1.35; }
+        .letterhead td { vertical-align: middle; padding: 1px 5px 4px; }
+        .brand-logo { width: 21mm; height: 21mm; object-fit: contain; }
+        .organization-name { color: #087f5b; font-size: 9px; font-weight: 700; line-height: 1.15; }
+        .document-title { margin-top: 1px; font-size: 18px; font-weight: 700; line-height: 1.08; }
+        .brand-subtitle { margin-top: 1px; color: #475569; font-size: 6px; }
+        .verse-wrap { height: 9mm; margin-top: 1px; text-align: left; }
+        .verse-image { display: block; width: 94mm; height: 9mm; object-fit: contain; object-position: left center; }
+        .verse-fallback { font-size: 17px; font-weight: 700; direction: rtl; text-align: left; }
+        .translation { margin-top: 1px; font-size: 7.2px; font-style: italic; line-height: 1.2; }
+        .meaning { margin-top: 1px; max-width: 205mm; color: #475569; font-size: 6.3px; line-height: 1.25; }
         .qr-wrap { width: 38mm; height: 38mm; padding: 1mm; background: #fff; }
         .qr { display: block; width: 36mm; height: 36mm; }
-        .info { width: 100%; margin: 3px 0; border-collapse: collapse; table-layout: fixed; }
-        .info td { border: 1px solid #94a3b8; padding: 2px 4px; height: 17px; }
-        .info strong { font-size: 6.5px; }
+        .info { width: 100%; margin: 2px 0 3px; border-collapse: collapse; table-layout: fixed; }
+        .info td { border: 1px solid #94a3b8; padding: 2px 4px; height: 17px; line-height: 1.15; }
+        .info-label { color: #334155; font-size: 6.5px; font-weight: 700; }
+        .student-name { font-size: 10px; font-weight: 700; line-height: 1.1; }
+        .identity-meta { display: block; margin-top: 1px; color: #64748b; font-size: 5.8px; }
+        .info-value { font-size: 7px; font-weight: 600; }
         .rows { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .rows th, .rows td { border: 1.15px solid #334155; padding: 0 2px; }
         .rows th { height: 20px; background: #e9f7f1; font-size: 6px; line-height: 1.15; }

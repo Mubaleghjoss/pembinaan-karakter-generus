@@ -143,6 +143,7 @@ class QuranReadingDocumentService
             'pages' => $pages,
             'catalog' => QuranCatalog::class,
             'logoDataUri' => $this->logoDataUri(),
+            'verseImageDataUri' => $this->verseImageDataUri(),
         ])->render(), 'UTF-8');
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
@@ -226,6 +227,13 @@ class QuranReadingDocumentService
         $fallback = public_path('images/icons/pkg-logo-192.png');
 
         return File::exists($fallback) ? $this->fileDataUri($fallback) : null;
+    }
+
+    private function verseImageDataUri(): ?string
+    {
+        $path = resource_path('images/quran/muzzammil-4.png');
+
+        return File::exists($path) ? $this->fileDataUri($path) : null;
     }
 
     private function fileDataUri(string $path): string
