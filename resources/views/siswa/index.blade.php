@@ -62,7 +62,8 @@
 function siswaManager() {
     return {
         // Common state
-        classes: [],
+        schoolGrades: @json($schoolGradeOptions),
+        pamongOptions: @json($pamongOptions->map(fn ($pamong) => ['id' => $pamong->id, 'name' => $pamong->name ?: $pamong->username])->values()),
         loading: false,
         
         // Biodata modal state
@@ -75,7 +76,7 @@ function siswaManager() {
             jenis_kelamin: '',
             tanggal_lahir: '',
             kelompok: '',
-            kelas_id: '',
+            school_grade: '',
             nama_wali: '',
             phone_wali: '',
             email_wali: ''
@@ -87,7 +88,8 @@ function siswaManager() {
         currentPage: 1,
         filters: {
             search: '',
-            kelas_id: '',
+            school_grade: '',
+            pamong_id: '',
             status: '',
             biodata_status: ''
         },
@@ -97,7 +99,7 @@ function siswaManager() {
         qrLoading: false,
         qrFilters: {
             search: '',
-            kelas_id: ''
+            school_grade: ''
         },
         qrSize: '300',
         showQRModal: false,
@@ -110,7 +112,7 @@ function siswaManager() {
         accountLoading: false,
         accountFilters: {
             search: '',
-            kelas_id: '',
+            school_grade: '',
             status: ''
         },
         selectedAccounts: [],
@@ -124,23 +126,7 @@ function siswaManager() {
         },
         
         async init() {
-            await this.loadClasses();
             await this.loadStudents();
-        },
-        
-        async loadClasses() {
-            try {
-                const response = await fetch('/kelas-list', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-                    }
-                });
-                const data = await response.json();
-                this.classes = data.data || data;
-            } catch (error) {
-                console.error('Error loading classes:', error);
-            }
         },
 
         extractRows(payload) {
@@ -176,7 +162,8 @@ function siswaManager() {
                     page: page,
                     per_page: 'all',
                     search: this.filters.search,
-                    kelas_id: this.filters.kelas_id,
+                    school_grade: this.filters.school_grade,
+                    pamong_id: this.filters.pamong_id,
                     status: this.filters.status,
                     biodata_status: this.filters.biodata_status || ''
                 });
@@ -211,7 +198,7 @@ function siswaManager() {
                 const params = new URLSearchParams({
                     per_page: 'all',
                     search: this.qrFilters.search,
-                    kelas_id: this.qrFilters.kelas_id,
+                    school_grade: this.qrFilters.school_grade,
                     status: '1' // Only active students
                 });
                 
@@ -262,8 +249,8 @@ function siswaManager() {
         async downloadAllQR() {
             const params = new URLSearchParams();
 
-            if (this.qrFilters.kelas_id) {
-                params.set('kelas_id', this.qrFilters.kelas_id);
+            if (this.qrFilters.school_grade) {
+                params.set('school_grade', this.qrFilters.school_grade);
             }
 
             if (this.qrFilters.search) {
@@ -282,7 +269,7 @@ function siswaManager() {
                 const params = new URLSearchParams({
                     per_page: 'all',
                     search: this.accountFilters.search,
-                    kelas_id: this.accountFilters.kelas_id,
+                    school_grade: this.accountFilters.school_grade,
                     status: this.accountFilters.status
                 });
                 
@@ -512,7 +499,7 @@ function siswaManager() {
                 jenis_kelamin: student.jenis_kelamin || '',
                 tanggal_lahir: student.tanggal_lahir || '',
                 kelompok: student.kelompok || '',
-                kelas_id: student.kelas_id || '',
+                school_grade: student.school_grade || '',
                 nama_wali: student.nama_wali || '',
                 phone_wali: student.phone_wali || '',
                 email_wali: student.email_wali || ''
@@ -533,7 +520,7 @@ function siswaManager() {
                 jenis_kelamin: this.biodataStudent.jenis_kelamin || '',
                 tanggal_lahir: this.biodataStudent.tanggal_lahir || '',
                 kelompok: this.biodataStudent.kelompok || '',
-                kelas_id: this.biodataStudent.kelas_id || '',
+                school_grade: this.biodataStudent.school_grade || '',
                 nama_wali: this.biodataStudent.nama_wali || '',
                 phone_wali: this.biodataStudent.phone_wali || '',
                 email_wali: this.biodataStudent.email_wali || ''

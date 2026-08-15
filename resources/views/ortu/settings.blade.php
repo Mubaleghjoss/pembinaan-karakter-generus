@@ -17,6 +17,17 @@
         :download-route="route('ortu.settings.statement.download')"
     />
 
+    <section class="pkg-panel mb-6 p-5 sm:p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Informasi Pendidikan & Binaan</h2>
+        <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div><dt class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">NIS</dt><dd class="mt-1 font-medium tabular-nums">{{ $siswa->nis }}</dd></div>
+            <div><dt class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Kelas Sekolah</dt><dd class="mt-1 font-medium">{{ $siswa->school_grade_label }}</dd></div>
+            <div><dt class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Level PKG Efektif</dt><dd class="mt-1 font-medium">{{ $siswa->target_grade_label }}</dd></div>
+            <div><dt class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Kelompok</dt><dd class="mt-1 font-medium">{{ $siswa->kelompok_label }}</dd></div>
+            <div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Pamong Binaan</dt><dd class="mt-1 font-medium">{{ $siswa->pamongAssignments->pluck('pamong')->filter()->map(fn ($pamong) => $pamong->name ?: $pamong->username)->join(', ') ?: 'Belum memiliki Pamong' }}</dd></div>
+        </dl>
+    </section>
+
     <div class="pkg-panel p-6 mb-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ubah Username</h2>
         <form action="{{ route('ortu.settings.update') }}" method="POST" class="space-y-4">

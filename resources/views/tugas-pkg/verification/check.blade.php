@@ -47,7 +47,7 @@
                 @endif
                 <div>
                     <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ $siswa->nama }}</h2>
-                    <p class="text-gray-600 dark:text-gray-400">NIS: {{ $siswa->nis }} | Kelas: {{ $siswa->kelas->nama ?? '-' }}</p>
+                    <p class="text-gray-600 dark:text-gray-400">NIS: {{ $siswa->nis }} | Kelas Sekolah: {{ $siswa->school_grade_label }} | Level PKG: {{ $siswa->target_grade_label }}</p>
                 </div>
             </div>
             <a href="{{ route('tugas-pkg.history', $siswa) }}" class="pkg-btn-secondary inline-flex items-center gap-1 px-3 py-2 text-sm">

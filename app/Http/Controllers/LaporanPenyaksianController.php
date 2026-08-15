@@ -215,21 +215,20 @@ class LaporanPenyaksianController extends Controller
     {
         $search = $request->get('q', '');
         
-        $siswa = Siswa::with('kelas')
-            ->active()
+        $siswa = Siswa::active()
             ->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
                   ->orWhere('nis', 'like', "%{$search}%");
             })
             ->limit(20)
-            ->get(['id', 'nis', 'nama', 'foto_path', 'kelas_id']);
+            ->get(['id', 'nis', 'nama', 'foto_path', 'school_grade']);
 
         return response()->json($siswa->map(function ($s) {
             return [
                 'id' => $s->id,
                 'nis' => $s->nis,
                 'nama' => $s->nama,
-                'kelas' => $s->kelas?->nama,
+                'kelas' => $s->school_grade_label,
                 'foto_url' => $s->foto_path ? asset('storage/' . $s->foto_path) : null,
                 'type' => 'siswa',
             ];

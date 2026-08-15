@@ -54,10 +54,10 @@
                         <label for="profile_assignment_grade" class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
                             Kelas Sekolah
                         </label>
-                        <select id="profile_assignment_grade" name="target_grade_override" class="pkg-field w-full" required>
+                        <select id="profile_assignment_grade" name="school_grade" class="pkg-field w-full" required>
                             <option value="">Pilih kelas sekolah saat ini</option>
                             @foreach($profileAssignmentGrades as $value => $label)
-                                <option value="{{ $value }}" {{ old('target_grade_override', $profileAssignmentUser->target_grade_override) === $value ? 'selected' : '' }}>
+                                <option value="{{ $value }}" {{ old('school_grade', $profileAssignmentUser->school_grade) === $value ? 'selected' : '' }}>
                                     {{ $label }}
                                 </option>
                             @endforeach
@@ -65,7 +65,7 @@
                         <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                             Pilihan ini menentukan target RPP yang tampil di akun siswa.
                         </p>
-                        @error('target_grade_override')
+                        @error('school_grade')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-300">{{ $message }}</p>
                         @enderror
                     </div>

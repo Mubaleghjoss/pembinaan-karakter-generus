@@ -132,8 +132,7 @@ class MateriController extends Controller
         }
 
         $studentsInScope = $this->materiAnalyticsStudentQuery($user)
-            ->with('kelas:id,nama')
-            ->select(['id', 'nis', 'nama', 'tanggal_lahir', 'target_grade_override', 'kelas_id', 'status', 'is_active'])
+            ->select(['id', 'nis', 'nama', 'tanggal_lahir', 'target_grade_override', 'school_grade', 'status', 'is_active'])
             ->get();
 
         $canEditSiswa = $user->hasPamongCrudPermission('siswa', 'edit');
@@ -145,7 +144,7 @@ class MateriController extends Controller
                 'id' => $siswa->id,
                 'nama' => $siswa->nama,
                 'nis' => $siswa->nis,
-                'kelas' => $siswa->kelas?->nama ?? '-',
+                'kelas' => $siswa->school_grade_label ?? 'Belum dikonfirmasi',
                 'tanggal_lahir' => $siswa->tanggal_lahir?->translatedFormat('d M Y') ?? '-',
                 'edit_url' => $canEditSiswa ? route('siswa.edit', $siswa) : null,
             ])

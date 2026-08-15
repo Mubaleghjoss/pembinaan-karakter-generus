@@ -66,7 +66,7 @@ class OrtuDashboardController extends Controller
     public function settings()
     {
         $siswa = Auth::guard('ortu')->user();
-        $siswa->load('generusRegistration');
+        $siswa->load(['generusRegistration', 'pamongAssignments.pamong:id,name,username']);
         return view('ortu.settings', compact('siswa'));
     }
 

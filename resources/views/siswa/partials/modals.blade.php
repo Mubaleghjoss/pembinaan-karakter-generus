@@ -86,11 +86,13 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kelas</label>
-                            <select id="kelas_id" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="">Pilih Kelas</option>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kelas Sekolah</label>
+                            <select id="school_grade" required class="mt-1 block w-full pkg-field">
+                                <option value="">Pilih Kelas Sekolah</option>
+                                @foreach(($schoolGradeOptions ?? []) as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
                             </select>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400" id="kelas-pamong-info"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kelompok</label>
@@ -133,8 +135,8 @@
                         </div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                             <p>Format file: .xlsx, .xls, atau .csv</p>
-                            <p>Kolom yang diperlukan: NIS, Nama, Jenis Kelamin, Kelas</p>
-                            <p class="mt-1 text-xs">Setiap kelas bisa memiliki beberapa pamong</p>
+                            <p>Kolom yang diperlukan: NIS, Nama, Jenis Kelamin, dan Kelas Sekolah.</p>
+                            <p class="mt-1 text-xs">Kolom Pamong Username bersifat opsional dan dapat berisi beberapa username.</p>
                             <a href="/siswa/template-import" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">Unduh Template</a>
                         </div>
                     </div>
@@ -164,9 +166,12 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Kelas</label>
-                            <select id="bulk-reset-kelas" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="">Semua Kelas</option>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kelas Sekolah</label>
+                            <select id="bulk-reset-school-grade" class="mt-1 block w-full pkg-field">
+                                <option value="">Semua Kelas Sekolah</option>
+                                @foreach(($schoolGradeOptions ?? []) as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
@@ -198,17 +203,13 @@
 
 @push('scripts')
 <script>
-// Store kelas data for pamong info display
-let kelasData = [];
-
 // Modal Functions
 function openAddModal() {
     document.getElementById('modal-title-text').textContent = 'Tambah Siswa';
     document.getElementById('student-id').value = '';
     document.getElementById('student-form').reset();
     document.getElementById('kelompok').value = '';
-    document.getElementById('kelas-pamong-info').textContent = '';
-    loadKelasForModal();
+    document.getElementById('school_grade').value = '';
     document.getElementById('student-modal').classList.remove('hidden');
 }
 
@@ -223,55 +224,8 @@ function editStudent(student) {
     document.getElementById('nama').value = student.nama;
     document.getElementById('jenis_kelamin').value = student.jenis_kelamin;
     document.getElementById('kelompok').value = student.kelompok || '';
-    loadKelasForModal(student.kelas_id);
+    document.getElementById('school_grade').value = student.school_grade || '';
     document.getElementById('student-modal').classList.remove('hidden');
-}
-
-async function loadKelasForModal(selectedId = null) {
-    try {
-        const response = await fetch('/kelas-list', {
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-            }
-        });
-        const data = await response.json();
-        kelasData = data.data || data;
-        
-        const select = document.getElementById('kelas_id');
-        select.innerHTML = '<option value="">Pilih Kelas</option>';
-        kelasData.forEach(kelas => {
-            const pamongNames = (kelas.pamong || []).map(p => p.nama).join(', ');
-            const option = document.createElement('option');
-            option.value = kelas.id;
-            option.textContent = kelas.nama + ' - ' + kelas.jumlah_siswa + ' siswa';
-            option.dataset.pamong = pamongNames || 'Belum ada pamong';
-            if (selectedId && kelas.id == selectedId) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
-        
-        // Update pamong info on change
-        select.addEventListener('change', updatePamongInfo);
-        if (selectedId) {
-            updatePamongInfo();
-        }
-    } catch (error) {
-        console.error('Error loading kelas:', error);
-    }
-}
-
-function updatePamongInfo() {
-    const select = document.getElementById('kelas_id');
-    const infoEl = document.getElementById('kelas-pamong-info');
-    const selectedOption = select.options[select.selectedIndex];
-    
-    if (selectedOption && selectedOption.dataset.pamong) {
-        infoEl.textContent = 'Pamong: ' + selectedOption.dataset.pamong;
-    } else {
-        infoEl.textContent = '';
-    }
 }
 
 async function saveStudent(event) {
@@ -289,7 +243,7 @@ async function saveStudent(event) {
         nis: nis,
         nama: nama,
         jenis_kelamin: document.getElementById('jenis_kelamin').value,
-        kelas_id: document.getElementById('kelas_id').value,
+        school_grade: document.getElementById('school_grade').value,
         kelompok: document.getElementById('kelompok').value
     };
     
@@ -400,7 +354,6 @@ async function importStudents(event) {
 
 // Bulk Reset Modal
 function openBulkResetModal() {
-    loadKelasForBulkReset();
     document.getElementById('bulk-reset-modal').classList.remove('hidden');
 }
 
@@ -408,34 +361,10 @@ function closeBulkResetModal() {
     document.getElementById('bulk-reset-modal').classList.add('hidden');
 }
 
-async function loadKelasForBulkReset() {
-    try {
-        const response = await fetch('/kelas-list', {
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-            }
-        });
-        const data = await response.json();
-        const classes = data.data || data;
-        
-        const select = document.getElementById('bulk-reset-kelas');
-        select.innerHTML = '<option value="">Semua Kelas</option>';
-        classes.forEach(kelas => {
-            const option = document.createElement('option');
-            option.value = kelas.id;
-            option.textContent = kelas.nama;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Error loading classes:', error);
-    }
-}
-
 async function bulkResetPassword(event) {
     event.preventDefault();
     
-    const kelasId = document.getElementById('bulk-reset-kelas').value;
+    const schoolGrade = document.getElementById('bulk-reset-school-grade').value;
     
     const confirmed = await window.showConfirmation('Yakin ingin reset password? Password akan direset ke NIS masing-masing siswa.', {
         title: 'Reset password massal',
@@ -452,7 +381,7 @@ async function bulkResetPassword(event) {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
             },
-            body: JSON.stringify({ kelas_id: kelasId })
+            body: JSON.stringify({ school_grade: schoolGrade })
         });
         
         const result = await response.json();
@@ -615,13 +544,13 @@ Biodata modal duplicate disabled; active modal is included inside siswaManager s
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas</label>
-                    <select x-model="biodataForm.kelas_id"
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
+                    <select x-model="biodataForm.school_grade"
                             :disabled="!biodataEditing"
                             class="w-full pkg-field disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">
-                        <option value="">Pilih Kelas</option>
-                        <template x-for="kelas in classes" :key="kelas.id">
-                            <option :value="kelas.id" x-text="kelas.nama"></option>
+                        <option value="">Belum dikonfirmasi</option>
+                        <template x-for="(label, value) in schoolGrades" :key="value">
+                            <option :value="value" x-text="label"></option>
                         </template>
                     </select>
                 </div>

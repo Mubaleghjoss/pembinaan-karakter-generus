@@ -40,6 +40,7 @@ class Siswa extends Authenticatable
         'kelompok',
         'phone',
         'kelas_id',
+        'school_grade',
         'target_grade_override',
         'profile_assignment_confirmed_at',
         'foto_path',
@@ -228,6 +229,16 @@ class Siswa extends Authenticatable
         return TargetGrade::label($this->target_grade);
     }
 
+    public function getSchoolGradeLabelAttribute(): ?string
+    {
+        return TargetGrade::schoolClassLabel($this->school_grade);
+    }
+
+    public function getSchoolGradeSuggestionAttribute(): ?string
+    {
+        return TargetGrade::fromBirthDate($this->tanggal_lahir);
+    }
+
     public function getMissingBiodataFieldsAttribute(): array
     {
         $missingFields = [];
@@ -236,6 +247,7 @@ class Siswa extends Authenticatable
         if (empty($this->nama)) $missingFields[] = 'Nama Lengkap';
         if (empty($kelompokValue)) $missingFields[] = 'Kelompok';
         if (empty($this->tanggal_lahir)) $missingFields[] = 'Tanggal Lahir';
+        if (empty($this->school_grade)) $missingFields[] = 'Kelas Sekolah';
         if (empty($this->phone)) $missingFields[] = 'No. HP';
         if (empty($this->phone_wali)) $missingFields[] = 'No. HP Wali';
         if (empty($this->foto_path)) $missingFields[] = 'Foto Profil';
@@ -291,7 +303,7 @@ class Siswa extends Authenticatable
     {
         return ! $this->profile_assignment_confirmed_at
             || ! static::normalizeKelompok($this->kelompok)
-            || ! in_array($this->target_grade_override, TargetGrade::values(), true);
+            || ! in_array($this->school_grade, TargetGrade::values(), true);
     }
 
     public function scopeActive($query)
@@ -302,6 +314,19 @@ class Siswa extends Authenticatable
     public function scopeInClass($query, $kelasId)
     {
         return $query->where('kelas_id', $kelasId);
+    }
+
+    public function scopeBySchoolGrade($query, ?string $schoolGrade)
+    {
+        return $query->when($schoolGrade, fn ($builder, $grade) => $builder->where('school_grade', $grade));
+    }
+
+    public function scopeByPamong($query, $pamongId)
+    {
+        return $query->when($pamongId, fn ($builder, $id) => $builder->whereHas(
+            'pamongAssignments',
+            fn ($assignment) => $assignment->where('pamong_id', $id)
+        ));
     }
 
     public function scopeAssignedTo($query, $pamongId)

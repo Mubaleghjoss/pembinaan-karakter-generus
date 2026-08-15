@@ -125,15 +125,17 @@
                         </div>
 
                         <div>
-                            <label for="target_grade_override" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Level Kelas PKG</label>
-                            <select name="target_grade_override" id="target_grade_override" class="w-full pkg-field">
-                                <option value="">Otomatis dari tanggal lahir{{ $siswa->target_grade_label ? ' (' . $siswa->target_grade_label . ')' : '' }}</option>
+                            <label for="school_grade" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kelas Sekolah</label>
+                            <select name="school_grade" id="school_grade" class="w-full pkg-field" required>
+                                <option value="">Pilih Kelas Sekolah</option>
                                 @foreach($targetGradeOptions as $value => $label)
-                                    <option value="{{ $value }}" {{ old('target_grade_override', $siswa->target_grade_override) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    <option value="{{ $value }}" {{ old('school_grade', $siswa->school_grade) === $value ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Kosongkan untuk mengikuti perhitungan usia pada 1 Juli tahun berjalan.</p>
-                            @error('target_grade_override')
+                            @if(!$siswa->school_grade && $siswa->school_grade_suggestion)
+                                <p class="mt-1 text-xs text-amber-600 dark:text-amber-300">Saran berdasarkan usia: {{ \App\Support\TargetGrade::schoolClassLabel($siswa->school_grade_suggestion) }}. Tetap konfirmasi sesuai kelas sekolah sebenarnya.</p>
+                            @endif
+                            @error('school_grade')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -180,7 +182,7 @@
                         </div>
 
                         <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <h3 class="text-md font-medium text-gray-900 dark:text-white mb-4">Informasi Kelas</h3>
+                            <h3 class="text-md font-medium text-gray-900 dark:text-white mb-4">Informasi Pendidikan & Binaan</h3>
                             <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
@@ -188,12 +190,16 @@
                                         <p class="font-semibold text-gray-900 dark:text-white">{{ $siswa->nis }}</p>
                                     </div>
                                     <div>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">Kelas</p>
-                                        <p class="font-semibold text-gray-900 dark:text-white">{{ $siswa->kelas->nama ?? '-' }}</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Kelas Sekolah</p>
+                                        <p class="font-semibold text-gray-900 dark:text-white">{{ $siswa->school_grade_label ?? 'Belum dikonfirmasi' }}</p>
                                     </div>
                                     <div>
                                         <p class="text-sm text-gray-500 dark:text-gray-400">Level PKG Efektif</p>
                                         <p class="font-semibold text-gray-900 dark:text-white">{{ $siswa->target_grade_label ?? '-' }}</p>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Pamong Binaan</p>
+                                        <p class="font-semibold text-gray-900 dark:text-white">{{ $siswa->pamongAssignments->pluck('pamong')->filter()->map(fn($p) => $p->name ?: $p->username)->implode(', ') ?: 'Belum memiliki Pamong' }}</p>
                                     </div>
                                 </div>
                             </div>

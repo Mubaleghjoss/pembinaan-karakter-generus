@@ -86,7 +86,7 @@
                         </div>
                         @if($laporanPenyaksian->siswa)
                         <div class="text-sm text-gray-500 dark:text-gray-400">
-                            NIS: {{ $laporanPenyaksian->siswa->nis }} | Kelas: {{ $laporanPenyaksian->siswa->kelas?->nama ?? '-' }}
+                            NIS: {{ $laporanPenyaksian->siswa->nis }} | Kelas Sekolah: {{ $laporanPenyaksian->siswa->school_grade_label }} | Level PKG: {{ $laporanPenyaksian->siswa->target_grade_label }}
                         </div>
                         @if($laporanPenyaksian->siswa->pamongAssignments->count() > 0)
                         <div class="mt-2">

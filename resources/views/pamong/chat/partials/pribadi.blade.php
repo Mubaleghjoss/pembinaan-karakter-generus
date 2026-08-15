@@ -19,7 +19,7 @@
                     >
                 </div>
                 <div>
-                    <label for="pribadi-kelas" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Kelas</label>
+                    <label for="pribadi-kelas" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Kelas Sekolah</label>
                     <select id="pribadi-kelas" x-model="pribadiKelas" class="pkg-field text-sm">
                         <option value="">Semua kelas</option>
                         <template x-for="kelas in kelasOptions()" :key="kelas.id">

@@ -99,7 +99,7 @@
     <!-- Filters -->
     <div class="pkg-card">
         <div class="p-4 sm:p-6">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="pkg-filter-grid">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cari Siswa</label>
                     <input type="text" 
@@ -110,13 +110,23 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas</label>
-                    <select x-model="filters.kelas_id" 
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
+                    <select x-model="filters.school_grade"
                             @change="loadStudents()"
                             class="w-full pkg-field text-sm">
-                        <option value="">Semua Kelas</option>
-                        <template x-for="kelas in classes" :key="kelas.id">
-                            <option :value="kelas.id" x-text="kelas.nama"></option>
+                        <option value="">Semua Kelas Sekolah</option>
+                        <template x-for="(label, value) in schoolGrades" :key="value">
+                            <option :value="value" x-text="label"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pamong Binaan</label>
+                    <select x-model="filters.pamong_id" @change="loadStudents()" class="w-full pkg-field text-sm">
+                        <option value="">Semua Pamong</option>
+                        <template x-for="pamong in pamongOptions" :key="pamong.id">
+                            <option :value="pamong.id" x-text="pamong.name"></option>
                         </template>
                     </select>
                 </div>
@@ -198,7 +208,7 @@
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Siswa</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Pendidikan & Binaan</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Biodata</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Biometrik</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Login Terakhir</th>
@@ -227,7 +237,11 @@
                                     </div>
                                 </div>
                             </td>
-                            <td data-label="Kelas" class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="student.kelas?.nama || '-'"></td>
+                            <td data-label="Pendidikan & Binaan" class="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                                <div class="font-medium" x-text="student.school_grade_label || 'Belum dikonfirmasi'"></div>
+                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400" x-text="student.effective_pkg_level_label ? `Level PKG: ${student.effective_pkg_level_label}` : 'Level PKG belum tersedia'"></div>
+                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400" x-text="student.pamong?.length ? `Pamong: ${student.pamong.map(item => item.name).join(', ')}` : 'Belum memiliki Pamong'"></div>
+                            </td>
                             <td data-label="Biodata" class="px-4 py-4 text-sm">
                                 <template x-if="student.is_biodata_complete === true">
                                     <span class="inline-flex items-center text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-md">

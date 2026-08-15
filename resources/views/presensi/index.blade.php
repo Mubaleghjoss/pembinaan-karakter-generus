@@ -101,7 +101,6 @@ updateClock();
 function presensiManager() {
     const initialDate = @json(request('date', now()->toDateString()));
     const endpoints = {
-        classes: @json(route('kelas.list')),
         presensiData: @json(route('presensi.data')),
         presensiStats: @json(route('presensi.stats')),
         presensiExport: @json(route('presensi.export')),
@@ -115,7 +114,8 @@ function presensiManager() {
 
     return {
         // Common state
-        classes: [],
+        schoolGrades: @json($schoolGradeOptions),
+        pamongOptions: @json($pamongOptions->map(fn ($pamong) => ['id' => $pamong->id, 'name' => $pamong->name ?: $pamong->username])->values()),
         loading: false,
         bulkVerifying: false,
         editModal: {
@@ -136,7 +136,8 @@ function presensiManager() {
         stats: { total: 0, hadir: 0, terlambat: 0, tidak_hadir: 0, verified: 0 },
         filters: {
             tanggal: initialDate,
-            kelas_id: '',
+            school_grade: '',
+            pamong_id: '',
             status: '',
             verified: ''
         },
@@ -154,30 +155,15 @@ function presensiManager() {
         
         // Bulk input state
         bulkInput: {
-            kelas_id: '',
+            school_grade: '',
+            pamong_id: '',
             tanggal: initialDate,
             status: 'hadir'
         },
         
         async init() {
-            await this.loadClasses();
             await this.loadPresensi();
             await this.loadStats();
-        },
-        
-        async loadClasses() {
-            try {
-                const response = await fetch(endpoints.classes, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-                    }
-                });
-                const data = await response.json();
-                this.classes = data.data || data;
-            } catch (error) {
-                console.error('Error loading classes:', error);
-            }
         },
         
         async loadPresensi() {
@@ -186,7 +172,8 @@ function presensiManager() {
             try {
                 const params = new URLSearchParams({
                     tanggal: this.filters.tanggal,
-                    kelas_id: this.filters.kelas_id,
+                    school_grade: this.filters.school_grade,
+                    pamong_id: this.filters.pamong_id,
                     status: this.filters.status,
                     verified: this.filters.verified
                 });
@@ -211,7 +198,8 @@ function presensiManager() {
             const params = new URLSearchParams();
             params.set('tanggal', this.filters.tanggal);
 
-            if (this.filters.kelas_id) params.set('kelas_id', this.filters.kelas_id);
+            if (this.filters.school_grade) params.set('school_grade', this.filters.school_grade);
+            if (this.filters.pamong_id) params.set('pamong_id', this.filters.pamong_id);
             if (this.filters.status) params.set('status', this.filters.status);
             if (this.filters.verified !== '') params.set('verified', this.filters.verified);
 
@@ -248,7 +236,8 @@ function presensiManager() {
             try {
                 const params = new URLSearchParams({
                     tanggal: this.filters.tanggal,
-                    kelas_id: this.filters.kelas_id
+                    school_grade: this.filters.school_grade,
+                    pamong_id: this.filters.pamong_id
                 });
                 
                 const response = await fetch(`${endpoints.presensiStats}?${params}`, {
@@ -313,7 +302,8 @@ function presensiManager() {
                     },
                     body: JSON.stringify({
                         tanggal: this.filters.tanggal,
-                        kelas_id: this.filters.kelas_id || null,
+                        school_grade: this.filters.school_grade || null,
+                        pamong_id: this.filters.pamong_id || null,
                         status: this.filters.status || null,
                         verified: this.filters.verified === '' ? null : this.filters.verified
                     })
@@ -437,15 +427,12 @@ function presensiManager() {
         },
 
         normalizeSiswaForManual(siswa) {
-            const kelas = typeof siswa.kelas === 'string'
-                ? { id: siswa.kelas_id || null, nama: siswa.kelas }
-                : (siswa.kelas || null);
-
             return {
                 id: siswa.id,
                 nis: siswa.nis,
                 nama: siswa.nama,
-                kelas,
+                school_grade: siswa.school_grade || null,
+                school_grade_label: siswa.school_grade_label || 'Belum dikonfirmasi',
                 foto_url: siswa.foto_url || null
             };
         },
@@ -526,12 +513,12 @@ function presensiManager() {
         },
         
         async submitBulkPresensi() {
-            if (!this.bulkInput.kelas_id) {
-                window.showNotification('Pilih kelas terlebih dahulu', 'warning');
+            if (!this.bulkInput.school_grade && !this.bulkInput.pamong_id) {
+                window.showNotification('Pilih Pamong atau kelas sekolah terlebih dahulu', 'warning');
                 return;
             }
             
-            const confirmed = await window.showConfirmation('Input presensi untuk seluruh siswa di kelas ini?', {
+            const confirmed = await window.showConfirmation('Input presensi untuk seluruh Generus sesuai filter ini?', {
                 title: 'Presensi massal',
                 confirmText: 'Simpan semua',
                 tone: 'primary'
@@ -547,7 +534,8 @@ function presensiManager() {
                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
                     },
                     body: JSON.stringify({
-                        kelas_id: this.bulkInput.kelas_id,
+                        school_grade: this.bulkInput.school_grade || null,
+                        pamong_id: this.bulkInput.pamong_id || null,
                         tanggal: this.bulkInput.tanggal,
                         status: this.bulkInput.status
                     })

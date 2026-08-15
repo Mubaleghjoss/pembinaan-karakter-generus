@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Kelas;
 use App\Models\OrganizationalTeam;
 use App\Models\PamongPermission;
 use App\Models\PamongSiswa;
@@ -10,6 +9,7 @@ use App\Models\Role;
 use App\Models\Siswa;
 use App\Models\User;
 use App\Support\OperationalPermissionPreset;
+use App\Support\TargetGrade;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -140,14 +140,16 @@ class PamongController extends Controller
         }
 
         $students = $pamong->assignedStudents()
-            ->with(['siswa.kelas'])
+            ->with(['siswa.pamongAssignments.pamong:id,name,username'])
             ->get()
             ->map(function ($assignment) {
                 return [
                     'id' => $assignment->siswa->id,
                     'nis' => $assignment->siswa->nis,
                     'nama' => $assignment->siswa->nama,
-                    'kelas' => $assignment->siswa->kelas,
+                    'school_grade' => $assignment->siswa->school_grade,
+                    'school_grade_label' => $assignment->siswa->school_grade_label,
+                    'effective_pkg_level' => $assignment->siswa->target_grade_label,
                 ];
             });
 
@@ -182,7 +184,7 @@ class PamongController extends Controller
         $pamong->loadCount('assignedStudents');
 
         $assignedStudents = $pamong->assignedStudents()
-            ->with(['siswa.kelas'])
+            ->with(['siswa.pamongAssignments.pamong:id,name,username'])
             ->orderByDesc('id')
             ->paginate(25)
             ->withQueryString();
@@ -200,15 +202,18 @@ class PamongController extends Controller
                 ->with('error', 'Penugasan siswa hanya tersedia untuk akun pamong.');
         }
 
-        $kelas = Kelas::where('is_active', true)
-            ->with(['siswa' => function ($query) {
-                $query->where('is_active', true)->orderBy('nama');
-            }])
+        $students = Siswa::query()
+            ->active()
+            ->withCount('pamongAssignments')
+            ->orderByRaw('school_grade IS NULL')
+            ->orderBy('school_grade')
             ->orderBy('nama')
             ->get();
+        $gradeOptions = TargetGrade::schoolClassOptions();
+        $gradeGroups = $students->groupBy(fn (Siswa $siswa) => $siswa->school_grade ?: 'unconfirmed');
         $assignedIds = $pamong->assignedStudents()->pluck('siswa_id')->toArray();
         
-        return view('pamong.assign', compact('pamong', 'kelas', 'assignedIds'));
+        return view('pamong.assign', compact('pamong', 'gradeOptions', 'gradeGroups', 'assignedIds'));
     }
 
     /**
@@ -222,13 +227,13 @@ class PamongController extends Controller
         }
 
         $validated = $request->validate([
-            'siswa_ids' => 'required|array',
+            'siswa_ids' => 'nullable|array',
             'siswa_ids.*' => 'exists:siswa,id',
         ]);
 
         // Get current assignments
         $currentIds = $pamong->assignedStudents()->pluck('siswa_id')->toArray();
-        $newIds = $validated['siswa_ids'];
+        $newIds = $validated['siswa_ids'] ?? [];
 
         if (Siswa::query()->whereIn('id', $newIds)->where(fn ($query) => $query
             ->where('status', '!=', 'active')

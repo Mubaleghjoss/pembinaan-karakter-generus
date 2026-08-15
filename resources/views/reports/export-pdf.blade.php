@@ -21,7 +21,7 @@
     <h1>Laporan Presensi</h1>
     <div class="meta">
         <p>Periode: {{ $filters['tanggal_mulai'] }} s/d {{ $filters['tanggal_selesai'] }}</p>
-        <p>Kelas: {{ $className }}</p>
+        <p>Kelas Sekolah: {{ $className }}</p>
     </div>
 
     <div class="grid">
@@ -53,11 +53,11 @@
         </tbody>
     </table>
 
-    <h2>Performa Kelas</h2>
+    <h2>Performa Kelas Sekolah</h2>
     <table>
         <thead>
             <tr>
-                <th>Kelas</th>
+                <th>Kelas Sekolah</th>
                 <th>Total Siswa</th>
                 <th>Hadir</th>
                 <th>Terlambat</th>
@@ -86,7 +86,7 @@
                 <th>Tanggal</th>
                 <th>NIS</th>
                 <th>Nama</th>
-                <th>Kelas</th>
+                <th>Kelas Sekolah</th>
                 <th>Status</th>
                 <th>Jam Masuk</th>
                 <th>Jam Keluar</th>
@@ -98,7 +98,7 @@
                     <td>{{ optional($record->tanggal)->format('Y-m-d') }}</td>
                     <td>{{ $record->siswa?->nis }}</td>
                     <td>{{ $record->siswa?->nama }}</td>
-                    <td>{{ $record->siswa?->kelas?->nama }}</td>
+                    <td>{{ $record->siswa?->school_grade_label }}</td>
                     <td>{{ ucfirst((string) $record->status) }}</td>
                     <td>{{ optional($record->jam_masuk)->format('H:i:s') }}</td>
                     <td>{{ optional($record->jam_keluar)->format('H:i:s') }}</td>

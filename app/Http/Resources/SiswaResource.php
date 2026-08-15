@@ -29,6 +29,18 @@ class SiswaResource extends JsonResource
             'tanggal_lahir' => $this->tanggal_lahir?->format('Y-m-d'),
             'kelompok' => $this->kelompok,
             'kelompok_label' => $this->kelompok_label,
+            'school_grade' => $this->school_grade,
+            'school_grade_label' => $this->school_grade_label,
+            'effective_pkg_level' => $this->target_grade,
+            'effective_pkg_level_label' => $this->target_grade_label,
+            'pamong' => $this->whenLoaded('pamongAssignments', fn () => $this->pamongAssignments
+                ->pluck('pamong')
+                ->filter()
+                ->map(fn ($pamong) => [
+                    'id' => $pamong->id,
+                    'name' => $pamong->name ?: $pamong->username,
+                    'username' => $pamong->username,
+                ])->values()),
             'foto_url' => $this->foto_url,
             'status' => $this->status,
             'is_active' => $this->is_active,

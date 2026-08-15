@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ConfirmQuranReadingScanRequest;
 use App\Http\Requests\StoreQuranReadingScanRequest;
-use App\Models\Kelas;
 use App\Models\QuranProgressSubmission;
 use App\Models\QuranReadingCycle;
 use App\Models\QuranReadingEntry;
@@ -13,10 +12,12 @@ use App\Models\QuranReadingSheet;
 use App\Models\QuranSurahProgress;
 use App\Models\Siswa;
 use App\Models\ThemeSetting;
+use App\Models\User;
 use App\Services\QuranKhatamService;
 use App\Services\QuranReadingDocumentService;
 use App\Services\QuranReadingScanService;
 use App\Support\QuranCatalog;
+use App\Support\TargetGrade;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -110,7 +111,7 @@ class QuranReadingController extends Controller
     {
         $user = $request->user();
         $siswaList = $this->operationalStudentQuery($request)->paginate(20)->withQueryString();
-        $pendingQuery = QuranReadingEntry::with(['siswa:id,nis,nama,kelas_id,status,is_active,alumni_reviewer_id', 'siswa.kelas:id,nama', 'siswa.alumniReviewer:id,name', 'scan:id,siswa_id'])
+        $pendingQuery = QuranReadingEntry::with(['siswa:id,nis,nama,school_grade,status,is_active,alumni_reviewer_id', 'siswa.alumniReviewer:id,name', 'scan:id,siswa_id'])
             ->where('status', QuranReadingEntry::STATUS_PENDING)
             ->latest('reading_date');
         if ($user->isTeacher()) {
@@ -118,7 +119,7 @@ class QuranReadingController extends Controller
         }
 
         $pendingEntries = $pendingQuery->limit(30)->get();
-        $pendingProgressQuery = QuranProgressSubmission::with(['siswa:id,nis,nama,kelas_id', 'siswa.kelas:id,nama', 'scan:id,siswa_id'])
+        $pendingProgressQuery = QuranProgressSubmission::with(['siswa:id,nis,nama,school_grade', 'scan:id,siswa_id'])
             ->where('status', QuranProgressSubmission::STATUS_PENDING)
             ->latest();
         if ($user->isTeacher()) {
@@ -145,7 +146,8 @@ class QuranReadingController extends Controller
             'surahOptions' => QuranCatalog::options(),
             'khatam' => $selectedSiswa ? $this->khatam->summaryForStudent($selectedSiswa) : null,
             'cycleHistory' => $selectedSiswa ? $selectedSiswa->quranReadingCycles()->latest('cycle_number')->get() : collect(),
-            'kelasOptions' => Kelas::where('is_active', true)->orderBy('nama')->get(['id', 'nama']),
+            'schoolGradeOptions' => TargetGrade::schoolClassOptions(),
+            'pamongOptions' => User::query()->where('status', 'active')->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))->orderByRaw('COALESCE(name, username)')->get(['id', 'name', 'username']),
             'kelompokOptions' => Siswa::kelompokOptions(),
             'capabilities' => [
                 'create' => $user->hasPamongCrudPermission('tracer_bacaan_quran', 'create'),
@@ -356,7 +358,8 @@ class QuranReadingController extends Controller
             'selected_ids' => ['nullable', 'array', 'max:50'],
             'selected_ids.*' => ['integer', 'distinct', 'exists:siswa,id'],
             'search' => ['nullable', 'string', 'max:120'],
-            'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
+            'school_grade' => ['nullable', 'string', \Illuminate\Validation\Rule::in(TargetGrade::values())],
+            'pamong_id' => ['nullable', 'integer', 'exists:users,id'],
             'kelompok' => ['nullable', 'string', 'max:80'],
         ]);
         $documentType = match ($data['document_type']) {
@@ -841,15 +844,14 @@ class QuranReadingController extends Controller
     private function operationalStudentQuery(Request $request): Builder
     {
         $query = Siswa::active()
-            ->with(['kelas:id,nama', 'pamongAssignments.pamong:id,name'])
+            ->with(['pamongAssignments.pamong:id,name'])
             ->orderBy('nama');
         $user = $request->user();
         if ($user?->isTeacher()) {
             $query->whereIn('id', $user->getAssignedSiswaIds());
         }
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->integer('kelas_id'));
-        }
+        if ($request->filled('school_grade')) $query->where('school_grade', $request->string('school_grade'));
+        if ($request->filled('pamong_id')) $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id')));
         if ($request->filled('kelompok')) {
             $query->where('kelompok', $request->string('kelompok'));
         }

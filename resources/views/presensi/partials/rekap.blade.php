@@ -74,20 +74,20 @@
     </div>
     </x-collapsible-section>
 
-    <x-collapsible-section title="Filter Rekap" description="Atur tanggal, kelas, status, dan verifikasi." compact>
-    <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+    <x-collapsible-section title="Filter Rekap" description="Atur tanggal, Pamong, kelas sekolah, status, dan verifikasi." compact>
+    <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tanggal</label>
                 <input type="date" x-model="filters.tanggal" @change="loadPresensi(); loadStats()"
                        class="w-full pkg-field text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas</label>
-                <select x-model="filters.kelas_id" @change="loadPresensi(); loadStats()"
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
+                <select x-model="filters.school_grade" @change="loadPresensi(); loadStats()"
                         class="w-full pkg-field text-sm">
-                    <option value="">Semua Kelas</option>
-                    <template x-for="kelas in classes" :key="kelas.id">
-                        <option :value="kelas.id" x-text="kelas.nama"></option>
+                    <option value="">Semua Kelas Sekolah</option>
+                    <template x-for="(label, value) in schoolGrades" :key="value">
+                        <option :value="value" x-text="label"></option>
                     </template>
                 </select>
             </div>
@@ -130,6 +130,13 @@
             <div>
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Ringkasan Kelompok</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Pantau siswa yang sudah hadir dan yang belum hadir per kelompok pada tanggal terpilih.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pamong</label>
+                <select x-model="filters.pamong_id" @change="loadPresensi(); loadStats()" class="w-full pkg-field text-sm">
+                    <option value="">Semua Pamong</option>
+                    <template x-for="pamong in pamongOptions" :key="pamong.id"><option :value="pamong.id" x-text="pamong.name"></option></template>
+                </select>
             </div>
             <a href="{{ route('presensi.generus-recap') }}" class="btn-secondary shrink-0 px-3 py-2 text-sm">
                 Rekap Generus PKG
@@ -303,7 +310,7 @@
                                     </div>
                                     <div class="ml-3">
                                         <div class="text-sm font-medium text-gray-900 dark:text-white" x-text="item.siswa?.nama"></div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400" x-text="item.siswa?.nis + ' - ' + (item.siswa?.kelas?.nama || '-')"></div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400" x-text="item.siswa?.nis + ' - ' + (item.siswa?.school_grade_label || 'Kelas belum dikonfirmasi')"></div>
                                     </div>
                                 </div>
                             </td>

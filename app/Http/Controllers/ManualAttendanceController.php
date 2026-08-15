@@ -64,8 +64,7 @@ class ManualAttendanceController extends Controller
         $limit = (int) ($validated['per_page'] ?? ($canAccessAllStudents ? 50 : 20));
 
         $students = Siswa::query()
-            ->select(['id', 'nis', 'nama', 'kelas_id', 'foto_path', 'status', 'is_active'])
-            ->with('kelas:id,nama')
+            ->select(['id', 'nis', 'nama', 'school_grade', 'foto_path', 'status', 'is_active'])
             ->active()
             ->forManualAttendance($user)
             ->when($search !== '', function ($query) use ($search) {
@@ -81,7 +80,7 @@ class ManualAttendanceController extends Controller
                 'id' => $siswa->id,
                 'nis' => $siswa->nis,
                 'nama' => $siswa->nama,
-                'kelas' => $siswa->kelas?->nama,
+                'kelas' => $siswa->school_grade_label,
                 'foto_url' => $siswa->foto_path ? asset('storage/' . $siswa->foto_path) : null,
             ]);
 

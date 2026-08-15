@@ -14,7 +14,7 @@
     <div class="pkg-page-header mb-6 lg:mb-8">
         <div>
             <h1 class="pkg-page-heading text-xl sm:text-2xl lg:text-3xl">Laporan Presensi</h1>
-            <p class="pkg-page-subheading">Analisis kehadiran siswa, performa kelas, dan ringkasan presensi dalam satu layar.</p>
+            <p class="pkg-page-subheading text-pretty">Analisis kehadiran siswa, performa kelas sekolah, dan ringkasan presensi dalam satu layar.</p>
         </div>
         <div class="pkg-page-actions mt-4 sm:mt-0">
             <button @click="exportReport('pdf')"
@@ -31,7 +31,7 @@
     <div class="pkg-filter-bar mb-6">
         <div class="p-0 sm:p-0">
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Filter Laporan</h3>
-            <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Periode</label>
                     <select x-model="periode" @change="updateDateRange()" class="w-full pkg-field text-sm">
@@ -50,15 +50,26 @@
                     <input type="date" x-model="tanggal_selesai" :disabled="periode !== 'custom'" class="w-full pkg-field disabled:opacity-50 text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas</label>
-                    <select x-model="kelas_id" class="w-full pkg-field text-sm">
-                        <option value="">Semua Kelas</option>
-                        <template x-for="kelas in classes" :key="kelas.id">
-                            <option :value="kelas.id" x-text="kelas.nama"></option>
-                        </template>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
+                    <select x-model="school_grade" class="w-full pkg-field text-sm">
+                        <option value="">Semua Kelas Sekolah</option>
+                        @foreach($schoolGradeOptions as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
                     </select>
                 </div>
-                <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
+                @if($pamongOptions->isNotEmpty())
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pamong</label>
+                    <select x-model="pamong_id" class="w-full pkg-field text-sm">
+                        <option value="">Semua Pamong</option>
+                        @foreach($pamongOptions as $pamong)
+                            <option value="{{ $pamong->id }}">{{ $pamong->name ?: $pamong->username }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+                <div class="sm:col-span-2 lg:col-span-5 flex justify-end">
                     <button @click="loadReports()"
                             class="pkg-btn-primary py-2 px-6">
                         Generate Laporan
@@ -113,14 +124,14 @@
 
     <div class="pkg-card mb-8">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Performa Kelas</h3>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Performa Kelas Sekolah</h3>
         </div>
         <div x-show="loadingPerformance" class="p-6 text-sm text-gray-500 dark:text-gray-400">Memuat performa kelas...</div>
         <div x-show="!loadingPerformance" class="overflow-x-auto pkg-mobile-table">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kelas</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kelas Sekolah</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Siswa</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hadir</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Terlambat</th>
@@ -131,7 +142,7 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="kelas in classPerformance" :key="kelas.id">
                         <tr>
-                            <td data-label="Kelas" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white pkg-mobile-main" x-text="kelas.nama"></td>
+                            <td data-label="Kelas Sekolah" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white pkg-mobile-main" x-text="kelas.nama"></td>
                             <td data-label="Total Siswa" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="kelas.total_siswa"></td>
                             <td data-label="Hadir" class="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400" x-text="kelas.hadir"></td>
                             <td data-label="Terlambat" class="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 dark:text-yellow-400" x-text="kelas.terlambat"></td>
@@ -139,6 +150,37 @@
                             <td data-label="% Kehadiran" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="`${kelas.persentase_kehadiran}%`"></td>
                         </tr>
                     </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="pkg-card mb-8">
+        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Rekap Berdasarkan Pamong</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Siswa dengan beberapa Pamong ikut dihitung pada setiap binaan terkait.</p>
+        </div>
+        <div x-show="loadingPerformance" class="p-6 text-sm text-gray-500 dark:text-gray-400">Memuat rekap Pamong...</div>
+        <div x-show="!loadingPerformance" class="overflow-x-auto pkg-mobile-table">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700"><tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Pamong</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Generus Binaan</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Hadir</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Terlambat</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Tidak Hadir</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">% Kehadiran</th>
+                </tr></thead>
+                <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="pamong in pamongPerformance" :key="pamong.id"><tr>
+                        <td data-label="Pamong" class="pkg-mobile-main px-6 py-4 text-sm font-medium text-gray-900 dark:text-white" x-text="pamong.nama"></td>
+                        <td data-label="Generus Binaan" class="px-6 py-4 text-sm tabular-nums" x-text="pamong.total_siswa"></td>
+                        <td data-label="Hadir" class="px-6 py-4 text-sm tabular-nums text-green-600 dark:text-green-400" x-text="pamong.hadir"></td>
+                        <td data-label="Terlambat" class="px-6 py-4 text-sm tabular-nums text-yellow-600 dark:text-yellow-400" x-text="pamong.terlambat"></td>
+                        <td data-label="Tidak Hadir" class="px-6 py-4 text-sm tabular-nums text-red-600 dark:text-red-400" x-text="pamong.tidak_hadir"></td>
+                        <td data-label="% Kehadiran" class="px-6 py-4 text-sm tabular-nums" x-text="`${pamong.persentase_kehadiran}%`"></td>
+                    </tr></template>
+                    <tr x-show="!pamongPerformance.length"><td colspan="6" class="pkg-mobile-empty px-6 py-0"><div class="pkg-empty-state"><h3 class="pkg-empty-title">Belum ada binaan aktif</h3><p class="pkg-empty-copy">Rekap Pamong muncul setelah Generus memiliki hubungan binaan aktif.</p></div></td></tr>
                 </tbody>
             </table>
         </div>
@@ -155,7 +197,7 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ranking</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Siswa</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kelas</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kelas Sekolah</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Hadir</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% Kehadiran</th>
                     </tr>
@@ -175,7 +217,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td data-label="Kelas" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="siswa.kelas?.nama || '-'"></td>
+                            <td data-label="Kelas Sekolah" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="siswa.school_grade_label || 'Belum dikonfirmasi'"></td>
                             <td data-label="Total Hadir" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="siswa.total_hadir"></td>
                             <td data-label="% Kehadiran" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="`${siswa.persentase_kehadiran}%`"></td>
                         </tr>
@@ -238,17 +280,17 @@
             periode: 'hari_ini',
             tanggal_mulai: new Date().toISOString().split('T')[0],
             tanggal_selesai: new Date().toISOString().split('T')[0],
-            kelas_id: '',
-            classes: [],
+            school_grade: '',
+            pamong_id: '',
             summary: { total_siswa: 0, total_presensi: 0, persentase_kehadiran: 0, rata_rata_harian: 0 },
             loadingSummary: true,
             classPerformance: [],
+            pamongPerformance: [],
             loadingPerformance: true,
             topStudents: [],
             loadingStudents: true,
             async init() {
                 this.updateDateRange();
-                await this.loadClasses();
                 await this.loadReports();
             },
             updateDateRange() {
@@ -278,13 +320,9 @@
                 return new URLSearchParams({
                     tanggal_mulai: this.tanggal_mulai,
                     tanggal_selesai: this.tanggal_selesai,
-                    kelas_id: this.kelas_id || ''
+                    school_grade: this.school_grade || '',
+                    pamong_id: this.pamong_id || ''
                 });
-            },
-            async loadClasses() {
-                const response = await fetch('/api/v1/kelas', { headers: { 'Accept': 'application/json' } });
-                const data = await response.json();
-                this.classes = data.data || [];
             },
             async loadReports() {
                 this.loadingSummary = true;
@@ -322,6 +360,7 @@
                     const response = await fetch(`{{ route('reports.class-performance') }}?${this.getReportParams().toString()}`, { headers: { 'Accept': 'application/json' } });
                     const data = await response.json();
                     this.classPerformance = data.data || [];
+                    this.pamongPerformance = data.pamong_data || [];
                 } finally {
                     this.loadingPerformance = false;
                 }

@@ -142,16 +142,17 @@
 
     <div x-show="activeTab === 'siswa'" x-cloak>
     <!-- Filters -->
-    <x-collapsible-section title="Filter siswa" description="Cari berdasarkan nama, NIS, atau kelas." :open="request()->filled('search') || request()->filled('kelas_id')" :compact="true" class="mb-6">
-        <form method="GET" class="pkg-filter-grid md:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+    <x-collapsible-section title="Filter siswa" description="Cari berdasarkan nama, NIS, Pamong, atau kelas sekolah." :open="request()->filled('search') || request()->filled('school_grade') || request()->filled('pamong_id')" :compact="true" class="mb-6">
+        <form method="GET" class="pkg-filter-grid md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama/NIS..."
                 class="flex-1 min-w-[200px] px-3 py-2 pkg-field text-sm">
-            <select name="kelas_id" class="px-3 py-2 pkg-field text-sm">
-                <option value="">Semua Kelas</option>
-                @foreach($kelasOptions as $kelas)
-                    <option value="{{ $kelas->id }}" {{ request('kelas_id') == $kelas->id ? 'selected' : '' }}>{{ $kelas->nama }}</option>
+            <select name="school_grade" class="px-3 py-2 pkg-field text-sm">
+                <option value="">Semua Kelas Sekolah</option>
+                @foreach($schoolGradeOptions as $value => $label)
+                    <option value="{{ $value }}" @selected(request('school_grade') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
+            <select name="pamong_id" class="px-3 py-2 pkg-field text-sm"><option value="">Semua Pamong</option>@foreach($pamongOptions as $pamong)<option value="{{ $pamong->id }}" @selected((string) request('pamong_id') === (string) $pamong->id)>{{ $pamong->name ?: $pamong->username }}</option>@endforeach</select>
             <button type="submit" class="pkg-btn-primary px-4 py-2 text-sm">Filter</button>
             <a href="{{ route('tugas-pkg.verification') }}" class="pkg-btn-secondary px-4 py-2 text-sm">Reset</a>
         </form>
@@ -165,7 +166,7 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">NIS</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Nama</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Pendidikan & Binaan</th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Aksi</th>
                     </tr>
                 </thead>
@@ -189,7 +190,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-label="Kelas">{{ $siswa->kelas->nama ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300" data-label="Pendidikan & Binaan"><span class="block font-medium">{{ $siswa->school_grade_label }}</span><span class="block text-xs">{{ $siswa->pamongAssignments->pluck('pamong')->filter()->map(fn ($pamong) => $pamong->name ?: $pamong->username)->join(', ') ?: 'Belum memiliki Pamong' }}</span></td>
                         <td class="pkg-mobile-actions px-6 py-4 whitespace-nowrap text-center" data-label="Aksi">
                             <div class="flex items-center justify-center gap-2">
                                 <a href="{{ route('tugas-pkg.check', $siswa) }}" class="pkg-btn-primary px-3 py-1 text-sm">
@@ -219,7 +220,7 @@
                                     @if(auth()->user()->isTeacher())
                                         Hubungi admin bila daftar siswa binaan belum muncul di akun Anda.
                                     @else
-                                        Coba ubah filter pencarian atau kelas untuk melihat data lain.
+                                        Coba ubah filter pencarian, Pamong, atau kelas sekolah untuk melihat data lain.
                                     @endif
                                 </p>
                             </div>

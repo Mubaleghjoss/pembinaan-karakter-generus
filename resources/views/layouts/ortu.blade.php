@@ -168,7 +168,7 @@ x-effect="localStorage.setItem('ortuSidebarCollapsed', sidebarCollapsed); docume
                     </div>
                     <div class="min-w-0">
                         <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $siswa->nama }}</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $siswa->kelas->nama ?? '-' }} | {{ $siswa->nis }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $siswa->school_grade_label }} | {{ $siswa->nis }}</p>
                         @if($siswa->isGraduated())
                             <span class="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">Alumni</span>
                         @endif

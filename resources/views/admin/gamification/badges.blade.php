@@ -94,7 +94,7 @@
                         <div class="p-4 rounded-lg border {{ $bgColors[$index] ?? '' }} text-center">
                             <div class="text-3xl mb-1">{{ $medals[$index] }}</div>
                             <div class="text-sm font-bold text-gray-900 dark:text-white truncate">{{ $sp->siswa->nama ?? '-' }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $sp->siswa->kelas->nama ?? '-' }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $sp->siswa->school_grade_label ?? 'Kelas belum dikonfirmasi' }}</div>
                             <div class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-1">{{ number_format($sp->total_points) }}</div>
                             <div class="text-xs text-gray-500 dark:text-gray-400">Level {{ $sp->level }}</div>
                         </div>
@@ -109,7 +109,7 @@
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rank</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Siswa</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas Sekolah</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Level</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kehadiran</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Karakter</th>
@@ -127,7 +127,7 @@
                                         @endif
                                     </td>
                                     <td class="pkg-mobile-main px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Siswa">{{ $sp->siswa->nama ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400" data-label="Kelas">{{ $sp->siswa->kelas->nama ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400" data-label="Kelas Sekolah">{{ $sp->siswa->school_grade_label ?? 'Belum dikonfirmasi' }}</td>
                                     <td class="px-4 py-3 text-sm text-center text-indigo-600 dark:text-indigo-400 font-medium" data-label="Level">{{ $sp->level }}</td>
                                     <td class="px-4 py-3 text-sm text-center text-blue-600 dark:text-blue-400" data-label="Kehadiran">{{ number_format($sp->attendance_points) }}</td>
                                     <td class="px-4 py-3 text-sm text-center text-green-600 dark:text-green-400" data-label="Tugas PKG">{{ number_format($sp->character_points) }}</td>

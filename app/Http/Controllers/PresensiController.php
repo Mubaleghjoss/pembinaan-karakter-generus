@@ -30,6 +30,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use App\Models\Siswa;
+use App\Support\TargetGrade;
 
 /**
  * Controller untuk mengelola Presensi (Web)
@@ -56,8 +57,7 @@ class PresensiController extends Controller
     public function index(Request $request)
     {
         $tanggal = $this->resolveAttendanceDate($request);
-        $kelasId = $request->filled('kelas_id') ? $request->integer('kelas_id') : null;
-        $autoAlphaCount = $this->backfillClosedSiswaAlpha($tanggal, $tanggal, $kelasId);
+        $autoAlphaCount = $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
 
         $presensi = $this->buildListingQuery($request, $tanggal)
             ->latest('jam_masuk')
@@ -69,6 +69,8 @@ class PresensiController extends Controller
         $canCreateManualAttendance = $request->user()->canCreateManualAttendance();
         $canAccessAllManualAttendanceStudents = $request->user()->canAccessAllManualAttendanceStudents();
         $canEditPresensi = $request->user()->hasPamongCrudPermission('presensi', 'edit');
+        $schoolGradeOptions = TargetGrade::schoolClassOptions();
+        $pamongOptions = User::query()->where('status', 'active')->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))->orderByRaw('COALESCE(name, username)')->get(['id', 'name', 'username']);
 
         return view('presensi.index', compact(
             'presensi',
@@ -78,7 +80,9 @@ class PresensiController extends Controller
             'autoAlphaCount',
             'canCreateManualAttendance',
             'canAccessAllManualAttendanceStudents',
-            'canEditPresensi'
+            'canEditPresensi',
+            'schoolGradeOptions',
+            'pamongOptions'
         ));
     }
 
@@ -112,8 +116,7 @@ class PresensiController extends Controller
         $limit = (int) ($validated['per_page'] ?? ($canAccessAllStudents ? 50 : 10));
 
         $students = Siswa::query()
-            ->select(['id', 'nis', 'nama', 'kelas_id', 'foto_path', 'status', 'is_active'])
-            ->with('kelas:id,nama')
+            ->select(['id', 'nis', 'nama', 'school_grade', 'foto_path', 'status', 'is_active'])
             ->active()
             ->forManualAttendance($user)
             ->when($search !== '', function ($query) use ($search) {
@@ -129,12 +132,8 @@ class PresensiController extends Controller
                 'id' => $siswa->id,
                 'nis' => $siswa->nis,
                 'nama' => $siswa->nama,
-                'kelas' => $siswa->kelas
-                    ? [
-                        'id' => $siswa->kelas->id,
-                        'nama' => $siswa->kelas->nama,
-                    ]
-                    : null,
+                'school_grade' => $siswa->school_grade,
+                'school_grade_label' => $siswa->school_grade_label,
                 'foto_url' => $siswa->foto_url,
             ]);
 
@@ -581,7 +580,8 @@ class PresensiController extends Controller
         $audience = in_array($request->input('audience'), ['siswa', 'pamong'], true)
             ? $request->input('audience')
             : 'all';
-        $kelasId = $request->filled('kelas_id') ? $request->integer('kelas_id') : null;
+        $schoolGrade = TargetGrade::normalizeSchoolClassInput($request->input('school_grade'));
+        $binaanPamongId = $request->filled('pamong_id') ? $request->integer('pamong_id') : null;
         $kelompok = Siswa::normalizeKelompok($request->input('kelompok'));
         $pamongRole = in_array($request->input('pamong_role'), User::attendanceRoleNames(), true)
             ? $request->input('pamong_role')
@@ -590,7 +590,7 @@ class PresensiController extends Controller
         $status = $request->input('status');
 
         if ($audience !== 'pamong') {
-            $this->backfillClosedSiswaAlpha($startDate, $endDate, $kelasId);
+            $this->backfillClosedSiswaAlpha($startDate, $endDate);
         }
 
         if ($audience !== 'siswa') {
@@ -604,10 +604,10 @@ class PresensiController extends Controller
         $statsRows = collect();
 
         if ($audience !== 'pamong') {
-            $siswaRows = $this->buildSiswaRecapRows($status, $startDate, $endDate, $kelasId, $kelompok);
+            $siswaRows = $this->buildSiswaRecapRows($status, $startDate, $endDate, $schoolGrade, $binaanPamongId, $kelompok);
             $rows = $rows->merge($siswaRows);
             $statsRows = $statsRows->merge(
-                $status ? $this->buildSiswaRecapRows(null, $startDate, $endDate, $kelasId, $kelompok) : $siswaRows
+                $status ? $this->buildSiswaRecapRows(null, $startDate, $endDate, $schoolGrade, $binaanPamongId, $kelompok) : $siswaRows
             );
         }
 
@@ -645,7 +645,10 @@ class PresensiController extends Controller
             'pamong' => $this->buildRecapStats($statsRows->where('type', 'pamong')->values()),
         ];
 
-        $kelasList = Kelas::query()->orderBy('nama')->get(['id', 'nama']);
+        $schoolGradeOptions = TargetGrade::schoolClassOptions();
+        $binaanPamongOptions = User::query()->where('status', 'active')
+            ->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))
+            ->orderBy('name')->get(['id', 'name', 'username']);
         $kelompokOptions = Siswa::kelompokOptions();
         $teamOptions = OrganizationalTeam::query()
             ->orderBy('sort_order')
@@ -661,7 +664,8 @@ class PresensiController extends Controller
             'records',
             'recap',
             'typeRecap',
-            'kelasList',
+            'schoolGradeOptions',
+            'binaanPamongOptions',
             'kelompokOptions',
             'teamOptions',
             'pamongRoleOptions',
@@ -680,8 +684,7 @@ class PresensiController extends Controller
     public function getData(Request $request): JsonResponse
     {
         $tanggal = $this->resolveAttendanceDate($request);
-        $kelasId = $request->filled('kelas_id') ? $request->integer('kelas_id') : null;
-        $this->backfillClosedSiswaAlpha($tanggal, $tanggal, $kelasId);
+        $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
 
         $presensiQuery = $this->buildListingQuery($request, $tanggal);
         $this->applyStatusFilter($presensiQuery, $request->input('status'));
@@ -712,16 +715,15 @@ class PresensiController extends Controller
     public function getStats(Request $request): JsonResponse
     {
         $tanggal = $this->resolveAttendanceDate($request);
-        $kelasId = $request->filled('kelas_id') ? $request->integer('kelas_id') : null;
-        $this->backfillClosedSiswaAlpha($tanggal, $tanggal, $kelasId);
-
-        $dto = new StatisticsFilterDTO(
-            startDate: $tanggal,
-            endDate: $tanggal,
-            kelasId: $kelasId
-        );
-
-        $stats = $this->presensiService->getStatistics($dto);
+        $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
+        $query = $this->buildListingQuery($request, $tanggal);
+        $stats = [
+            'total' => (clone $query)->count(),
+            'hadir' => (clone $query)->where('status', 'hadir')->count(),
+            'terlambat' => (clone $query)->where('status', 'terlambat')->count(),
+            'tidak_hadir' => (clone $query)->whereIn('status', ['alpha', 'tidak_hadir', 'izin', 'sakit'])->count(),
+            'verified' => (clone $query)->where('is_verified', true)->count(),
+        ];
 
         return response()->json([
             'success' => true,
@@ -733,18 +735,22 @@ class PresensiController extends Controller
     {
         $validated = $request->validate([
             'tanggal' => ['nullable', 'date', 'date_format:Y-m-d'],
+            'school_grade' => ['nullable', 'string', \Illuminate\Validation\Rule::in(TargetGrade::values())],
+            'pamong_id' => ['nullable', 'integer', 'exists:users,id'],
             'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
             'status' => ['nullable', 'string', 'in:hadir,terlambat,izin,sakit,alpha,tidak_hadir'],
             'verified' => ['nullable', 'in:0,1'],
         ]);
 
         $tanggal = $validated['tanggal'] ?? now()->toDateString();
-        $kelasId = isset($validated['kelas_id']) ? (int) $validated['kelas_id'] : null;
-        $this->backfillClosedSiswaAlpha($tanggal, $tanggal, $kelasId);
+        $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
 
         $query = Presensi::query()
             ->whereDate('tanggal', $tanggal)
-            ->when($kelasId, fn ($query, $id) => $query->whereRelation('siswa', 'kelas_id', $id));
+            ->whereHas('siswa', fn ($student) => $student
+                ->when($validated['school_grade'] ?? null, fn ($query, $grade) => $query->where('school_grade', $grade))
+                ->when($validated['pamong_id'] ?? null, fn ($query, $pamongId) => $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $pamongId)))
+                ->when($validated['kelas_id'] ?? null, fn ($query, $legacyClassId) => $query->where('kelas_id', $legacyClassId)));
 
         $this->applyStatusFilter($query, $validated['status'] ?? null);
 
@@ -780,7 +786,8 @@ class PresensiController extends Controller
         }
 
         $validated = $request->validate([
-            'kelas_id' => ['required', 'integer', 'exists:kelas,id'],
+            'school_grade' => ['nullable', 'required_without:pamong_id', 'string', \Illuminate\Validation\Rule::in(TargetGrade::values())],
+            'pamong_id' => ['nullable', 'required_without:school_grade', 'integer', 'exists:users,id'],
             'tanggal' => ['required', 'date', 'date_format:Y-m-d'],
             'status' => ['required', 'string', 'in:hadir,terlambat,izin,sakit,alpha,tidak_hadir'],
         ]);
@@ -788,7 +795,8 @@ class PresensiController extends Controller
         $status = $this->normalizeStatusFilter($validated['status']) ?: 'alpha';
         $siswaIds = Siswa::query()
             ->active()
-            ->where('kelas_id', $validated['kelas_id'])
+            ->when($validated['school_grade'] ?? null, fn ($query, $grade) => $query->where('school_grade', $grade))
+            ->when($validated['pamong_id'] ?? null, fn ($query, $pamongId) => $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $pamongId)))
             ->orderBy('id')
             ->pluck('id');
 
@@ -995,7 +1003,7 @@ class PresensiController extends Controller
 
     protected function buildListingQuery(Request $request, string|array $tanggal)
     {
-        $siswaColumns = ['id', 'nis', 'nama', 'kelas_id', 'alamat', 'foto_path'];
+        $siswaColumns = ['id', 'nis', 'nama', 'school_grade', 'alamat', 'foto_path'];
 
         if (Siswa::hasKelompokColumn()) {
             $siswaColumns[] = 'kelompok';
@@ -1017,7 +1025,6 @@ class PresensiController extends Controller
             ])
             ->with([
                 'siswa' => fn ($query) => $query->select($siswaColumns),
-                'siswa.kelas:id,nama',
                 'verifier:id,name',
             ])
             ->when(
@@ -1025,17 +1032,20 @@ class PresensiController extends Controller
                 fn ($query) => $query->whereBetween('tanggal', $tanggal),
                 fn ($query) => $query->whereDate('tanggal', $tanggal)
             )
-            ->when($request->kelas_id, fn ($query, $kelasId) => $query->whereRelation('siswa', 'kelas_id', $kelasId));
+            ->whereHas('siswa', fn ($student) => $student
+                ->when($request->filled('school_grade'), fn ($query) => $query->where('school_grade', $request->string('school_grade')))
+                ->when($request->filled('pamong_id'), fn ($query) => $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id')))));
     }
 
     protected function buildSiswaRecapRows(
         ?string $status,
         Carbon $startDate,
         Carbon $endDate,
-        ?int $kelasId,
+        ?string $schoolGrade,
+        ?int $pamongId,
         ?string $kelompok
     ): Collection {
-        $siswaColumns = ['id', 'nis', 'nama', 'kelas_id', 'alamat', 'foto_path'];
+        $siswaColumns = ['id', 'nis', 'nama', 'school_grade', 'alamat', 'foto_path'];
 
         if (Siswa::hasKelompokColumn()) {
             $siswaColumns[] = 'kelompok';
@@ -1057,13 +1067,13 @@ class PresensiController extends Controller
             ])
             ->with([
                 'siswa' => fn ($query) => $query->select($siswaColumns),
-                'siswa.kelas:id,nama',
                 'verifier:id,name',
             ])
             ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-            ->whereHas('siswa', function ($query) use ($kelasId, $kelompok) {
+            ->whereHas('siswa', function ($query) use ($schoolGrade, $pamongId, $kelompok) {
                 $query->active()
-                    ->when($kelasId, fn ($query, $kelasId) => $query->where('kelas_id', $kelasId))
+                    ->when($schoolGrade, fn ($query, $grade) => $query->where('school_grade', $grade))
+                    ->when($pamongId, fn ($query, $id) => $query->byPamong($id))
                     ->when($kelompok, function ($query, string $kelompok) {
                         Siswa::hasKelompokColumn()
                             ? $query->where('kelompok', $kelompok)
@@ -1090,7 +1100,7 @@ class PresensiController extends Controller
                     'date_sort' => $date->format('Y-m-d'),
                     'name' => $siswa?->nama ?: '-',
                     'identifier' => $siswa?->nis ?: '-',
-                    'unit' => $siswa?->kelas?->nama ?: 'Tanpa kelas',
+                    'unit' => $siswa?->school_grade_label ?: 'Kelas belum dikonfirmasi',
                     'group' => $siswa?->kelompok_label ?: '-',
                     'role' => 'Siswa',
                     'team' => '-',
@@ -1311,7 +1321,7 @@ class PresensiController extends Controller
     protected function buildKelompokSummary(Request $request, string $tanggal): array
     {
         $kelompokOptions = Siswa::kelompokOptions();
-        $siswaColumns = ['id', 'nis', 'nama', 'kelas_id', 'alamat'];
+        $siswaColumns = ['id', 'nis', 'nama', 'school_grade', 'alamat'];
 
         if (Siswa::hasKelompokColumn()) {
             $siswaColumns[] = 'kelompok';
@@ -1319,9 +1329,9 @@ class PresensiController extends Controller
 
         $students = Siswa::query()
             ->select($siswaColumns)
-            ->with('kelas:id,nama')
             ->active()
-            ->when($request->kelas_id, fn ($query, $kelasId) => $query->where('kelas_id', $kelasId))
+            ->when($request->school_grade, fn ($query, $grade) => $query->where('school_grade', $grade))
+            ->when($request->pamong_id, fn ($query, $pamongId) => $query->byPamong((int) $pamongId))
             ->orderBy('nama')
             ->get()
             ->filter(fn (Siswa $siswa) => in_array($siswa->kelompok, array_keys($kelompokOptions), true))
@@ -1352,8 +1362,8 @@ class PresensiController extends Controller
                         'id' => $siswa->id,
                         'nama' => $siswa->nama,
                         'nis' => $siswa->nis,
-                        'kelas' => $siswa->kelas->nama ?? '-',
-                        'kelas_id' => $siswa->kelas_id,
+                        'kelas' => $siswa->school_grade_label ?? 'Belum dikonfirmasi',
+                        'school_grade' => $siswa->school_grade,
                         'foto_url' => $siswa->foto_url,
                     ];
 

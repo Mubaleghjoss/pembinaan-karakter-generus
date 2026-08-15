@@ -369,7 +369,7 @@
 
     <div class="print-info">
         @if(isset($className))
-            <strong>Kelas: {{ $className }}</strong> |
+            <strong>Kelas Sekolah: {{ $className }}</strong> |
         @endif
         Total: {{ $students->count() }} siswa | 
         Dicetak: {{ now()->format('d/m/Y H:i') }}
@@ -411,8 +411,8 @@
                             <span class="info-value">: {{ $student->nis }}</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Kelas</span>
-                            <span class="info-value">: {{ $student->kelas->nama ?? '-' }}</span>
+                            <span class="info-label">Kelas Sekolah</span>
+                            <span class="info-value">: {{ $student->school_grade_label ?? 'Belum dikonfirmasi' }}</span>
                         </div>
                         @if($student->alamat)
                         <div class="info-row alamat-row">

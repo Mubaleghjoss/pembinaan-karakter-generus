@@ -23,13 +23,13 @@
     <div class="pkg-card p-4">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas</label>
-                <select x-model="qrFilters.kelas_id" 
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
+                <select x-model="qrFilters.school_grade"
                         @change="loadStudentsForQR()"
                         class="w-full pkg-field text-sm">
-                    <option value="">Semua Kelas</option>
-                    <template x-for="kelas in classes" :key="kelas.id">
-                        <option :value="kelas.id" x-text="kelas.nama"></option>
+                    <option value="">Semua Kelas Sekolah</option>
+                    <template x-for="(label, value) in schoolGrades" :key="value">
+                        <option :value="value" x-text="label"></option>
                     </template>
                 </select>
             </div>
@@ -89,7 +89,7 @@
                     <!-- Info -->
                     <h4 class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="student.nama"></h4>
                     <p class="text-xs text-gray-500 dark:text-gray-400" x-text="student.nis"></p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="student.kelas?.nama || '-'"></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="student.school_grade_label || 'Kelas belum dikonfirmasi'"></p>
                     
                     <!-- Actions -->
                     <div class="mt-3 flex gap-2 justify-center">

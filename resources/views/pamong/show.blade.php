@@ -26,7 +26,7 @@
                     Reset Password
                 </button>
             </form>
-            <a href="{{ route('pamong.assign.form', $pamong) }}" class="btn-primary text-sm">Assign Siswa</a>
+            <a href="{{ route('pamong.assign.form', $pamong) }}" class="btn-primary text-sm">Atur Binaan</a>
         </div>
     </div>
 
@@ -67,7 +67,7 @@
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Siswa</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">NIS</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Pendidikan & Binaan</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Aksi</th>
                 </tr>
             </thead>
@@ -80,8 +80,9 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" data-label="NIS">
                         {{ $assignment->siswa->nis }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" data-label="Kelas">
-                        {{ $assignment->siswa->kelas->nama ?? '-' }}
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400" data-label="Pendidikan & Binaan">
+                        <span class="block font-medium text-gray-800 dark:text-gray-200">{{ $assignment->siswa->school_grade_label }}</span>
+                        <span class="block text-xs">Level PKG: {{ $assignment->siswa->target_grade_label }}</span>
                     </td>
                     <td class="pkg-mobile-actions px-6 py-4 whitespace-nowrap text-right" data-label="Aksi">
                         <form action="{{ route('pamong.remove-assignment', [$pamong, $assignment->siswa]) }}" method="POST" class="inline" data-confirm="Yakin ingin menghapus siswa ini dari penugasan?" data-confirm-title="Hapus penugasan siswa" data-confirm-button="Hapus" data-confirm-tone="danger">

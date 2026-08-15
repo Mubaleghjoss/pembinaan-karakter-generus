@@ -32,13 +32,13 @@
         <div class="p-4">
             <form method="GET" class="flex flex-wrap gap-4 items-end">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kelas</label>
-                    <select name="kelas_id" onchange="this.form.submit()"
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kelas Sekolah</label>
+                    <select name="school_grade" onchange="this.form.submit()"
                             class="pkg-field text-sm">
-                        <option value="">Semua Kelas</option>
-                        @foreach($kelasList as $kelas)
-                        <option value="{{ $kelas->id }}" {{ request('kelas_id') == $kelas->id ? 'selected' : '' }}>
-                            {{ $kelas->nama }}
+                        <option value="">Semua Kelas Sekolah</option>
+                        @foreach($schoolGradeOptions as $value => $label)
+                        <option value="{{ $value }}" {{ request('school_grade') === $value ? 'selected' : '' }}>
+                            {{ $label }}
                         </option>
                         @endforeach
                     </select>
@@ -67,8 +67,8 @@
         <div class="p-4 border-b border-gray-200 dark:border-gray-700 print-header">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                 Daftar Akun Siswa
-                @if(request('kelas_id'))
-                    - {{ $kelasList->firstWhere('id', request('kelas_id'))?->nama }}
+                @if(request('school_grade'))
+                    - {{ $schoolGradeOptions[request('school_grade')] ?? request('school_grade') }}
                 @endif
             </h2>
             <p class="text-sm text-gray-500">Dicetak: {{ now()->format('d M Y H:i') }}</p>
@@ -81,7 +81,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">No</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Nama</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">NIS (Username)</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas Sekolah</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Password Default</th>
                     </tr>
                 </thead>
@@ -91,7 +91,7 @@
                         <td class="px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="No">{{ $index + 1 }}</td>
                         <td class="pkg-mobile-main px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Siswa">{{ $siswa->nama }}</td>
                         <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white" data-label="NIS">{{ $siswa->nis }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Kelas">{{ $siswa->kelas->nama ?? '-' }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Kelas Sekolah">{{ $siswa->school_grade_label }}</td>
                         <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white" data-label="Password awal">{{ $siswa->nis }}</td>
                     </tr>
                     @empty

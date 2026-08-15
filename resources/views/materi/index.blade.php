@@ -174,7 +174,7 @@
                             <div class="min-w-0">
                                 <p class="font-semibold text-gray-900 dark:text-white">{{ $student['nama'] }}</p>
                                 <p class="mt-1 text-xs text-amber-700 dark:text-amber-200">
-                                    NIS {{ $student['nis'] }} - Kelas {{ $student['kelas'] }} - Lahir {{ $student['tanggal_lahir'] }}
+                                    NIS {{ $student['nis'] }} - Kelas Sekolah {{ $student['kelas'] }} - Lahir {{ $student['tanggal_lahir'] }}
                                 </p>
                             </div>
                             @if($student['edit_url'])

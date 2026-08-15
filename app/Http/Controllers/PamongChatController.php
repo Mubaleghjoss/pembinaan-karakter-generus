@@ -19,7 +19,6 @@ class PamongChatController extends Controller
         $user = Auth::user();
 
         $siswaList = $this->visibleSiswaQuery($user)
-            ->with('kelas')
             ->orderBy('nama')
             ->get();
         $recipientScopeLabel = $user->isAdmin() ? 'siswa aktif' : 'siswa binaan Anda';
@@ -52,12 +51,10 @@ class PamongChatController extends Controller
                 'id' => $siswa->id,
                 'nis' => $siswa->nis,
                 'nama' => $siswa->nama,
-                'kelas' => $siswa->kelas
-                    ? [
-                        'id' => $siswa->kelas->id,
-                        'nama' => $siswa->kelas->nama,
-                    ]
-                    : null,
+                'kelas' => $siswa->school_grade ? [
+                    'id' => $siswa->school_grade,
+                    'nama' => $siswa->school_grade_label,
+                ] : null,
             ])
             ->values();
 

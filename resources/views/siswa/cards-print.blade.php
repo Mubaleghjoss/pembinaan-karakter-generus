@@ -406,9 +406,9 @@
                                     <span class="info-value">{{ $siswa->nis }}</span>
                                 </div>
                                 <div class="info-row">
-                                    <span class="info-label">Kelas</span>
+                                    <span class="info-label">Kelas Sekolah</span>
                                     <span>:</span>
-                                    <span class="info-value">{{ $siswa->kelas->nama ?? '-' }}</span>
+                                    <span class="info-value">{{ $siswa->school_grade_label ?? '-' }}</span>
                                 </div>
                             </div>
                         </div>

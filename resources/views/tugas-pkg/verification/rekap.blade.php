@@ -43,12 +43,12 @@
     </div>
 
     <!-- Filters -->
-    <x-collapsible-section title="Filter rekap" description="Saring kelas, pamong, dan rentang tanggal." :open="request()->hasAny(['kelas_id', 'pamong_id', 'start_date', 'end_date'])" :compact="true" class="mb-6">
+    <x-collapsible-section title="Filter rekap" description="Saring kelas sekolah, Pamong, dan rentang tanggal." :open="request()->hasAny(['school_grade', 'pamong_id', 'start_date', 'end_date'])" :compact="true" class="mb-6">
         <form method="GET" class="pkg-filter-grid md:grid-cols-[repeat(4,minmax(0,1fr))_auto_auto]">
-            <select name="kelas_id" class="px-3 py-2 pkg-field text-sm">
-                <option value="">Semua Kelas</option>
-                @foreach($kelasOptions as $kelas)
-                    <option value="{{ $kelas->id }}" {{ request('kelas_id') == $kelas->id ? 'selected' : '' }}>{{ $kelas->nama }}</option>
+            <select name="school_grade" class="px-3 py-2 pkg-field text-sm">
+                <option value="">Semua Kelas Sekolah</option>
+                @foreach($schoolGradeOptions as $value => $label)
+                    <option value="{{ $value }}" {{ request('school_grade') === $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
             @if(!auth()->user()->isTeacher() && $pamongOptions->isNotEmpty())
@@ -81,7 +81,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">No</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">NIS</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Nama</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas Sekolah</th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Karakter Terceklis</th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total Ceklis</th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Progress</th>
@@ -109,7 +109,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-label="Kelas">{{ $data['siswa']->kelas->nama ?? '-' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-label="Kelas Sekolah">{{ $data['siswa']->school_grade_label }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white" data-label="Tugas selesai">
                             {{ $data['checked_count'] }}/{{ $data['total_karakter'] }}
                         </td>
@@ -138,7 +138,7 @@
                         <td colspan="8" class="pkg-mobile-empty px-6 py-0">
                             <div class="pkg-empty-state">
                                 <h3 class="pkg-empty-title">Belum ada data rekap</h3>
-                                <p class="pkg-empty-copy">Coba ubah filter kelas, pamong, atau rentang tanggal untuk melihat ringkasan progres tugas PKG siswa.</p>
+                                <p class="pkg-empty-copy">Coba ubah filter kelas sekolah, Pamong, atau rentang tanggal untuk melihat ringkasan progres tugas PKG siswa.</p>
                             </div>
                         </td>
                     </tr>

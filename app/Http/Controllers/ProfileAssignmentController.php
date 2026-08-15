@@ -15,12 +15,12 @@ class ProfileAssignmentController extends Controller
     {
         $validated = $request->validate([
             'kelompok' => ['required', 'string', Rule::in(array_keys(Siswa::kelompokOptions()))],
-            'target_grade_override' => ['required', 'string', Rule::in(TargetGrade::values())],
+            'school_grade' => ['required', 'string', Rule::in(TargetGrade::values())],
         ], [
             'kelompok.required' => 'Pilih kelompok terbaru.',
             'kelompok.in' => 'Kelompok yang dipilih tidak valid.',
-            'target_grade_override.required' => 'Pilih kelas sekolah saat ini.',
-            'target_grade_override.in' => 'Kelas sekolah yang dipilih tidak valid.',
+            'school_grade.required' => 'Pilih kelas sekolah saat ini.',
+            'school_grade.in' => 'Kelas sekolah yang dipilih tidak valid.',
         ]);
 
         $siswa = $request->user('siswa');
@@ -28,7 +28,7 @@ class ProfileAssignmentController extends Controller
 
         $siswa->update([
             'kelompok' => $validated['kelompok'],
-            'target_grade_override' => $validated['target_grade_override'],
+            'school_grade' => $validated['school_grade'],
             'profile_assignment_confirmed_at' => now(),
         ]);
 

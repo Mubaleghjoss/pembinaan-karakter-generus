@@ -18,7 +18,7 @@
                 <a href="{{ $studentUrl }}" class="flex min-w-0 flex-1 items-center justify-between gap-3 py-3">
                 <div class="min-w-0">
                     <p class="truncate font-semibold">{{ $siswa->nama }}</p>
-                    <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $siswa->nis }} &middot; {{ $siswa->kelas?->nama ?? 'Tanpa kelas' }} &middot; {{ $siswa->kelompok_label ?? $siswa->kelompok ?? '-' }}</p>
+                    <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $siswa->nis }} &middot; {{ $siswa->school_grade_label }} &middot; {{ $siswa->kelompok_label ?? $siswa->kelompok ?? '-' }}</p>
                 </div>
                 <span aria-hidden="true">&rarr;</span>
                 </a>

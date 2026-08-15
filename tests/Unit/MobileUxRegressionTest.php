@@ -150,7 +150,7 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('<x-tabs', $operational);
         $this->assertStringContainsString(':sync-query="true"', $operational);
         $this->assertStringContainsString("\$capabilities['create']", $operational);
-        $this->assertStringContainsString('capture="environment"', $scan);
+        $this->assertStringNotContainsString('capture="environment"', $scan);
         $this->assertStringContainsString('maksimal 8 MB', $scan);
         $this->assertStringNotContainsString('overflow-x-auto', $scan);
     }

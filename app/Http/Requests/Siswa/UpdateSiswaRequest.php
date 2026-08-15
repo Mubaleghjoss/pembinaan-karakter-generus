@@ -48,6 +48,7 @@ class UpdateSiswaRequest extends FormRequest
             'tanggal_lahir' => ['sometimes', 'nullable', 'date'],
             'kelompok' => ['nullable', 'string', Rule::in(array_keys(\App\Models\Siswa::kelompokOptions()))],
             'kelas_id' => ['sometimes', 'nullable', 'integer', 'exists:kelas,id'],
+            'school_grade' => ['sometimes', 'nullable', 'string', Rule::in(TargetGrade::values())],
             'target_grade_override' => ['nullable', 'string', Rule::in(TargetGrade::values())],
             'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'nama_wali' => ['nullable', 'string', 'max:255'],
@@ -76,6 +77,7 @@ class UpdateSiswaRequest extends FormRequest
             'kelompok.in' => 'Kelompok harus salah satu dari daftar yang tersedia.',
             'kelas_id.integer' => 'ID kelas harus berupa angka.',
             'kelas_id.exists' => 'Kelas tidak ditemukan.',
+            'school_grade.in' => 'Kelas sekolah tidak valid.',
             'target_grade_override.in' => 'Level kelas PKG tidak valid.',
             'foto.image' => 'File harus berupa gambar.',
             'foto.mimes' => 'Format foto harus jpeg, png, atau jpg.',
@@ -104,8 +106,9 @@ class UpdateSiswaRequest extends FormRequest
             'jenis_kelamin' => 'Jenis Kelamin',
             'tanggal_lahir' => 'Tanggal Lahir',
             'kelompok' => 'Kelompok',
-            'kelas_id' => 'Kelas',
-            'target_grade_override' => 'Level Kelas PKG',
+            'kelas_id' => 'Kelas Arsip',
+            'school_grade' => 'Kelas Sekolah',
+            'target_grade_override' => 'Override Level PKG',
             'foto' => 'Foto',
             'nama_wali' => 'Nama Wali',
             'phone_wali' => 'Telepon Wali',
@@ -133,7 +136,7 @@ class UpdateSiswaRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Trim whitespace dari string fields
-        $fieldsToTrim = ['nis', 'nama', 'kelompok', 'target_grade_override', 'nama_wali', 'phone_wali', 'email_wali'];
+        $fieldsToTrim = ['nis', 'nama', 'kelompok', 'school_grade', 'target_grade_override', 'nama_wali', 'phone_wali', 'email_wali'];
 
         foreach ($fieldsToTrim as $field) {
             if ($this->has($field) && is_string($this->$field)) {

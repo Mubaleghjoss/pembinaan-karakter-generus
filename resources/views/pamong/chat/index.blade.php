@@ -151,7 +151,7 @@ function chatManager() {
             return this.siswaList
                 .map((siswa) => ({
                     id: siswa.kelas?.id ?? '',
-                    nama: siswa.kelas?.nama ?? 'Tanpa Kelas',
+                    nama: siswa.kelas?.nama ?? 'Kelas belum dikonfirmasi',
                 }))
                 .filter((kelas) => kelas.id !== '')
                 .filter((kelas, index, list) => list.findIndex((item) => item.id === kelas.id) === index)

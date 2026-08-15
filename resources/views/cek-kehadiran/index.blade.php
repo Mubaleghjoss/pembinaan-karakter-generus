@@ -92,7 +92,7 @@
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                             <td class="px-4 py-3 pkg-mobile-main" data-label="Siswa">
                                 <div class="font-medium text-gray-900 dark:text-white">{{ $t->siswa->nama ?? '-' }}</div>
-                                <div class="text-xs text-gray-500">{{ $t->siswa->kelas->nama ?? '' }}</div>
+                                <div class="text-xs text-gray-500">{{ $t->siswa->school_grade_label ?? 'Kelas belum dikonfirmasi' }}</div>
                             </td>
                             <td class="px-4 py-3 text-gray-700 dark:text-gray-300" data-label="Deskripsi">{{ $t->description }}</td>
                             <td class="px-4 py-3 text-gray-600 dark:text-gray-400" data-label="Tanggal">{{ $t->created_at->format('d M Y H:i') }}</td>

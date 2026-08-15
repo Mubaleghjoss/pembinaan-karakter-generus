@@ -9,7 +9,6 @@ use App\Http\Requests\Siswa\StoreSiswaRequest;
 use App\Http\Requests\Siswa\UpdateSiswaRequest;
 use App\Http\Resources\SiswaResource;
 use App\Imports\SiswaImport;
-use App\Models\Kelas;
 use App\Models\Level;
 use App\Models\Siswa;
 use App\Models\SiswaPoint;
@@ -61,12 +60,15 @@ class SiswaController extends Controller
             $filters['search'] = $request->search;
         }
 
-        if ($request->kelas_id) {
-            $filters['kelas_id'] = $request->kelas_id;
-        }
+        if ($request->school_grade) $filters['school_grade'] = $request->school_grade;
+        if ($request->pamong_id) $filters['pamong_id'] = $request->pamong_id;
 
         $siswa = $this->siswaService->paginate($filters, 20);
-        $kelas = Kelas::all();
+        $kelas = collect();
+        $schoolGradeOptions = TargetGrade::schoolClassOptions();
+        $pamongOptions = User::query()->where('status', 'active')
+            ->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))
+            ->orderByRaw('COALESCE(name, username)')->get(['id', 'name', 'username']);
         $biodataStats = $this->siswaService->getBiodataStatistics();
         $kelompokOptions = Siswa::kelompokOptions();
         $adminReviewers = User::query()
@@ -111,7 +113,7 @@ class SiswaController extends Controller
         return view('siswa.index', compact(
             'siswa', 'kelas', 'biodataStats',
             'totalSiswaAktif', 'totalBiometrik', 'totalBiometrikLegacy', 'levelDistribution',
-            'kelompokOptions',
+            'kelompokOptions', 'schoolGradeOptions', 'pamongOptions',
             'adminReviewers'
         ));
     }
@@ -121,17 +123,16 @@ class SiswaController extends Controller
      */
     public function accounts(Request $request)
     {
-        $query = Siswa::with('kelas')->active();
+        $query = Siswa::query()->active();
 
-        if ($request->kelas_id) {
-            $query->where('kelas_id', $request->kelas_id);
+        if ($request->filled('school_grade')) {
+            $query->where('school_grade', $request->school_grade);
         }
 
-        $siswaList = $query->orderBy('kelas_id')->orderBy('nama')->get();
-        $kelasList = Kelas::orderBy('nama')->get();
+        $siswaList = $query->orderBy('school_grade')->orderBy('nama')->get();
+        $schoolGradeOptions = TargetGrade::schoolClassOptions();
 
-        return view('siswa.accounts', compact('siswaList', 'kelasList'));
-        $kelas = Kelas::all();
+        return view('siswa.accounts', compact('siswaList', 'schoolGradeOptions'));
 
         return view('siswa.index', compact('siswa', 'kelas'));
     }
@@ -141,11 +142,10 @@ class SiswaController extends Controller
      */
     public function create()
     {
-        $kelas = $this->getActiveKelasOptions();
         $kelompokOptions = Siswa::kelompokOptions();
-        $targetGradeOptions = TargetGrade::options();
+        $targetGradeOptions = TargetGrade::schoolClassOptions();
 
-        return view('siswa.create', compact('kelas', 'kelompokOptions', 'targetGradeOptions'));
+        return view('siswa.create', compact('kelompokOptions', 'targetGradeOptions'));
     }
 
     /**
@@ -173,19 +173,10 @@ class SiswaController extends Controller
      */
     public function edit(Siswa $siswa)
     {
-        $kelas = $this->getActiveKelasOptions();
         $kelompokOptions = Siswa::kelompokOptions();
-        $targetGradeOptions = TargetGrade::options();
+        $targetGradeOptions = TargetGrade::schoolClassOptions();
 
-        return view('siswa.edit', compact('siswa', 'kelas', 'kelompokOptions', 'targetGradeOptions'));
-    }
-
-    protected function getActiveKelasOptions()
-    {
-        return Kelas::with('pamong')
-            ->where('is_active', true)
-            ->orderBy('nama')
-            ->get();
+        return view('siswa.edit', compact('siswa', 'kelompokOptions', 'targetGradeOptions'));
     }
 
     /**
@@ -238,12 +229,12 @@ class SiswaController extends Controller
      */
     public function qrGenerate(Request $request)
     {
-        $kelas = Kelas::withCount([
-                'siswa as siswa_count' => fn ($query) => $query->active(),
-            ])
-            ->with(['siswa' => fn ($query) => $query->active()->orderBy('nama')])
-            ->orderBy('nama')
-            ->get();
+        $studentsByGrade = Siswa::active()->orderBy('nama')->get()->groupBy('school_grade');
+        $kelas = collect(TargetGrade::schoolClassOptions())->map(function ($label, $grade) use ($studentsByGrade) {
+            $students = $studentsByGrade->get($grade, collect());
+
+            return (object) ['id' => $grade, 'nama' => $label, 'siswa_count' => $students->count(), 'siswa' => $students];
+        })->values();
         $totalSiswa = Siswa::active()->count();
 
         return view('qr.generate', compact('kelas', 'totalSiswa'));
@@ -257,20 +248,19 @@ class SiswaController extends Controller
         $request->validate([
             'type' => 'required|in:single,bulk,class',
             'student_id' => 'required_if:type,single|exists:siswa,id',
-            'class_id' => 'required_if:type,class|exists:kelas,id',
+            'class_id' => ['required_if:type,class', 'nullable', \Illuminate\Validation\Rule::in(TargetGrade::values())],
         ]);
 
         $students = collect();
         $className = null;
 
         if ($request->type === 'single') {
-            $students = Siswa::with('kelas')->active()->where('id', $request->student_id)->get();
+            $students = Siswa::active()->where('id', $request->student_id)->get();
         } elseif ($request->type === 'class') {
-            $kelas = Kelas::find($request->class_id);
-            $className = $kelas?->nama;
-            $students = Siswa::with('kelas')->active()->where('kelas_id', $request->class_id)->get();
+            $className = TargetGrade::schoolClassLabel($request->class_id);
+            $students = Siswa::active()->where('school_grade', $request->class_id)->get();
         } elseif ($request->type === 'bulk') {
-            $students = Siswa::with('kelas')->active()->get();
+            $students = Siswa::active()->get();
         }
 
         // Generate tokens via service
@@ -281,7 +271,7 @@ class SiswaController extends Controller
         }
 
         // Refresh students to get updated QR tokens
-        $students = $students->fresh(['kelas']);
+        $students = $students->fresh();
 
         return view('qr.print', compact('students', 'className'));
     }
@@ -337,7 +327,6 @@ class SiswaController extends Controller
             $siswa->refresh();
         }
 
-        $siswa->load('kelas');
         $qrCode = $siswa->isActive() ? $this->buildQrCodeDataUri($siswa) : null;
 
         return view('siswa.card-print', compact('siswa', 'qrCode'));
@@ -348,12 +337,10 @@ class SiswaController extends Controller
      */
     public function printCards(Request $request)
     {
-        $query = Siswa::query()
-            ->with('kelas')
-            ->active();
+        $query = Siswa::query()->active();
 
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->integer('kelas_id'));
+        if ($request->filled('school_grade')) {
+            $query->where('school_grade', $request->input('school_grade'));
         }
 
         if ($request->filled('search')) {
@@ -365,12 +352,12 @@ class SiswaController extends Controller
         }
 
         $students = $query
-            ->orderBy('kelas_id')
+            ->orderBy('school_grade')
             ->orderBy('nama')
             ->get();
 
-        $className = $request->filled('kelas_id')
-            ? Kelas::query()->whereKey($request->integer('kelas_id'))->value('nama')
+        $className = $request->filled('school_grade')
+            ? TargetGrade::schoolClassLabel($request->input('school_grade'))
             : null;
 
         $cards = $students->map(fn (Siswa $siswa) => [
@@ -409,10 +396,9 @@ class SiswaController extends Controller
         if ($request->filled('search')) {
             $filters['search'] = $request->search;
         }
-        
-        if ($request->filled('kelas_id')) {
-            $filters['kelas_id'] = $request->kelas_id;
-        }
+
+        if ($request->filled('school_grade')) $filters['school_grade'] = $request->school_grade;
+        if ($request->filled('pamong_id')) $filters['pamong_id'] = $request->integer('pamong_id');
         
         if ($request->filled('status')) {
             if (in_array((string) $request->status, ['1', '0'], true)) {
@@ -675,7 +661,8 @@ class SiswaController extends Controller
             'tanggal_lahir',
             'alamat',
             'phone',
-            'kelas_id',
+            'school_grade',
+            'target_grade_override',
             'nama_wali',
             'phone_wali',
             'email_wali',
@@ -688,12 +675,11 @@ class SiswaController extends Controller
         }
 
         $query = Siswa::select($columns)
-            ->with('kelas:id,nama')
-            ->orderBy('kelas_id')
+            ->orderBy('school_grade')
             ->orderBy('nama');
 
-        if ($request->kelas_id) {
-            $query->where('kelas_id', $request->kelas_id);
+        if ($request->school_grade) {
+            $query->where('school_grade', $request->school_grade);
         }
 
         $siswaList = $query->get();
@@ -703,7 +689,7 @@ class SiswaController extends Controller
         $sheet->setTitle('Data Akun Siswa');
 
         // Header columns
-        $headers = ['No', 'NIS (Username)', 'Nama Lengkap', 'Jenis Kelamin', 'Tanggal Lahir', 'Kelompok', 'No. Telepon', 'Kelas', 'Nama Wali', 'No. Telepon Wali', 'Email Wali', 'Password', 'Status'];
+        $headers = ['No', 'NIS (Username)', 'Nama Lengkap', 'Jenis Kelamin', 'Tanggal Lahir', 'Kelompok', 'No. Telepon', 'Kelas Sekolah', 'Nama Wali', 'No. Telepon Wali', 'Email Wali', 'Password', 'Status'];
         $lastCol = chr(64 + count($headers)); // 'M'
 
         foreach ($headers as $colIndex => $header) {
@@ -730,7 +716,7 @@ class SiswaController extends Controller
             $sheet->setCellValue("E{$row}", $siswa->tanggal_lahir ? $siswa->tanggal_lahir->format('d/m/Y') : '-');
             $sheet->setCellValue("F{$row}", $siswa->kelompok_label ?? '-');
             $sheet->setCellValueExplicit("G{$row}", $siswa->phone ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValue("H{$row}", $siswa->kelas->nama ?? '-');
+            $sheet->setCellValue("H{$row}", $siswa->school_grade_label ?? '-');
             $sheet->setCellValue("I{$row}", $siswa->nama_wali ?? '-');
             $sheet->setCellValueExplicit("J{$row}", $siswa->phone_wali ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValue("K{$row}", $siswa->email_wali ?? '-');
@@ -783,7 +769,7 @@ class SiswaController extends Controller
     public function bulkResetPassword(Request $request): JsonResponse
     {
         $request->validate([
-            'kelas_id' => 'nullable|exists:kelas,id',
+            'school_grade' => ['nullable', 'string', \Illuminate\Validation\Rule::in(TargetGrade::values())],
             'ids' => 'nullable|array',
             'ids.*' => 'exists:siswa,id',
         ]);
@@ -795,8 +781,8 @@ class SiswaController extends Controller
         
         if ($request->has('ids') && !empty($request->ids)) {
             $query->whereIn('id', $request->ids);
-        } elseif ($request->kelas_id) {
-            $query->where('kelas_id', $request->kelas_id);
+        } elseif ($request->filled('school_grade')) {
+            $query->where('school_grade', $request->school_grade);
         }
 
         $count = 0;

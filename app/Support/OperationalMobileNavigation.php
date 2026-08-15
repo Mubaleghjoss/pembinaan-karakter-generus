@@ -86,7 +86,7 @@ class OperationalMobileNavigation
             $request->routeIs('pamong.*') && ! $request->routeIs('pamong-presensi.*') && ! $request->routeIs('pamong.chat.*'),
             $isAdmin
         );
-        $add('Data Utama', 'classes', 'Kelas', 'database', route('kelas.index'), $request->routeIs('kelas.*'), $can('siswa'));
+        $add('Data Utama', 'classes', 'Binaan Pamong', 'database', route('kelas.index'), $request->routeIs('kelas.*'), $can('siswa'));
         $add('Data Utama', 'export', 'Ekspor Data', 'export', route('export.index'), $request->routeIs('export.*'), $can('export'));
 
         $add('Presensi', 'attendance', 'Presensi Siswa', 'attendance', route('presensi.index'), $request->routeIs('presensi.index') && $request->query('tab') !== 'input', $canGeneralAttendance);

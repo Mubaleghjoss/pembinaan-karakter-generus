@@ -61,7 +61,7 @@
                         <label class="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
                             <input type="checkbox" value="{{ $siswa->id }}" x-model="form.siswa_ids" class="pkg-check rounded">
                             <span class="text-gray-900 dark:text-white">{{ $siswa->nama }}</span>
-                            <span class="text-xs text-gray-500">({{ $siswa->kelas->nama ?? '-' }})</span>
+                            <span class="text-xs text-gray-500">({{ $siswa->school_grade_label ?? 'Kelas belum dikonfirmasi' }})</span>
                         </label>
                         @endforeach
                     </div>

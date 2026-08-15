@@ -38,7 +38,8 @@ class StoreSiswaRequest extends FormRequest
             'jenis_kelamin' => ['required', 'string', Rule::in(['L', 'P'])],
             'tanggal_lahir' => ['nullable', 'date', 'before:today'],
             'kelompok' => ['nullable', 'string', Rule::in(array_keys(\App\Models\Siswa::kelompokOptions()))],
-            'kelas_id' => ['required', 'integer', 'exists:kelas,id'],
+            'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
+            'school_grade' => ['required', 'string', Rule::in(TargetGrade::values())],
             'target_grade_override' => ['nullable', 'string', Rule::in(TargetGrade::values())],
             'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'nama_wali' => ['nullable', 'string', 'max:255'],
@@ -70,9 +71,10 @@ class StoreSiswaRequest extends FormRequest
             'phone.string' => 'Nomor HP harus berupa string.',
             'phone.max' => 'Nomor HP maksimal 20 karakter.',
             'kelompok.in' => 'Kelompok harus salah satu dari daftar yang tersedia.',
-            'kelas_id.required' => 'Kelas wajib dipilih.',
             'kelas_id.integer' => 'ID kelas harus berupa angka.',
             'kelas_id.exists' => 'Kelas tidak ditemukan.',
+            'school_grade.required' => 'Kelas sekolah wajib dipilih.',
+            'school_grade.in' => 'Kelas sekolah tidak valid.',
             'target_grade_override.in' => 'Level kelas PKG tidak valid.',
             'foto.image' => 'File harus berupa gambar.',
             'foto.mimes' => 'Format foto harus jpeg, png, atau jpg.',
@@ -99,8 +101,9 @@ class StoreSiswaRequest extends FormRequest
             'jenis_kelamin' => 'Jenis Kelamin',
             'tanggal_lahir' => 'Tanggal Lahir',
             'kelompok' => 'Kelompok',
-            'kelas_id' => 'Kelas',
-            'target_grade_override' => 'Level Kelas PKG',
+            'kelas_id' => 'Kelas Arsip',
+            'school_grade' => 'Kelas Sekolah',
+            'target_grade_override' => 'Override Level PKG',
             'foto' => 'Foto',
             'nama_wali' => 'Nama Wali',
             'phone_wali' => 'Telepon Wali',
@@ -126,7 +129,7 @@ class StoreSiswaRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Trim whitespace dari string fields
-        $fieldsToTrim = ['nis', 'nama', 'kelompok', 'target_grade_override', 'nama_wali', 'phone_wali', 'email_wali'];
+        $fieldsToTrim = ['nis', 'nama', 'kelompok', 'school_grade', 'target_grade_override', 'nama_wali', 'phone_wali', 'email_wali'];
 
         foreach ($fieldsToTrim as $field) {
             if ($this->has($field) && is_string($this->$field)) {

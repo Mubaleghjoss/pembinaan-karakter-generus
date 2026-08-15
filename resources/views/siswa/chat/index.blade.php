@@ -67,7 +67,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="font-medium text-gray-900 dark:text-white truncate">{{ $teman->nama }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $teman->kelas->nama ?? '-' }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $teman->school_grade_label ?? 'Kelas belum dikonfirmasi' }}</p>
                 </div>
             </button>
             @endforeach

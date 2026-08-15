@@ -18,6 +18,8 @@ readonly class UpdateSiswaDTO
         public ?string $jenisKelamin = null,
         public ?string $tanggalLahir = null,
         public ?int $kelasId = null,
+        public ?string $schoolGrade = null,
+        public bool $schoolGradeProvided = false,
         public ?string $kelompok = null,
         public ?string $targetGradeOverride = null,
         public bool $targetGradeOverrideProvided = false,
@@ -39,6 +41,8 @@ readonly class UpdateSiswaDTO
             jenisKelamin: $request->validated('jenis_kelamin'),
             tanggalLahir: $request->validated('tanggal_lahir'),
             kelasId: $request->validated('kelas_id'),
+            schoolGrade: $request->input('school_grade') ?: null,
+            schoolGradeProvided: $request->has('school_grade'),
             kelompok: $request->validated('kelompok'),
             targetGradeOverride: $request->input('target_grade_override') ?: null,
             targetGradeOverrideProvided: $request->has('target_grade_override'),
@@ -61,6 +65,8 @@ readonly class UpdateSiswaDTO
             jenisKelamin: $data['jenis_kelamin'] ?? null,
             tanggalLahir: $data['tanggal_lahir'] ?? null,
             kelasId: $data['kelas_id'] ?? null,
+            schoolGrade: $data['school_grade'] ?? null,
+            schoolGradeProvided: array_key_exists('school_grade', $data),
             kelompok: $data['kelompok'] ?? null,
             targetGradeOverride: $data['target_grade_override'] ?? null,
             targetGradeOverrideProvided: array_key_exists('target_grade_override', $data),
@@ -92,6 +98,9 @@ readonly class UpdateSiswaDTO
         }
         if ($this->kelasId !== null) {
             $data['kelas_id'] = $this->kelasId;
+        }
+        if ($this->schoolGradeProvided) {
+            $data['school_grade'] = $this->schoolGrade;
         }
         if ($this->kelompok !== null) {
             $data['kelompok'] = $this->kelompok;

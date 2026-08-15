@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Siswa;
+use App\Models\User;
+use App\Support\TargetGrade;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +15,7 @@ class OrtuManagementController extends Controller
     public function index(Request $request)
     {
         $query = Siswa::query()
-            ->with(['kelas'])
+            ->with(['pamongAssignments.pamong:id,name,username'])
             ->withMax('ortuComments as latest_ortu_comment_at', 'created_at');
 
         if ($request->has('search')) {
@@ -25,9 +27,8 @@ class OrtuManagementController extends Controller
             });
         }
 
-        if ($request->has('kelas_id') && $request->kelas_id) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
+        if ($request->filled('school_grade')) $query->where('school_grade', $request->school_grade);
+        if ($request->filled('pamong_id')) $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id')));
 
         $siswa = $query->orderBy('nama')->get();
 
@@ -46,9 +47,10 @@ class OrtuManagementController extends Controller
             return $item;
         });
 
-        $kelas = \App\Models\Kelas::all();
+        $schoolGradeOptions = TargetGrade::schoolClassOptions();
+        $pamongOptions = User::query()->where('status', 'active')->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))->orderByRaw('COALESCE(name, username)')->get(['id', 'name', 'username']);
 
-        return view('admin.ortu.index', compact('siswa', 'kelas'));
+        return view('admin.ortu.index', compact('siswa', 'schoolGradeOptions', 'pamongOptions'));
     }
 
     public function resetPassword(Request $request, Siswa $siswa)

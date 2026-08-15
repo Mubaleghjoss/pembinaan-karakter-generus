@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\TracerKarakter;
 use App\Models\Karakter;
 use App\Models\Siswa;
-use App\Models\Kelas;
 use App\Models\PamongPresensi;
 use App\Models\PamongSiswa;
 use App\Models\User;
@@ -17,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Models\SiswaKarakterChecklist;
+use App\Support\TargetGrade;
 
 /**
  * Controller for managing tracer karakter (character tracking) functionality.
@@ -44,10 +44,8 @@ class TracerKarakterController extends Controller
             $siswaQuery = Siswa::active();
         }
         
-        // Filter by kelas if provided
-        if ($request->filled('kelas_id')) {
-            $siswaQuery->where('kelas_id', $request->kelas_id);
-        }
+        if ($request->filled('school_grade')) $siswaQuery->where('school_grade', $request->school_grade);
+        if ($request->filled('pamong_id')) $siswaQuery->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id')));
         
         // Search by name or NIS
         if ($request->filled('search')) {
@@ -58,8 +56,9 @@ class TracerKarakterController extends Controller
             });
         }
         
-        $siswaList = $siswaQuery->with('kelas')->paginate(20);
-        $kelasOptions = Kelas::where('is_active', true)->get();
+        $siswaList = $siswaQuery->with('pamongAssignments.pamong:id,name,username')->paginate(20);
+        $schoolGradeOptions = TargetGrade::schoolClassOptions();
+        $pamongOptions = User::query()->where('status', 'active')->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))->orderByRaw('COALESCE(name, username)')->get(['id', 'name', 'username']);
         
         // Get verification stats for badge
         $statsQuery = \App\Models\SiswaKarakterChecklist::query();
@@ -120,7 +119,8 @@ class TracerKarakterController extends Controller
 
         return view('tugas-pkg.verification.index', compact(
             'siswaList',
-            'kelasOptions',
+            'schoolGradeOptions',
+            'pamongOptions',
             'stats',
             'checklists',
             'siswaOptions',
@@ -430,7 +430,7 @@ class TracerKarakterController extends Controller
     {
         $user = Auth::user();
         $assignedSiswaIds = $user->isTeacher() ? $user->getAssignedSiswaIds() : null;
-        $filters = $request->only(['kelas_id', 'pamong_id', 'start_date', 'end_date']);
+        $filters = $request->only(['school_grade', 'pamong_id', 'start_date', 'end_date']);
         $cacheKey = 'tracer_rekap:' . md5(json_encode([
             'user_id' => $user->id,
             'role' => $user->role?->name,
@@ -444,8 +444,8 @@ class TracerKarakterController extends Controller
                 $siswaQuery->whereIn('id', $assignedSiswaIds);
             }
 
-            if ($request->filled('kelas_id')) {
-                $siswaQuery->where('kelas_id', $request->kelas_id);
+            if ($request->filled('school_grade')) {
+                $siswaQuery->where('school_grade', TargetGrade::normalizeSchoolClassInput($request->school_grade));
             }
 
             if (! $user->isTeacher() && $request->filled('pamong_id')) {
@@ -454,7 +454,7 @@ class TracerKarakterController extends Controller
                 $siswaQuery->whereIn('id', $pamongSiswaIds);
             }
 
-            $siswaList = $siswaQuery->with('kelas')->get();
+            $siswaList = $siswaQuery->with('pamongAssignments:id,name,username')->get();
             $totalKarakter = Karakter::active()->count();
 
             $statsQuery = TracerKarakter::query();
@@ -504,12 +504,12 @@ class TracerKarakterController extends Controller
                     : 0,
             ];
 
-            $kelasOptions = Kelas::where('is_active', true)->get();
+            $schoolGradeOptions = TargetGrade::schoolClassOptions();
             $pamongOptions = ! $user->isTeacher()
                 ? \App\Models\User::whereHas('role', fn($q) => $q->whereIn('name', User::operationalRoleNames()))->get()
                 : collect();
 
-            return compact('rekapData', 'rekapSummary', 'kelasOptions', 'pamongOptions', 'totalKarakter');
+            return compact('rekapData', 'rekapSummary', 'schoolGradeOptions', 'pamongOptions', 'totalKarakter');
         });
 
         return view('tugas-pkg.verification.rekap', $payload);
@@ -532,8 +532,8 @@ class TracerKarakterController extends Controller
         }
         
         // Apply filters
-        if ($request->filled('kelas_id')) {
-            $siswaQuery->where('kelas_id', $request->kelas_id);
+        if ($request->filled('school_grade')) {
+            $siswaQuery->where('school_grade', TargetGrade::normalizeSchoolClassInput($request->school_grade));
         }
         
         if (! $user->isTeacher() && $request->filled('pamong_id')) {
@@ -543,8 +543,7 @@ class TracerKarakterController extends Controller
         }
         
         $siswaList = $siswaQuery
-            ->select(['id', 'nis', 'nama', 'kelas_id'])
-            ->with('kelas:id,nama')
+            ->select(['id', 'nis', 'nama', 'school_grade'])
             ->get();
         $karakterList = Karakter::active()->get(['id', 'nama']);
         $totalKarakter = $karakterList->count();
@@ -564,7 +563,7 @@ class TracerKarakterController extends Controller
         
         // Build export data
         $exportData = [];
-        $headers = ['No', 'NIS', 'Nama', 'Kelas'];
+        $headers = ['No', 'NIS', 'Nama', 'Kelas Sekolah'];
         
         foreach ($karakterList as $karakter) {
             $headers[] = $karakter->nama;
@@ -580,7 +579,7 @@ class TracerKarakterController extends Controller
                 $no++,
                 $siswa->nis,
                 $siswa->nama,
-                $siswa->kelas->nama ?? '-',
+                $siswa->school_grade_label,
             ];
             
             $checkedKarakterIds = $checkedKarakterMap->get($siswa->id, []);

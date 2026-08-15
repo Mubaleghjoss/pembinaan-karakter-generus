@@ -16,7 +16,7 @@
     <!-- Class List with Student Counts -->
     <div class="pkg-card overflow-hidden mb-8">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Daftar Kelas</h3>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Daftar Kelas Sekolah</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">Pilih kelas untuk generate QR code semua siswa</p>
         </div>
         <div class="p-6">

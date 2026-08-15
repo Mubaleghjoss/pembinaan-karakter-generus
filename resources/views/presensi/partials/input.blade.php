@@ -49,7 +49,7 @@
                                     </template>
                                     <div>
                                         <div class="text-sm font-medium text-gray-900 dark:text-white" x-text="siswa.nama"></div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400" x-text="siswa.nis + ' - ' + (siswa.kelas?.nama || '-')"></div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400" x-text="siswa.nis + ' - ' + (siswa.school_grade_label || 'Kelas belum dikonfirmasi')"></div>
                                     </div>
                                 </button>
                             </template>
@@ -70,7 +70,7 @@
                                 </template>
                                 <div>
                                     <div class="font-medium text-gray-900 dark:text-white" x-text="manualInput.selectedSiswa?.nama"></div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400" x-text="manualInput.selectedSiswa?.nis + ' - ' + (manualInput.selectedSiswa?.kelas?.nama || '-')"></div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400" x-text="manualInput.selectedSiswa?.nis + ' - ' + (manualInput.selectedSiswa?.school_grade_label || 'Kelas belum dikonfirmasi')"></div>
                                 </div>
                             </div>
                             <button type="button" @click="manualInput.selectedSiswa = null; manualInput.searchSiswa = ''" class="text-gray-400 hover:text-gray-600">
@@ -135,15 +135,21 @@
     </x-collapsible-section>
 
     @if($canAccessAllManualAttendanceStudents ?? false)
-    <x-collapsible-section title="Input Presensi Massal" description="Catat presensi seluruh siswa dalam satu kelas sekaligus." compact>
-        <div class="pkg-filter-grid grid-cols-1 md:grid-cols-3 gap-4">
+    <x-collapsible-section title="Input Presensi Massal" description="Pilih Pamong, lalu persempit dengan kelas sekolah bila diperlukan. Siswa multi-Pamong otomatis dideduplikasi." compact>
+        <div class="pkg-filter-grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pilih Kelas</label>
-                <select x-model="bulkInput.kelas_id"
-                        class="w-full pkg-field">
-                    <option value="">Pilih Kelas</option>
-                    <template x-for="kelas in classes" :key="kelas.id">
-                        <option :value="kelas.id" x-text="kelas.nama"></option>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pamong</label>
+                <select x-model="bulkInput.pamong_id" class="w-full pkg-field">
+                    <option value="">Semua Pamong</option>
+                    <template x-for="pamong in pamongOptions" :key="pamong.id"><option :value="pamong.id" x-text="pamong.name"></option></template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
+                <select x-model="bulkInput.school_grade" class="w-full pkg-field">
+                    <option value="">Semua Kelas Sekolah</option>
+                    <template x-for="(label, value) in schoolGrades" :key="value">
+                        <option :value="value" x-text="label"></option>
                     </template>
                 </select>
             </div>
@@ -164,9 +170,9 @@
         
         <div class="mt-4">
             <button @click="submitBulkPresensi()" 
-                    :disabled="!bulkInput.kelas_id"
+                    :disabled="!bulkInput.school_grade && !bulkInput.pamong_id"
                     class="pkg-btn-primary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                Input Presensi Kelas
+                Input Presensi Generus
             </button>
         </div>
     </x-collapsible-section>

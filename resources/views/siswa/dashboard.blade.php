@@ -61,7 +61,7 @@
     <!-- Welcome Header -->
     <div class="mb-8">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Selamat Datang, {{ $siswa->nama }}!</h1>
-        <p class="text-gray-600 dark:text-gray-400">NIS: {{ $siswa->nis }} | Kelas: {{ $siswa->kelas->nama ?? '-' }}</p>
+        <p class="text-gray-600 dark:text-gray-400">NIS: {{ $siswa->nis }} | Kelas Sekolah: {{ $siswa->school_grade_label ?? 'Belum dikonfirmasi' }}</p>
     </div>
 
     @if(isset($journalTasks) && $journalTasks->isNotEmpty())
@@ -196,8 +196,8 @@
         <div class="pkg-card p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Kelas</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ $siswa->kelas->nama ?? '-' }}</p>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Kelas Sekolah</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ $siswa->school_grade_label ?? 'Belum dikonfirmasi' }}</p>
                 </div>
                 <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
                     <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

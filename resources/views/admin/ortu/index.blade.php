@@ -11,13 +11,14 @@
         </div>
         <div class="flex items-center gap-2">
             <!-- Search & Filter -->
-            <form action="{{ route('ortu-management.index') }}" method="GET" class="flex gap-2">
-                <select name="kelas_id" onchange="this.form.submit()" class="pkg-field text-sm">
-                    <option value="">Semua Kelas</option>
-                    @foreach($kelas as $k)
-                    <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama }}</option>
+            <form action="{{ route('ortu-management.index') }}" method="GET" class="flex flex-wrap gap-2">
+                <select name="school_grade" onchange="this.form.submit()" class="pkg-field text-sm">
+                    <option value="">Semua Kelas Sekolah</option>
+                    @foreach($schoolGradeOptions as $value => $label)
+                    <option value="{{ $value }}" {{ request('school_grade') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
+                <select name="pamong_id" onchange="this.form.submit()" class="pkg-field text-sm"><option value="">Semua Pamong</option>@foreach($pamongOptions as $pamong)<option value="{{ $pamong->id }}" @selected((string) request('pamong_id') === (string) $pamong->id)>{{ $pamong->name ?: $pamong->username }}</option>@endforeach</select>
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Siswa / NIS..." 
                         class="w-full sm:w-64 pl-10 pr-4 py-2 pkg-field text-sm">
@@ -60,7 +61,7 @@
                                 </div>
                                 <div class="ml-4">
                                     <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $s->nama }}</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ $s->nis }} | {{ $s->kelas->nama ?? '-' }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ $s->nis }} | {{ $s->school_grade_label }} | {{ $s->pamongAssignments->pluck('pamong')->filter()->map(fn ($pamong) => $pamong->name ?: $pamong->username)->join(', ') ?: 'Belum ada Pamong' }}</div>
                                 </div>
                             </div>
                         </td>

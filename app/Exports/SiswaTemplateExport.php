@@ -19,19 +19,19 @@ class SiswaTemplateExport
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data Siswa');
 
-        // Headers - Uses Kelas (which has multi-pamong)
         $headers = [
             'A1' => 'NIS',
             'B1' => 'Password',
             'C1' => 'Nama',
             'D1' => 'Jenis Kelamin',
-            'E1' => 'Kelas',
+            'E1' => 'Kelas Sekolah',
             'F1' => 'Tanggal Lahir',
             'G1' => 'Kelompok',
             'H1' => 'Phone',
             'I1' => 'Nama Wali',
             'J1' => 'Phone Wali',
-            'K1' => 'Foto',
+            'K1' => 'Pamong Username',
+            'L1' => 'Foto',
         ];
 
         foreach ($headers as $cell => $value) {
@@ -58,23 +58,13 @@ class SiswaTemplateExport
                 ],
             ],
         ];
-        $sheet->getStyle('A1:K1')->applyFromArray($headerStyle);
-
-        // Get available kelas names for sample
-        $kelasNames = \App\Models\Kelas::where('is_active', true)
-            ->limit(3)
-            ->pluck('nama')
-            ->toArray();
-        
-        $kelas1 = $kelasNames[0] ?? 'Kelas X-A';
-        $kelas2 = $kelasNames[1] ?? 'Kelas X-B';
-        $kelas3 = $kelasNames[2] ?? 'Kelas XI-A';
+        $sheet->getStyle('A1:L1')->applyFromArray($headerStyle);
 
         // Sample data - Uses Kelas names (NIS, Password, Nama, JK, Kelas, TglLahir, Alamat, Phone, NamaWali, PhoneWali, Foto)
         $sampleData = [
-            ['12345', '12345', 'Ahmad Fauzi', 'L', $kelas1, '2008-05-15', 'panunggangan utara', '081234567890', 'Budi Santoso', '081234567891', 'ahmad_fauzi.jpg'],
-            ['12346', 'password123', 'Siti Nurhaliza', 'P', $kelas1, '2008-08-20', 'sawah dalam', '081234567892', 'Hasan Abdullah', '081234567893', 'siti_nurhaliza.jpg'],
-            ['12347', '', 'Muhammad Rizki', 'L', $kelas2, '2008-03-10', 'pakulonan', '', 'Ahmad Yani', '081234567894', ''],
+            ['12345', '12345', 'Ahmad Fauzi', 'L', 'SMP Kelas 1', '2013-05-15', 'panunggangan utara', '081234567890', 'Budi Santoso', '081234567891', 'pamong.ahmad', 'ahmad_fauzi.jpg'],
+            ['12346', 'password123', 'Siti Nurhaliza', 'P', 'SMA/SMK Kelas 2', '2010-08-20', 'sawah dalam', '081234567892', 'Hasan Abdullah', '081234567893', 'pamong.ahmad; pamong.siti', 'siti_nurhaliza.jpg'],
+            ['12347', '', 'Muhammad Rizki', 'L', 'Pranikah', '2007-03-10', 'pakulonan', '', 'Ahmad Yani', '081234567894', '', ''],
         ];
 
         $row = 2;
@@ -91,7 +81,7 @@ class SiswaTemplateExport
                 ],
             ],
         ];
-        $sheet->getStyle('A2:K4')->applyFromArray($dataStyle);
+        $sheet->getStyle('A2:L4')->applyFromArray($dataStyle);
 
         // Column widths
         $columnWidths = [
@@ -99,13 +89,14 @@ class SiswaTemplateExport
             'B' => 15,  // Password
             'C' => 25,  // Nama
             'D' => 15,  // Jenis Kelamin
-            'E' => 15,  // Kelas
+            'E' => 24,  // Kelas Sekolah
             'F' => 15,  // Tanggal Lahir
             'G' => 35,  // Alamat
             'H' => 15,  // Phone
             'I' => 20,  // Nama Wali
             'J' => 15,  // Phone Wali
-            'K' => 20,  // Foto
+            'K' => 30,  // Pamong Username
+            'L' => 20,  // Foto
         ];
 
         foreach ($columnWidths as $col => $width) {
@@ -116,16 +107,6 @@ class SiswaTemplateExport
         $instructionSheet = $spreadsheet->createSheet();
         $instructionSheet->setTitle('Petunjuk');
         
-        // Get kelas list with pamong for instructions
-        $kelasList = \App\Models\Kelas::with('pamong')
-            ->where('is_active', true)
-            ->get()
-            ->map(function($kelas) {
-                $pamongNames = $kelas->pamong->map(fn($p) => $p->name ?? $p->username)->implode(', ');
-                return $kelas->nama . ' (Pamong: ' . ($pamongNames ?: 'Belum ada') . ')';
-            })
-            ->implode("\n");
-
         $instructions = [
             ['PETUNJUK PENGISIAN DATA SISWA'],
             [''],
@@ -134,12 +115,13 @@ class SiswaTemplateExport
             ['Password', 'Password untuk login (opsional, jika kosong = NIS)', 'password123'],
             ['Nama', 'Nama lengkap siswa (WAJIB)', 'Ahmad Fauzi'],
             ['Jenis Kelamin', 'L untuk Laki-laki, P untuk Perempuan (opsional)', 'L'],
-            ['Kelas', 'Nama kelas (opsional, akan dibuat otomatis jika belum ada)', 'Kelas X-A'],
+            ['Kelas Sekolah', 'Wajib: SMP Kelas 1-3, SMA/SMK Kelas 1-3, atau Pranikah', 'SMP Kelas 1'],
             ['Tanggal Lahir', 'Format: YYYY-MM-DD (opsional)', '2008-05-15'],
             ['Kelompok', 'Pilih salah satu: panunggangan utara, sawah dalam, pakulonan', 'panunggangan utara'],
             ['Phone', 'Nomor HP pribadi siswa (opsional)', '081234567890'],
             ['Nama Wali', 'Nama wali/orang tua (opsional)', 'Budi Santoso'],
             ['Phone Wali', 'Nomor telepon wali (opsional)', '081234567891'],
+            ['Pamong Username', 'Opsional. Pisahkan beberapa username dengan titik koma', 'pamong.ahmad; pamong.siti'],
             ['Foto', 'Nama file foto dalam ZIP (opsional)', 'ahmad_fauzi.jpg'],
             [''],
             ['DATA MINIMAL YANG DIPERLUKAN:'],
@@ -152,15 +134,15 @@ class SiswaTemplateExport
             ['Password = Kolom Password (jika kosong, password = NIS)'],
             ['URL Login = /siswa/login'],
             [''],
-            ['DAFTAR KELAS YANG TERSEDIA:'],
-            [$kelasList ?: 'Belum ada kelas terdaftar (akan dibuat otomatis saat import)'],
+            ['PILIHAN KELAS SEKOLAH:'],
+            ['SMP Kelas 1, SMP Kelas 2, SMP Kelas 3, SMA/SMK Kelas 1, SMA/SMK Kelas 2, SMA/SMK Kelas 3, Pranikah'],
             [''],
             ['CATATAN PENTING:'],
             ['1. Hapus baris contoh sebelum mengisi data'],
             ['2. NIS harus unik dan belum terdaftar'],
-            ['3. Kolom lain boleh dikosongkan, hanya NIS dan Nama yang wajib'],
-            ['4. Jika nama kelas diisi dan belum ada, akan dibuat otomatis'],
-            ['5. Setiap kelas bisa memiliki beberapa pamong'],
+            ['3. NIS, Nama, dan Kelas Sekolah wajib diisi'],
+            ['4. Impor tidak membuat kelas internal baru'],
+            ['5. Satu Generus dapat ditautkan ke beberapa Pamong'],
             ['6. Jika menggunakan foto, siapkan file ZIP berisi foto-foto'],
             ['7. Nama file foto harus sesuai dengan yang ditulis di kolom Foto'],
             ['8. Format foto yang didukung: JPG, JPEG, PNG, GIF'],

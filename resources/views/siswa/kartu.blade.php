@@ -78,9 +78,9 @@
                             <span class="info-value">{{ $siswa->nis }}</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Kelas</span>
+                            <span class="info-label">Kelas Sekolah</span>
                             <span class="info-sep">:</span>
-                            <span class="info-value">{{ $siswa->kelas->nama ?? '-' }}</span>
+                            <span class="info-value">{{ $siswa->school_grade_label ?? '-' }}</span>
                         </div>
                     </div>
                 </div>
@@ -407,7 +407,7 @@ function siswaCardPhotoManager() {
             initial: @json(strtoupper(substr($siswa->nama, 0, 1))),
             name: @json($siswa->nama),
             nis: @json($siswa->nis),
-            kelas: @json($siswa->kelas->nama ?? '-'),
+            kelas: @json($siswa->school_grade_label ?? '-'),
             qrUrl: @json($qrCode),
         },
         init() {
@@ -594,7 +594,7 @@ function siswaCardPhotoManager() {
             await this.drawPhoto(ctx, 50, 48, 64, 71);
             this.drawText(ctx, this.cardData.name, 63, 137, 9.5, 700, '#fff', 112, 'center');
             this.drawInfo(ctx, 'NIS', this.cardData.nis, 33, 152);
-            this.drawInfo(ctx, 'Kelas', this.cardData.kelas, 33, 163);
+            this.drawInfo(ctx, 'Kelas Sekolah', this.cardData.kelas, 33, 163);
             await this.drawQr(ctx, 143, 48, 184, 145);
             this.drawText(ctx, this.cardData.footer, w / 2, h - 8, 5.2, 500, 'rgba(255,255,255,0.5)', w - 28, 'center');
             return canvas;

@@ -32,8 +32,11 @@ class QuranReadingDocumentService
 
     public function report(Siswa $siswa, Collection $entries, array $filters = []): Response
     {
+        $siswa->loadMissing('pamongAssignments.pamong:id,name');
+
         return $this->render('quran-reading.pdf.report', [
             'siswa' => $siswa,
+            'pamongNames' => $this->pamongNames($siswa),
             'entries' => $entries,
             'filters' => $filters,
             'catalog' => QuranCatalog::class,

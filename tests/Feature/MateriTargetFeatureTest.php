@@ -265,7 +265,7 @@ class MateriTargetFeatureTest extends TestCase
         ]);
     }
 
-    public function test_siswa_profile_can_store_manual_target_grade_override(): void
+    public function test_siswa_profile_can_store_school_grade_without_setting_admin_override(): void
     {
         $siswa = $this->siswaForGrade(TargetGrade::SMP_7);
 
@@ -274,7 +274,7 @@ class MateriTargetFeatureTest extends TestCase
             'jenis_kelamin' => $siswa->jenis_kelamin,
             'tanggal_lahir' => '2014-06-30',
             'kelompok' => $siswa->kelompok,
-            'target_grade_override' => TargetGrade::SMA_10,
+            'school_grade' => $siswa->school_grade,
             'phone' => '081234567890',
             'nama_wali' => 'Wali Test',
             'phone_wali' => '081111111111',
@@ -284,8 +284,9 @@ class MateriTargetFeatureTest extends TestCase
 
         $siswa->refresh();
 
-        $this->assertSame(TargetGrade::SMA_10, $siswa->target_grade_override);
-        $this->assertSame(TargetGrade::SMA_10, $siswa->target_grade);
+        $this->assertSame(TargetGrade::SMP_7, $siswa->school_grade);
+        $this->assertNull($siswa->target_grade_override);
+        $this->assertSame(TargetGrade::SMP_7, $siswa->target_grade);
     }
 
     private function adminUser(): User

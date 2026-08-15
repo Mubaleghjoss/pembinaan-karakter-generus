@@ -48,8 +48,7 @@ class PresensiController extends Controller
                 'keterangan',
             ])
             ->with([
-                'siswa:id,nis,nama,kelas_id,foto_path',
-                'siswa.kelas:id,nama',
+                'siswa:id,nis,nama,school_grade,foto_path',
                 'verifier:id,username',
             ]);
 
@@ -61,8 +60,9 @@ class PresensiController extends Controller
             $query->where('siswa_id', $request->siswa_id);
         }
 
-        if ($request->filled('kelas_id')) {
-            $query->whereRelation('siswa', 'kelas_id', $request->kelas_id);
+        if ($request->filled('school_grade')) $query->whereRelation('siswa', 'school_grade', $request->school_grade);
+        if ($request->filled('pamong_id')) {
+            $query->whereHas('siswa.pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id')));
         }
 
         if ($request->filled('status')) {
@@ -125,7 +125,7 @@ class PresensiController extends Controller
             RateLimiter::clear($key);
 
             $presensi = $result['presensi'];
-            $presensi->load(['siswa.kelas']);
+            $presensi->load('siswa');
 
             return response()->json([
                 'success' => true,
@@ -134,7 +134,8 @@ class PresensiController extends Controller
                 'student' => [
                     'nama' => $presensi->siswa->nama,
                     'nis' => $presensi->siswa->nis,
-                    'kelas' => $presensi->siswa->kelas->nama ?? null,
+                    'school_grade' => $presensi->siswa->school_grade,
+                    'school_grade_label' => $presensi->siswa->school_grade_label,
                 ],
             ]);
         } catch (\App\Exceptions\QrTokenExpiredException $e) {
@@ -163,7 +164,7 @@ class PresensiController extends Controller
     {
         $dto = RecordAttendanceDTO::fromRequest($request);
         $presensi = $this->presensiService->recordAttendance($dto);
-        $presensi->load(['siswa.kelas', 'verifier:id,username']);
+        $presensi->load(['siswa', 'verifier:id,username']);
 
         return response()->json([
             'success' => true,
@@ -188,7 +189,7 @@ class PresensiController extends Controller
         }
 
         $presensi->update($data);
-        $presensi->load(['siswa.kelas', 'verifier:id,username']);
+        $presensi->load(['siswa', 'verifier:id,username']);
 
         return response()->json([
             'success' => true,
@@ -211,7 +212,7 @@ class PresensiController extends Controller
         }
 
         $this->presensiService->verifyAttendance($presensi->id, $request->user()->id);
-        $presensi->refresh()->load(['siswa.kelas', 'verifier:id,username']);
+        $presensi->refresh()->load(['siswa', 'verifier:id,username']);
 
         return response()->json([
             'success' => true,

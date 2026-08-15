@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Siswa\StoreSiswaRequest;
 use App\Http\Requests\Siswa\UpdateSiswaRequest;
 use App\Http\Resources\SiswaResource;
-use App\Models\Kelas;
 use App\Models\Siswa;
 use App\Services\Contracts\SiswaServiceInterface;
 use Illuminate\Http\JsonResponse;
@@ -37,9 +36,8 @@ class SiswaController extends Controller
             $filters['search'] = $request->search;
         }
 
-        if ($request->filled('kelas_id')) {
-            $filters['kelas_id'] = $request->kelas_id;
-        }
+        if ($request->filled('school_grade')) $filters['school_grade'] = $request->school_grade;
+        if ($request->filled('pamong_id')) $filters['pamong_id'] = $request->pamong_id;
 
         if ($request->filled('status')) {
             $filters['status'] = $request->status;
@@ -67,20 +65,9 @@ class SiswaController extends Controller
      */
     public function store(StoreSiswaRequest $request): JsonResponse
     {
-        // Check class capacity
-        $kelas = Kelas::findOrFail($request->kelas_id);
-        if ($kelas->isFull()) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Class is full',
-                'message' => 'Cannot add more students to this class.',
-                'code' => 'CLASS_FULL',
-            ], 400);
-        }
-
         $dto = CreateSiswaDTO::fromRequest($request);
         $siswa = $this->siswaService->create($dto);
-        $siswa->load('kelas');
+        $siswa->load('pamongAssignments.pamong:id,name,username');
 
         return response()->json([
             'success' => true,
@@ -94,7 +81,7 @@ class SiswaController extends Controller
      */
     public function show(Siswa $siswa): JsonResponse
     {
-        $siswa->load(['kelas', 'presensi' => function ($query) {
+        $siswa->load(['pamongAssignments.pamong:id,name,username', 'presensi' => function ($query) {
             $query->latest()->limit(10);
         }]);
 
@@ -109,22 +96,9 @@ class SiswaController extends Controller
      */
     public function update(UpdateSiswaRequest $request, Siswa $siswa): JsonResponse
     {
-        // Check class capacity if changing class
-        if ($request->kelas_id && $request->kelas_id != $siswa->kelas_id) {
-            $kelas = Kelas::findOrFail($request->kelas_id);
-            if ($kelas->isFull()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Target class is full',
-                    'message' => 'Cannot move student to this class.',
-                    'code' => 'CLASS_FULL',
-                ], 400);
-            }
-        }
-
         $dto = UpdateSiswaDTO::fromRequest($request);
         $siswa = $this->siswaService->update($siswa->id, $dto);
-        $siswa->load('kelas');
+        $siswa->load('pamongAssignments.pamong:id,name,username');
 
         return response()->json([
             'success' => true,
@@ -235,6 +209,8 @@ class SiswaController extends Controller
         return response()->json([
             'success' => true,
             'data' => SiswaResource::collection($students),
-        ]);
+            'deprecated' => true,
+            'message' => 'Endpoint kelas arsip. Gunakan filter school_grade atau pamong_id.',
+        ])->header('Deprecation', 'true');
     }
 }

@@ -42,7 +42,10 @@ class SiswaService implements SiswaServiceInterface
             'jenis_kelamin' => $dto->jenisKelamin,
             'tanggal_lahir' => $dto->tanggalLahir,
             'kelompok' => $dto->kelompok,
-            'kelas_id' => $dto->kelasId,
+            // Kelas lama hanya dipertahankan untuk membaca histori. Data baru
+            // dikelompokkan melalui kelas sekolah dan binaan Pamong.
+            'kelas_id' => null,
+            'school_grade' => $dto->schoolGrade,
             'target_grade_override' => $dto->targetGradeOverride,
             'nama_wali' => $dto->namaWali,
             'phone_wali' => $dto->phoneWali,
@@ -88,7 +91,6 @@ class SiswaService implements SiswaServiceInterface
             'jenis_kelamin' => $dto->jenisKelamin,
             'tanggal_lahir' => $dto->tanggalLahir,
             'kelompok' => $dto->kelompok,
-            'kelas_id' => $dto->kelasId,
             'nama_wali' => $dto->namaWali,
             'phone_wali' => $dto->phoneWali,
             'email_wali' => $dto->emailWali,
@@ -98,6 +100,10 @@ class SiswaService implements SiswaServiceInterface
 
         if ($dto->targetGradeOverrideProvided) {
             $data['target_grade_override'] = $dto->targetGradeOverride;
+        }
+
+        if ($dto->schoolGradeProvided) {
+            $data['school_grade'] = $dto->schoolGrade;
         }
 
         // Handle foto upload jika ada
@@ -201,8 +207,8 @@ class SiswaService implements SiswaServiceInterface
             'P' => $siswaCollection->where('jenis_kelamin', 'P')->count(),
         ];
 
-        // Statistik per kelas
-        $perKelas = $siswaCollection->groupBy('kelas_id')
+        // Statistik per kelas sekolah
+        $perKelas = $siswaCollection->groupBy('school_grade')
             ->map(fn ($group) => $group->count())
             ->toArray();
 

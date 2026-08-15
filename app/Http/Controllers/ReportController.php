@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Kelas;
 use App\Models\Presensi;
 use App\Models\Siswa;
+use App\Models\User;
+use App\Support\TargetGrade;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -30,6 +32,11 @@ class ReportController extends Controller
         return view('reports.index', [
             'user' => $user->load('role'),
             'pageTitle' => 'Laporan Presensi',
+            'schoolGradeOptions' => TargetGrade::schoolClassOptions(),
+            'pamongOptions' => $user->isTeacher()
+                ? collect()
+                : User::query()->whereHas('role', fn ($query) => $query->whereIn('name', User::operationalRoleNames()))
+                    ->where('status', 'active')->orderBy('name')->get(['id', 'name', 'username']),
         ]);
     }
 
@@ -129,48 +136,93 @@ class ReportController extends Controller
         $data = Cache::remember($cacheKey, 120, function () use ($filters) {
             $totalHari = $this->totalDaysInRange($filters);
 
-            $classes = Kelas::query()
-                ->select('id', 'nama')
-                ->active()
-                ->when($filters['kelas_id'], fn ($query, $kelasId) => $query->where('id', $kelasId))
-                ->withCount([
-                    'siswa as total_siswa' => fn ($query) => $query->active(),
-                ])
-                ->orderBy('nama')
-                ->get()
-                ->keyBy('id');
+            $studentCounts = $this->activeSiswaQuery($filters)
+                ->selectRaw('school_grade, COUNT(*) as total_siswa')
+                ->groupBy('school_grade')
+                ->pluck('total_siswa', 'school_grade');
 
             $attendanceRows = $this->presensiQuery($filters)
                 ->selectRaw("
-                    siswa.kelas_id,
+                    siswa.school_grade,
                     SUM(CASE WHEN presensi.status = 'hadir' THEN 1 ELSE 0 END) as hadir,
                     SUM(CASE WHEN presensi.status = 'terlambat' THEN 1 ELSE 0 END) as terlambat,
                     SUM(CASE WHEN presensi.status = 'alpha' THEN 1 ELSE 0 END) as tidak_hadir
                 ")
-                ->groupBy('siswa.kelas_id')
+                ->groupBy('siswa.school_grade')
                 ->get()
-                ->keyBy('kelas_id');
+                ->keyBy('school_grade');
 
-            return $classes->map(function ($kelas) use ($attendanceRows, $totalHari) {
-                $attendance = $attendanceRows->get($kelas->id);
-                $hadir = (int) ($attendance->hadir ?? 0);
-                $terlambat = (int) ($attendance->terlambat ?? 0);
-                $tidakHadir = (int) ($attendance->tidak_hadir ?? 0);
-                $attendanceOpportunities = max(1, ((int) $kelas->total_siswa) * $totalHari);
+            $classRows = collect(TargetGrade::schoolClassOptions())
+                ->when($filters['school_grade'], fn ($labels) => $labels->only($filters['school_grade']))
+                ->map(function ($label, $grade) use ($attendanceRows, $studentCounts, $totalHari) {
+                    $attendance = $attendanceRows->get($grade);
+                    $hadir = (int) ($attendance->hadir ?? 0);
+                    $terlambat = (int) ($attendance->terlambat ?? 0);
+                    $tidakHadir = (int) ($attendance->tidak_hadir ?? 0);
+                    $totalSiswa = (int) ($studentCounts[$grade] ?? 0);
+                    $attendanceOpportunities = max(1, $totalSiswa * $totalHari);
 
-                return [
-                    'id' => $kelas->id,
-                    'nama' => $kelas->nama,
-                    'total_siswa' => (int) $kelas->total_siswa,
-                    'hadir' => $hadir,
-                    'terlambat' => $terlambat,
-                    'tidak_hadir' => $tidakHadir,
-                    'persentase_kehadiran' => round((($hadir + $terlambat) / $attendanceOpportunities) * 100, 1),
-                ];
-            })->values()->all();
+                    return [
+                        'id' => $grade,
+                        'nama' => $label,
+                        'total_siswa' => $totalSiswa,
+                        'hadir' => $hadir,
+                        'terlambat' => $terlambat,
+                        'tidak_hadir' => $tidakHadir,
+                        'persentase_kehadiran' => round((($hadir + $terlambat) / $attendanceOpportunities) * 100, 1),
+                    ];
+                })->values()->all();
+
+            $pamongCounts = DB::table('pamong_siswa')
+                ->join('siswa', 'siswa.id', '=', 'pamong_siswa.siswa_id')
+                ->whereNull('pamong_siswa.ended_at')
+                ->where('siswa.status', 'active')->where('siswa.is_active', true)
+                ->when($filters['school_grade'], fn ($query, $grade) => $query->where('siswa.school_grade', $grade))
+                ->when($filters['pamong_id'], fn ($query, $pamongId) => $query->where('pamong_siswa.pamong_id', $pamongId))
+                ->when(Auth::user()->isTeacher(), fn ($query) => $query->where('pamong_siswa.pamong_id', Auth::id()))
+                ->selectRaw('pamong_siswa.pamong_id, COUNT(DISTINCT siswa.id) as total_siswa')
+                ->groupBy('pamong_siswa.pamong_id')->pluck('total_siswa', 'pamong_id');
+
+            $pamongAttendance = DB::table('pamong_siswa')
+                ->join('siswa', 'siswa.id', '=', 'pamong_siswa.siswa_id')
+                ->leftJoin('presensi', function ($join) use ($filters) {
+                    $join->on('presensi.siswa_id', '=', 'siswa.id')
+                        ->whereBetween('presensi.tanggal', [$filters['tanggal_mulai'], $filters['tanggal_selesai']]);
+                })
+                ->whereNull('pamong_siswa.ended_at')
+                ->where('siswa.status', 'active')->where('siswa.is_active', true)
+                ->when($filters['school_grade'], fn ($query, $grade) => $query->where('siswa.school_grade', $grade))
+                ->when($filters['pamong_id'], fn ($query, $pamongId) => $query->where('pamong_siswa.pamong_id', $pamongId))
+                ->when(Auth::user()->isTeacher(), fn ($query) => $query->where('pamong_siswa.pamong_id', Auth::id()))
+                ->selectRaw("pamong_siswa.pamong_id,
+                    SUM(CASE WHEN presensi.status = 'hadir' THEN 1 ELSE 0 END) as hadir,
+                    SUM(CASE WHEN presensi.status = 'terlambat' THEN 1 ELSE 0 END) as terlambat,
+                    SUM(CASE WHEN presensi.status = 'alpha' THEN 1 ELSE 0 END) as tidak_hadir")
+                ->groupBy('pamong_siswa.pamong_id')->get()->keyBy('pamong_id');
+
+            $pamongRows = User::query()->whereIn('id', $pamongCounts->keys())
+                ->orderBy('name')->get(['id', 'name', 'username'])
+                ->map(function (User $pamong) use ($pamongCounts, $pamongAttendance, $totalHari) {
+                    $attendance = $pamongAttendance->get($pamong->id);
+                    $totalSiswa = (int) ($pamongCounts[$pamong->id] ?? 0);
+                    $hadir = (int) ($attendance->hadir ?? 0);
+                    $terlambat = (int) ($attendance->terlambat ?? 0);
+
+                    return [
+                        'id' => $pamong->id,
+                        'nama' => $pamong->name ?: $pamong->username,
+                        'total_siswa' => $totalSiswa,
+                        'hadir' => $hadir,
+                        'terlambat' => $terlambat,
+                        'tidak_hadir' => (int) ($attendance->tidak_hadir ?? 0),
+                        'persentase_kehadiran' => round((($hadir + $terlambat) / max(1, $totalSiswa * $totalHari)) * 100, 1),
+                    ];
+                })->values()->all();
+
+            return ['classes' => $classRows, 'pamongs' => $pamongRows];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => $data['classes'], 'pamong_data' => $data['pamongs']]);
     }
 
     public function topStudents(Request $request): JsonResponse
@@ -181,8 +233,7 @@ class ReportController extends Controller
             $totalHari = $this->totalDaysInRange($filters);
 
             $students = $this->activeSiswaQuery($filters)
-                ->select('siswa.id', 'siswa.nama', 'siswa.nis', 'siswa.foto_path', 'siswa.kelas_id')
-                ->with(['kelas:id,nama'])
+                ->select('siswa.id', 'siswa.nama', 'siswa.nis', 'siswa.foto_path', 'siswa.school_grade')
                 ->withCount([
                     'presensi as total_hadir' => fn ($query) => $query
                         ->whereBetween('tanggal', [$filters['tanggal_mulai'], $filters['tanggal_selesai']])
@@ -201,10 +252,8 @@ class ReportController extends Controller
                     'nama' => $siswa->nama,
                     'nis' => $siswa->nis,
                     'foto_path' => $siswa->foto_path,
-                    'kelas' => $siswa->kelas ? [
-                        'id' => $siswa->kelas->id,
-                        'nama' => $siswa->kelas->nama,
-                    ] : null,
+                    'school_grade' => $siswa->school_grade,
+                    'school_grade_label' => $siswa->school_grade_label,
                     'total_hadir' => (int) $siswa->total_hadir,
                     'persentase_kehadiran' => round(((int) $siswa->total_hadir / $attendanceOpportunities) * 100, 1),
                 ];
@@ -235,7 +284,8 @@ class ReportController extends Controller
         $validated = $request->validate([
             'tanggal_mulai' => ['nullable', 'date'],
             'tanggal_selesai' => ['nullable', 'date'],
-            'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
+            'school_grade' => ['nullable', 'string', 'in:'.implode(',', array_keys(TargetGrade::schoolClassOptions()))],
+            'pamong_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
         $start = Carbon::parse($validated['tanggal_mulai'] ?? now()->toDateString())->startOfDay();
@@ -248,7 +298,8 @@ class ReportController extends Controller
         $filters = [
             'tanggal_mulai' => $start->toDateString(),
             'tanggal_selesai' => $end->toDateString(),
-            'kelas_id' => $validated['kelas_id'] ?? null,
+            'school_grade' => $validated['school_grade'] ?? null,
+            'pamong_id' => $validated['pamong_id'] ?? null,
         ];
 
         $cacheKey = 'reports:'.Auth::id().':'.$suffix.':'.sha1(json_encode($filters));
@@ -260,7 +311,9 @@ class ReportController extends Controller
     {
         return Siswa::query()
             ->active()
-            ->when($filters['kelas_id'], fn ($query, $kelasId) => $query->where('kelas_id', $kelasId));
+            ->when($filters['school_grade'], fn ($query, $grade) => $query->where('school_grade', $grade))
+            ->when($filters['pamong_id'], fn ($query, $pamongId) => $query->byPamong($pamongId))
+            ->when(Auth::user()->isTeacher(), fn ($query) => $query->whereIn('id', Auth::user()->getAssignedSiswaIds()));
     }
 
     protected function presensiQuery(array $filters)
@@ -269,7 +322,12 @@ class ReportController extends Controller
             ->join('siswa', 'siswa.id', '=', 'presensi.siswa_id')
             ->where('siswa.status', 'active')
             ->where('siswa.is_active', true)
-            ->when($filters['kelas_id'], fn ($query, $kelasId) => $query->where('siswa.kelas_id', $kelasId))
+            ->when($filters['school_grade'], fn ($query, $grade) => $query->where('siswa.school_grade', $grade))
+            ->when($filters['pamong_id'], fn ($query, $pamongId) => $query->whereExists(function ($inner) use ($pamongId) {
+                $inner->selectRaw('1')->from('pamong_siswa')->whereColumn('pamong_siswa.siswa_id', 'siswa.id')
+                    ->where('pamong_siswa.pamong_id', $pamongId)->whereNull('pamong_siswa.ended_at');
+            }))
+            ->when(Auth::user()->isTeacher(), fn ($query) => $query->whereIn('siswa.id', Auth::user()->getAssignedSiswaIds()))
             ->whereBetween('presensi.tanggal', [$filters['tanggal_mulai'], $filters['tanggal_selesai']]);
     }
 
@@ -289,10 +347,12 @@ class ReportController extends Controller
         $topStudents = $this->topStudents(new Request($filters))->getData(true)['data'];
 
         $records = Presensi::query()
-            ->with(['siswa.kelas:id,nama'])
+            ->with('siswa:id,nis,nama,school_grade')
             ->whereHas('siswa', function ($query) use ($filters) {
                 $query->active()
-                    ->when($filters['kelas_id'], fn ($inner, $kelasId) => $inner->where('kelas_id', $kelasId));
+                    ->when($filters['school_grade'], fn ($inner, $grade) => $inner->where('school_grade', $grade))
+                    ->when($filters['pamong_id'], fn ($inner, $pamongId) => $inner->byPamong($pamongId))
+                    ->when(Auth::user()->isTeacher(), fn ($inner) => $inner->whereIn('id', Auth::user()->getAssignedSiswaIds()));
             })
             ->whereBetween('tanggal', [$filters['tanggal_mulai'], $filters['tanggal_selesai']])
             ->orderBy('tanggal')
@@ -311,7 +371,7 @@ class ReportController extends Controller
         $summarySheet->fromArray([
             ['Laporan Presensi'],
             ['Periode', $filters['tanggal_mulai'].' s/d '.$filters['tanggal_selesai']],
-            ['Kelas', $filters['kelas_id'] ? optional(Kelas::find($filters['kelas_id']))->nama : 'Semua Kelas'],
+            ['Kelas Sekolah', $filters['school_grade'] ? TargetGrade::schoolClassLabel($filters['school_grade']) : 'Semua Kelas Sekolah'],
             [],
             ['Metrik', 'Nilai'],
             ['Total Siswa', $dataset['summary']['total_siswa']],
@@ -323,7 +383,7 @@ class ReportController extends Controller
         $recordsSheet = $spreadsheet->createSheet();
         $recordsSheet->setTitle('Data Presensi');
         $recordsSheet->fromArray([
-            ['Tanggal', 'NIS', 'Nama', 'Kelas', 'Status', 'Jam Masuk', 'Jam Keluar', 'Keterangan'],
+            ['Tanggal', 'NIS', 'Nama', 'Kelas Sekolah', 'Status', 'Jam Masuk', 'Jam Keluar', 'Keterangan'],
         ]);
 
         $row = 2;
@@ -333,7 +393,7 @@ class ReportController extends Controller
                     optional($record->tanggal)->format('Y-m-d'),
                     $record->siswa?->nis,
                     $record->siswa?->nama,
-                    $record->siswa?->kelas?->nama,
+                    $record->siswa?->school_grade_label,
                     ucfirst((string) $record->status),
                     optional($record->jam_masuk)->format('H:i:s'),
                     optional($record->jam_keluar)->format('H:i:s'),
@@ -353,9 +413,9 @@ class ReportController extends Controller
 
     protected function exportPrintableHtml(array $dataset, array $filters)
     {
-        $className = $filters['kelas_id']
-            ? optional(Kelas::find($filters['kelas_id']))->nama
-            : 'Semua Kelas';
+        $className = $filters['school_grade']
+            ? TargetGrade::schoolClassLabel($filters['school_grade'])
+            : 'Semua Kelas Sekolah';
 
         return response()
             ->view('reports.export-pdf', [

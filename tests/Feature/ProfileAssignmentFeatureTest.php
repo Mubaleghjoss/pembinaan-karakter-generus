@@ -29,6 +29,7 @@ class ProfileAssignmentFeatureTest extends TestCase
         $siswa = Siswa::factory()->create([
             'nama' => 'Akun Tester',
             'kelompok' => 'sawah dalam',
+            'school_grade' => null,
             'target_grade_override' => null,
             'profile_assignment_confirmed_at' => null,
         ]);
@@ -47,13 +48,14 @@ class ProfileAssignmentFeatureTest extends TestCase
             ->actingAs($siswa, 'siswa')
             ->put(route('siswa.profile-assignment.update'), [
                 'kelompok' => ParticipantProfileOptions::SAWAH_DALAM_2,
-                'target_grade_override' => TargetGrade::PRANIKAH,
+                'school_grade' => TargetGrade::PRANIKAH,
             ]);
 
         $response->assertRedirect(route('siswa.dashboard'));
 
         $siswa->refresh();
         $this->assertSame(ParticipantProfileOptions::SAWAH_DALAM_2, $siswa->kelompok);
+        $this->assertSame(TargetGrade::PRANIKAH, $siswa->school_grade);
         $this->assertSame(TargetGrade::PRANIKAH, $siswa->target_grade);
         $this->assertNotNull($siswa->profile_assignment_confirmed_at);
 

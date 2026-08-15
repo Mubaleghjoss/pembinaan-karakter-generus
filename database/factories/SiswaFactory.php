@@ -33,6 +33,7 @@ class SiswaFactory extends Factory
             'tanggal_lahir' => now()->subYears(12)->format('Y-m-d'),
             'alamat' => 'Alamat Test '.self::$counter,
             'kelas_id' => Kelas::factory(),
+            'school_grade' => \App\Support\TargetGrade::SMP_7,
             'foto_path' => null,
             'status' => 'active',
             'qr_secret_salt' => Str::random(64),

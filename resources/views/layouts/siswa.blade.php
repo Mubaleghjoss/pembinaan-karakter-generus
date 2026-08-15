@@ -174,7 +174,7 @@
                     <div class="min-w-0">
                         <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $currentSiswa->nama }}</p>
                         @if($currentSiswa->isGraduated())<span class="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">Alumni</span>@endif
-                        <p class="truncate text-xs text-gray-600 dark:text-gray-400">{{ $currentSiswa->kelas->nama ?? '-' }} | {{ $currentSiswa->nis }}</p>
+                        <p class="truncate text-xs text-gray-600 dark:text-gray-400">{{ $currentSiswa->school_grade_label }} | {{ $currentSiswa->nis }}</p>
                     </div>
                 </div>
             </div>
@@ -298,7 +298,7 @@
                         <div x-show="open" @click.outside="open = false" x-transition x-cloak class="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
                             <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
                                 <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $currentSiswa->nama }}</p>
-                                <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $currentSiswa->kelas->nama ?? '-' }} | {{ $currentSiswa->nis }}</p>
+                                <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $currentSiswa->school_grade_label }} | {{ $currentSiswa->nis }}</p>
                             </div>
                             <a href="{{ route('siswa.profile') }}" class="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Profil dan Foto</a>
                             <a href="{{ route('siswa.kartu') }}" class="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Kartu Siswa dan Unduh</a>

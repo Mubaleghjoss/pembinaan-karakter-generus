@@ -45,24 +45,15 @@
                     @enderror
                 </div>
 
-                <!-- Kelas -->
                 <div>
-                    <label for="kelas_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kelas</label>
-                    <select name="kelas_id" id="kelas_id" required
-                        class="w-full pkg-field">
-                        <option value="">Pilih Kelas</option>
-                        @foreach($kelas as $kelas)
-                            @php
-                                $pamongNames = $kelas->pamong->map(fn($p) => $p->name ?? $p->username)->implode(', ');
-                            @endphp
-                            <option value="{{ $kelas->id }}" {{ old('kelas_id', $siswa->kelas_id) == $kelas->id ? 'selected' : '' }}>
-                                {{ $kelas->nama }} - Pamong: {{ $pamongNames ?: 'Belum ada' }}
-                            </option>
+                    <label for="school_grade" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kelas Sekolah</label>
+                    <select name="school_grade" id="school_grade" required class="w-full pkg-field">
+                        <option value="">Pilih Kelas Sekolah</option>
+                        @foreach($targetGradeOptions as $value => $label)
+                            <option value="{{ $value }}" {{ old('school_grade', $siswa->school_grade) === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
-                    @error('kelas_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    @error('school_grade')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
@@ -78,19 +69,6 @@
                     @enderror
                 </div>
 
-                <div>
-                    <label for="target_grade_override" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Level Kelas PKG</label>
-                    <select name="target_grade_override" id="target_grade_override" class="w-full pkg-field">
-                        <option value="">Otomatis dari tanggal lahir{{ $siswa->target_grade_label ? ' (' . $siswa->target_grade_label . ')' : '' }}</option>
-                        @foreach($targetGradeOptions as $value => $label)
-                            <option value="{{ $value }}" {{ old('target_grade_override', $siswa->target_grade_override) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Kosongkan agar sistem menghitung dari usia pada 1 Juli.</p>
-                    @error('target_grade_override')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
             </div>
 
             <!-- Foto Siswa -->

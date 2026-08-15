@@ -139,7 +139,7 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = Siswa::query()
-            ->with(['kelas', 'alumniReviewer:id,name,status'])
+            ->with(['kelas', 'alumniReviewer:id,name,status', 'pamongAssignments.pamong:id,name,username'])
             ->withCount(['validBiometricCredentials', 'legacyBiometricCredentials']);
 
         // Combined search filter (nama OR nis)
@@ -166,6 +166,14 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
             $query->where('kelas_id', $filters['kelas_id']);
         }
 
+        if (! empty($filters['school_grade'])) {
+            $query->where('school_grade', $filters['school_grade']);
+        }
+
+        if (! empty($filters['pamong_id'])) {
+            $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $filters['pamong_id']));
+        }
+
         // Filter berdasarkan status
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -184,6 +192,7 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
                 $query->whereNotNull('nama')->where('nama', '!=', '')
                       ->whereNotNull($kelompokField)->where($kelompokField, '!=', '')
                       ->whereNotNull('tanggal_lahir')
+                      ->whereNotNull('school_grade')
                       ->whereNotNull('phone')->where('phone', '!=', '')
                       ->whereNotNull('phone_wali')->where('phone_wali', '!=', '')
                       ->whereNotNull('foto_path')->where('foto_path', '!=', '');
@@ -193,6 +202,7 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
                     $q->whereNull('nama')->orWhere('nama', '')
                       ->orWhereNull($kelompokField)->orWhere($kelompokField, '')
                       ->orWhereNull('tanggal_lahir')
+                      ->orWhereNull('school_grade')
                       ->orWhereNull('phone')->orWhere('phone', '')
                       ->orWhereNull('phone_wali')->orWhere('phone_wali', '')
                       ->orWhereNull('foto_path')->orWhere('foto_path', '');

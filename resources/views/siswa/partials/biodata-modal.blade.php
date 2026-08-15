@@ -116,13 +116,13 @@
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas</label>
-                    <select x-model="biodataForm.kelas_id"
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
+                    <select x-model="biodataForm.school_grade"
                             :disabled="!biodataEditing"
                             class="w-full pkg-field disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">
-                        <option value="">Pilih Kelas</option>
-                        <template x-for="kelas in classes" :key="kelas.id">
-                            <option :value="kelas.id" x-text="kelas.nama"></option>
+                        <option value="">Belum dikonfirmasi</option>
+                        <template x-for="(label, value) in schoolGrades" :key="value">
+                            <option :value="value" x-text="label"></option>
                         </template>
                     </select>
                 </div>

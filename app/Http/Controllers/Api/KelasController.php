@@ -61,7 +61,8 @@ class KelasController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Classes retrieved successfully',
+            'message' => 'Data kelas arsip. Gunakan Binaan Pamong dan Kelas Sekolah untuk data aktif.',
+            'deprecated' => true,
             'data' => $classes->items(),
             'meta' => [
                 'current_page' => $classes->currentPage(),
@@ -71,7 +72,7 @@ class KelasController extends Controller
                 'to' => $classes->lastItem(),
                 'total' => $classes->total(),
             ],
-        ]);
+        ])->header('Deprecation', 'true');
     }
     
     /**
@@ -100,6 +101,11 @@ class KelasController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        return response()->json([
+            'success' => false,
+            'message' => 'Pembuatan kelas lama telah dinonaktifkan. Gunakan Kelas Sekolah dan Binaan Pamong.',
+        ], 410);
+
         $validated = $request->validate([
             'nama' => 'required|string|max:100',
             'kode_kelas' => 'nullable|string|max:20|unique:kelas,kode_kelas',
@@ -165,9 +171,10 @@ class KelasController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Class retrieved successfully',
+            'message' => 'Data kelas arsip.',
+            'deprecated' => true,
             'data' => $kelas,
-        ]);
+        ])->header('Deprecation', 'true');
     }
 
     /**
@@ -175,6 +182,11 @@ class KelasController extends Controller
      */
     public function update(Request $request, Kelas $kelas): JsonResponse
     {
+        return response()->json([
+            'success' => false,
+            'message' => 'Perubahan kelas lama telah dinonaktifkan. Gunakan Kelas Sekolah dan Binaan Pamong.',
+        ], 410);
+
         $validated = $request->validate([
             'nama' => 'required|string|max:100',
             'kode_kelas' => [
@@ -237,6 +249,11 @@ class KelasController extends Controller
      */
     public function destroy(Kelas $kelas): JsonResponse
     {
+        return response()->json([
+            'success' => false,
+            'message' => 'Penghapusan kelas lama telah dinonaktifkan karena data dipertahankan sebagai arsip.',
+        ], 410);
+
         // Check if class has students
         $studentCount = $kelas->siswa()->count();
         if ($studentCount > 0) {

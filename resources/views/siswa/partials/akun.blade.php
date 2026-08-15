@@ -30,13 +30,13 @@
     <div class="pkg-card p-4">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas</label>
-                <select x-model="accountFilters.kelas_id" 
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
+                <select x-model="accountFilters.school_grade"
                         @change="loadStudentsForAccount()"
                         class="w-full pkg-field text-sm">
-                    <option value="">Semua Kelas</option>
-                    <template x-for="kelas in classes" :key="kelas.id">
-                        <option :value="kelas.id" x-text="kelas.nama"></option>
+                    <option value="">Semua Kelas Sekolah</option>
+                    <template x-for="(label, value) in schoolGrades" :key="value">
+                        <option :value="value" x-text="label"></option>
                     </template>
                 </select>
             </div>
@@ -101,7 +101,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Siswa</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Username</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Password</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kelas Sekolah</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Aksi</th>
                     </tr>
@@ -148,7 +148,7 @@
                                     </button>
                                 </div>
                             </td>
-                            <td data-label="Kelas" class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="student.kelas?.nama || '-'"></td>
+                            <td data-label="Kelas Sekolah" class="px-4 py-4 text-sm text-gray-900 dark:text-white" x-text="student.school_grade_label || 'Belum dikonfirmasi'"></td>
                             <td data-label="Status" class="px-4 py-4">
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
                                       :class="student.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"

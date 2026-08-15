@@ -50,13 +50,18 @@
             </div>
 
             <div>
-                <label for="kelas_id" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Kelas Siswa</label>
-                <select name="kelas_id" id="kelas_id" class="w-full pkg-field">
-                    <option value="">Semua Kelas</option>
-                    @foreach($kelasList as $kelas)
-                        <option value="{{ $kelas->id }}" {{ request('kelas_id') == $kelas->id ? 'selected' : '' }}>{{ $kelas->nama }}</option>
+                <label for="school_grade" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Kelas Sekolah</label>
+                <select name="school_grade" id="school_grade" class="w-full pkg-field">
+                    <option value="">Semua Kelas Sekolah</option>
+                    @foreach($schoolGradeOptions as $value => $label)
+                        <option value="{{ $value }}" {{ request('school_grade') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
+            </div>
+
+            <div>
+                <label for="pamong_id" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Pamong Binaan</label>
+                <select name="pamong_id" id="pamong_id" class="w-full pkg-field"><option value="">Semua Pamong</option>@foreach($binaanPamongOptions as $pamong)<option value="{{ $pamong->id }}" @selected(request('pamong_id') == $pamong->id)>{{ $pamong->name ?: $pamong->username }}</option>@endforeach</select>
             </div>
 
             <div>

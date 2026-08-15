@@ -48,7 +48,7 @@
             </div>
             <div>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $siswa->nama }}</h2>
-                <p class="text-gray-600 dark:text-gray-400">NIS: {{ $siswa->nis }} | {{ $siswa->kelas->nama ?? '-' }}</p>
+                <p class="text-gray-600 dark:text-gray-400">NIS: {{ $siswa->nis }} | {{ $siswa->school_grade_label ?? 'Kelas sekolah belum dikonfirmasi' }}</p>
             </div>
         </div>
     </div>

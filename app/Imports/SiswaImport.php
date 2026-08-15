@@ -2,9 +2,10 @@
 
 namespace App\Imports;
 
-use App\Models\Kelas;
+use App\Models\PamongSiswa;
 use App\Models\Siswa;
 use App\Models\User;
+use App\Support\TargetGrade;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -15,7 +16,6 @@ class SiswaImport
     protected array $errors = [];
     protected int $successCount = 0;
     protected int $failedCount = 0;
-    protected array $kelasCache = [];
 
     /**
      * Import siswa dari file Excel
@@ -30,7 +30,6 @@ class SiswaImport
         $header = array_shift($rows);
         
         // Validate header
-        $expectedHeaders = ['nis', 'nama', 'jenis_kelamin', 'kelas', 'tanggal_lahir', 'kelompok', 'nama_wali', 'phone_wali', 'foto'];
         $headerLower = array_map('strtolower', array_map('trim', $header));
         
         // Extract photos from zip if provided
@@ -76,9 +75,15 @@ class SiswaImport
             'jenis kelamin' => 'jenis_kelamin',
             'jenis_kelamin' => 'jenis_kelamin',
             'jeniskelamin' => 'jenis_kelamin',
-            'kelas' => 'kelas',
-            'nama kelas' => 'kelas',
-            'nama_kelas' => 'kelas',
+            'kelas' => 'school_grade',
+            'nama kelas' => 'school_grade',
+            'nama_kelas' => 'school_grade',
+            'kelas sekolah' => 'school_grade',
+            'kelas_sekolah' => 'school_grade',
+            'pamong' => 'pamong_usernames',
+            'username pamong' => 'pamong_usernames',
+            'pamong username' => 'pamong_usernames',
+            'pamong_usernames' => 'pamong_usernames',
             'tanggal lahir' => 'tanggal_lahir',
             'tanggal_lahir' => 'tanggal_lahir',
             'tgl lahir' => 'tanggal_lahir',
@@ -128,13 +133,15 @@ class SiswaImport
             }
         }
         
-        // Validation rules - hanya nis dan nama yang wajib
+        $data['school_grade'] = TargetGrade::normalizeSchoolClassInput($data['school_grade'] ?? null);
+
         $validator = Validator::make($data, [
             'nis' => 'required|string|max:20',
             'nama' => 'required|string|max:100',
             'password' => 'nullable|string|max:100',
             'jenis_kelamin' => 'nullable|in:L,P',
-            'kelas' => 'nullable|string',
+            'school_grade' => 'required|in:' . implode(',', TargetGrade::values()),
+            'pamong_usernames' => 'nullable|string|max:500',
             'tanggal_lahir' => 'nullable|date',
             'kelompok' => 'nullable|in:' . implode(',', array_keys(\App\Models\Siswa::kelompokOptions())),
             'phone' => 'nullable|string|max:20',
@@ -151,10 +158,19 @@ class SiswaImport
             throw new \Exception("NIS {$data['nis']} sudah terdaftar");
         }
 
-        // Get or create kelas (use default if not provided)
-        $kelas = null;
-        if (!empty($data['kelas'])) {
-            $kelas = $this->getOrCreateKelas($data['kelas']);
+        $pamongUsernames = collect(preg_split('/[,;\n]+/', (string) ($data['pamong_usernames'] ?? '')))
+            ->map(fn ($username) => trim($username))->filter()->unique()->values();
+        $pamong = collect();
+        if ($pamongUsernames->isNotEmpty()) {
+            $pamong = User::query()
+                ->whereIn('username', $pamongUsernames)
+                ->where('status', 'active')
+                ->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))
+                ->get(['id', 'username']);
+            $missing = $pamongUsernames->diff($pamong->pluck('username'));
+            if ($missing->isNotEmpty()) {
+                throw new \Exception('Username Pamong tidak ditemukan/aktif: ' . $missing->implode(', '));
+            }
         }
 
         // Handle photo
@@ -168,12 +184,13 @@ class SiswaImport
         $password = !empty($data['password']) ? $data['password'] : trim($data['nis']);
 
         // Create siswa
-        Siswa::create([
+        $siswa = Siswa::create([
             'nis' => trim($data['nis']),
             'password' => $password,
             'nama' => trim($data['nama']),
             'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
-            'kelas_id' => $kelas ? $kelas->id : null,
+            'kelas_id' => null,
+            'school_grade' => $data['school_grade'],
             'tanggal_lahir' => !empty($data['tanggal_lahir']) ? date('Y-m-d', strtotime($data['tanggal_lahir'])) : null,
             'kelompok' => \App\Models\Siswa::normalizeKelompok($data['kelompok'] ?? null),
             'phone' => $data['phone'] ?? null,
@@ -185,45 +202,16 @@ class SiswaImport
             'qr_secret_salt' => Str::random(64),
         ]);
 
-        $this->successCount++;
-    }
-
-    /**
-     * Get or create kelas by name
-     */
-    protected function getOrCreateKelas(string $namaKelas): Kelas
-    {
-        $namaKelas = trim($namaKelas);
-        
-        if (isset($this->kelasCache[$namaKelas])) {
-            return $this->kelasCache[$namaKelas];
-        }
-
-        // Try to find existing kelas by name
-        $kelas = Kelas::where('nama', $namaKelas)->first();
-        
-        if (!$kelas) {
-            // Generate kode_kelas from nama (remove spaces and special chars)
-            $kodeKelas = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $namaKelas));
-            
-            // Check if kode_kelas already exists, append number if needed
-            $baseKode = $kodeKelas;
-            $counter = 1;
-            while (Kelas::where('kode_kelas', $kodeKelas)->exists()) {
-                $kodeKelas = $baseKode . $counter;
-                $counter++;
+        if ($pamong->isNotEmpty()) {
+            foreach ($pamong as $user) {
+                PamongSiswa::updateOrCreate(
+                    ['pamong_id' => $user->id, 'siswa_id' => $siswa->id],
+                    ['ended_at' => null, 'ended_by' => null]
+                );
             }
-
-            $kelas = Kelas::create([
-                'nama' => $namaKelas,
-                'kode_kelas' => $kodeKelas,
-                'kapasitas' => 40,
-                'is_active' => true,
-            ]);
         }
 
-        $this->kelasCache[$namaKelas] = $kelas;
-        return $kelas;
+        $this->successCount++;
     }
 
     /**

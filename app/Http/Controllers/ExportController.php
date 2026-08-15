@@ -6,11 +6,12 @@ use App\Models\Siswa;
 use App\Models\Presensi;
 use App\Models\TracerKarakter;
 use App\Models\Karakter;
-use App\Models\Kelas;
 use App\Models\PointPeriod;
 use App\Models\PointTransaction;
 use App\Models\SiswaPoint;
 use App\Models\SiswaKarakterChecklist;
+use App\Models\User;
+use App\Support\TargetGrade;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -299,7 +300,7 @@ class ExportController extends Controller
         $dataSheet = $spreadsheet->createSheet();
         $dataSheet->setTitle('Data Siswa');
 
-        $headers = ['Rank', 'NIS', 'Nama', 'Kelas', 'Level', 'Total Poin', 'Poin Kehadiran', 'Poin Karakter', 'Poin Bonus', 'Streak Hadir', 'Streak Karakter'];
+        $headers = ['Rank', 'NIS', 'Nama', 'Kelas Sekolah', 'Level', 'Total Poin', 'Poin Kehadiran', 'Poin Karakter', 'Poin Bonus', 'Streak Hadir', 'Streak Karakter'];
         if ($period) {
             $headers = array_merge($headers, ['Total Tugas Periode', 'Tugas Diverifikasi', 'Tugas Menunggu Pamong']);
         }
@@ -312,7 +313,7 @@ class ExportController extends Controller
             $dataSheet->setCellValue("A{$row}", $index + 1);
             $dataSheet->setCellValueExplicit("B{$row}", $sp->siswa->nis ?? '-', DataType::TYPE_STRING);
             $dataSheet->setCellValue("C{$row}", $sp->siswa->nama ?? '-');
-            $dataSheet->setCellValue("D{$row}", $sp->siswa->kelas->nama ?? '-');
+            $dataSheet->setCellValue("D{$row}", $sp->siswa->school_grade_label ?? '-');
             $dataSheet->setCellValue("E{$row}", $sp->currentLevel->nama ?? 'Level ' . $sp->level);
             $dataSheet->setCellValue("F{$row}", $sp->total_points);
             $dataSheet->setCellValue("G{$row}", $sp->attendance_points);
@@ -349,7 +350,7 @@ class ExportController extends Controller
         if ($period) {
             $taskSheet = $spreadsheet->createSheet();
             $taskSheet->setTitle('Rekap Tugas');
-            $taskSheet->fromArray([['Rank', 'NIS', 'Nama', 'Kelas', 'Total Tugas', 'Diverifikasi', 'Menunggu Pamong']], null, 'A1');
+            $taskSheet->fromArray([['Rank', 'NIS', 'Nama', 'Kelas Sekolah', 'Total Tugas', 'Diverifikasi', 'Menunggu Pamong']], null, 'A1');
             $this->styleWorksheetHeader($taskSheet, 'A1:G1');
 
             $taskRow = 2;
@@ -357,7 +358,7 @@ class ExportController extends Controller
                 $taskSheet->setCellValue("A{$taskRow}", $index + 1);
                 $taskSheet->setCellValueExplicit("B{$taskRow}", $sp->siswa->nis ?? '-', DataType::TYPE_STRING);
                 $taskSheet->setCellValue("C{$taskRow}", $sp->siswa->nama ?? '-');
-                $taskSheet->setCellValue("D{$taskRow}", $sp->siswa->kelas->nama ?? '-');
+                $taskSheet->setCellValue("D{$taskRow}", $sp->siswa->school_grade_label ?? '-');
                 $taskSheet->setCellValue("E{$taskRow}", $sp->period_task_total ?? 0);
                 $taskSheet->setCellValue("F{$taskRow}", $sp->period_task_verified ?? 0);
                 $taskSheet->setCellValue("G{$taskRow}", $sp->period_task_pending ?? 0);
@@ -393,7 +394,7 @@ class ExportController extends Controller
         $rankingSheet->mergeCells('A4:H4');
         $rankingSheet->getStyle('A4')->getFont()->setItalic(true)->getColor()->setRGB('6B7280');
         $rankingSheet->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $rankingSheet->fromArray([['Peringkat', 'NIS', 'Nama', 'Kelas', 'Level', 'Total Poin', 'Streak Hadir', 'Streak Karakter']], null, 'A6');
+        $rankingSheet->fromArray([['Peringkat', 'NIS', 'Nama', 'Kelas Sekolah', 'Level', 'Total Poin', 'Streak Hadir', 'Streak Karakter']], null, 'A6');
         $this->styleWorksheetHeader($rankingSheet, 'A6:H6');
 
         $rankingRow = 7;
@@ -401,7 +402,7 @@ class ExportController extends Controller
             $rankingSheet->setCellValue("A{$rankingRow}", $index + 1);
             $rankingSheet->setCellValueExplicit("B{$rankingRow}", $sp->siswa->nis ?? '-', DataType::TYPE_STRING);
             $rankingSheet->setCellValue("C{$rankingRow}", $sp->siswa->nama ?? '-');
-            $rankingSheet->setCellValue("D{$rankingRow}", $sp->siswa->kelas->nama ?? '-');
+            $rankingSheet->setCellValue("D{$rankingRow}", $sp->siswa->school_grade_label ?? '-');
             $rankingSheet->setCellValue("E{$rankingRow}", $sp->currentLevel->nama ?? 'Level ' . $sp->level);
             $rankingSheet->setCellValue("F{$rankingRow}", $sp->total_points);
             $rankingSheet->setCellValue("G{$rankingRow}", $sp->attendance_streak);
@@ -436,7 +437,7 @@ class ExportController extends Controller
             'Waktu',
             'NIS',
             'Nama',
-            'Kelas',
+            'Kelas Sekolah',
             'Tipe',
             'Sumber',
             'Poin',
@@ -454,7 +455,7 @@ class ExportController extends Controller
             ->values();
 
         $transactionQuery = PointTransaction::query()
-            ->with(['siswa.kelas'])
+            ->with('siswa')
             ->whereIn('siswa_id', $leaderboardSiswaIds)
             ->when($period, function ($query) use ($period) {
                 $query->where(function ($inner) use ($period) {
@@ -472,7 +473,7 @@ class ExportController extends Controller
             $transactionSheet->setCellValue("B{$transactionRow}", optional($transaction->created_at)->format('H:i:s') ?: '-');
             $transactionSheet->setCellValueExplicit("C{$transactionRow}", $transaction->siswa->nis ?? '-', DataType::TYPE_STRING);
             $transactionSheet->setCellValue("D{$transactionRow}", $transaction->siswa->nama ?? '-');
-            $transactionSheet->setCellValue("E{$transactionRow}", $transaction->siswa->kelas->nama ?? '-');
+            $transactionSheet->setCellValue("E{$transactionRow}", $transaction->siswa->school_grade_label ?? '-');
             $transactionSheet->setCellValue("F{$transactionRow}", ucfirst((string) $transaction->type));
             $transactionSheet->setCellValue("G{$transactionRow}", $transaction->source_label ?? $transaction->source ?? '-');
             $transactionSheet->setCellValue("H{$transactionRow}", (int) $transaction->points);
@@ -509,7 +510,8 @@ class ExportController extends Controller
         $user = Auth::user();
         $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->get('end_date', now()->format('Y-m-d'));
-        $kelasId = $request->get('kelas_id');
+        $schoolGrade = TargetGrade::normalizeSchoolClassInput($request->get('school_grade'));
+        $pamongId = $request->integer('pamong_id') ?: null;
 
         // Get siswa IDs based on role
         if ($user->isTeacher()) {
@@ -520,12 +522,12 @@ class ExportController extends Controller
 
         $filename = 'presensi-' . $startDate . '-to-' . $endDate . '.csv';
 
-        $callback = function() use ($siswaIds, $startDate, $endDate, $kelasId) {
+        $callback = function() use ($siswaIds, $startDate, $endDate, $schoolGrade, $pamongId) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM for Excel
 
             // Header
-            fputcsv($file, ['No', 'Tanggal', 'NIS', 'Nama', 'Kelas', 'Status', 'Jam Masuk', 'Jam Keluar', 'Keterangan']);
+            fputcsv($file, ['No', 'Tanggal', 'NIS', 'Nama', 'Kelas Sekolah', 'Status', 'Jam Masuk', 'Jam Keluar', 'Keterangan']);
 
             $no = 1;
             $query = Presensi::query()
@@ -538,13 +540,16 @@ class ExportController extends Controller
                     'presensi.keterangan',
                     'siswa.nis',
                     'siswa.nama',
-                    'kelas.nama as kelas_nama',
+                    'siswa.school_grade',
                 ])
                 ->join('siswa', 'siswa.id', '=', 'presensi.siswa_id')
-                ->leftJoin('kelas', 'kelas.id', '=', 'siswa.kelas_id')
                 ->whereIn('presensi.siswa_id', $siswaIds)
                 ->whereBetween('presensi.tanggal', [$startDate, $endDate])
-                ->when($kelasId, fn ($inner, $filterKelasId) => $inner->where('siswa.kelas_id', $filterKelasId))
+                ->when($schoolGrade, fn ($inner, $grade) => $inner->where('siswa.school_grade', $grade))
+                ->when($pamongId, fn ($inner, $id) => $inner->whereExists(function ($assignment) use ($id) {
+                    $assignment->selectRaw('1')->from('pamong_siswa')->whereColumn('pamong_siswa.siswa_id', 'siswa.id')
+                        ->where('pamong_siswa.pamong_id', $id)->whereNull('pamong_siswa.ended_at');
+                }))
                 ->orderBy('presensi.tanggal')
                 ->orderBy('presensi.siswa_id')
                 ->orderBy('presensi.id');
@@ -555,7 +560,7 @@ class ExportController extends Controller
                     Carbon::parse($p->tanggal)->format('Y-m-d'),
                     $p->nis ?? '-',
                     $p->nama ?? '-',
-                    $p->kelas_nama ?? '-',
+                    TargetGrade::schoolClassLabel($p->school_grade),
                     ucfirst($p->status),
                     $p->jam_masuk ? Carbon::parse($p->jam_masuk)->format('H:i') : '-',
                     $p->jam_keluar ? Carbon::parse($p->jam_keluar)->format('H:i') : '-',
@@ -580,7 +585,8 @@ class ExportController extends Controller
         $user = Auth::user();
         $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->get('end_date', now()->format('Y-m-d'));
-        $kelasId = $request->get('kelas_id');
+        $schoolGrade = TargetGrade::normalizeSchoolClassInput($request->get('school_grade'));
+        $pamongId = $request->integer('pamong_id') ?: null;
 
         // Get siswa
         if ($user->isTeacher()) {
@@ -589,13 +595,11 @@ class ExportController extends Controller
             $siswaQuery = Siswa::active();
         }
 
-        if ($kelasId) {
-            $siswaQuery->where('kelas_id', $kelasId);
-        }
+        $siswaQuery->when($schoolGrade, fn ($query, $grade) => $query->where('school_grade', $grade))
+            ->when($pamongId, fn ($query, $id) => $query->byPamong($id));
 
         $siswaList = $siswaQuery
-            ->select(['id', 'nis', 'nama', 'kelas_id'])
-            ->with('kelas:id,nama')
+            ->select(['id', 'nis', 'nama', 'school_grade'])
             ->orderBy('nama')
             ->get();
 
@@ -618,7 +622,7 @@ class ExportController extends Controller
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($file, ['No', 'NIS', 'Nama', 'Kelas', 'Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpha', 'Total Hari', 'Persentase']);
+            fputcsv($file, ['No', 'NIS', 'Nama', 'Kelas Sekolah', 'Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpha', 'Total Hari', 'Persentase']);
 
             $no = 1;
             foreach ($siswaList as $siswa) {
@@ -635,7 +639,7 @@ class ExportController extends Controller
                     $no++,
                     $siswa->nis,
                     $siswa->nama,
-                    $siswa->kelas->nama ?? '-',
+                    $siswa->school_grade_label,
                     $hadir,
                     $terlambat,
                     $izin,
@@ -917,12 +921,13 @@ class ExportController extends Controller
     public function siswa(Request $request)
     {
         $user = Auth::user();
-        $kelasId = $request->get('kelas_id');
+        $schoolGrade = TargetGrade::normalizeSchoolClassInput($request->get('school_grade'));
+        $pamongId = $request->integer('pamong_id') ?: null;
         $assignedSiswaIds = $user->isTeacher() ? $user->getAssignedSiswaIds() : null;
 
         $filename = 'data-siswa-' . now()->format('Y-m-d') . '.csv';
 
-        $callback = function() use ($kelasId, $assignedSiswaIds) {
+        $callback = function() use ($schoolGrade, $pamongId, $assignedSiswaIds) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
@@ -930,7 +935,8 @@ class ExportController extends Controller
                 'No',
                 'NIS',
                 'Nama',
-                'Kelas',
+                'Kelas Sekolah',
+                'Level PKG Efektif',
                 'Kelompok',
                 'Jenis Kelamin',
                 'Tanggal Lahir',
@@ -944,12 +950,12 @@ class ExportController extends Controller
 
             $no = 1;
             $query = DB::table('siswa')
-                ->leftJoin('kelas', 'kelas.id', '=', 'siswa.kelas_id')
                 ->select([
                     'siswa.id',
                     'siswa.nis',
                     'siswa.nama',
-                    'kelas.nama as kelas_nama',
+                    'siswa.school_grade',
+                    'siswa.target_grade_override',
                     'siswa.kelompok',
                     'siswa.jenis_kelamin',
                     'siswa.tanggal_lahir',
@@ -961,7 +967,11 @@ class ExportController extends Controller
                     'siswa.status',
                 ])
                 ->where('siswa.is_active', true)
-                ->when($kelasId, fn ($inner, $filterKelasId) => $inner->where('siswa.kelas_id', $filterKelasId))
+                ->when($schoolGrade, fn ($inner, $grade) => $inner->where('siswa.school_grade', $grade))
+                ->when($pamongId, fn ($inner, $id) => $inner->whereExists(function ($assignment) use ($id) {
+                    $assignment->selectRaw('1')->from('pamong_siswa')->whereColumn('pamong_siswa.siswa_id', 'siswa.id')
+                        ->where('pamong_siswa.pamong_id', $id)->whereNull('pamong_siswa.ended_at');
+                }))
                 ->when($assignedSiswaIds !== null, fn ($inner) => $inner->whereIn('siswa.id', $assignedSiswaIds))
                 ->orderBy('siswa.nama');
 
@@ -970,7 +980,8 @@ class ExportController extends Controller
                     $no++,
                     $siswa->nis,
                     $siswa->nama,
-                    $siswa->kelas_nama ?? '-',
+                    TargetGrade::schoolClassLabel($siswa->school_grade),
+                    TargetGrade::label($siswa->target_grade_override ?: $siswa->school_grade ?: TargetGrade::fromBirthDate($siswa->tanggal_lahir)),
                     $siswa->kelompok ?? '-',
                     $siswa->jenis_kelamin ?? '-',
                     $siswa->tanggal_lahir ? Carbon::parse($siswa->tanggal_lahir)->format('Y-m-d') : '-',
@@ -998,7 +1009,10 @@ class ExportController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $kelas = Kelas::query()->orderBy('nama')->get(['id', 'nama']);
+        $schoolGradeOptions = TargetGrade::schoolClassOptions();
+        $pamongOptions = $user->isTeacher() ? collect() : User::query()
+            ->whereHas('role', fn ($query) => $query->whereIn('name', User::operationalRoleNames()))
+            ->where('status', 'active')->orderBy('name')->get(['id', 'name', 'username']);
         $periods = PointPeriod::query()->orderByDesc('start_date')->orderByDesc('id')->get(['id', 'name', 'status', 'start_date', 'end_date']);
         $activeSiswaQuery = Siswa::active();
 
@@ -1008,7 +1022,7 @@ class ExportController extends Controller
 
         $summary = [
             'active_siswa_count' => (clone $activeSiswaQuery)->count(),
-            'kelas_count' => $kelas->count(),
+            'kelas_count' => (clone $activeSiswaQuery)->whereNotNull('school_grade')->distinct()->count('school_grade'),
             'period_count' => $periods->count(),
             'presensi_this_month_count' => Presensi::query()
                 ->whereBetween('tanggal', [now()->startOfMonth()->toDateString(), now()->toDateString()])
@@ -1016,6 +1030,6 @@ class ExportController extends Controller
                 ->count(),
         ];
 
-        return view('export.index', compact('kelas', 'periods', 'summary'));
+        return view('export.index', compact('schoolGradeOptions', 'pamongOptions', 'periods', 'summary'));
     }
 }

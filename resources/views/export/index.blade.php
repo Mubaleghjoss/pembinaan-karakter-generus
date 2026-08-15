@@ -19,7 +19,7 @@
                     <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ number_format($summary['active_siswa_count'] ?? 0) }}</p>
                 </div>
                 <div class="pkg-card-soft p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Kelas</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Kelas Sekolah</p>
                     <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ number_format($summary['kelas_count'] ?? 0) }}</p>
                 </div>
                 <div class="pkg-card-soft p-4">
@@ -48,6 +48,11 @@
                         <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Sampai tanggal</label>
                         <input type="date" name="end_date" value="{{ now()->format('Y-m-d') }}" class="pkg-field w-full px-3 py-2">
                     </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Kelas Sekolah</label>
+                        <select name="school_grade" class="pkg-field w-full px-3 py-2"><option value="">Semua kelas sekolah</option>@foreach($schoolGradeOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
+                    </div>
+                    @if($pamongOptions->isNotEmpty())<div><label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Pamong</label><select name="pamong_id" class="pkg-field w-full px-3 py-2"><option value="">Semua Pamong</option>@foreach($pamongOptions as $pamong)<option value="{{ $pamong->id }}">{{ $pamong->name ?: $pamong->username }}</option>@endforeach</select></div>@endif
                     <div class="sm:col-span-2">
                         <button type="submit" class="btn-primary w-full justify-center">Unduh Presensi CSV</button>
                     </div>
@@ -69,14 +74,10 @@
                         <input type="date" name="end_date" value="{{ now()->format('Y-m-d') }}" class="pkg-field w-full px-3 py-2">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Kelas</label>
-                        <select name="kelas_id" class="pkg-field w-full px-3 py-2">
-                            <option value="">Semua kelas</option>
-                            @foreach($kelas as $item)
-                                <option value="{{ $item->id }}">{{ $item->nama }}</option>
-                            @endforeach
-                        </select>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Kelas Sekolah</label>
+                        <select name="school_grade" class="pkg-field w-full px-3 py-2"><option value="">Semua kelas sekolah</option>@foreach($schoolGradeOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
                     </div>
+                    @if($pamongOptions->isNotEmpty())<div class="sm:col-span-2"><label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Pamong</label><select name="pamong_id" class="pkg-field w-full px-3 py-2"><option value="">Semua Pamong</option>@foreach($pamongOptions as $pamong)<option value="{{ $pamong->id }}">{{ $pamong->name ?: $pamong->username }}</option>@endforeach</select></div>@endif
                     <div class="sm:col-span-2">
                         <button type="submit" class="btn-primary w-full justify-center">Unduh Rekap CSV</button>
                     </div>
@@ -86,18 +87,14 @@
             <section class="pkg-panel p-5">
                 <div class="mb-5">
                     <h2 class="text-lg font-bold text-slate-900 dark:text-white">Data Siswa</h2>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Daftar siswa aktif beserta kelas, kelompok, kontak siswa, dan kontak wali.</p>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Daftar siswa aktif beserta kelas sekolah, Level PKG Efektif, kelompok, dan kontak wali.</p>
                 </div>
                 <form action="{{ route('export.siswa') }}" method="GET" class="space-y-4">
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Kelas</label>
-                        <select name="kelas_id" class="pkg-field w-full px-3 py-2">
-                            <option value="">Semua kelas</option>
-                            @foreach($kelas as $item)
-                                <option value="{{ $item->id }}">{{ $item->nama }}</option>
-                            @endforeach
-                        </select>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Kelas Sekolah</label>
+                        <select name="school_grade" class="pkg-field w-full px-3 py-2"><option value="">Semua kelas sekolah</option>@foreach($schoolGradeOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
                     </div>
+                    @if($pamongOptions->isNotEmpty())<div><label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">Pamong</label><select name="pamong_id" class="pkg-field w-full px-3 py-2"><option value="">Semua Pamong</option>@foreach($pamongOptions as $pamong)<option value="{{ $pamong->id }}">{{ $pamong->name ?: $pamong->username }}</option>@endforeach</select></div>@endif
                     <button type="submit" class="btn-primary w-full justify-center">Unduh Data Siswa CSV</button>
                 </form>
             </section>

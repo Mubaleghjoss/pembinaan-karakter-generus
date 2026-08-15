@@ -176,9 +176,9 @@ class SiswaDashboardController extends Controller
     public function profile()
     {
         $siswa = Auth::guard('siswa')->user();
-        $siswa->load(['kelas', 'generusRegistration']);
+        $siswa->load(['generusRegistration', 'pamongAssignments.pamong:id,name,username']);
         $kelompokOptions = Siswa::kelompokOptions();
-        $targetGradeOptions = TargetGrade::options();
+        $targetGradeOptions = TargetGrade::schoolClassOptions();
         
         return view('siswa.profile', compact('siswa', 'kelompokOptions', 'targetGradeOptions'));
     }
@@ -252,7 +252,7 @@ class SiswaDashboardController extends Controller
             'jenis_kelamin' => 'nullable|in:L,P',
             'tanggal_lahir' => 'nullable|date',
             'kelompok' => 'nullable|in:' . implode(',', array_keys(Siswa::kelompokOptions())),
-            'target_grade_override' => 'nullable|in:' . implode(',', TargetGrade::values()),
+            'school_grade' => 'required|in:' . implode(',', TargetGrade::values()),
             'phone' => 'nullable|string|max:20',
             'nama_wali' => 'nullable|string|max:100',
             'phone_wali' => 'nullable|string|max:20',
@@ -262,7 +262,8 @@ class SiswaDashboardController extends Controller
             'jenis_kelamin.in' => 'Jenis kelamin tidak valid.',
             'tanggal_lahir.date' => 'Format tanggal lahir tidak valid.',
             'kelompok.in' => 'Kelompok tidak valid.',
-            'target_grade_override.in' => 'Level kelas PKG tidak valid.',
+            'school_grade.required' => 'Kelas sekolah wajib dipilih.',
+            'school_grade.in' => 'Kelas sekolah tidak valid.',
             'phone.max' => 'Nomor HP maksimal 20 karakter.',
             'nama_wali.max' => 'Nama wali maksimal 100 karakter.',
             'phone_wali.max' => 'Nomor HP wali maksimal 20 karakter.',
@@ -276,7 +277,7 @@ class SiswaDashboardController extends Controller
                 'jenis_kelamin' => $request->jenis_kelamin,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'kelompok' => $request->kelompok,
-                'target_grade_override' => $request->input('target_grade_override') ?: null,
+                'school_grade' => $request->input('school_grade'),
                 'phone' => $request->phone,
                 'nama_wali' => $request->nama_wali,
                 'phone_wali' => $request->phone_wali,
