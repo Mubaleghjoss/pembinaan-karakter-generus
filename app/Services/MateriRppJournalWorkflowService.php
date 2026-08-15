@@ -233,7 +233,7 @@ class MateriRppJournalWorkflowService
                 'assigned_by' => $assignedBy?->id,
             ]);
         } elseif ($type === self::ASSIGNEE_SISWA) {
-            $assignee = Siswa::query()->where('is_active', true)->findOrFail($assigneeId);
+            $assignee = Siswa::active()->findOrFail($assigneeId);
 
             $row = MateriRppJournalAssignee::firstOrCreate([
                 'schedule_reminder_id' => $schedule->id,

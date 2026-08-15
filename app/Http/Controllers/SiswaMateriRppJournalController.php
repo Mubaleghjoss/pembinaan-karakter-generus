@@ -71,13 +71,15 @@ class SiswaMateriRppJournalController extends Controller
             'scheduleReminder' => $scheduleReminder,
             'journal' => $journal,
             'statusOptions' => MateriRppJournal::statusOptions(),
-            'canSubmit' => $this->workflow->canSubmitAsStudent($siswa, $scheduleReminder, $scheduleReminder->rppJournal),
+            'canSubmit' => ! $siswa->isGraduated()
+                && $this->workflow->canSubmitAsStudent($siswa, $scheduleReminder, $scheduleReminder->rppJournal),
         ]);
     }
 
     public function store(Request $request, ScheduleReminder $scheduleReminder)
     {
         $siswa = $this->siswa();
+        abort_if($siswa->isGraduated(), 403, 'Jurnal RPP tidak menerima kiriman baru dari Alumni.');
         $existing = $scheduleReminder->rppJournal;
         abort_unless($this->workflow->canSubmitAsStudent($siswa, $scheduleReminder, $existing), 403);
 

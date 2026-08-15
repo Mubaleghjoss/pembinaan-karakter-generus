@@ -13,6 +13,8 @@ use App\Models\Kelas;
 use App\Models\Level;
 use App\Models\Siswa;
 use App\Models\SiswaPoint;
+use App\Models\PamongSiswa;
+use App\Models\User;
 use App\Models\WebAuthnCredential;
 use App\Services\Contracts\SiswaServiceInterface;
 use App\Support\TargetGrade;
@@ -22,8 +24,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Controller untuk mengelola Siswa (Web)
@@ -65,12 +69,17 @@ class SiswaController extends Controller
         $kelas = Kelas::all();
         $biodataStats = $this->siswaService->getBiodataStatistics();
         $kelompokOptions = Siswa::kelompokOptions();
+        $adminReviewers = User::query()
+            ->where('status', 'active')
+            ->whereHas('role', fn ($query) => $query->where('name', User::ROLE_ADMIN))
+            ->orderBy('name')
+            ->get(['id', 'name', 'username']);
 
         $dashboardStats = Cache::remember('siswa:index:stats', now()->addSeconds(90), function () {
             $supportsCredentialPublicKey = WebAuthnCredential::supportsCredentialPublicKey();
 
             return [
-                'totalSiswaAktif' => Siswa::where('is_active', true)->count(),
+                'totalSiswaAktif' => Siswa::active()->count(),
                 'totalBiometrik' => $supportsCredentialPublicKey
                     ? WebAuthnCredential::where('user_type', 'siswa')
                         ->whereNotNull('credential_public_key')
@@ -95,14 +104,15 @@ class SiswaController extends Controller
         // Level distribution
         $levelDistribution = Level::active()->orderBy('level')
             ->withCount(['siswaPoints as siswa_count' => function ($q) {
-                $q->whereHas('siswa', fn($s) => $s->where('is_active', true));
+                $q->whereHas('siswa', fn($s) => $s->active());
             }])
             ->get();
 
         return view('siswa.index', compact(
             'siswa', 'kelas', 'biodataStats',
             'totalSiswaAktif', 'totalBiometrik', 'totalBiometrikLegacy', 'levelDistribution',
-            'kelompokOptions'
+            'kelompokOptions',
+            'adminReviewers'
         ));
     }
 
@@ -111,7 +121,7 @@ class SiswaController extends Controller
      */
     public function accounts(Request $request)
     {
-        $query = Siswa::with('kelas')->where('is_active', true);
+        $query = Siswa::with('kelas')->active();
 
         if ($request->kelas_id) {
             $query->where('kelas_id', $request->kelas_id);
@@ -183,6 +193,14 @@ class SiswaController extends Controller
      */
     public function update(UpdateSiswaRequest $request, Siswa $siswa)
     {
+        $nextStatus = $request->validated('status');
+        if ($nextStatus && $nextStatus !== $siswa->status
+            && in_array('graduated', [$nextStatus, $siswa->status], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Gunakan tombol pengaturan Alumni agar penugasan Pamong dan akses portal diperbarui dengan aman.',
+            ]);
+        }
+
         $dto = UpdateSiswaDTO::fromRequest($request);
         $this->siswaService->update($siswa->id, $dto);
 
@@ -221,12 +239,12 @@ class SiswaController extends Controller
     public function qrGenerate(Request $request)
     {
         $kelas = Kelas::withCount([
-                'siswa as siswa_count' => fn ($query) => $query->where('is_active', true),
+                'siswa as siswa_count' => fn ($query) => $query->active(),
             ])
-            ->with(['siswa' => fn ($query) => $query->where('is_active', true)->orderBy('nama')])
+            ->with(['siswa' => fn ($query) => $query->active()->orderBy('nama')])
             ->orderBy('nama')
             ->get();
-        $totalSiswa = Siswa::where('is_active', true)->count();
+        $totalSiswa = Siswa::active()->count();
 
         return view('qr.generate', compact('kelas', 'totalSiswa'));
     }
@@ -246,13 +264,13 @@ class SiswaController extends Controller
         $className = null;
 
         if ($request->type === 'single') {
-            $students = Siswa::with('kelas')->where('id', $request->student_id)->get();
+            $students = Siswa::with('kelas')->active()->where('id', $request->student_id)->get();
         } elseif ($request->type === 'class') {
             $kelas = Kelas::find($request->class_id);
             $className = $kelas?->nama;
-            $students = Siswa::with('kelas')->where('kelas_id', $request->class_id)->get();
+            $students = Siswa::with('kelas')->active()->where('kelas_id', $request->class_id)->get();
         } elseif ($request->type === 'bulk') {
-            $students = Siswa::with('kelas')->where('is_active', true)->get();
+            $students = Siswa::with('kelas')->active()->get();
         }
 
         // Generate tokens via service
@@ -281,7 +299,7 @@ class SiswaController extends Controller
      */
     public function getQrCode(Siswa $siswa): JsonResponse
     {
-        if (! $siswa->is_active) {
+        if (! $siswa->isActive()) {
             return response()->json([
                 'success' => false,
                 'error' => 'Cannot generate QR code for inactive student',
@@ -301,7 +319,7 @@ class SiswaController extends Controller
      */
     public function printCard(Siswa $siswa)
     {
-        if (! $siswa->qr_token) {
+        if ($siswa->isActive() && ! $siswa->qr_token) {
             $this->siswaService->generateQrCode($siswa->id);
             $siswa->refresh();
         }
@@ -314,13 +332,13 @@ class SiswaController extends Controller
      */
     public function printCardOnly(Siswa $siswa)
     {
-        if (! $siswa->qr_token) {
+        if ($siswa->isActive() && ! $siswa->qr_token) {
             $this->siswaService->generateQrCode($siswa->id);
             $siswa->refresh();
         }
 
         $siswa->load('kelas');
-        $qrCode = $this->buildQrCodeDataUri($siswa);
+        $qrCode = $siswa->isActive() ? $this->buildQrCodeDataUri($siswa) : null;
 
         return view('siswa.card-print', compact('siswa', 'qrCode'));
     }
@@ -332,7 +350,7 @@ class SiswaController extends Controller
     {
         $query = Siswa::query()
             ->with('kelas')
-            ->where('is_active', true);
+            ->active();
 
         if ($request->filled('kelas_id')) {
             $query->where('kelas_id', $request->integer('kelas_id'));
@@ -368,7 +386,7 @@ class SiswaController extends Controller
      */
     public function downloadCard(Siswa $siswa)
     {
-        if (! $siswa->qr_token) {
+        if ($siswa->isActive() && ! $siswa->qr_token) {
             $this->siswaService->generateQrCode($siswa->id);
             $siswa->refresh();
         }
@@ -397,7 +415,11 @@ class SiswaController extends Controller
         }
         
         if ($request->filled('status')) {
-            $filters['is_active'] = $request->status == '1';
+            if (in_array((string) $request->status, ['1', '0'], true)) {
+                $filters['is_active'] = $request->status == '1';
+            } else {
+                $filters['status'] = (string) $request->status;
+            }
         }
         
         if ($request->filled('biodata_status')) {
@@ -419,6 +441,73 @@ class SiswaController extends Controller
             'data' => SiswaResource::collection($siswa->getCollection())->resolve($request),
             'meta' => $meta,
         ] + $meta);
+    }
+
+    public function updateAlumniLifecycle(Request $request, Siswa $siswa): JsonResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        $data = $request->validate([
+            'action' => ['required', 'in:graduate,update,reactivate'],
+            'alumni_can_submit' => ['nullable', 'boolean'],
+            'alumni_reviewer_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $reviewerId = isset($data['alumni_reviewer_id']) ? (int) $data['alumni_reviewer_id'] : null;
+        if ($reviewerId) {
+            $reviewer = User::query()->with('role')->find($reviewerId);
+            if (! $reviewer || ! $reviewer->isAdmin() || ! $reviewer->isActive()) {
+                throw ValidationException::withMessages([
+                    'alumni_reviewer_id' => 'Penanggung jawab harus berupa akun Admin yang aktif.',
+                ]);
+            }
+        }
+
+        $message = DB::transaction(function () use ($data, $reviewerId, $request, $siswa) {
+            if ($data['action'] === 'reactivate') {
+                abort_unless($siswa->isGraduated(), 409, 'Hanya Alumni yang dapat diaktifkan kembali.');
+                $siswa->update([
+                    'status' => 'active',
+                    'is_active' => true,
+                    'graduated_at' => null,
+                    'alumni_reviewer_id' => null,
+                    'alumni_can_submit' => true,
+                ]);
+
+                return 'Alumni diaktifkan kembali sebagai siswa. Tetapkan Pamong baru secara manual.';
+            }
+
+            if ($data['action'] === 'update') {
+                abort_unless($siswa->isGraduated(), 409, 'Setelan Alumni hanya tersedia untuk siswa berstatus Alumni.');
+            }
+
+            $siswa->update([
+                'status' => 'graduated',
+                'is_active' => true,
+                'graduated_at' => $siswa->graduated_at ?: now(),
+                'alumni_can_submit' => (bool) ($data['alumni_can_submit'] ?? true),
+                'alumni_reviewer_id' => $reviewerId,
+            ]);
+
+            if ($data['action'] === 'graduate') {
+                PamongSiswa::query()
+                    ->where('siswa_id', $siswa->id)
+                    ->whereNull('ended_at')
+                    ->update(['ended_at' => now(), 'ended_by' => $request->user()->id]);
+            }
+
+            return $data['action'] === 'graduate'
+                ? 'Siswa menjadi Alumni dan penugasan Pamong aktif telah diakhiri.'
+                : 'Setelan Alumni berhasil diperbarui.';
+        });
+
+        Cache::forget('siswa:index:stats');
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => (new SiswaResource($siswa->fresh(['kelas', 'alumniReviewer'])))->resolve($request),
+        ]);
     }
 
     /**

@@ -155,6 +155,12 @@ class PresensiController extends Controller
     {
         $siswa = Siswa::query()->findOrFail($request->validated('siswa_id'));
 
+        if (! $siswa->isActive()) {
+            return back()->withErrors([
+                'siswa_id' => 'Presensi baru hanya dapat dicatat untuk siswa berstatus Aktif.',
+            ])->withInput();
+        }
+
         if (! $request->user()->canRecordManualAttendanceFor($siswa)) {
             $message = $request->user()->canCreateManualAttendance()
                 ? 'Anda hanya dapat mengisi presensi siswa binaan.'
@@ -1314,7 +1320,7 @@ class PresensiController extends Controller
         $students = Siswa::query()
             ->select($siswaColumns)
             ->with('kelas:id,nama')
-            ->where('is_active', true)
+            ->active()
             ->when($request->kelas_id, fn ($query, $kelasId) => $query->where('kelas_id', $kelasId))
             ->orderBy('nama')
             ->get()

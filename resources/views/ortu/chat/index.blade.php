@@ -11,6 +11,13 @@
         </div>
     </div>
 
+    @if($siswa->isGraduated())
+        <div class="pkg-card-soft mb-4 border border-sky-200 p-4 dark:border-sky-900">
+            <p class="font-semibold text-sky-900 dark:text-sky-100">Riwayat chat Alumni</p>
+            <p class="mt-1 text-sm text-sky-800/80 dark:text-sky-200/80">Percakapan lama tetap dapat dibaca. Pengiriman pesan baru kepada Pamong sudah dinonaktifkan.</p>
+        </div>
+    @endif
+
     <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
         <div class="pkg-card min-w-0 overflow-hidden lg:col-span-1" :class="selectedPamong ? 'hidden lg:block' : 'block'">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -105,6 +112,7 @@
                 </template>
             </div>
 
+            @unless($siswa->isGraduated())
             <div class="p-4 border-t border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 rounded-b-lg" x-show="selectedPamong">
                 <form @submit.prevent="sendMessage" class="flex gap-2 items-end">
                     <textarea
@@ -125,6 +133,7 @@
                     </button>
                 </form>
             </div>
+            @endunless
         </div>
     </div>
 </div>

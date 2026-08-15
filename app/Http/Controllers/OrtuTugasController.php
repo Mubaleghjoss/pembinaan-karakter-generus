@@ -36,7 +36,7 @@ class OrtuTugasController extends Controller
             ->toArray();
 
         // Filter for pending tasks
-        $pendingTasks = $allTasks->filter(function($task) use ($todayCompletedIds) {
+        $pendingTasks = $siswa->isGraduated() ? collect() : $allTasks->filter(function($task) use ($todayCompletedIds) {
             return !in_array($task->id, $todayCompletedIds);
         });
 
@@ -46,6 +46,8 @@ class OrtuTugasController extends Controller
     public function addComment(Request $request, $checklistId)
     {
         $siswa = Auth::guard('ortu')->user();
+
+        abort_if($siswa->isGraduated(), 403, 'Portal Orang Tua Alumni bersifat baca-saja.');
 
         $request->validate([
             'comment' => 'required|string|min:3|max:1000',

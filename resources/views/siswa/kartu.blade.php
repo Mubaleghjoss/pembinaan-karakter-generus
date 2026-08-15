@@ -91,7 +91,7 @@
                         <img src="{{ $qrCode }}" alt="QR Code" id="qr-image">
                     @else
                         <div class="qr-placeholder">
-                            <span>QR</span>
+                            <span>{{ $siswa->isGraduated() ? 'ALUMNI' : 'QR' }}</span>
                         </div>
                     @endif
                 </div>
@@ -124,6 +124,7 @@
     @include('components.id-card-print-help')
 
     <!-- Instructions -->
+    @if($siswa->isActive())
     <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
         <h3 class="font-medium text-blue-800 dark:text-blue-200 mb-2">Petunjuk Penggunaan</h3>
         <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
@@ -133,6 +134,9 @@
             <li>Hubungi pamong jika QR Code tidak berfungsi saat presensi</li>
         </ul>
     </div>
+    @else
+    <div class="mt-6 rounded-lg bg-sky-50 p-4 text-sm text-sky-800 dark:bg-sky-950/30 dark:text-sky-200">Kartu Alumni tidak memiliki QR presensi aktif.</div>
+    @endif
 
     <div x-show="cameraOpen"
          x-transition

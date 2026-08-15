@@ -11,6 +11,13 @@
         </div>
     </div>
 
+    @if($siswa->isGraduated())
+        <div class="pkg-card-soft mb-4 border border-sky-200 p-4 dark:border-sky-900">
+            <p class="font-semibold text-sky-900 dark:text-sky-100">Riwayat chat Alumni</p>
+            <p class="mt-1 text-sm text-sky-800/80 dark:text-sky-200/80">Percakapan lama tetap dapat dibaca. Pengiriman pesan baru sudah dinonaktifkan.</p>
+        </div>
+    @endif
+
     <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
         <!-- Contact List -->
         <div class="pkg-card min-w-0 overflow-hidden lg:col-span-1" :class="selectedId ? 'hidden lg:block' : 'block'">
@@ -166,6 +173,7 @@
             </div>
 
             <!-- Input -->
+            @unless($siswa->isGraduated())
             <div class="p-4 border-t border-gray-200 dark:border-gray-700">
                 <form @submit.prevent="sendMessage" class="flex gap-2 items-end" enctype="multipart/form-data" data-no-csrf-handler>
                     <!-- Image Upload Button -->
@@ -195,6 +203,7 @@
                     <button @click="clearImage" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">&times;</button>
                 </div>
             </div>
+            @endunless
         </div>
     </div>
 </div>

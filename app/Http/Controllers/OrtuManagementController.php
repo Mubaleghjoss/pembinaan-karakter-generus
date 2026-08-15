@@ -65,7 +65,7 @@ class OrtuManagementController extends Controller
     public function resetAllPasswords(Request $request)
     {
         // Only for active students
-        $siswa = Siswa::where('status', 'active')->get();
+        $siswa = Siswa::active()->get();
         $count = 0;
 
         foreach ($siswa as $s) {

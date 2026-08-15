@@ -55,7 +55,7 @@ class SiswaAuthController extends Controller
 
         $siswa = Siswa::where('nis', $request->nis)->first();
 
-        if (! $siswa || ! $siswa->isActive() || ! Hash::check($request->password, $siswa->password)) {
+        if (! $siswa || ! $siswa->canLogin() || ! Hash::check($request->password, $siswa->password)) {
             $this->loginThrottle->recordFailure($request, 'siswa', $identity);
 
             return redirect()->route('siswa.login', ['error' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])

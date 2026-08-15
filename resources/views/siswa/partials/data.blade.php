@@ -126,9 +126,11 @@
                     <select x-model="filters.status" 
                             @change="loadStudents()"
                             class="w-full pkg-field text-sm">
-                        <option value="1">Aktif</option>
-                        <option value="0">Tidak Aktif</option>
                         <option value="">Semua Status</option>
+                        <option value="active">Aktif</option>
+                        <option value="graduated">Alumni</option>
+                        <option value="transferred">Pindah</option>
+                        <option value="inactive">Nonaktif</option>
                     </select>
                 </div>
                 
@@ -278,9 +280,9 @@
                                 </template>
                             </td>
                             <td data-label="Status" class="px-4 py-4">
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                      :class="student.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"
-                                      x-text="student.is_active ? 'Aktif' : 'Tidak Aktif'"></span>
+                                <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                                      :class="student.status === 'graduated' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200' : (student.status === 'active' && student.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200')"
+                                      x-text="student.status === 'graduated' ? 'Alumni' : (student.status === 'transferred' ? 'Pindah' : (student.status === 'active' && student.is_active ? 'Aktif' : 'Nonaktif'))"></span>
                             </td>
                             <td data-label="Aksi" class="px-4 py-4 text-right pkg-mobile-actions">
                                 <div class="flex items-center justify-end space-x-2">
@@ -294,6 +296,11 @@
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
+                                    </button>
+                                    @endif
+                                    @if(auth()->user()->isAdmin())
+                                    <button type="button" @click="openAlumniModal(student)" class="text-sky-600 hover:text-sky-900 dark:text-sky-400" :title="student.is_alumni ? 'Atur Alumni' : 'Jadikan Alumni'" :aria-label="student.is_alumni ? 'Atur Alumni' : 'Jadikan Alumni'">
+                                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422A12.083 12.083 0 0118.5 15c0 1.327-.213 2.604-.607 3.798A11.952 11.952 0 0012 20.5a11.952 11.952 0 00-5.893-1.702A12.072 12.072 0 015.5 15c0-1.533.286-3 .807-4.35L12 14z"/></svg>
                                     </button>
                                     @endif
                                     @if(auth()->user()->hasPamongCrudPermission('siswa', 'delete'))
@@ -328,5 +335,43 @@
             </div>
         </div>
     </div>
+
+    @if(auth()->user()->isAdmin())
+    <div x-cloak x-show="alumniModalOpen" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" @keydown.escape.window="closeAlumniModal()">
+        <section x-show="alumniModalOpen" x-transition.opacity.duration.150ms role="dialog" aria-modal="true" aria-labelledby="alumni-modal-title" class="pkg-modal w-full max-w-lg p-5 sm:p-6" @click.outside="closeAlumniModal()">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 id="alumni-modal-title" class="text-balance text-lg font-bold text-gray-900 dark:text-white" x-text="alumniStudent?.is_alumni ? 'Setelan Alumni' : 'Jadikan Alumni'"></h2>
+                    <p class="mt-1 text-pretty text-sm text-gray-500 dark:text-gray-400" x-text="alumniStudent ? `${alumniStudent.nama} - ${alumniStudent.nis}` : ''"></p>
+                </div>
+                <button type="button" @click="closeAlumniModal()" class="btn-secondary size-11 justify-center p-0" aria-label="Tutup setelan Alumni">&times;</button>
+            </div>
+
+            <div class="mt-5 space-y-4">
+                <label class="flex min-h-12 items-start gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                    <input type="checkbox" class="pkg-check mt-0.5" x-model="alumniForm.alumni_can_submit">
+                    <span><strong class="block text-sm text-gray-900 dark:text-white">Izinkan kirim Tugas dan bacaan Al-Qur'an</strong><span class="mt-1 block text-pretty text-xs text-gray-500 dark:text-gray-400">Kiriman Alumni menunggu verifikasi Admin dan tidak masuk ke Pamong.</span></span>
+                </label>
+                <div>
+                    <label for="alumni-reviewer" class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300">Admin penanggung jawab</label>
+                    <select id="alumni-reviewer" class="pkg-field w-full" x-model="alumniForm.alumni_reviewer_id">
+                        <option value="">Antrean seluruh Admin</option>
+                        @foreach($adminReviewers as $reviewer)
+                            <option value="{{ $reviewer->id }}">{{ $reviewer->name ?: $reviewer->username }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <p class="text-pretty text-xs text-gray-500 dark:text-gray-400">Penugasan Pamong lama disimpan sebagai riwayat dan tidak dipulihkan otomatis bila Alumni diaktifkan kembali.</p>
+            </div>
+
+            <div class="mt-6 grid gap-2 sm:grid-cols-2">
+                <button type="button" class="btn-secondary min-h-11 justify-center" @click="closeAlumniModal()">Batal</button>
+                <button x-show="!alumniStudent?.is_alumni" type="button" class="btn-primary min-h-11 justify-center" :disabled="alumniSaving" @click="saveAlumniLifecycle('graduate')" x-text="alumniSaving ? 'Menyimpan...' : 'Tetapkan Alumni'"></button>
+                <button x-show="alumniStudent?.is_alumni" type="button" class="btn-primary min-h-11 justify-center" :disabled="alumniSaving" @click="saveAlumniLifecycle('update')" x-text="alumniSaving ? 'Menyimpan...' : 'Simpan Setelan'"></button>
+                <button x-show="alumniStudent?.is_alumni" type="button" class="btn-success min-h-11 justify-center sm:col-span-2" :disabled="alumniSaving" @click="saveAlumniLifecycle('reactivate')">Aktifkan Kembali sebagai Siswa</button>
+            </div>
+        </section>
+    </div>
+    @endif
 </div>
 

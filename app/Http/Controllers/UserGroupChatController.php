@@ -132,6 +132,14 @@ class UserGroupChatController extends Controller
      */
     public function sendMessage(Request $request, ChatGroup $chatGroup): JsonResponse
     {
+        $student = Auth::guard('siswa')->user();
+        if ($student?->isGraduated()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Chat grup tidak tersedia untuk Alumni.',
+            ], 403);
+        }
+
         $request->validate([
             'message' => 'nullable|string|max:1000',
             'attachment' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',

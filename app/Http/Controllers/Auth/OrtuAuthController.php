@@ -41,7 +41,7 @@ class OrtuAuthController extends Controller
         // Find siswa by ortu_username
         $siswa = Siswa::where('ortu_username', $request->username)->first();
 
-        if (! $siswa || ! $siswa->isActive()) {
+        if (! $siswa || ! $siswa->canLogin()) {
             $this->loginThrottle->recordFailure($request, 'orang-tua', $identity);
 
             return redirect()->route('ortu.login', ['error' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])

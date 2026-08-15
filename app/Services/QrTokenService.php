@@ -70,7 +70,9 @@ class QrTokenService implements QrTokenServiceInterface
      */
     public function verify(Siswa $siswa, string $token): bool
     {
-        return $siswa->qr_token === $token && ! $this->isExpired($siswa);
+        return $siswa->isActive()
+            && $siswa->qr_token === $token
+            && ! $this->isExpired($siswa);
     }
 
     /**

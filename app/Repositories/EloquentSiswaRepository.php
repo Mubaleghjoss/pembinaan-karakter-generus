@@ -139,7 +139,7 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = Siswa::query()
-            ->with('kelas')
+            ->with(['kelas', 'alumniReviewer:id,name,status'])
             ->withCount(['validBiometricCredentials', 'legacyBiometricCredentials']);
 
         // Combined search filter (nama OR nis)

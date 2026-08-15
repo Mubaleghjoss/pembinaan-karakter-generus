@@ -29,6 +29,8 @@ class PamongSiswa extends Model
     protected $fillable = [
         'pamong_id',
         'siswa_id',
+        'ended_at',
+        'ended_by',
     ];
 
     /**
@@ -38,6 +40,7 @@ class PamongSiswa extends Model
      */
     protected $casts = [
         'created_at' => 'datetime',
+        'ended_at' => 'datetime',
     ];
 
     /**
@@ -54,5 +57,15 @@ class PamongSiswa extends Model
     public function siswa(): BelongsTo
     {
         return $this->belongsTo(Siswa::class);
+    }
+
+    public function endedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ended_by');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereNull('ended_at');
     }
 }

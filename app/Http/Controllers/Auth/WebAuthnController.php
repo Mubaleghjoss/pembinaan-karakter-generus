@@ -346,7 +346,7 @@ class WebAuthnController extends Controller
             ], 401);
         }
 
-        if (in_array($credential->user_type, ['siswa', 'ortu'], true) && method_exists($user, 'isActive') && ! $user->isActive()) {
+        if (in_array($credential->user_type, ['siswa', 'ortu'], true) && method_exists($user, 'canLogin') && ! $user->canLogin()) {
             AuthLogger::logBiometricEvent(
                 action: 'login_failed',
                 userId: $user->id,

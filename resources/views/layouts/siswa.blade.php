@@ -75,7 +75,7 @@
     $siswaChatBadge = (int) ($siswaSidebarUnreadChatCount ?? 0);
     $mobilePortal = [
         'tone' => 'blue',
-        'portal_label' => 'Portal Siswa',
+        'portal_label' => $currentSiswa?->isGraduated() ? 'Portal Alumni' : 'Portal Siswa',
         'home_url' => route('siswa.dashboard'),
         'profile_url' => route('siswa.profile'),
         'profile_label' => 'profil siswa',
@@ -173,6 +173,7 @@
                     </div>
                     <div class="min-w-0">
                         <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $currentSiswa->nama }}</p>
+                        @if($currentSiswa->isGraduated())<span class="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">Alumni</span>@endif
                         <p class="truncate text-xs text-gray-600 dark:text-gray-400">{{ $currentSiswa->kelas->nama ?? '-' }} | {{ $currentSiswa->nis }}</p>
                     </div>
                 </div>

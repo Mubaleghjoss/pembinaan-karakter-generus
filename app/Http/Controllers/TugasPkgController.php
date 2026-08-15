@@ -14,7 +14,7 @@ class TugasPkgController extends Controller
         $search = $request->input('search');
 
         $query = Karakter::query()
-            ->where('is_active', true)
+            ->active()
             ->where(function ($builder) use ($today) {
                 $builder->whereNull('tanggal_mulai')
                     ->orWhereDate('tanggal_mulai', '<=', $today);
@@ -58,7 +58,7 @@ class TugasPkgController extends Controller
         $karakterOptions = Karakter::active()->get();
 
         $summaryQuery = Karakter::query()
-            ->where('is_active', true)
+            ->active()
             ->where(function ($builder) use ($today) {
                 $builder->whereNull('tanggal_mulai')
                     ->orWhereDate('tanggal_mulai', '<=', $today);

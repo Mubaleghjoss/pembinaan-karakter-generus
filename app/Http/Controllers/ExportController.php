@@ -515,7 +515,7 @@ class ExportController extends Controller
         if ($user->isTeacher()) {
             $siswaIds = $user->getAssignedSiswaIds();
         } else {
-            $siswaIds = Siswa::where('is_active', true)->pluck('id');
+            $siswaIds = Siswa::active()->pluck('id');
         }
 
         $filename = 'presensi-' . $startDate . '-to-' . $endDate . '.csv';
@@ -586,7 +586,7 @@ class ExportController extends Controller
         if ($user->isTeacher()) {
             $siswaQuery = Siswa::whereIn('id', $user->getAssignedSiswaIds());
         } else {
-            $siswaQuery = Siswa::where('is_active', true);
+            $siswaQuery = Siswa::active();
         }
 
         if ($kelasId) {
@@ -667,7 +667,7 @@ class ExportController extends Controller
         if ($user->isTeacher()) {
             $siswaIds = $user->getAssignedSiswaIds();
         } else {
-            $siswaIds = Siswa::where('is_active', true)->pluck('id');
+            $siswaIds = Siswa::active()->pluck('id');
         }
 
         if ($period) {
@@ -1000,7 +1000,7 @@ class ExportController extends Controller
         $user = Auth::user();
         $kelas = Kelas::query()->orderBy('nama')->get(['id', 'nama']);
         $periods = PointPeriod::query()->orderByDesc('start_date')->orderByDesc('id')->get(['id', 'name', 'status', 'start_date', 'end_date']);
-        $activeSiswaQuery = Siswa::query()->where('is_active', true);
+        $activeSiswaQuery = Siswa::active();
 
         if ($user->isTeacher()) {
             $activeSiswaQuery->whereIn('id', $user->getAssignedSiswaIds());

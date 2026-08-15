@@ -43,6 +43,7 @@ class QuranReadingController extends Controller
     public function studentStore(Request $request)
     {
         $siswa = Auth::guard('siswa')->user();
+        $this->ensureAlumniSubmissionEnabled($siswa);
         $data = $this->validatedEntry($request);
 
         $siswa->quranReadingEntries()->create($data + [
@@ -52,12 +53,15 @@ class QuranReadingController extends Controller
             'status' => QuranReadingEntry::STATUS_PENDING,
         ]);
 
-        return back()->with('success', 'Catatan bacaan dikirim dan menunggu verifikasi Pamong.');
+        return back()->with('success', $siswa->isGraduated()
+            ? 'Catatan bacaan dikirim dan menunggu verifikasi Admin.'
+            : 'Catatan bacaan dikirim dan menunggu verifikasi Pamong.');
     }
 
     public function studentUpdate(Request $request, QuranReadingEntry $entry)
     {
         $siswa = Auth::guard('siswa')->user();
+        $this->ensureAlumniSubmissionEnabled($siswa);
         abort_unless((int) $entry->siswa_id === (int) $siswa->id, 403);
         abort_unless($entry->status === QuranReadingEntry::STATUS_PENDING, 409, 'Hanya catatan yang menunggu yang dapat diubah.');
 
@@ -106,7 +110,7 @@ class QuranReadingController extends Controller
     {
         $user = $request->user();
         $siswaList = $this->operationalStudentQuery($request)->paginate(20)->withQueryString();
-        $pendingQuery = QuranReadingEntry::with(['siswa:id,nis,nama,kelas_id', 'siswa.kelas:id,nama', 'scan:id,siswa_id'])
+        $pendingQuery = QuranReadingEntry::with(['siswa:id,nis,nama,kelas_id,status,is_active,alumni_reviewer_id', 'siswa.kelas:id,nama', 'siswa.alumniReviewer:id,name', 'scan:id,siswa_id'])
             ->where('status', QuranReadingEntry::STATUS_PENDING)
             ->latest('reading_date');
         if ($user->isTeacher()) {
@@ -326,6 +330,21 @@ class QuranReadingController extends Controller
         return $this->newDuplex($siswa, $request->user()->id);
     }
 
+    public function blankMonthly()
+    {
+        return $this->documents->blankMonthly();
+    }
+
+    public function blankSurahReference()
+    {
+        return $this->documents->blankSurahReference();
+    }
+
+    public function blankDuplex()
+    {
+        return $this->documents->blankDuplex();
+    }
+
     public function bulkSheets(Request $request)
     {
         if ($request->input('selection_mode') !== 'selected') {
@@ -396,6 +415,7 @@ class QuranReadingController extends Controller
         $this->ensureScanEnabled();
 
         if ($this->isStudentRoute($request)) {
+            $this->ensureAlumniSubmissionEnabled($request->user('siswa'));
             return redirect()->to(route('siswa.quran.index', ['tab' => 'scan']).'#scan');
         }
 
@@ -411,6 +431,9 @@ class QuranReadingController extends Controller
     public function scanUpload(StoreQuranReadingScanRequest $request, ?Siswa $siswa = null)
     {
         $this->ensureScanEnabled();
+        if ($this->isStudentRoute($request)) {
+            $this->ensureAlumniSubmissionEnabled($request->user('siswa'));
+        }
         $data = $request->validated();
         $sheet = $this->scans->resolveSheet($data['sheet_payload']);
         [$actorType, $actorId] = $this->resolveScanActor($request, $siswa, $sheet);
@@ -435,6 +458,7 @@ class QuranReadingController extends Controller
         $this->ensureScanEnabled();
         $data = $request->validated();
         $sheet = $this->scans->resolveSheet($data['sheet_payload']);
+        $this->ensureAlumniSubmissionEnabled($sheet->siswa);
         $scan = $this->scans->create(
             $sheet,
             $request->file('scan_image'),
@@ -475,6 +499,9 @@ class QuranReadingController extends Controller
     {
         $this->ensureScanEnabled();
         $this->authorizeScan($request, $scan, $isStudent, $isPublic);
+        if ($isStudent || $isPublic) {
+            $this->ensureAlumniSubmissionEnabled($scan->siswa);
+        }
         abort_if($scan->status === 'expired', 410, 'Foto scan kedaluwarsa dan sudah dibersihkan. Silakan unggah ulang lembar.');
 
         $scan->load(['siswa.kelas', 'sheet.cycle']);
@@ -524,6 +551,9 @@ class QuranReadingController extends Controller
     {
         $this->ensureScanEnabled();
         $this->authorizeScan($request, $scan, $isStudent, $isPublic);
+        if ($isStudent || $isPublic) {
+            $this->ensureAlumniSubmissionEnabled($scan->siswa);
+        }
         abort_if($scan->status === 'expired', 410, 'Foto scan kedaluwarsa dan sudah dibersihkan. Silakan unggah ulang lembar.');
         abort_if($scan->status === 'confirmed', 409, 'Hasil scan ini sudah dikonfirmasi.');
         if ($scan->sheet?->sheet_type === 'surah_map') {
@@ -590,7 +620,9 @@ class QuranReadingController extends Controller
         };
 
         return redirect()->to($target)
-            ->with('success', $needsVerification ? 'Hasil scan dikirim untuk verifikasi Pamong.' : 'Hasil scan disimpan dan terverifikasi.');
+            ->with('success', $needsVerification
+                ? ($scan->siswa->isGraduated() ? 'Hasil scan dikirim untuk verifikasi Admin.' : 'Hasil scan dikirim untuk verifikasi Pamong.')
+                : 'Hasil scan disimpan dan terverifikasi.');
     }
 
     private function confirmKhatamScanResponse(ConfirmQuranReadingScanRequest $request, QuranReadingScan $scan, bool $isStudent, bool $isPublic)
@@ -829,6 +861,16 @@ class QuranReadingController extends Controller
         }
 
         return $query;
+    }
+
+    private function ensureAlumniSubmissionEnabled(?Siswa $siswa): void
+    {
+        abort_unless($siswa, 401);
+        abort_if(
+            $siswa->isGraduated() && ! $siswa->canSubmitAsAlumni(),
+            403,
+            'Pengiriman bacaan Alumni sedang dinonaktifkan oleh Admin.'
+        );
     }
 
     private function authorizeOperationalStudent($user, Siswa $siswa): void

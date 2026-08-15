@@ -17,6 +17,7 @@
     };
 @endphp
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    @if($siswa->isActive())
     <div class="mb-6">
         @include('components.dashboard-qr-card', [
             'dashboardQrData' => $dashboardQrData,
@@ -25,6 +26,16 @@
             'dashboardIdCardUrl' => route('siswa.kartu'),
         ])
     </div>
+    @else
+    <div class="pkg-panel mb-6 border-sky-200 bg-sky-50/70 p-5 dark:border-sky-900 dark:bg-sky-950/30">
+        <div class="flex items-start gap-3">
+            <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-200" aria-hidden="true">
+                <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422A12.083 12.083 0 0118.5 15c0 1.327-.213 2.604-.607 3.798A11.952 11.952 0 0012 20.5a11.952 11.952 0 00-5.893-1.702A12.072 12.072 0 015.5 15c0-1.533.286-3 .807-4.35L12 14z"/></svg>
+            </span>
+            <div><h2 class="text-balance font-bold text-gray-900 dark:text-white">Akun Alumni PKG</h2><p class="mt-1 text-pretty text-sm text-gray-600 dark:text-gray-300">Akun tetap dapat digunakan. Presensi dan QR siswa sudah dinonaktifkan, sedangkan Tugas PKG dan bacaan Al-Qur'an dikirim langsung untuk verifikasi Admin.</p></div>
+        </div>
+    </div>
+    @endif
 
     <!-- Share Info Banners -->
     @if(isset($shareInfos))

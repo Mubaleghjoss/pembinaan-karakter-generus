@@ -15,11 +15,14 @@ class OrtuChatController extends Controller
         $siswa = Auth::guard('ortu')->user();
 
         // Get pamong assigned to this siswa
-        $pamongIds = PamongSiswa::where('siswa_id', $siswa->id)->pluck('pamong_id');
+        $pamongIds = PamongSiswa::query()
+            ->when(! $siswa->isGraduated(), fn ($query) => $query->active())
+            ->where('siswa_id', $siswa->id)
+            ->pluck('pamong_id');
         $pamongList = User::whereIn('id', $pamongIds)->get();
 
         // If no assigned pamong, show all pamong
-        if ($pamongList->isEmpty()) {
+        if ($pamongList->isEmpty() && ! $siswa->isGraduated()) {
             $pamongList = User::whereHas('roles', function ($q) {
                 $q->whereIn('slug', ['pamong', 'admin']);
             })->get();
@@ -78,6 +81,13 @@ class OrtuChatController extends Controller
     public function sendMessage(Request $request)
     {
         $siswa = Auth::guard('ortu')->user();
+
+        if ($siswa->isGraduated()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Portal Orang Tua Alumni bersifat baca-saja.',
+            ], 403);
+        }
 
         $request->validate([
             'pamong_id' => 'required|exists:users,id',

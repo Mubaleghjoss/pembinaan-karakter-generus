@@ -115,6 +115,13 @@ function siswaManager() {
         },
         selectedAccounts: [],
         selectAllAccounts: false,
+        alumniModalOpen: false,
+        alumniSaving: false,
+        alumniStudent: null,
+        alumniForm: {
+            alumni_can_submit: true,
+            alumni_reviewer_id: ''
+        },
         
         async init() {
             await this.loadClasses();
@@ -422,6 +429,63 @@ function siswaManager() {
         deleteStudent(student) {
             if (typeof window.deleteStudent === 'function') {
                 window.deleteStudent(student);
+            }
+        },
+
+        openAlumniModal(student) {
+            this.alumniStudent = student;
+            this.alumniForm = {
+                alumni_can_submit: student.alumni_can_submit !== false,
+                alumni_reviewer_id: student.alumni_reviewer_id || ''
+            };
+            this.alumniModalOpen = true;
+        },
+
+        closeAlumniModal() {
+            if (this.alumniSaving) return;
+            this.alumniModalOpen = false;
+            this.alumniStudent = null;
+        },
+
+        async saveAlumniLifecycle(action) {
+            if (!this.alumniStudent || this.alumniSaving) return;
+
+            const promptText = action === 'reactivate'
+                ? 'Aktifkan kembali sebagai siswa? Pamong lama tidak akan dipulihkan otomatis.'
+                : (action === 'graduate'
+                    ? 'Tetapkan sebagai Alumni dan akhiri seluruh penugasan Pamong aktif?'
+                    : 'Simpan setelan Alumni ini?');
+            if (!window.confirm(promptText)) return;
+
+            this.alumniSaving = true;
+            try {
+                const response = await fetch(`/siswa/${this.alumniStudent.id}/alumni`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify({
+                        action,
+                        alumni_can_submit: this.alumniForm.alumni_can_submit,
+                        alumni_reviewer_id: this.alumniForm.alumni_reviewer_id || null
+                    })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    const errors = result.errors ? Object.values(result.errors).flat().join(' ') : null;
+                    throw new Error(errors || result.message || 'Setelan Alumni gagal disimpan.');
+                }
+
+                window.showNotification(result.message, 'success');
+                this.alumniModalOpen = false;
+                this.alumniStudent = null;
+                await this.loadStudents(this.currentPage);
+            } catch (error) {
+                window.showNotification(error.message || 'Setelan Alumni gagal disimpan.', 'error');
+            } finally {
+                this.alumniSaving = false;
             }
         },
         

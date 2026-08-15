@@ -82,7 +82,7 @@ class KelasController extends Controller
         $totalKelas = Kelas::count();
         $kelasAktif = Kelas::where('is_active', true)->count();
         $totalPamong = User::whereHas('role', fn($q) => $q->where('name', 'teacher'))->count();
-        $totalSiswa = Siswa::where('is_active', true)->count();
+        $totalSiswa = Siswa::active()->count();
         
         return response()->json([
             'success' => true,
@@ -281,7 +281,7 @@ class KelasController extends Controller
                 ->orderBy('tingkat')
                 ->get(),
             'total_capacity' => (int) ($classSummary->total_capacity ?? 0),
-            'total_students' => Siswa::where('is_active', true)->count(),
+            'total_students' => Siswa::active()->count(),
             'classes_with_students' => Kelas::whereHas('siswa', function ($query) {
                 $query->where('is_active', true);
             })->count(),

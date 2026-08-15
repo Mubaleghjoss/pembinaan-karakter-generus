@@ -503,6 +503,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/siswa/{siswa}/generate-password', [SiswaController::class, 'generatePassword'])->name('siswa.generate-password');
     Route::post('/siswa/{siswa}/set-password', [SiswaController::class, 'setPassword'])->name('siswa.set-password');
     Route::post('/siswa-bulk-reset-password', [SiswaController::class, 'bulkResetPassword'])->name('siswa.bulk-reset-password');
+    Route::patch('/siswa/{siswa}/alumni', [SiswaController::class, 'updateAlumniLifecycle'])
+        ->middleware('admin.only')
+        ->name('siswa.alumni.update');
 
     // Siswa - Ortu Account Management (admin)
     Route::post('/siswa/{siswa}/reset-ortu-password', [SiswaController::class, 'resetOrtuPassword'])->name('siswa.reset-ortu-password');
@@ -810,6 +813,9 @@ Route::middleware('auth')->group(function () {
         Route::patch('/progres/{submission}/tolak', [App\Http\Controllers\QuranReadingController::class, 'rejectProgress'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('progress.reject');
         Route::put('/{siswa}/progres-khatam', [App\Http\Controllers\QuranReadingController::class, 'correctKhatamProgress'])->middleware('pamong.permission:tracer_bacaan_quran,edit')->name('progress.correct');
         Route::post('/lembar-massal', [App\Http\Controllers\QuranReadingController::class, 'bulkSheets'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('bulk-sheets');
+        Route::get('/dokumen-kosong/bulanan', [App\Http\Controllers\QuranReadingController::class, 'blankMonthly'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.monthly');
+        Route::get('/dokumen-kosong/referensi-114-surat', [App\Http\Controllers\QuranReadingController::class, 'blankSurahReference'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.reference');
+        Route::get('/dokumen-kosong/paket-bolak-balik', [App\Http\Controllers\QuranReadingController::class, 'blankDuplex'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.duplex');
         Route::get('/{siswa}/laporan', [App\Http\Controllers\QuranReadingController::class, 'operationalReport'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('report');
         Route::get('/{siswa}/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'operationalSheet'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('sheet');
         Route::get('/{siswa}/peta-khatam', [App\Http\Controllers\QuranReadingController::class, 'operationalKhatamMap'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('khatam-map');

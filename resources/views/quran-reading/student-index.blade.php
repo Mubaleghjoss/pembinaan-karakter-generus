@@ -4,12 +4,15 @@
 
 @section('content')
 @php
+    $canSubmit = $siswa->canSubmitAsAlumni();
     $tabs = [
         ['id' => 'rekap', 'label' => 'Riwayat'],
-        ['id' => 'input', 'label' => 'Catat Bacaan'],
-        ['id' => 'khatam', 'label' => 'Peta Khatam'],
     ];
-    if (config('quran-reading.scan_enabled')) {
+    if ($canSubmit) {
+        $tabs[] = ['id' => 'input', 'label' => 'Catat Bacaan'];
+    }
+    $tabs[] = ['id' => 'khatam', 'label' => 'Peta Khatam'];
+    if ($canSubmit && config('quran-reading.scan_enabled')) {
         $tabs[] = ['id' => 'scan', 'label' => 'Scan Lembar'];
     }
     $tabIds = collect($tabs)->pluck('id')->all();
@@ -20,9 +23,18 @@
     <div class="pkg-page-header">
         <div>
             <h1 class="pkg-page-heading">Tracer Bacaan Al-Qur'an</h1>
-            <p class="pkg-page-subheading">Catat bacaanmu dengan rapi. Catatan baru akan diperiksa Pamong sebelum masuk laporan resmi.</p>
+            <p class="pkg-page-subheading">Catat bacaanmu dengan rapi. Catatan baru akan diperiksa {{ $siswa->isGraduated() ? 'Admin' : 'Pamong' }} sebelum masuk laporan resmi.</p>
         </div>
     </div>
+
+    @if($siswa->isGraduated())
+        <div class="pkg-card-soft border border-sky-200 p-4 dark:border-sky-900">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div><p class="font-semibold text-sky-900 dark:text-sky-100">Tracer Alumni</p><p class="mt-1 text-sm text-sky-800/80 dark:text-sky-200/80">Riwayat dan PDF tetap tersedia. Catatan baru masuk langsung ke antrean Admin.</p></div>
+                <span class="w-fit rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">{{ $canSubmit ? 'Pengiriman aktif' : 'Pengiriman dinonaktifkan' }}</span>
+            </div>
+        </div>
+    @endif
 
     @if(session('success'))
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200" role="status">{{ session('success') }}</div>
@@ -69,11 +81,11 @@
                                     <p class="font-bold">{{ $entry->reading_date->isoFormat('dddd, D MMMM YYYY') }}</p>
                                     <p class="mt-1 text-sm">Halaman {{ $entry->page_start }}&ndash;{{ $entry->page_end }} &middot; {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }} sampai {{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>
                                     @if($entry->notes)<p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $entry->notes }}</p>@endif
-                                    @if($entry->verification_notes)<p class="mt-2 rounded-lg bg-gray-50 p-2 text-xs dark:bg-gray-800">Catatan Pamong: {{ $entry->verification_notes }}</p>@endif
+                                    @if($entry->verification_notes)<p class="mt-2 rounded-lg bg-gray-50 p-2 text-xs dark:bg-gray-800">Catatan pemeriksa: {{ $entry->verification_notes }}</p>@endif
                                 </div>
                                 @include('quran-reading.partials.status', ['status' => $entry->status])
                             </div>
-                            @if($entry->status === 'pending')
+                            @if($entry->status === 'pending' && $canSubmit)
                                 <details class="mt-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
                                     <summary class="cursor-pointer font-semibold">Ubah catatan yang menunggu</summary>
                                     <form method="POST" action="{{ route('siswa.quran.update', $entry) }}" class="mt-4">
@@ -85,7 +97,7 @@
                             @endif
                         </article>
                     @empty
-                        <div class="pkg-empty-state"><p class="pkg-empty-title">Belum ada catatan bacaan</p><p class="pkg-empty-copy">Buka tab Catat Bacaan untuk memulai.</p></div>
+                        <div class="pkg-empty-state"><p class="pkg-empty-title">Belum ada catatan bacaan</p><p class="pkg-empty-copy">{{ $canSubmit ? 'Buka tab Catat Bacaan untuk memulai.' : 'Pengiriman baru sedang dinonaktifkan. Riwayat akan tetap tersedia di halaman ini.' }}</p></div>
                     @endforelse
                 </div>
                 @if($entries->hasPages())<div class="border-t border-gray-200 p-4 dark:border-gray-700">{{ $entries->links() }}</div>@endif
@@ -96,6 +108,7 @@
             @include('quran-reading.partials.khatam-card', ['downloadUrl' => route('siswa.quran.khatam-map')])
         </x-tab-panel>
 
+        @if($canSubmit)
         <x-tab-panel id="input">
             <section class="pkg-panel-lg">
                 <h2 class="text-lg font-bold">Catat bacaan baru</h2>
@@ -107,8 +120,9 @@
                 </form>
             </section>
         </x-tab-panel>
+        @endif
 
-        @if(config('quran-reading.scan_enabled'))
+        @if($canSubmit && config('quran-reading.scan_enabled'))
             <x-tab-panel id="scan">
                 <section class="pkg-panel-lg space-y-5">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

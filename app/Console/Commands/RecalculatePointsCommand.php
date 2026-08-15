@@ -54,7 +54,7 @@ class RecalculatePointsCommand extends Command
             }
         }
         
-        $siswas = Siswa::where('is_active', true)->get();
+        $siswas = Siswa::active()->get();
         $bar = $this->output->createProgressBar(count($siswas));
         $bar->start();
 

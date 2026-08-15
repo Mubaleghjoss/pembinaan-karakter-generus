@@ -44,6 +44,9 @@ class Siswa extends Authenticatable
         'profile_assignment_confirmed_at',
         'foto_path',
         'status',
+        'graduated_at',
+        'alumni_can_submit',
+        'alumni_reviewer_id',
         'nama_wali',
         'phone_wali',
         'email_wali',
@@ -76,6 +79,8 @@ class Siswa extends Authenticatable
         'metadata' => 'array',
         'is_active' => 'boolean',
         'profile_assignment_confirmed_at' => 'datetime',
+        'graduated_at' => 'datetime',
+        'alumni_can_submit' => 'boolean',
     ];
 
     protected static function boot()
@@ -83,6 +88,12 @@ class Siswa extends Authenticatable
         parent::boot();
 
         static::creating(function ($siswa) {
+            if (empty($siswa->status)) {
+                $siswa->status = 'active';
+            }
+            if ($siswa->is_active === null) {
+                $siswa->is_active = true;
+            }
             if (empty($siswa->qr_secret_salt)) {
                 $siswa->qr_secret_salt = Str::random(64);
             }
@@ -171,6 +182,21 @@ class Siswa extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active' && $this->is_active;
+    }
+
+    public function isGraduated(): bool
+    {
+        return $this->status === 'graduated' && $this->is_active;
+    }
+
+    public function canLogin(): bool
+    {
+        return $this->is_active && in_array($this->status, ['active', 'graduated'], true);
+    }
+
+    public function canSubmitAsAlumni(): bool
+    {
+        return ! $this->isGraduated() || $this->alumni_can_submit;
     }
 
     public function getFullIdentityAttribute(): string
@@ -304,7 +330,17 @@ class Siswa extends Authenticatable
 
     public function pamongAssignments(): HasMany
     {
+        return $this->hasMany(PamongSiswa::class)->whereNull('ended_at');
+    }
+
+    public function pamongAssignmentHistory(): HasMany
+    {
         return $this->hasMany(PamongSiswa::class);
+    }
+
+    public function alumniReviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'alumni_reviewer_id');
     }
 
     public function tracerKarakter(): HasMany

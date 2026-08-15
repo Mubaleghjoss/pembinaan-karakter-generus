@@ -11,6 +11,13 @@
         </div>
     </div>
 
+    @if($siswa->isGraduated())
+        <div class="pkg-card-soft mb-6 border border-sky-200 p-4 dark:border-sky-900">
+            <p class="font-semibold text-sky-900 dark:text-sky-100">Mode baca Alumni</p>
+            <p class="mt-1 text-sm text-sky-800/80 dark:text-sky-200/80">Riwayat tugas tetap tersedia. Komentar baru dari akun Orang Tua dinonaktifkan setelah Generus menjadi Alumni.</p>
+        </div>
+    @endif
+
     @if(isset($pendingTasks) && $pendingTasks->count() > 0)
     <div class="mb-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-2xl p-4">
         <div class="flex items-start gap-3">
@@ -90,11 +97,13 @@
                         @endif
                     </div>
                 </div>
+                @unless($siswa->isGraduated())
                 <div class="mt-4">
                     <button @click="showComment = !showComment" class="btn-secondary w-full sm:w-auto">
                         Beri komentar atau penyaksian
                     </button>
                 </div>
+                @endunless
 
                 @if(isset($comments[$checklist->id]) && $comments[$checklist->id]->count() > 0)
                 <div class="mt-4 space-y-2">
@@ -108,6 +117,7 @@
                 @endif
             </div>
 
+            @unless($siswa->isGraduated())
             <div x-show="showComment" x-transition class="border-t border-gray-200 dark:border-gray-600 p-5 bg-gray-50 dark:bg-gray-800/70">
                 <form action="{{ route('ortu.tugas.comment', $checklist->id) }}" method="POST">
                     @csrf
@@ -133,6 +143,7 @@
                     </div>
                 </form>
             </div>
+            @endunless
         </div>
         @endforeach
     </div>

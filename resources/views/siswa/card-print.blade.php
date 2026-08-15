@@ -363,7 +363,7 @@
                     @if($qrCode)
                         <img src="{{ $qrCode }}" alt="QR Code">
                     @else
-                        <div class="qr-placeholder">QR</div>
+                        <div class="qr-placeholder">{{ $siswa->isGraduated() ? 'ALUMNI' : 'QR' }}</div>
                     @endif
                 </div>
             </div>

@@ -39,7 +39,7 @@ class CekKehadiranController extends Controller
         $user = Auth::user();
         $pamongSiswaIds = null;
         if ($user && $user->isTeacher()) {
-            $pamongSiswaIds = \App\Models\PamongSiswa::where('pamong_id', $user->id)
+            $pamongSiswaIds = \App\Models\PamongSiswa::active()->where('pamong_id', $user->id)
                 ->pluck('siswa_id');
             $query->whereIn('siswa_id', $pamongSiswaIds);
         }

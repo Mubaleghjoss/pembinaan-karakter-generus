@@ -126,6 +126,12 @@ class SiswaKarakterController extends Controller
     {
         $siswa = Auth::guard('siswa')->user();
 
+        abort_if(
+            $siswa->isGraduated() && ! $siswa->canSubmitAsAlumni(),
+            403,
+            'Pengiriman tugas Alumni sedang dinonaktifkan oleh Admin.'
+        );
+
         $request->validate([
             'student_note' => 'nullable|string|max:1000',
             'hasil_teks' => 'nullable|string|max:5000',
@@ -177,7 +183,9 @@ class SiswaKarakterController extends Controller
         if ($existingCheck) {
             if (!$existingCheck->isVerified()) {
                 return redirect()->route('siswa.tugas-pkg.index', ['date' => $forDate])
-                    ->with('success', 'Tugas ini sudah tercatat dan sedang menunggu verifikasi Pamong.');
+                    ->with('success', $siswa->isGraduated()
+                        ? 'Tugas ini sudah tercatat dan sedang menunggu verifikasi Admin.'
+                        : 'Tugas ini sudah tercatat dan sedang menunggu verifikasi Pamong.');
             }
 
             return redirect()->route('siswa.tugas-pkg.index', ['date' => $forDate])
@@ -270,7 +278,8 @@ class SiswaKarakterController extends Controller
             }
 
             return redirect()->route('siswa.tugas-pkg.index', ['date' => $forDate])
-                ->with('success', "Tugas berhasil dicatat untuk {$dateLabel}! Menunggu verifikasi dari Pamong. {$pointMessage}");
+                ->with('success', "Tugas berhasil dicatat untuk {$dateLabel}! Menunggu verifikasi dari "
+                    .($siswa->isGraduated() ? 'Admin' : 'Pamong').". {$pointMessage}");
         }
     }
 
@@ -404,7 +413,7 @@ class SiswaKarakterController extends Controller
         $kelasOptions = \App\Models\Kelas::where('is_active', true)->orderBy('nama')->get();
         $siswaOptions = $user->isTeacher() 
             ? \App\Models\Siswa::whereIn('id', $assignedSiswaIds ?? [])->orderBy('nama')->get()
-            : \App\Models\Siswa::where('is_active', true)->orderBy('nama')->get();
+            : \App\Models\Siswa::active()->orderBy('nama')->get();
         
         return view('tugas-pkg.verification.index', compact('checklists', 'stats', 'kelasOptions', 'siswaOptions'));
     }

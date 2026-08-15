@@ -41,7 +41,7 @@ class TracerKarakterController extends Controller
             $siswaQuery = Siswa::whereIn('id', $user->getAssignedSiswaIds());
         } else {
             // Admin can see all students
-            $siswaQuery = Siswa::where('is_active', true);
+            $siswaQuery = Siswa::active();
         }
         
         // Filter by kelas if provided
@@ -74,7 +74,7 @@ class TracerKarakterController extends Controller
         ];
         
         // Always load checklists for verification tab (so data shows without filter)
-        $checklistQuery = \App\Models\SiswaKarakterChecklist::with(['siswa', 'karakter', 'verifier', 'ortuComments'])
+        $checklistQuery = \App\Models\SiswaKarakterChecklist::with(['siswa.alumniReviewer:id,name', 'karakter', 'verifier', 'ortuComments'])
             ->orderBy('checked_at', 'desc');
         
         if ($user->isTeacher()) {
@@ -113,7 +113,7 @@ class TracerKarakterController extends Controller
         // Get siswa options for verification filter
         $siswaOptions = $user->isTeacher() 
             ? Siswa::whereIn('id', $user->getAssignedSiswaIds())->get()
-            : Siswa::where('is_active', true)->get();
+            : Siswa::query()->where('is_active', true)->whereIn('status', ['active', 'graduated'])->get();
         $karakterOptions = Karakter::active()->orderBy('nama')->get();
 
         [$analyticsSummary, $pamongAnalyticsRows, $analyticsRange] = $this->buildPamongAnalytics($request, $user);
@@ -181,6 +181,7 @@ class TracerKarakterController extends Controller
             });
 
         $pendingBacklog = PamongSiswa::query()
+            ->whereNull('pamong_siswa.ended_at')
             ->join('siswa_karakter_checklist as skc', 'skc.siswa_id', '=', 'pamong_siswa.siswa_id')
             ->selectRaw('pamong_siswa.pamong_id, COUNT(skc.id) as pending_backlog')
             ->whereNull('skc.verified_at')
@@ -437,7 +438,7 @@ class TracerKarakterController extends Controller
         ]));
 
         $payload = Cache::remember($cacheKey, now()->addSeconds(90), function () use ($user, $assignedSiswaIds, $request) {
-            $siswaQuery = Siswa::query()->where('is_active', true);
+            $siswaQuery = Siswa::active();
 
             if ($assignedSiswaIds !== null) {
                 $siswaQuery->whereIn('id', $assignedSiswaIds);
@@ -448,7 +449,7 @@ class TracerKarakterController extends Controller
             }
 
             if (! $user->isTeacher() && $request->filled('pamong_id')) {
-                $pamongSiswaIds = \App\Models\PamongSiswa::where('pamong_id', $request->pamong_id)
+                $pamongSiswaIds = \App\Models\PamongSiswa::active()->where('pamong_id', $request->pamong_id)
                     ->pluck('siswa_id');
                 $siswaQuery->whereIn('id', $pamongSiswaIds);
             }
@@ -527,7 +528,7 @@ class TracerKarakterController extends Controller
         if ($user->isTeacher()) {
             $siswaQuery = Siswa::whereIn('id', $user->getAssignedSiswaIds());
         } else {
-            $siswaQuery = Siswa::where('is_active', true);
+            $siswaQuery = Siswa::active();
         }
         
         // Apply filters
@@ -536,7 +537,7 @@ class TracerKarakterController extends Controller
         }
         
         if (! $user->isTeacher() && $request->filled('pamong_id')) {
-            $pamongSiswaIds = \App\Models\PamongSiswa::where('pamong_id', $request->pamong_id)
+            $pamongSiswaIds = \App\Models\PamongSiswa::active()->where('pamong_id', $request->pamong_id)
                 ->pluck('siswa_id');
             $siswaQuery->whereIn('id', $pamongSiswaIds);
         }
@@ -684,7 +685,7 @@ class TracerKarakterController extends Controller
         if ($user->isTeacher()) {
             $siswaIds = $user->getAssignedSiswaIds();
         } else {
-            $siswaIds = Siswa::where('is_active', true)->pluck('id')->toArray();
+            $siswaIds = Siswa::active()->pluck('id')->toArray();
         }
         
         // Get available karakter grouped by category
@@ -738,7 +739,7 @@ class TracerKarakterController extends Controller
         if ($user->isTeacher()) {
             $siswaOptions = Siswa::whereIn('id', $user->getAssignedSiswaIds())->orderBy('nama')->get();
         } else {
-            $siswaOptions = Siswa::where('is_active', true)->orderBy('nama')->get();
+            $siswaOptions = Siswa::query()->where('is_active', true)->whereIn('status', ['active', 'graduated'])->orderBy('nama')->get();
         }
 
         // Get all active karakter

@@ -189,6 +189,37 @@ class QuranReadingFeatureTest extends TestCase
         $this->assertStringContainsString('وَرَتِّلِ الْقُرْاٰنَ تَرْتِيْلًاۗ', $html);
     }
 
+    public function test_admin_can_download_three_blank_documents_without_creating_sheet_records(): void
+    {
+        $admin = $this->admin();
+
+        $monthly = $this->actingAs($admin)->get(route('quran.blank.monthly'));
+        $monthly->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(1, $this->pdfPageCount($monthly->getContent()));
+
+        $reference = $this->actingAs($admin)->get(route('quran.blank.reference'));
+        $reference->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(1, $this->pdfPageCount($reference->getContent()));
+
+        $duplex = $this->actingAs($admin)->get(route('quran.blank.duplex'));
+        $duplex->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(2, $this->pdfPageCount($duplex->getContent()));
+        $this->assertSame(0, QuranReadingSheet::count());
+
+        $documents = app(\App\Services\QuranReadingDocumentService::class);
+        $html = view('quran-reading.pdf.document', [
+            'pages' => [$documents->blankMonthlyPage(), $documents->blankReferencePage()],
+            'catalog' => QuranCatalog::class,
+            'logoDataUri' => null,
+            'verseImageDataUri' => null,
+        ])->render();
+        $this->assertSame(31, substr_count($html, '<td class="no">'));
+        $this->assertSame(114, substr_count($html, 'class="check-box"'));
+        $this->assertStringContainsString('Untuk pencatatan manual — tidak dipindai.', $html);
+        $this->assertStringNotContainsString('qrDataUri', $html);
+        $this->assertStringNotContainsString('ID lembar:', $html);
+    }
+
     public function test_student_and_operational_tracer_use_permission_aware_deep_link_tabs(): void
     {
         config()->set('quran-reading.scan_enabled', true);

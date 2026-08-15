@@ -216,7 +216,7 @@ class LaporanPenyaksianController extends Controller
         $search = $request->get('q', '');
         
         $siswa = Siswa::with('kelas')
-            ->where('is_active', true)
+            ->active()
             ->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
                   ->orWhere('nis', 'like', "%{$search}%");
@@ -276,7 +276,7 @@ class LaporanPenyaksianController extends Controller
         
         // Get siswa
         $siswa = Siswa::with('kelas')
-            ->where('is_active', true)
+            ->active()
             ->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
                   ->orWhere('nis', 'like', "%{$search}%");

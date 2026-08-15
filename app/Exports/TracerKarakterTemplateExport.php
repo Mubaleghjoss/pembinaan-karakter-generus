@@ -49,7 +49,7 @@ class TracerKarakterTemplateExport
 
         // Sample data
         if ($this->withSampleData) {
-            $siswaList = Siswa::where('is_active', true)->limit(3)->get();
+            $siswaList = Siswa::active()->limit(3)->get();
             $karakterList = Karakter::where('is_active', true)->limit(3)->get();
             $today = now()->format('Y-m-d');
             

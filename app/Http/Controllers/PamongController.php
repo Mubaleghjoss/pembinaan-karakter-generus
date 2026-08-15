@@ -230,13 +230,21 @@ class PamongController extends Controller
         $currentIds = $pamong->assignedStudents()->pluck('siswa_id')->toArray();
         $newIds = $validated['siswa_ids'];
 
+        if (Siswa::query()->whereIn('id', $newIds)->where(fn ($query) => $query
+            ->where('status', '!=', 'active')
+            ->orWhere('is_active', false))->exists()) {
+            return back()->withErrors([
+                'siswa_ids' => 'Penugasan Pamong hanya dapat diberikan kepada siswa berstatus Aktif.',
+            ])->withInput();
+        }
+
         // Add new assignments
         $toAdd = array_diff($newIds, $currentIds);
         foreach ($toAdd as $siswaId) {
-            PamongSiswa::create([
-                'pamong_id' => $pamong->id,
-                'siswa_id' => $siswaId,
-            ]);
+            PamongSiswa::updateOrCreate(
+                ['pamong_id' => $pamong->id, 'siswa_id' => $siswaId],
+                ['ended_at' => null, 'ended_by' => null]
+            );
         }
 
         // Remove unselected assignments
@@ -244,7 +252,8 @@ class PamongController extends Controller
         if (!empty($toRemove)) {
             PamongSiswa::where('pamong_id', $pamong->id)
                 ->whereIn('siswa_id', $toRemove)
-                ->delete();
+                ->whereNull('ended_at')
+                ->update(['ended_at' => now(), 'ended_by' => auth()->id()]);
         }
 
         return redirect()->route('pamong.show', $pamong)
@@ -263,7 +272,8 @@ class PamongController extends Controller
 
         PamongSiswa::where('pamong_id', $pamong->id)
             ->where('siswa_id', $siswa->id)
-            ->delete();
+            ->whereNull('ended_at')
+            ->update(['ended_at' => now(), 'ended_by' => auth()->id()]);
 
         return back()->with('success', 'Siswa berhasil dihapus dari penugasan!');
     }
@@ -276,7 +286,7 @@ class PamongController extends Controller
         $kelasId = $request->get('kelas_id');
         
         $students = Siswa::where('kelas_id', $kelasId)
-            ->where('is_active', true)
+            ->active()
             ->orderBy('nama')
             ->get(['id', 'nis', 'nama']);
 

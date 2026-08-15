@@ -22,6 +22,15 @@ class AuthenticateSiswa
             return redirect()->route('siswa.login');
         }
 
+        if (! Auth::guard('siswa')->user()->canLogin()) {
+            Auth::guard('siswa')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('siswa.login')
+                ->withErrors(['nis' => 'Akun tidak aktif. Hubungi Admin.']);
+        }
+
         return $next($request);
     }
 }

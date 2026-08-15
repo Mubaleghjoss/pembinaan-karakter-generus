@@ -53,12 +53,13 @@ class AdminBroadcastController extends Controller
 
     public function index()
     {
-        $siswaCount = Siswa::where('is_active', true)->count();
+        $siswaCount = Siswa::active()->count();
         $pamongCount = $this->activePamongQuery()->count();
         $userCount = $this->activeStaffQuery()
             ->where('id', '!=', Auth::id())
             ->count();
         $pamongGroupCount = PamongSiswa::query()
+            ->whereNull('ended_at')
             ->select('pamong_id')
             ->distinct()
             ->count('pamong_id');
@@ -76,7 +77,7 @@ class AdminBroadcastController extends Controller
         $user = Auth::user();
         [$messageType, $attachmentPath] = $this->resolveMessagePayload($request);
 
-        $siswaList = Siswa::where('is_active', true)->get();
+        $siswaList = Siswa::active()->get();
 
         $sentCount = 0;
         foreach ($siswaList as $siswa) {
@@ -172,7 +173,7 @@ class AdminBroadcastController extends Controller
         [$messageType, $attachmentPath] = $this->resolveMessagePayload($request);
 
         $pamongs = $this->activePamongQuery()
-            ->whereIn('id', PamongSiswa::query()->select('pamong_id')->distinct())
+            ->whereIn('id', PamongSiswa::active()->select('pamong_id')->distinct())
             ->get();
 
         $sentCount = 0;
@@ -217,6 +218,7 @@ class AdminBroadcastController extends Controller
             );
 
             $assignedSiswaIds = PamongSiswa::query()
+                ->whereNull('ended_at')
                 ->where('pamong_id', $pamong->id)
                 ->pluck('siswa_id');
 

@@ -21,6 +21,10 @@ class TaskPwaNotificationService
 {
     public function pendingStudentTaskCount(Siswa $siswa, CarbonInterface|string|null $date = null): int
     {
+        if (! $siswa->canSubmitAsAlumni()) {
+            return 0;
+        }
+
         $targetDate = $date instanceof CarbonInterface
             ? $date->toDateString()
             : Carbon::parse($date ?? now())->toDateString();
@@ -64,7 +68,7 @@ class TaskPwaNotificationService
 
     public function notifyPamongAboutSubmission(SiswaKarakterChecklist $checklist): int
     {
-        $checklist->loadMissing(['siswa', 'karakter']);
+        $checklist->loadMissing(['siswa.alumniReviewer.role', 'karakter']);
         $siswa = $checklist->siswa;
 
         if (! $siswa) {
@@ -72,10 +76,22 @@ class TaskPwaNotificationService
         }
 
         $recipients = User::query()
+            ->where('status', 'active')
             ->whereHas('pushSubscriptions')
             ->with(['role', 'pamongPermission'])
             ->get()
             ->filter(function (User $user) use ($siswa) {
+                if ($siswa->isGraduated()) {
+                    if (! $user->isAdmin()) {
+                        return false;
+                    }
+
+                    $reviewer = $siswa->alumniReviewer;
+                    $hasAvailableReviewer = $reviewer?->isActive() && $reviewer->isAdmin();
+
+                    return ! $hasAvailableReviewer || (int) $reviewer->id === (int) $user->id;
+                }
+
                 if (! ($user->isAdmin() || $user->usesPamongPermissionSystem())) {
                     return false;
                 }
@@ -98,7 +114,7 @@ class TaskPwaNotificationService
             }
 
             try {
-                $pamongName = trim((string) $recipient->display_name) ?: 'Pamong';
+                $pamongName = trim((string) $recipient->display_name) ?: ($siswa->isGraduated() ? 'Admin' : 'Pamong');
                 $studentName = trim((string) $siswa->nama) ?: 'Siswa';
                 $taskName = $checklist->karakter?->nama ?? 'Tugas PKG';
 
@@ -132,7 +148,13 @@ class TaskPwaNotificationService
         $sent = 0;
 
         Siswa::query()
-            ->active()
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->where('status', 'active')
+                    ->orWhere(fn ($alumni) => $alumni
+                        ->where('status', 'graduated')
+                        ->where('alumni_can_submit', true));
+            })
             ->whereHas('pushSubscriptions')
             ->with('pushSubscriptions')
             ->chunkById(100, function ($students) use ($targetDate, &$sent) {

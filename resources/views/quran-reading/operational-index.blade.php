@@ -47,7 +47,7 @@
                         @foreach($pendingEntries as $entry)
                             <article class="p-4 sm:p-5">
                                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                                    <div><p class="font-bold">{{ $entry->siswa->nama }} <span class="font-normal text-gray-500">&middot; {{ $entry->siswa->nis }}</span></p><p class="mt-1 text-sm">{{ $entry->reading_date->isoFormat('D MMM YYYY') }} &middot; Hal. {{ $entry->page_start }}&ndash;{{ $entry->page_end }} &middot; {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }}&ndash;{{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>@if($entry->notes)<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $entry->notes }}</p>@endif @if($entry->scan)<a class="mt-2 inline-flex min-h-11 items-center font-semibold text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-300" href="{{ route('quran.scan.image', $entry->scan) }}" target="_blank" rel="noopener">Lihat foto scan</a>@endif</div>
+                                    <div><p class="font-bold">{{ $entry->siswa->nama }} <span class="font-normal text-gray-500">&middot; {{ $entry->siswa->nis }}</span> @if($entry->siswa->isGraduated())<span class="ml-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">Alumni</span>@endif</p>@if($entry->siswa->isGraduated())<p class="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300">Antrean Admin{{ $entry->siswa->alumniReviewer ? ' · Penanggung jawab: '.$entry->siswa->alumniReviewer->name : ' umum' }}</p>@endif<p class="mt-1 text-sm">{{ $entry->reading_date->isoFormat('D MMM YYYY') }} &middot; Hal. {{ $entry->page_start }}&ndash;{{ $entry->page_end }} &middot; {{ \App\Support\QuranCatalog::name($entry->surah_start) }} {{ $entry->ayah_start }}&ndash;{{ \App\Support\QuranCatalog::name($entry->surah_end) }} {{ $entry->ayah_end }}</p>@if($entry->notes)<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $entry->notes }}</p>@endif @if($entry->scan)<a class="mt-2 inline-flex min-h-11 items-center font-semibold text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-300" href="{{ route('quran.scan.image', $entry->scan) }}" target="_blank" rel="noopener">Lihat foto scan</a>@endif</div>
                                     @if($capabilities['verify'])
                                         <div class="grid gap-2 sm:grid-cols-2 lg:w-[440px]">
                                             <form method="POST" action="{{ route('quran.verify', $entry) }}" class="flex flex-col gap-2 sm:flex-row">@csrf @method('PATCH')<input name="verification_notes" class="pkg-field min-h-11 min-w-0 flex-1" placeholder="Catatan opsional"><button class="btn-success min-h-11 justify-center">Verifikasi</button></form>
@@ -62,6 +62,22 @@
             @endif
 
             @if($capabilities['export'])
+                <section class="pkg-panel-lg">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h2 class="font-bold">Dokumen Kosong</h2>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Untuk orang umum atau pencatatan kertas. Tidak berisi identitas, QR, token, dan tidak dapat dipindai ke sistem.</p>
+                        </div>
+                        <span class="w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">Manual</span>
+                    </div>
+                    <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        <a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.blank.monthly') }}">Unduh Lembar Bulanan Kosong</a>
+                        <a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.blank.reference') }}">Unduh Referensi 114 Surat Kosong</a>
+                        <a class="btn-success min-h-11 justify-center sm:col-span-2 xl:col-span-1" href="{{ route('quran.blank.duplex') }}">Unduh Paket Kosong Bolak-Balik</a>
+                    </div>
+                    <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Paket terdiri dari halaman depan Lembar Bulanan dan halaman belakang Referensi 114 Surat. Cetak landscape, bolak-balik, lalu pilih balik sisi pendek.</p>
+                </section>
+
                 <section class="pkg-panel-lg">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div><h2 class="font-bold">Cetak Massal</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Maksimal 50 Generus. PDF dirender bertahap agar aman di server.</p></div>

@@ -27,6 +27,10 @@
         .meaning { margin-top: 1px; max-width: 205mm; color: #475569; font-size: 6.3px; line-height: 1.25; }
         .qr-wrap { width: 38mm; height: 38mm; padding: 1mm; background: #fff; }
         .qr { display: block; width: 36mm; height: 36mm; }
+        .manual-document-mark { width: 36mm; margin-left: auto; border: 1.5px solid #94a3b8; padding: 7mm 2mm; color: #475569; font-size: 8px; font-weight: 700; line-height: 1.35; text-align: center; }
+        .manual-document-mark span { font-size: 7px; font-weight: 400; }
+        .manual-document-mark { width: 36mm; margin-left: auto; border: 1.5px solid #94a3b8; padding: 7mm 2mm; color: #475569; font-size: 8px; font-weight: 700; line-height: 1.35; text-align: center; }
+        .manual-document-mark span { font-size: 7px; font-weight: 400; }
         .info { width: 100%; margin: 2px 0 3px; border-collapse: collapse; table-layout: fixed; }
         .info td { border: 1px solid #94a3b8; padding: 2px 4px; height: 17px; line-height: 1.15; }
         .info-label { color: #334155; font-size: 6.5px; font-weight: 700; }

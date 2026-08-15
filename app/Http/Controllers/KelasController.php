@@ -35,7 +35,7 @@ class KelasController extends Controller
         $totalKelas = $kelasList->count();
         $kelasAktif = $kelasList->where('is_active', true)->count();
         $totalPamong = User::whereHas('role', fn($q) => $q->where('name', 'teacher'))->count();
-        $totalSiswa = Siswa::where('is_active', true)->count();
+        $totalSiswa = Siswa::active()->count();
 
         // Get all pamong for dropdown
         $pamongList = User::whereHas('role', fn($q) => $q->where('name', 'teacher'))
@@ -210,7 +210,7 @@ class KelasController extends Controller
             $totalKelas = Kelas::count();
             $kelasAktif = Kelas::where('is_active', true)->count();
             $totalPamong = User::whereHas('role', fn($q) => $q->where('name', 'teacher'))->count();
-            $totalSiswa = Siswa::where('is_active', true)->count();
+            $totalSiswa = Siswa::active()->count();
             
             return response()->json([
                 'success' => true,

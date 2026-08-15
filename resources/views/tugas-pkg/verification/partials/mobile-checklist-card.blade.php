@@ -28,8 +28,9 @@
         <div class="min-w-0 flex-1 space-y-3">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <p class="break-words text-sm font-semibold text-gray-900 dark:text-white">{{ $checklist->siswa->nama }}</p>
+                    <p class="break-words text-sm font-semibold text-gray-900 dark:text-white">{{ $checklist->siswa->nama }} @if($checklist->siswa->isGraduated())<span class="ml-1 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">Alumni</span>@endif</p>
                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ $checklist->siswa->nis }}</p>
+                    @if($checklist->siswa->isGraduated())<p class="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300">Antrean Admin{{ $checklist->siswa->alumniReviewer ? ' · '.$checklist->siswa->alumniReviewer->name : ' umum' }}</p>@endif
                 </div>
 
                 <div class="shrink-0 text-right">
@@ -170,9 +171,9 @@
                     </button>
                 @endif
 
-                <a href="{{ route('pamong.chat.index', ['tab' => 'pribadi', 'siswa_id' => $checklist->siswa->id]) }}" class="pkg-btn-secondary justify-center px-3 py-2 text-sm">
+                @unless($checklist->siswa->isGraduated())<a href="{{ route('pamong.chat.index', ['tab' => 'pribadi', 'siswa_id' => $checklist->siswa->id]) }}" class="pkg-btn-secondary justify-center px-3 py-2 text-sm">
                     Chat siswa
-                </a>
+                </a>@endunless
 
                 <button type="button" onclick="openDeleteModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}', {{ $checklist->isVerified() ? 'true' : 'false' }}, {{ $checklist->awarded_points ?? ($checklist->karakter->poin ?? 10) }})" class="btn-danger justify-center px-3 py-2 text-sm">
                     Tolak verifikasi

@@ -135,6 +135,11 @@ class User extends Authenticatable
      */
     public function assignedStudents(): HasMany
     {
+        return $this->hasMany(PamongSiswa::class, 'pamong_id')->whereNull('ended_at');
+    }
+
+    public function studentAssignmentHistory(): HasMany
+    {
         return $this->hasMany(PamongSiswa::class, 'pamong_id');
     }
 
@@ -150,7 +155,7 @@ class User extends Authenticatable
             'id',
             'id',
             'siswa_id'
-        );
+        )->whereNull('pamong_siswa.ended_at');
     }
 
     /**

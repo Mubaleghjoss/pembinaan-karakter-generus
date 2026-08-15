@@ -281,7 +281,7 @@ class CalendarController extends Controller
             return [$user, collect($user->getAssignedSiswaIds())->values()];
         }
 
-        return [$user, Siswa::where('is_active', true)->pluck('id')];
+        return [$user, Siswa::active()->pluck('id')];
     }
 
     protected function buildAdminEvents($user, Carbon $start, Carbon $end, Collection $siswaIds): array
@@ -884,7 +884,7 @@ class CalendarController extends Controller
         if ($user->isTeacher()) {
             $siswaIds = collect($user->getAssignedSiswaIds())->values();
         } else {
-            $siswaIds = Siswa::where('is_active', true)->pluck('id');
+            $siswaIds = Siswa::active()->pluck('id');
         }
 
         $stats = Cache::remember(

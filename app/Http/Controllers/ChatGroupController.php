@@ -52,7 +52,7 @@ class ChatGroupController extends Controller
         }
 
         if ($type === ChatGroup::TYPE_ALL_SISWA || $type === ChatGroup::TYPE_ALL_USERS) {
-            $siswaIds = Siswa::query()->where('is_active', true)->pluck('id');
+            $siswaIds = Siswa::active()->pluck('id');
 
             foreach ($siswaIds as $siswaId) {
                 ChatGroupMember::firstOrCreate(
@@ -88,7 +88,7 @@ class ChatGroupController extends Controller
     public function create()
     {
         $users = $this->activeStaffUsers()->orderBy('username')->get();
-        $siswaList = Siswa::where('is_active', true)->with('kelas')->get();
+        $siswaList = Siswa::active()->with('kelas')->get();
 
         return view('admin.chat-groups.create', compact('users', 'siswaList'));
     }
@@ -187,7 +187,7 @@ class ChatGroupController extends Controller
     public function edit(ChatGroup $chatGroup)
     {
         $users = $this->activeStaffUsers()->orderBy('username')->get();
-        $siswaList = Siswa::where('is_active', true)->with('kelas')->get();
+        $siswaList = Siswa::active()->with('kelas')->get();
         $chatGroup->load(['members.user', 'members.siswa']);
 
         return view('admin.chat-groups.edit', compact('chatGroup', 'users', 'siswaList'));
@@ -271,7 +271,7 @@ class ChatGroupController extends Controller
      */
     public function addAllSiswa(ChatGroup $chatGroup): JsonResponse
     {
-        $siswaList = Siswa::where('is_active', true)->get();
+        $siswaList = Siswa::active()->get();
         $existingSiswaIds = $chatGroup->members()->whereNotNull('siswa_id')->pluck('siswa_id')->toArray();
 
         $added = 0;

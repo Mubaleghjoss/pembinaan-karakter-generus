@@ -16,8 +16,10 @@ class SiswaChatController extends Controller
     public function index()
     {
         $siswa = Auth::guard('siswa')->user();
-        
-        $pamongIds = PamongSiswa::where('siswa_id', $siswa->id)->pluck('pamong_id');
+        $pamongIds = PamongSiswa::query()
+            ->when(! $siswa->isGraduated(), fn ($query) => $query->active())
+            ->where('siswa_id', $siswa->id)
+            ->pluck('pamong_id');
         $pamongList = User::query()
             ->with('role')
             ->where('status', 'active')
@@ -32,7 +34,7 @@ class SiswaChatController extends Controller
                 $contact->contact_role_label = $contact->hasRole('admin') ? 'Admin' : 'Pamong';
             });
         
-        $relatedSiswa = Siswa::where('is_active', true)
+        $relatedSiswa = Siswa::active()
             ->where('id', '!=', $siswa->id)
             ->whereHas('pamongAssignments', fn ($query) => $query->whereIn('pamong_id', $pamongIds))
             ->orderBy('nama')
@@ -113,6 +115,14 @@ class SiswaChatController extends Controller
 
     public function sendMessage(Request $request): JsonResponse
     {
+        $siswa = Auth::guard('siswa')->user();
+        if ($siswa->isGraduated()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chat Pamong tidak tersedia untuk Alumni.',
+            ], 403);
+        }
+
         $request->validate([
             'type' => 'required|in:pamong,siswa',
             'target_id' => 'required|integer',
@@ -121,7 +131,6 @@ class SiswaChatController extends Controller
             'attachment' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $siswa = Auth::guard('siswa')->user();
         $messageType = 'text';
         $attachmentPath = null;
         $caption = null;

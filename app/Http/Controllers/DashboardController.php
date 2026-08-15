@@ -59,7 +59,7 @@ class DashboardController extends Controller
     {
         return $user->isTeacher()
             ? $user->getAssignedSiswaIds()
-            : Siswa::where('is_active', true)->pluck('id')->all();
+            : Siswa::active()->pluck('id')->all();
     }
 
     private function getPrimaryDashboardData(User $user, Carbon $today): array

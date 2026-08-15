@@ -69,6 +69,30 @@ class QuranReadingDocumentService
         return $this->renderPages($pages, $filename);
     }
 
+    public function blankMonthly(): Response
+    {
+        return $this->renderPages(
+            [$this->blankMonthlyPage()],
+            'Lembar Bacaan Al-Quran Bulanan Kosong.pdf',
+        );
+    }
+
+    public function blankSurahReference(): Response
+    {
+        return $this->renderPages(
+            [$this->blankReferencePage()],
+            'Referensi 114 Surat Kosong.pdf',
+        );
+    }
+
+    public function blankDuplex(): Response
+    {
+        return $this->renderPages([
+            $this->blankMonthlyPage(),
+            $this->blankReferencePage(),
+        ], 'Paket Bacaan Al-Quran Kosong Bolak-Balik.pdf');
+    }
+
     public function monthlyPage(QuranReadingSheet $sheet, string $plainToken): array
     {
         $sheet->loadMissing(['siswa.pamongAssignments.pamong:id,name']);
@@ -90,6 +114,23 @@ class QuranReadingDocumentService
             'type' => 'reference',
             'siswa' => $siswa,
             'pamongNames' => $this->pamongNames($siswa),
+        ];
+    }
+
+    public function blankMonthlyPage(): array
+    {
+        return [
+            'type' => 'monthly',
+            'blank' => true,
+            'rowCount' => 31,
+        ];
+    }
+
+    public function blankReferencePage(): array
+    {
+        return [
+            'type' => 'reference',
+            'blank' => true,
         ];
     }
 

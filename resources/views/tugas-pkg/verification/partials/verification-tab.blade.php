@@ -197,8 +197,9 @@
                                 <input type="checkbox" name="ids[]" value="{{ $checklist->id }}" x-model="selectedItems" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $checklist->siswa->nama }}</div>
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $checklist->siswa->nama }} @if($checklist->siswa->isGraduated())<span class="ml-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">Alumni</span>@endif</div>
                                 <div class="text-sm text-gray-500 dark:text-gray-300">{{ $checklist->siswa->nis }}</div>
+                                @if($checklist->siswa->isGraduated())<div class="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300">Antrean Admin{{ $checklist->siswa->alumniReviewer ? ' · '.$checklist->siswa->alumniReviewer->name : ' umum' }}</div>@endif
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $checklist->karakter->nama }}</div>
@@ -337,9 +338,9 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <a href="{{ route('pamong.chat.index', ['tab' => 'pribadi', 'siswa_id' => $checklist->siswa->id]) }}" class="mr-3 rounded-lg px-2 py-1 text-sky-600 transition hover:bg-sky-50 hover:text-sky-900 dark:text-sky-400 dark:hover:bg-sky-900/20 dark:hover:text-sky-300">
+                                @unless($checklist->siswa->isGraduated())<a href="{{ route('pamong.chat.index', ['tab' => 'pribadi', 'siswa_id' => $checklist->siswa->id]) }}" class="mr-3 rounded-lg px-2 py-1 text-sky-600 transition hover:bg-sky-50 hover:text-sky-900 dark:text-sky-400 dark:hover:bg-sky-900/20 dark:hover:text-sky-300">
                                     Chat siswa ini
-                                </a>
+                                </a>@endunless
                                 @if(!$checklist->isVerified())
                                 <button type="button" onclick="openVerifyModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}')" class="mr-3 rounded-lg px-2 py-1 text-green-600 transition hover:bg-green-50 hover:text-green-900 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:text-green-300">
                                     Verifikasi

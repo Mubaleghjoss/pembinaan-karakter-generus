@@ -8,6 +8,7 @@ use App\Models\ChatGroupMessage;
 use App\Models\Karakter;
 use App\Models\LaporanPenyaksian;
 use App\Models\Setting;
+use App\Models\Siswa;
 use App\Models\ThemeSetting;
 use App\Services\MateriRppJournalWorkflowService;
 use App\Services\TaskPwaNotificationService;
@@ -114,8 +115,9 @@ class SettingsServiceProvider extends ServiceProvider
 
                 $today = today();
 
-                if (Auth::guard('siswa')->check()) {
-                    $siswa = Auth::guard('siswa')->user();
+                $authenticatedSiswa = Auth::guard('siswa')->user();
+                if ($authenticatedSiswa instanceof Siswa) {
+                    $siswa = $authenticatedSiswa;
 
                     $siswaSidebarPendingTaskCount = app(TaskPwaNotificationService::class)
                         ->pendingStudentTaskCount($siswa, $today);
@@ -142,10 +144,11 @@ class SettingsServiceProvider extends ServiceProvider
                         ->pendingStudentCount($siswa);
                 }
 
-                if (Auth::guard('ortu')->check()) {
-                    $siswa = Auth::guard('ortu')->user();
+                $authenticatedOrtu = Auth::guard('ortu')->user();
+                if ($authenticatedOrtu instanceof Siswa) {
+                    $siswa = $authenticatedOrtu;
 
-                    $ortuSidebarPendingTaskCount = (int) Karakter::query()
+                    $ortuSidebarPendingTaskCount = $siswa->isGraduated() ? 0 : (int) Karakter::query()
                         ->where('is_active', true)
                         ->where(function ($query) use ($today) {
                             $query->whereNull('tanggal_mulai')

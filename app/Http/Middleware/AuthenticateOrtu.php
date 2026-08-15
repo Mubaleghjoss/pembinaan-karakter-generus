@@ -19,6 +19,15 @@ class AuthenticateOrtu
             return redirect()->route('ortu.login');
         }
 
+        if (! Auth::guard('ortu')->user()->canLogin()) {
+            Auth::guard('ortu')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('ortu.login')
+                ->withErrors(['username' => 'Akun tidak aktif. Hubungi Admin.']);
+        }
+
         return $next($request);
     }
 }

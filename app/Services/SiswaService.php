@@ -174,6 +174,10 @@ class SiswaService implements SiswaServiceInterface
             throw new ModelNotFoundException("Siswa dengan ID {$siswaId} tidak ditemukan");
         }
 
+        if (! $siswa->isActive()) {
+            throw new \DomainException('QR presensi hanya tersedia untuk siswa aktif.');
+        }
+
         return $this->qrTokenService->getQrData($siswa);
     }
 

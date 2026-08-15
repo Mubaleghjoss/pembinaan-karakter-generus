@@ -853,7 +853,7 @@ class GamificationController extends Controller
                 ->limit(20)
                 ->get();
 
-            $totalActiveSiswa = \App\Models\Siswa::where('is_active', true)->count();
+            $totalActiveSiswa = \App\Models\Siswa::active()->count();
 
             $taskAnalytics = \App\Models\Karakter::where('is_active', true)
                 ->withCount(['checklists as total_completions'])
@@ -990,7 +990,7 @@ class GamificationController extends Controller
                 }
             } elseif ($type === 'tasks') {
                 fputcsv($file, ['Tugas', 'Kategori', 'Total Selesai', 'Siswa Unik', 'Partisipasi %', 'Verifikasi %']);
-                $totalActiveSiswa = \App\Models\Siswa::where('is_active', true)->count();
+                $totalActiveSiswa = \App\Models\Siswa::active()->count();
                 $tasks = \App\Models\Karakter::where('is_active', true)
                     ->withCount(['checklists as total_completions'])
                     ->withCount(['checklists as verified_completions' => fn($q) => $q->whereNotNull('verified_at')])
@@ -1137,7 +1137,7 @@ class GamificationController extends Controller
             ->first();
 
         $transactions = $query->paginate(25)->appends($request->query());
-        $siswaList = \App\Models\Siswa::where('is_active', true)->orderBy('nama')->get(['id', 'nama', 'nis']);
+        $siswaList = \App\Models\Siswa::active()->orderBy('nama')->get(['id', 'nama', 'nis']);
 
         return view('admin.gamification.transactions', compact(
             'transactions',

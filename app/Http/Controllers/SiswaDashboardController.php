@@ -85,8 +85,12 @@ class SiswaDashboardController extends Controller
         $allLevels = \App\Models\Level::active()->orderBy('level')->get();
 
         $biometricStatus = BiometricStatus::resolve($siswa->id, 'siswa');
-        $journalTasks = $this->journalWorkflow->studentTasks($siswa);
-        $dashboardQrData = $this->siswaService->generateQrCode($siswa->id);
+        $journalTasks = $siswa->isGraduated()
+            ? collect()
+            : $this->journalWorkflow->studentTasks($siswa);
+        $dashboardQrData = $siswa->isActive()
+            ? $this->siswaService->generateQrCode($siswa->id)
+            : null;
 
         return view('siswa.dashboard', compact(
             'siswa',
@@ -113,14 +117,14 @@ class SiswaDashboardController extends Controller
         $siswa->load('kelas');
         
         // Generate QR if needed
-        if (!$siswa->qr_token || $siswa->qr_token_expires_at?->isPast()) {
+        if ($siswa->isActive() && (!$siswa->qr_token || $siswa->qr_token_expires_at?->isPast())) {
             $this->siswaService->generateQrCode($siswa->id);
             $siswa->refresh();
         }
 
         // Generate QR image
         $qrCode = null;
-        if ($siswa->qr_token) {
+        if ($siswa->isActive() && $siswa->qr_token) {
             $qrData = json_encode([
                 'student_id' => $siswa->id,
                 'nis' => $siswa->nis,
@@ -155,13 +159,13 @@ class SiswaDashboardController extends Controller
         $siswa = Auth::guard('siswa')->user();
         $siswa->load('kelas');
 
-        if (!$siswa->qr_token || $siswa->qr_token_expires_at?->isPast()) {
+        if ($siswa->isActive() && (!$siswa->qr_token || $siswa->qr_token_expires_at?->isPast())) {
             $this->siswaService->generateQrCode($siswa->id);
             $siswa->refresh();
             $siswa->load('kelas');
         }
 
-        $qrCode = $this->buildQrCodeDataUri($siswa);
+        $qrCode = $siswa->isActive() ? $this->buildQrCodeDataUri($siswa) : null;
 
         return view('siswa.card-print', compact('siswa', 'qrCode'));
     }
