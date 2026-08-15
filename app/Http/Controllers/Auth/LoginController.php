@@ -170,11 +170,10 @@ class LoginController extends Controller
     protected function sendFailedLoginResponse(Request $request)
     {
         $field = 'login';
-        $message = 'Data login tidak cocok atau akun tidak dapat digunakan.';
+        $message = 'Username, nomor HP, email, atau password salah.';
 
-        // Fallback: redirect with query param if session fails
         if (!$request->expectsJson()) {
-            return redirect()->route('login', ['error' => $message])
+            return redirect()->route('login')
                 ->withInput($request->only('login', 'remember'))
                 ->withErrors([
                     $field => [$message],

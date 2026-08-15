@@ -10,17 +10,7 @@
 @section('content')
     @include('auth.partials.role-switcher', ['activeRole' => 'siswa'])
 
-    @if($errors->any())
-        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
-            {{ $errors->first() }}
-        </div>
-    @endif
-
-    @if(session('error') || request('error'))
-        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
-            {{ session('error') ?? request('error') }}
-        </div>
-    @endif
+    @include('auth.partials.error-alert')
 
     <form method="POST" action="{{ route('siswa.login.post') }}" class="space-y-3.5 sm:space-y-4" data-auth-login-form>
         @csrf

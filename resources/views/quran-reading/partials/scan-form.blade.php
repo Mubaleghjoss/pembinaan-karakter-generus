@@ -6,6 +6,8 @@
         default => route('quran.scan.upload'),
     };
     $studentName = isset($siswa) && $siswa ? $siswa->nama : null;
+    $prefilledPayload = $prefilledPayload ?? null;
+    $maxUploadBytes = (int) config('quran-reading.max_upload_kilobytes', 8192) * 1024;
 @endphp
 
 <section
@@ -15,6 +17,9 @@
     data-tesseract-worker="{{ asset('vendor/tesseract/worker.min.js') }}"
     data-tesseract-core="{{ asset('vendor/tesseract/core') }}"
     data-tesseract-lang="{{ asset('vendor/tesseract/lang') }}"
+    data-prefilled-payload="{{ $prefilledPayload }}"
+    data-auto-submit="{{ $scanLayout === 'public' && $prefilledPayload ? 'true' : 'false' }}"
+    data-max-upload-bytes="{{ $maxUploadBytes }}"
 >
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -36,11 +41,11 @@
 
     <form method="POST" enctype="multipart/form-data" action="{{ $scanAction }}" class="mt-5" data-quran-scan-form>
         @csrf
-        <input type="hidden" name="sheet_payload" value="{{ old('sheet_payload') }}" data-quran-sheet-payload>
+        <input type="hidden" name="sheet_payload" value="{{ old('sheet_payload', $prefilledPayload) }}" data-quran-sheet-payload>
         <input type="hidden" name="ocr_suggestion" value="{{ old('ocr_suggestion') }}" data-quran-ocr-suggestion>
         <input type="file" name="processed_image" accept="image/jpeg" class="hidden" tabindex="-1" data-quran-processed-file>
 
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="grid gap-3 sm:grid-cols-3">
             <button type="button" class="btn-primary min-h-12 w-full justify-center" data-quran-camera-open>
                 <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                 Buka Kamera
@@ -49,6 +54,11 @@
                 <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 Pilih dari Galeri
                 <input type="file" name="scan_image" accept="image/jpeg,image/png,image/webp" class="sr-only" required data-quran-scan-file>
+            </label>
+            <label class="btn-secondary min-h-12 w-full cursor-pointer justify-center">
+                <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2zm7 0v6h6M9 14h6M9 17h4" /></svg>
+                Pilih PDF
+                <input type="file" accept="application/pdf,.pdf" class="sr-only" data-quran-pdf-file>
             </label>
         </div>
 
@@ -91,7 +101,7 @@
         </div>
 
         <div class="mt-4 rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-700" data-quran-scan-status role="status" aria-live="polite">
-            Pilih kamera atau galeri untuk mulai memindai.
+            {{ $prefilledPayload ? 'Lembar sudah dikenali. Pilih foto atau PDF untuk diperiksa.' : 'Pilih kamera, galeri, atau PDF untuk mulai memindai.' }}
         </div>
         <div class="mt-3 hidden" data-quran-progress-wrap>
             <div class="mb-1 flex items-center justify-between text-xs font-semibold"><span data-quran-progress-label>Memproses</span><span data-quran-progress-value>0%</span></div>

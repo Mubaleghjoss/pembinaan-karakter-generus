@@ -34,8 +34,47 @@ class QuranReadingFeatureTest extends TestCase
         $this->get(route('public.scanner', ['mode' => 'quran']))
             ->assertOk()
             ->assertSee('Pilih dari Galeri')
+            ->assertSee('Pilih PDF')
+            ->assertSee('accept="application/pdf,.pdf"', false)
             ->assertSee('data-quran-scan-file', false)
             ->assertDontSee('capture="environment"', false);
+    }
+
+    public function test_public_scan_code_opens_clean_prefilled_scanner_and_rejects_invalid_token(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        $siswa = Siswa::factory()->create();
+        $token = bin2hex(random_bytes(16));
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id,
+            'public_id' => (string) Str::uuid(),
+            'token_hash' => hash('sha256', $token),
+            'status' => 'active',
+            'sheet_type' => 'monthly',
+            'row_count' => 31,
+            'template_version' => 4,
+        ]);
+        $scanner = app(QuranReadingScanService::class);
+        $code = $scanner->publicCode($sheet, $token);
+
+        $this->assertSame(44, strlen($code));
+        $payload = $scanner->payloadFromPublicCode($code);
+        $this->assertSame($scanner->payload($sheet, $token), $payload);
+
+        $openResponse = $this->get(route('public.quran.scan.open', ['code' => $code]));
+        $openResponse
+            ->assertRedirect(route('public.scanner', ['mode' => 'quran']).'#quran')
+            ->assertHeader('Referrer-Policy', 'no-referrer');
+        $this->assertStringContainsString('no-store', (string) $openResponse->headers->get('Cache-Control'));
+
+        $this->get(route('public.scanner', ['mode' => 'quran']))
+            ->assertOk()
+            ->assertSee('Lembar sudah dikenali. Pilih foto atau PDF untuk diperiksa.')
+            ->assertSee('data-auto-submit="true"', false)
+            ->assertSee('value="'.$payload.'"', false);
+
+        $invalidCode = $scanner->publicCode($sheet, bin2hex(random_bytes(16)));
+        $this->get(route('public.quran.scan.open', ['code' => $invalidCode]))->assertNotFound();
     }
 
     public function test_student_submission_is_pending_and_admin_can_verify_it(): void

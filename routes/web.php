@@ -42,6 +42,10 @@ Route::get('/berita-publik/{slug}', [App\Http\Controllers\PublicController::clas
 Route::get('/berita/{slug}', [App\Http\Controllers\PublicController::class, 'berita'])
     ->where('slug', '(?!create$)[A-Za-z0-9-]+')
     ->name('public.berita');
+Route::get('/sq/{code}', [App\Http\Controllers\QuranReadingController::class, 'openPublicScan'])
+    ->where('code', '[A-Za-z0-9_-]{44}')
+    ->middleware('throttle:quran-public-open')
+    ->name('public.quran.scan.open');
 Route::get('/scan-presensi', [App\Http\Controllers\PublicController::class, 'scanner'])->name('public.scanner');
 Route::post('/scan-presensi/bacaan-quran', [App\Http\Controllers\QuranReadingController::class, 'publicScanUpload'])
     ->middleware('throttle:quran-public-scan')

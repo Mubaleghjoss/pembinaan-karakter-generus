@@ -12,6 +12,12 @@ use Illuminate\Validation\ValidationException;
 
 class QuranReadingScanService
 {
+    private const PUBLIC_CODE_TYPES = [
+        'monthly' => 1,
+        'weekly' => 2,
+        'surah_map' => 3,
+    ];
+
     public function resolveSheet(string $payload): QuranReadingSheet
     {
         [$publicId, $token] = $this->parsePayload($payload);
@@ -79,6 +85,49 @@ class QuranReadingScanService
         }
 
         return 'PKGQURAN:'.$sheet->public_id.':'.$plainToken;
+    }
+
+    public function publicCode(QuranReadingSheet $sheet, string $plainToken): string
+    {
+        $uuidHex = str_replace('-', '', strtolower((string) $sheet->public_id));
+        $tokenHex = strtolower($plainToken);
+        $type = self::PUBLIC_CODE_TYPES[$sheet->sheet_type ?: 'weekly'] ?? null;
+
+        if ($type === null || ! preg_match('/^[0-9a-f]{32}$/', $uuidHex) || ! preg_match('/^[0-9a-f]{32}$/', $tokenHex)) {
+            throw new \InvalidArgumentException('Data QR lembar tidak dapat dikodekan sebagai URL publik.');
+        }
+
+        $binary = chr($type).hex2bin($uuidHex).hex2bin($tokenHex);
+
+        return rtrim(strtr(base64_encode($binary), '+/', '-_'), '=');
+    }
+
+    public function payloadFromPublicCode(string $code): string
+    {
+        if (! preg_match('/^[A-Za-z0-9_-]{44}$/', $code)) {
+            throw ValidationException::withMessages(['code' => 'Tautan lembar tidak valid.']);
+        }
+
+        $binary = base64_decode(strtr($code, '-_', '+/'), true);
+        if ($binary === false || strlen($binary) !== 33) {
+            throw ValidationException::withMessages(['code' => 'Tautan lembar tidak valid.']);
+        }
+
+        $type = ord($binary[0]);
+        $prefix = match ($type) {
+            1 => 'PKGQMB',
+            2 => 'PKGQ',
+            3 => 'PKGQM',
+            default => null,
+        };
+        if ($prefix === null) {
+            throw ValidationException::withMessages(['code' => 'Tautan lembar tidak valid.']);
+        }
+
+        $uuid = $this->uuidFromHex(bin2hex(substr($binary, 1, 16)));
+        $token = bin2hex(substr($binary, 17, 16));
+
+        return $prefix.':'.strtoupper(str_replace('-', '', $uuid)).':'.strtoupper($token);
     }
 
     public function purgeFilesIfComplete(QuranReadingScan $scan): bool

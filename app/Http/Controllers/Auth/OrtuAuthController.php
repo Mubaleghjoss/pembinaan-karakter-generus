@@ -44,8 +44,8 @@ class OrtuAuthController extends Controller
         if (! $siswa || ! $siswa->canLogin()) {
             $this->loginThrottle->recordFailure($request, 'orang-tua', $identity);
 
-            return redirect()->route('ortu.login', ['error' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
-                ->withErrors(['username' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
+            return redirect()->route('ortu.login')
+                ->withErrors(['username' => 'Username atau password salah.'])
                 ->withInput($request->only('username'));
         }
 
@@ -59,8 +59,8 @@ class OrtuAuthController extends Controller
         if (!Hash::check($request->password, $siswa->ortu_password)) {
             $this->loginThrottle->recordFailure($request, 'orang-tua', $identity);
 
-            return redirect()->route('ortu.login', ['error' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
-                ->withErrors(['username' => 'Data login tidak cocok atau akun tidak dapat digunakan.'])
+            return redirect()->route('ortu.login')
+                ->withErrors(['username' => 'Username atau password salah.'])
                 ->withInput($request->only('username'));
         }
 

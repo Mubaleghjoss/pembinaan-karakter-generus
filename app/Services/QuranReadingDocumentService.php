@@ -105,7 +105,9 @@ class QuranReadingDocumentService
             'sheet' => $sheet,
             'siswa' => $sheet->siswa,
             'pamongNames' => $this->pamongNames($sheet->siswa),
-            'qrDataUri' => $this->qrDataUri($this->scanner->payload($sheet, $plainToken)),
+            'qrDataUri' => $this->qrDataUri(route('public.quran.scan.open', [
+                'code' => $this->scanner->publicCode($sheet, $plainToken),
+            ])),
         ];
     }
 

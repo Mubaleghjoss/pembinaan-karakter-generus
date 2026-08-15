@@ -88,12 +88,27 @@
     "src": "node_modules/chart.js/auto/auto.js",
     "isDynamicEntry": true
   },
+  "node_modules/pdfjs-dist/build/pdf.mjs": {
+    "file": "assets/pdf-TYrZqVzP.js",
+    "name": "pdf",
+    "src": "node_modules/pdfjs-dist/build/pdf.mjs",
+    "isDynamicEntry": true
+  },
   "node_modules/pdfjs-dist/build/pdf.worker.min.mjs": {
     "file": "assets/pdf.worker.min-wgc6bjNh.mjs",
     "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
   },
+  "node_modules/pdfjs-dist/build/pdf.worker.min.mjs?url": {
+    "file": "assets/pdf.worker.min-wpIUWwi_.js",
+    "name": "pdf.worker.min",
+    "src": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs?url",
+    "isDynamicEntry": true,
+    "assets": [
+      "assets/pdf.worker.min-wgc6bjNh.mjs"
+    ]
+  },
   "resources/js/app.js": {
-    "file": "assets/app-DDpgtT00.js",
+    "file": "assets/app-BlwQ8u6X.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -143,7 +158,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-ojMoWE2R.js",
+    "file": "assets/QRScanner-DND0mmrJ.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -166,12 +181,13 @@
     ]
   },
   "resources/js/pdf-viewer.js": {
-    "file": "assets/pdf-viewer-DtrobaBD.js",
+    "file": "assets/pdf-viewer-CayYIy0P.js",
     "name": "pdf-viewer",
     "src": "resources/js/pdf-viewer.js",
     "isDynamicEntry": true,
-    "assets": [
-      "assets/pdf.worker.min-wgc6bjNh.mjs"
+    "imports": [
+      "node_modules/pdfjs-dist/build/pdf.mjs",
+      "node_modules/pdfjs-dist/build/pdf.worker.min.mjs?url"
     ]
   },
   "resources/js/presentation-editor.js": {
@@ -218,7 +234,7 @@
     "isEntry": true
   },
   "resources/js/quran-scan.js": {
-    "file": "assets/quran-scan-DTX38TOj.js",
+    "file": "assets/quran-scan-ChVIGUC_.js",
     "name": "quran-scan",
     "src": "resources/js/quran-scan.js",
     "isEntry": true,
@@ -226,6 +242,8 @@
       "_preload-helper-I4rgV-VL.js"
     ],
     "dynamicImports": [
+      "node_modules/pdfjs-dist/build/pdf.mjs",
+      "node_modules/pdfjs-dist/build/pdf.worker.min.mjs?url",
       "_document-scanner-CCXDc1P6.js",
       "resources/js/vendor/jscanify-client.js",
       "_index-qEfrVXE3.js",

@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Siswa;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class SecurityHardeningFeatureTest extends TestCase
@@ -48,6 +50,40 @@ class SecurityHardeningFeatureTest extends TestCase
 
         $response->assertSessionHasErrors('nis');
         $this->assertStringContainsString('Terlalu banyak percobaan login', session('errors')->first('nis'));
+    }
+
+    public function test_password_login_pages_show_one_safe_error_without_query_message(): void
+    {
+        $siswa = Siswa::factory()->create([
+            'nis' => 'LOGIN-001',
+            'password' => Hash::make('password-benar'),
+            'ortu_username' => 'ortu.login.001',
+            'ortu_password' => Hash::make('password-orang-tua'),
+        ]);
+        $user = User::factory()->create([
+            'username' => 'admin.login.001',
+            'password' => Hash::make('password-admin'),
+        ]);
+
+        $cases = [
+            [route('siswa.login.post'), route('siswa.login'), ['nis' => $siswa->nis, 'password' => 'salah'], 'NIS atau password salah.'],
+            [route('ortu.login.post'), route('ortu.login'), ['username' => $siswa->ortu_username, 'password' => 'salah'], 'Username atau password salah.'],
+            [route('login.post'), route('login'), ['login' => $user->username, 'password' => 'salah'], 'Username, nomor HP, email, atau password salah.'],
+        ];
+
+        foreach ($cases as [$endpoint, $loginPage, $credentials, $message]) {
+            $response = $this->post($endpoint, $credentials);
+            $response->assertRedirect($loginPage);
+            $this->assertStringNotContainsString('error=', (string) $response->headers->get('Location'));
+
+            $page = $this->get($loginPage);
+            $page->assertOk()->assertSee($message);
+            $this->assertSame(1, substr_count($page->getContent(), $message));
+        }
+
+        $this->get(route('siswa.login', ['error' => 'Pesan palsu dari URL']))
+            ->assertOk()
+            ->assertDontSee('Pesan palsu dari URL');
     }
 
     public function test_operational_and_parent_logins_use_the_same_generic_throttle(): void

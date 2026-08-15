@@ -98,9 +98,15 @@ class PublicController extends Controller
         ));
     }
 
-    public function scanner()
+    public function scanner(Request $request)
     {
         $theme = ThemeSetting::current();
+        $quranScanPrefill = $request->session()->pull('quran_scan_prefill');
+        if (! is_array($quranScanPrefill)
+            || ! isset($quranScanPrefill['payload'], $quranScanPrefill['created_at'])
+            || (int) $quranScanPrefill['created_at'] < now()->subMinutes(10)->timestamp) {
+            $quranScanPrefill = null;
+        }
         $now = Carbon::now();
         $activeSchedules = AttendanceSchedule::query()
             ->where('is_active', true)
@@ -176,6 +182,7 @@ class PublicController extends Controller
 
         return view('public.scanner', compact(
             'theme',
+            'quranScanPrefill',
             'schedule',
             'scheduleCards',
             'isOpen',

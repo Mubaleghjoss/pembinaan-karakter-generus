@@ -126,5 +126,9 @@ class RateLimitServiceProvider extends ServiceProvider
                 Limit::perHour(3)->by('quran-public-sheet:'.$sheetKey),
             ];
         });
+
+        RateLimiter::for('quran-public-open', function (Request $request) {
+            return Limit::perMinute(30)->by('quran-public-open:'.$request->ip());
+        });
     }
 }

@@ -476,6 +476,30 @@ class QuranReadingController extends Controller
         return redirect()->route('public.quran.scan.confirm', $scan);
     }
 
+    public function openPublicScan(Request $request, string $code)
+    {
+        $this->ensureScanEnabled();
+
+        try {
+            $payload = $this->scans->payloadFromPublicCode($code);
+            $this->scans->resolveSheet($payload);
+        } catch (ValidationException) {
+            abort(404, 'Tautan lembar tidak valid atau sudah tidak aktif.');
+        }
+
+        $request->session()->put('quran_scan_prefill', [
+            'payload' => $payload,
+            'created_at' => now()->timestamp,
+        ]);
+
+        return redirect()
+            ->to(route('public.scanner', ['mode' => 'quran']).'#quran')
+            ->withHeaders([
+                'Cache-Control' => 'private, no-store, max-age=0',
+                'Referrer-Policy' => 'no-referrer',
+            ]);
+    }
+
     public function studentScanConfirmForm(Request $request, QuranReadingScan $scan)
     {
         return $this->renderScanConfirm($request, $scan, true);

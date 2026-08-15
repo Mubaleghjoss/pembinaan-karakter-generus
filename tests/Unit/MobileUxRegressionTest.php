@@ -141,6 +141,7 @@ class MobileUxRegressionTest extends TestCase
         $student = file_get_contents($root.'/resources/views/quran-reading/student-index.blade.php');
         $operational = file_get_contents($root.'/resources/views/quran-reading/operational-index.blade.php');
         $scan = file_get_contents($root.'/resources/views/quran-reading/partials/scan-form.blade.php');
+        $scanScript = file_get_contents($root.'/resources/js/quran-scan.js');
 
         $this->assertStringContainsString('<x-tabs', $student);
         $this->assertStringContainsString(':sync-query="true"', $student);
@@ -151,6 +152,9 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString(':sync-query="true"', $operational);
         $this->assertStringContainsString("\$capabilities['create']", $operational);
         $this->assertStringNotContainsString('capture="environment"', $scan);
+        $this->assertStringContainsString('data-quran-pdf-file', $scan);
+        $this->assertStringContainsString("import('pdfjs-dist')", $scanScript);
+        $this->assertStringContainsString('requestSubmit()', $scanScript);
         $this->assertStringContainsString('maksimal 8 MB', $scan);
         $this->assertStringNotContainsString('overflow-x-auto', $scan);
     }

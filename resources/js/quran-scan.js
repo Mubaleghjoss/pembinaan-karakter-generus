@@ -5,6 +5,52 @@ const A4_HEIGHT = 2339;
 const A4_LANDSCAPE_WIDTH = 2339;
 const A4_LANDSCAPE_HEIGHT = 1654;
 let cvPromise;
+let pdfJsPromise;
+
+function uuidFromHex(value) {
+    return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+}
+
+export function payloadFromPublicCode(code) {
+    if (!/^[A-Za-z0-9_-]{44}$/.test(String(code || ''))) return null;
+    try {
+        const binary = atob(String(code).replace(/-/g, '+').replace(/_/g, '/'));
+        if (binary.length !== 33) return null;
+        const prefix = { 1: 'PKGQMB', 2: 'PKGQ', 3: 'PKGQM' }[binary.charCodeAt(0)];
+        if (!prefix) return null;
+        const bytes = [...binary].map((character) => character.charCodeAt(0).toString(16).padStart(2, '0'));
+        const uuid = uuidFromHex(bytes.slice(1, 17).join(''));
+        const token = bytes.slice(17, 33).join('');
+        return `${prefix}:${uuid.replace(/-/g, '').toUpperCase()}:${token.toUpperCase()}`;
+    } catch {
+        return null;
+    }
+}
+
+export function normalizeQrPayload(value) {
+    const candidate = String(value || '').trim();
+    if (QR_PATTERN.test(candidate)) return candidate;
+    try {
+        const url = new URL(candidate, window.location.origin);
+        const match = url.pathname.match(/^\/sq\/([A-Za-z0-9_-]{44})\/?$/);
+        return match ? payloadFromPublicCode(match[1]) : null;
+    } catch {
+        return null;
+    }
+}
+
+function loadPdfJs() {
+    if (!pdfJsPromise) {
+        pdfJsPromise = Promise.all([
+            import('pdfjs-dist'),
+            import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+        ]).then(([pdfjs, workerModule]) => {
+            pdfjs.GlobalWorkerOptions.workerSrc = workerModule.default || workerModule;
+            return pdfjs;
+        });
+    }
+    return pdfJsPromise;
+}
 
 function documentTypeFromPayload(payload) {
     const normalized = String(payload || '').toUpperCase();
@@ -168,8 +214,9 @@ async function readQr(reader, source, deskewed, manualCrop = null) {
     let lastError;
     for (const candidate of candidates) {
         try {
-            const payload = await decodeCandidate(reader, candidate.canvas);
-            if (!QR_PATTERN.test(payload)) throw new Error('QR bukan lembar Tracer Bacaan Al-Qur’an PKG.');
+            const decodedValue = await decodeCandidate(reader, candidate.canvas);
+            const payload = normalizeQrPayload(decodedValue);
+            if (!payload) throw new Error('QR bukan lembar Tracer Bacaan Al-Qur’an PKG.');
             return { payload, rotation: candidate.rotation };
         } catch (error) {
             lastError = error;
@@ -443,6 +490,41 @@ function makeFileFromCanvas(canvas, name) {
     }, 'image/jpeg', 0.9));
 }
 
+async function renderFirstPdfPage(file) {
+    const pdfjs = await loadPdfJs();
+    let pdfDocument;
+    try {
+        const loadingTask = pdfjs.getDocument({ data: await file.arrayBuffer() });
+        pdfDocument = await loadingTask.promise;
+        if (!pdfDocument.numPages) throw new Error('PDF tidak memiliki halaman yang dapat dipindai.');
+
+        const page = await pdfDocument.getPage(1);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const scale = Math.max(1, Math.min(5, 3200 / Math.max(baseViewport.width, baseViewport.height)));
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(viewport.width));
+        canvas.height = Math.max(1, Math.round(viewport.height));
+        await page.render({
+            canvasContext: canvas.getContext('2d', { alpha: false }),
+            viewport,
+        }).promise;
+
+        return {
+            file: await makeFileFromCanvas(canvas, 'lembar-dari-pdf.jpg'),
+            pageCount: pdfDocument.numPages,
+        };
+    } catch (error) {
+        if (error?.name === 'PasswordException') {
+            throw new Error('PDF dilindungi password. Buka kunci PDF lalu pilih kembali.');
+        }
+        if (error?.message === 'PDF tidak memiliki halaman yang dapat dipindai.') throw error;
+        throw new Error('PDF tidak dapat dibaca. Pastikan file PDF tidak rusak atau dilindungi password.');
+    } finally {
+        await pdfDocument?.destroy?.();
+    }
+}
+
 function updateFileInput(input, file) {
     const transfer = new DataTransfer();
     transfer.items.add(file);
@@ -581,16 +663,28 @@ async function finishDocument(root, state) {
     const detectedCount = state.documentType === 'surah_map'
         ? suggestions.completed_surahs?.length || 0
         : suggestions.length;
-    setStatus(root, state.documentType === 'surah_map'
+    const resultMessage = state.documentType === 'surah_map'
         ? `${detectedCount} tanda surat terbaca. Unggah untuk memeriksa perubahan Peta Khatam.`
-        : (detectedCount ? `${detectedCount} baris terdeteksi. Unggah untuk memeriksa setiap angka sebelum disimpan.` : 'QR valid terbaca. Unggah dan isi atau koreksi angka pada layar konfirmasi.'), 'success');
+        : (detectedCount ? `${detectedCount} baris terdeteksi. Unggah untuk memeriksa setiap angka sebelum disimpan.` : 'QR valid terbaca. Unggah dan isi atau koreksi angka pada layar konfirmasi.');
+    setStatus(root, [state.fileNotice, resultMessage].filter(Boolean).join(' '), 'success');
+
+    if (state.autoSubmit && !state.autoSubmitted) {
+        state.autoSubmitted = true;
+        setStatus(root, 'Hasil siap. Membuka halaman pemeriksaan...', 'progress');
+        root.querySelector('[data-quran-scan-form]').requestSubmit();
+    }
 }
 
-async function processFile(root, state, file) {
+async function processFile(root, state, file, fileNotice = '') {
+    if (file.size > state.maxUploadBytes) {
+        throw new Error(`Ukuran file maksimal ${Math.round(state.maxUploadBytes / 1024 / 1024)} MB.`);
+    }
     state.file = file;
-    state.payload = '';
-    state.documentType = 'weekly';
-    root.querySelector('[data-quran-sheet-payload]').value = '';
+    state.fileNotice = fileNotice;
+    state.autoSubmitted = false;
+    state.payload = state.prefilledPayload || '';
+    state.documentType = state.payload ? documentTypeFromPayload(state.payload) : 'weekly';
+    root.querySelector('[data-quran-sheet-payload]').value = state.payload;
     root.querySelector('[data-quran-scan-submit]').disabled = true;
     root.querySelector('[data-quran-manual-crop]').classList.add('hidden');
     root.querySelector('[data-quran-crop-box]').classList.add('hidden');
@@ -601,6 +695,35 @@ async function processFile(root, state, file) {
     const previewImage = root.querySelector('[data-quran-preview-image]');
     previewImage.src = state.source.toDataURL('image/jpeg', 0.86);
     root.querySelector('[data-quran-preview-panel]').classList.remove('hidden');
+
+    if (state.payload) {
+        if (isLandscapeDocument(state.documentType) && state.source.height > state.source.width) state.source = rotateCanvas(state.source, 90);
+        if (state.documentType === 'weekly' && state.source.width > state.source.height) state.source = rotateCanvas(state.source, 90);
+        setProgress(root, 'Memeriksa lembar', 20);
+        const correction = await deskewDocument(state.source, state.documentType);
+        state.deskewed = correction.canvas;
+        state.corrected = correction.corrected;
+
+        try {
+            const embeddedQr = await readQr(state.reader, state.source, state.deskewed);
+            if (embeddedQr.payload.toUpperCase() !== state.payload.toUpperCase()) {
+                const mismatch = new Error('QR pada foto berbeda dari lembar yang dibuka. Gunakan foto dari lembar yang sama.');
+                mismatch.code = 'QR_MISMATCH';
+                throw mismatch;
+            }
+        } catch (error) {
+            if (error?.code === 'QR_MISMATCH') throw error;
+        }
+
+        if (!state.corrected) {
+            state.showCornerEditor();
+            setStatus(root, 'Lembar dikenali, tetapi batas kertas belum cukup jelas. Atur empat sudut agar pembacaan angka lebih akurat.', 'progress');
+            return;
+        }
+        await finishDocument(root, state);
+        return;
+    }
+
     setProgress(root, 'Meluruskan kertas', 20);
     const correction = await deskewDocument(state.source, 'weekly');
     state.deskewed = correction.canvas;
@@ -642,17 +765,52 @@ async function initRoot(root, index) {
     hiddenReader.id = `quran-hidden-reader-${index}`;
     hiddenReader.className = 'sr-only';
     root.appendChild(hiddenReader);
-    const state = { reader: new Html5Qrcode(hiddenReader.id, { verbose: false }), source: null, deskewed: null, file: null, documentType: 'weekly' };
+    const initialPayload = QR_PATTERN.test(root.dataset.prefilledPayload || '') ? root.dataset.prefilledPayload : '';
+    const state = {
+        reader: new Html5Qrcode(hiddenReader.id, { verbose: false }),
+        source: null,
+        deskewed: null,
+        file: null,
+        fileNotice: '',
+        documentType: initialPayload ? documentTypeFromPayload(initialPayload) : 'weekly',
+        prefilledPayload: initialPayload,
+        autoSubmit: root.dataset.autoSubmit === 'true' && Boolean(initialPayload),
+        autoSubmitted: false,
+        maxUploadBytes: Number(root.dataset.maxUploadBytes || 8 * 1024 * 1024),
+    };
     root._quranState = state;
     initCrop(root, state);
     initDocumentCorners(root, state);
 
     const fileInput = root.querySelector('[data-quran-scan-file]');
+    const pdfInput = root.querySelector('[data-quran-pdf-file]');
     const video = root.querySelector('[data-quran-camera-video]');
     fileInput.addEventListener('change', async () => {
         const file = fileInput.files?.[0];
         if (!file) return;
         try { await processFile(root, state, file); } catch (error) { setStatus(root, error?.message || 'Foto gagal diproses.', 'error'); }
+    });
+    pdfInput.addEventListener('change', async () => {
+        const pdf = pdfInput.files?.[0];
+        if (!pdf) return;
+        try {
+            if (pdf.size > state.maxUploadBytes) {
+                throw new Error(`Ukuran file maksimal ${Math.round(state.maxUploadBytes / 1024 / 1024)} MB.`);
+            }
+            setStatus(root, 'Membuka halaman pertama PDF...', 'progress');
+            setProgress(root, 'Membuka PDF', 5);
+            const rendered = await renderFirstPdfPage(pdf);
+            updateFileInput(fileInput, rendered.file);
+            const notice = rendered.pageCount > 1
+                ? `PDF memiliki ${rendered.pageCount} halaman; hanya halaman pertama yang diproses.`
+                : 'Halaman pertama PDF berhasil disiapkan.';
+            await processFile(root, state, rendered.file, notice);
+        } catch (error) {
+            root.querySelector('[data-quran-scan-submit]').disabled = true;
+            setStatus(root, error?.message || 'PDF gagal diproses.', 'error');
+        } finally {
+            pdfInput.value = '';
+        }
     });
 
     root.querySelector('[data-quran-camera-open]').addEventListener('click', async () => {
@@ -679,11 +837,15 @@ async function initRoot(root, index) {
         const file = await makeFileFromCanvas(canvas, 'foto-lembar.jpg');
         updateFileInput(fileInput, file);
         stopCamera(root);
-        await processFile(root, state, file);
+        try {
+            await processFile(root, state, file);
+        } catch (error) {
+            setStatus(root, error?.message || 'Foto kamera gagal diproses.', 'error');
+        }
     });
     root.querySelector('[data-quran-retake]').addEventListener('click', () => root.querySelector('[data-quran-camera-open]').click());
     root.querySelector('[data-quran-use-photo]').addEventListener('click', async () => {
-        if (state.file) await processFile(root, state, state.file);
+        if (state.file) await processFile(root, state, state.file, state.fileNotice);
     });
 }
 

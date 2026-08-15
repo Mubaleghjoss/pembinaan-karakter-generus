@@ -356,7 +356,10 @@
                     <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Tidak perlu login. QR rahasia pada lembar mengenali Generus, dan hasil scan akan menunggu verifikasi Pamong.</p>
                 </div>
                 @if(config('quran-reading.scan_enabled'))
-                    @include('quran-reading.partials.scan-form', ['layout' => 'public'])
+                    @include('quran-reading.partials.scan-form', [
+                        'layout' => 'public',
+                        'prefilledPayload' => $quranScanPrefill['payload'] ?? null,
+                    ])
                 @else
                     <div class="pkg-empty-state"><p class="pkg-empty-title">Scanner bacaan belum aktif</p><p class="pkg-empty-copy">Silakan gunakan input manual dari Portal Siswa.</p></div>
                 @endif
