@@ -27,6 +27,17 @@ class QuranReadingFeatureTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_public_quran_gallery_picker_does_not_force_the_camera(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+
+        $this->get(route('public.scanner', ['mode' => 'quran']))
+            ->assertOk()
+            ->assertSee('Pilih dari Galeri')
+            ->assertSee('data-quran-scan-file', false)
+            ->assertDontSee('capture="environment"', false);
+    }
+
     public function test_student_submission_is_pending_and_admin_can_verify_it(): void
     {
         $siswa = Siswa::factory()->create();
