@@ -175,9 +175,17 @@
             <div class="min-h-0 overflow-y-auto p-5">
                 <ul class="space-y-2" data-save-list></ul>
             </div>
-            <div class="grid grid-cols-2 gap-2 border-t border-slate-200 p-5 dark:border-slate-700">
-                <button type="button" class="btn-secondary min-h-11" data-save-cancel>Batal</button>
-                <button type="button" class="btn-primary min-h-11" data-save-confirm>Simpan</button>
+            <div class="border-t border-slate-200 p-5 dark:border-slate-700">
+                <div
+                    class="mb-3 hidden rounded-xl border border-red-300 bg-red-50 p-3 text-sm font-semibold text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-200"
+                    data-save-error
+                    role="alert"
+                    tabindex="-1"
+                ></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" class="btn-secondary min-h-11" data-save-cancel>Batal</button>
+                    <button type="button" class="btn-primary min-h-11" data-save-confirm>Simpan</button>
+                </div>
             </div>
         </div>
     </dialog>

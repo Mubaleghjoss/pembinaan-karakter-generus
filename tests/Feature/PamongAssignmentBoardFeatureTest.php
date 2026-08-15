@@ -111,6 +111,61 @@ class PamongAssignmentBoardFeatureTest extends TestCase
         ]);
     }
 
+    public function test_batch_update_allows_multiple_students_to_share_the_same_pamong(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN, 'Administrator');
+        $sourcePamong = $this->user(User::ROLE_TEACHER, 'Pamong Awal');
+        $targetPamong = $this->user(User::ROLE_TEACHER, 'Pamong Tujuan');
+        $firstStudent = $this->student('Generus Pertama');
+        $secondStudent = $this->student('Generus Kedua');
+        PamongSiswa::query()->create(['pamong_id' => $sourcePamong->id, 'siswa_id' => $firstStudent->id]);
+        PamongSiswa::query()->create(['pamong_id' => $sourcePamong->id, 'siswa_id' => $secondStudent->id]);
+        $version = app(PamongAssignmentBoardService::class)->version();
+
+        $response = $this->actingAs($admin)->putJson(route('pamong.assignments.board'), [
+            'version' => $version,
+            'students' => [
+                ['siswa_id' => $firstStudent->id, 'pamong_ids' => [$targetPamong->id]],
+                ['siswa_id' => $secondStudent->id, 'pamong_ids' => [$targetPamong->id]],
+            ],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('affected_students', 2)
+            ->assertJsonPath('added', 2)
+            ->assertJsonPath('ended', 2);
+
+        foreach ([$firstStudent, $secondStudent] as $student) {
+            $this->assertDatabaseHas('pamong_siswa', [
+                'pamong_id' => $targetPamong->id,
+                'siswa_id' => $student->id,
+                'ended_at' => null,
+            ]);
+        }
+    }
+
+    public function test_batch_update_rejects_duplicate_pamong_inside_one_student_assignment(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN, 'Administrator');
+        $pamong = $this->user(User::ROLE_TEACHER, 'Pamong Aktif');
+        $student = $this->student('Generus Duplikat');
+        $version = app(PamongAssignmentBoardService::class)->version();
+
+        $this->actingAs($admin)->putJson(route('pamong.assignments.board'), [
+            'version' => $version,
+            'students' => [[
+                'siswa_id' => $student->id,
+                'pamong_ids' => [$pamong->id, $pamong->id],
+            ]],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('students.0.pamong_ids');
+
+        $this->assertDatabaseMissing('pamong_siswa', [
+            'pamong_id' => $pamong->id,
+            'siswa_id' => $student->id,
+        ]);
+    }
+
     public function test_stale_board_version_returns_conflict_without_overwriting_assignments(): void
     {
         $admin = $this->user(User::ROLE_ADMIN, 'Administrator');

@@ -76,6 +76,7 @@ class PamongAssignmentBoard {
             actionEnd: find('[data-action-end]'),
             saveDialog: find('[data-board-save-dialog]'),
             saveSummary: find('[data-save-summary]'),
+            saveError: find('[data-save-error]'),
             saveList: find('[data-save-list]'),
             saveCancel: find('[data-save-cancel]'),
             saveConfirm: find('[data-save-confirm]'),
@@ -637,6 +638,7 @@ class PamongAssignmentBoard {
             return;
         }
 
+        this.clearSaveError();
         this.elements.saveSummary.textContent = `${changes.length} Generus akan diperbarui. Histori binaan yang dilepas tetap disimpan.`;
         this.elements.saveList.replaceChildren(...changes.map((change) => {
             const item = document.createElement('li');
@@ -666,6 +668,7 @@ class PamongAssignmentBoard {
             return;
         }
 
+        this.clearSaveError();
         this.elements.saveConfirm.disabled = true;
         const originalLabel = this.elements.saveConfirm.textContent;
         this.elements.saveConfirm.textContent = 'Menyimpan...';
@@ -698,7 +701,7 @@ class PamongAssignmentBoard {
             }
 
             if (!response.ok) {
-                const validationMessage = Object.values(data.errors || {}).flat()[0];
+                const validationMessage = Array.from(new Set(Object.values(data.errors || {}).flat())).join(' ');
                 throw new Error(validationMessage || data.message || 'Pembagian belum dapat disimpan.');
             }
 
@@ -709,14 +712,36 @@ class PamongAssignmentBoard {
             this.history = [];
             this.elements.conflict.classList.add('hidden');
             this.elements.saveDialog.close();
+            this.clearSaveError();
             this.renderDraftBar();
             window.showNotification?.(data.message || 'Pembagian Generus dan Pamong berhasil disimpan.', 'success');
         } catch (error) {
-            window.showNotification?.(error.message || 'Pembagian belum dapat disimpan.', 'error');
+            const message = error.message || 'Pembagian belum dapat disimpan.';
+            this.showSaveError(message);
+            window.showNotification?.(message, 'error');
         } finally {
             this.elements.saveConfirm.disabled = false;
             this.elements.saveConfirm.textContent = originalLabel;
         }
+    }
+
+    clearSaveError() {
+        if (!this.elements.saveError) {
+            return;
+        }
+
+        this.elements.saveError.textContent = '';
+        this.elements.saveError.classList.add('hidden');
+    }
+
+    showSaveError(message) {
+        if (!this.elements.saveError) {
+            return;
+        }
+
+        this.elements.saveError.textContent = message;
+        this.elements.saveError.classList.remove('hidden');
+        this.elements.saveError.focus({ preventScroll: true });
     }
 
     pamongName(id) {

@@ -584,16 +584,38 @@ function startQRScanner() {
 
 // Utility functions
 function showNotification(message, type = 'info') {
+    let host = document.querySelector('[data-pkg-notification-stack]');
+
+    if (!host) {
+        host = document.createElement('div');
+        host.className = 'pkg-notification-stack';
+        host.dataset.pkgNotificationStack = 'true';
+        host.setAttribute('aria-label', 'Notifikasi');
+        host.setAttribute('aria-live', 'polite');
+
+        if (document.querySelector('.pkg-topbar, .pkg-portal-mobile-header')) {
+            host.classList.add('pkg-notification-stack--with-header');
+        }
+
+        document.body.appendChild(host);
+    }
+
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${getNotificationClass(type)}`;
+    notification.className = `pkg-notification ${getNotificationClass(type)}`;
+    notification.setAttribute('role', type === 'error' || type === 'warning' ? 'alert' : 'status');
     notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        setTimeout(() => notification.remove(), 300);
+
+    host.appendChild(notification);
+    window.requestAnimationFrame(() => notification.classList.add('is-visible'));
+
+    window.setTimeout(() => {
+        notification.classList.remove('is-visible');
+        window.setTimeout(() => {
+            notification.remove();
+            if (!host.childElementCount) {
+                host.remove();
+            }
+        }, 180);
     }, 5000);
 }
 
@@ -676,13 +698,13 @@ function showConfirmation(message, options = {}) {
 function getNotificationClass(type) {
     switch (type) {
         case 'success':
-            return 'bg-green-500 text-white';
+            return 'pkg-notification--success';
         case 'error':
-            return 'bg-red-500 text-white';
+            return 'pkg-notification--error';
         case 'warning':
-            return 'bg-yellow-500 text-white';
+            return 'pkg-notification--warning';
         default:
-            return 'bg-blue-500 text-white';
+            return 'pkg-notification--info';
     }
 }
 

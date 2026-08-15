@@ -336,4 +336,22 @@ class MobileUxRegressionTest extends TestCase
             $this->assertStringContainsString('data-label=', $relatedView);
         }
     }
+
+    public function test_assignment_board_errors_and_shared_notifications_stay_visible(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $board = file_get_contents($root.'/resources/views/pamong/assign.blade.php');
+        $boardScript = file_get_contents($root.'/resources/js/pamong-assignment-board.js');
+        $appScript = file_get_contents($root.'/resources/js/app.js');
+        $styles = file_get_contents($root.'/resources/css/app.css');
+
+        $this->assertStringContainsString('data-save-error', $board);
+        $this->assertStringContainsString('this.showSaveError(message)', $boardScript);
+        $this->assertStringContainsString('data-pkg-notification-stack', $appScript);
+        $this->assertStringNotContainsString('fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50', $appScript);
+        $this->assertStringContainsString('.pkg-notification-stack--with-header', $styles);
+        $this->assertStringContainsString('top: 5rem;', $styles);
+        $this->assertStringContainsString('z-index: 90;', $styles);
+        $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $styles);
+    }
 }

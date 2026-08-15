@@ -267,8 +267,26 @@ class PamongController extends Controller
             'version' => ['required', 'string', 'size:64'],
             'students' => ['required', 'array', 'min:1', 'max:100'],
             'students.*.siswa_id' => ['required', 'integer', 'distinct', 'exists:siswa,id'],
-            'students.*.pamong_ids' => ['present', 'array', 'max:50'],
-            'students.*.pamong_ids.*' => ['integer', 'distinct', 'exists:users,id'],
+            'students.*.pamong_ids' => [
+                'present',
+                'array',
+                'max:50',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! is_array($value)) {
+                        return;
+                    }
+
+                    $normalizedPamongIds = array_map(
+                        static fn (mixed $id): string => (string) $id,
+                        $value
+                    );
+
+                    if (count($normalizedPamongIds) !== count(array_unique($normalizedPamongIds))) {
+                        $fail('Pamong pada satu Generus tidak boleh dipilih lebih dari sekali.');
+                    }
+                },
+            ],
+            'students.*.pamong_ids.*' => ['integer', 'exists:users,id'],
         ]);
 
         try {
