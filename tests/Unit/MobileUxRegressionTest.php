@@ -159,6 +159,23 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringNotContainsString('overflow-x-auto', $scan);
     }
 
+    public function test_pamong_assignment_board_has_touch_and_mobile_safe_controls(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $view = file_get_contents($root.'/resources/views/pamong/assign.blade.php');
+        $script = file_get_contents($root.'/resources/js/pamong-assignment-board.js');
+        $styles = file_get_contents($root.'/resources/css/app.css');
+
+        $this->assertStringContainsString('data-pamong-assignment-board', $view);
+        $this->assertStringContainsString('data-board-draft-bar', $view);
+        $this->assertStringContainsString('data-board-action-dialog', $view);
+        $this->assertStringContainsString("addEventListener('pointerdown'", $script);
+        $this->assertStringContainsString('data-column-id', $script);
+        $this->assertStringContainsString('prefers-reduced-motion', $styles);
+        $this->assertStringContainsString('scroll-snap-type: x mandatory', $styles);
+        $this->assertStringContainsString('env(safe-area-inset-bottom)', $styles);
+    }
+
     public function test_interactive_tables_use_mobile_cards_or_an_explicit_mobile_alternative(): void
     {
         $root = dirname(__DIR__, 2);

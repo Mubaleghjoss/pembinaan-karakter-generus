@@ -121,6 +121,15 @@ function initializeFeatureMounts() {
     mountReactComponent('news-slider', () => import('./components/NewsSlider.jsx'));
     mountReactComponent('qr-scanner', () => import('./components/QRScanner.jsx'));
     mountReactComponent('attendance-success', () => import('./components/AttendanceSuccess.jsx'));
+
+    if (document.querySelector('[data-pamong-assignment-board]')) {
+        import('./pamong-assignment-board.js')
+            .then((module) => module.initializePamongAssignmentBoards())
+            .catch((error) => {
+                console.error('Papan plotting Binaan Pamong gagal dimuat.', error);
+                showNotification('Papan plotting belum dapat dimuat. Coba muat ulang halaman.', 'error');
+            });
+    }
 }
 
 let pdfViewerLoaderPromise;

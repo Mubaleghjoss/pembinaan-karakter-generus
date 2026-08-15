@@ -8,8 +8,11 @@ use App\Models\PamongSiswa;
 use App\Models\Role;
 use App\Models\Siswa;
 use App\Models\User;
+use App\Services\PamongAssignmentBoardService;
+use App\Services\PamongAssignmentVersionConflict;
 use App\Support\OperationalPermissionPreset;
 use App\Support\TargetGrade;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -195,25 +198,98 @@ class PamongController extends Controller
     /**
      * Show form to assign students to pamong.
      */
-    public function assignForm(User $pamong)
+    public function assignForm(User $pamong, PamongAssignmentBoardService $boardService)
     {
         if (! $pamong->isTeacher()) {
             return redirect()->route('settings.index', ['tab' => 'pamong'])
                 ->with('error', 'Penugasan siswa hanya tersedia untuk akun pamong.');
         }
 
+        $pamongs = User::query()
+            ->where('status', 'active')
+            ->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))
+            ->orderByRaw('organizational_sort_order IS NULL')
+            ->orderBy('organizational_sort_order')
+            ->orderByRaw('COALESCE(name, username)')
+            ->get(['id', 'name', 'username', 'avatar_path', 'organizational_sort_order']);
+        $activePamongIds = $pamongs->pluck('id');
         $students = Siswa::query()
             ->active()
-            ->withCount('pamongAssignments')
+            ->with(['pamongAssignments' => fn ($query) => $query
+                ->whereIn('pamong_id', $activePamongIds)
+                ->select(['id', 'pamong_id', 'siswa_id'])])
             ->orderByRaw('school_grade IS NULL')
             ->orderBy('school_grade')
             ->orderBy('nama')
             ->get();
         $gradeOptions = TargetGrade::schoolClassOptions();
-        $gradeGroups = $students->groupBy(fn (Siswa $siswa) => $siswa->school_grade ?: 'unconfirmed');
-        $assignedIds = $pamong->assignedStudents()->pluck('siswa_id')->toArray();
-        
-        return view('pamong.assign', compact('pamong', 'gradeOptions', 'gradeGroups', 'assignedIds'));
+        $boardData = [
+            'version' => $boardService->version(),
+            'focused_pamong_id' => $pamongs->contains('id', $pamong->id) ? $pamong->id : null,
+            'pamongs' => $pamongs->map(fn (User $item) => [
+                'id' => $item->id,
+                'name' => $item->display_name,
+                'initials' => mb_strtoupper(mb_substr($item->display_name, 0, 1)),
+            ])->values(),
+            'students' => $students->map(fn (Siswa $student) => [
+                'id' => $student->id,
+                'name' => $student->nama,
+                'nis' => $student->nis,
+                'school_grade' => $student->school_grade,
+                'school_grade_label' => $student->school_grade_label ?? 'Kelas belum dikonfirmasi',
+                'kelompok' => $student->kelompok,
+                'kelompok_label' => $student->kelompok_label ?? 'Kelompok belum diisi',
+                'pamong_ids' => $student->pamongAssignments
+                    ->pluck('pamong_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->sort()
+                    ->values(),
+            ])->values(),
+        ];
+
+        return view('pamong.assign', [
+            'pamong' => $pamong,
+            'boardData' => $boardData,
+            'gradeOptions' => $gradeOptions,
+            'kelompokOptions' => Siswa::kelompokOptions(),
+            'totalPamong' => $pamongs->count(),
+            'totalStudents' => $students->count(),
+            'totalAssigned' => $students->filter(fn (Siswa $student) => $student->pamongAssignments->isNotEmpty())->count(),
+            'totalUnassigned' => $students->filter(fn (Siswa $student) => $student->pamongAssignments->isEmpty())->count(),
+        ]);
+    }
+
+    public function updateAssignmentBoard(
+        Request $request,
+        PamongAssignmentBoardService $boardService
+    ): JsonResponse {
+        $validated = $request->validate([
+            'version' => ['required', 'string', 'size:64'],
+            'students' => ['required', 'array', 'min:1', 'max:100'],
+            'students.*.siswa_id' => ['required', 'integer', 'distinct', 'exists:siswa,id'],
+            'students.*.pamong_ids' => ['present', 'array', 'max:50'],
+            'students.*.pamong_ids.*' => ['integer', 'distinct', 'exists:users,id'],
+        ]);
+
+        try {
+            $result = $boardService->update(
+                $validated['students'],
+                $request->user(),
+                $validated['version']
+            );
+        } catch (PamongAssignmentVersionConflict $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+                'version' => $exception->currentVersion,
+            ], 409);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pembagian Generus dan Pamong berhasil disimpan.',
+            ...$result,
+        ]);
     }
 
     /**
