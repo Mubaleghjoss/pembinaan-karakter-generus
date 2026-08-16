@@ -4,33 +4,39 @@ namespace App\Http\Controllers;
 
 use App\DTOs\RecordAttendanceDTO;
 use App\DTOs\ScanQrDTO;
-use App\DTOs\StatisticsFilterDTO;
 use App\Exceptions\DuplicateAttendanceException;
+use App\Exceptions\QrTokenExpiredException;
+use App\Exports\PresensiExport;
+use App\Exports\PresensiTemplateExport;
 use App\Http\Requests\Presensi\ScanQrRequest;
 use App\Http\Requests\Presensi\StorePresensiRequest;
 use App\Http\Requests\Presensi\UpdatePresensiRequest;
 use App\Http\Resources\PresensiResource;
-use App\Models\Presensi;
-use App\Models\User;
-use App\Services\Contracts\PamongPresensiServiceInterface;
-use App\Services\Contracts\PamongQrServiceInterface;
-use App\Services\Contracts\PresensiServiceInterface;
 use App\Imports\PresensiImport;
-use App\Exports\PresensiExport;
-use App\Exports\PresensiTemplateExport;
+use App\Models\AttendanceSchedule;
 use App\Models\Kelas;
 use App\Models\OrganizationalTeam;
 use App\Models\PamongPresensi;
 use App\Models\PointPeriod;
-use App\Models\AttendanceSchedule;
+use App\Models\PointTransaction;
+use App\Models\Presensi;
+use App\Models\Siswa;
+use App\Models\User;
+use App\Services\AttendanceOverviewService;
+use App\Services\Contracts\PamongPresensiServiceInterface;
+use App\Services\Contracts\PamongQrServiceInterface;
+use App\Services\Contracts\PresensiServiceInterface;
+use App\Services\GamificationService;
+use App\Support\TargetGrade;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
-use App\Models\Siswa;
-use App\Support\TargetGrade;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 /**
  * Controller untuk mengelola Presensi (Web)
@@ -43,11 +49,13 @@ class PresensiController extends Controller
     public function __construct(
         protected PresensiServiceInterface $presensiService,
         protected PamongQrServiceInterface $pamongQrService,
-        protected PamongPresensiServiceInterface $pamongPresensiService
+        protected PamongPresensiServiceInterface $pamongPresensiService,
+        protected AttendanceOverviewService $attendanceOverview,
     ) {
         $this->middleware('auth')->except(['scan']);
+        $this->middleware('pamong.permission:presensi,view')->only(['index', 'getData', 'getStats', 'recap', 'periodPanel', 'shareSummary']);
         $this->middleware('pamong.permission:manual_attendance,view')->only(['students']);
-        $this->middleware('pamong.permission:manual_attendance,create')->only(['store', 'bulkStore', 'import', 'downloadTemplate']);
+        $this->middleware('pamong.permission:manual_attendance,create')->only(['store', 'bulkStore', 'quickStatus', 'import', 'downloadTemplate']);
         $this->middleware('pamong.permission:presensi,edit')->only(['update']);
     }
 
@@ -70,6 +78,7 @@ class PresensiController extends Controller
         $canAccessAllManualAttendanceStudents = $request->user()->canAccessAllManualAttendanceStudents();
         $canEditPresensi = $request->user()->hasPamongCrudPermission('presensi', 'edit');
         $schoolGradeOptions = TargetGrade::schoolClassOptions();
+        $kelompokOptions = $this->attendanceOverview->groupOptions();
         $pamongOptions = User::query()->where('status', 'active')->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))->orderByRaw('COALESCE(name, username)')->get(['id', 'name', 'username']);
 
         return view('presensi.index', compact(
@@ -82,6 +91,7 @@ class PresensiController extends Controller
             'canAccessAllManualAttendanceStudents',
             'canEditPresensi',
             'schoolGradeOptions',
+            'kelompokOptions',
             'pamongOptions'
         ));
     }
@@ -91,7 +101,7 @@ class PresensiController extends Controller
      */
     public function create()
     {
-        return redirect(route('presensi.index', ['tab' => 'input']) . '#input');
+        return redirect(route('presensi.index', ['tab' => 'input']).'#input');
     }
 
     public function students(Request $request): JsonResponse
@@ -121,8 +131,8 @@ class PresensiController extends Controller
             ->forManualAttendance($user)
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
-                    $subQuery->where('nama', 'like', '%' . $search . '%')
-                        ->orWhere('nis', 'like', '%' . $search . '%');
+                    $subQuery->where('nama', 'like', '%'.$search.'%')
+                        ->orWhere('nis', 'like', '%'.$search.'%');
                 });
             })
             ->orderBy('nama')
@@ -218,6 +228,102 @@ class PresensiController extends Controller
         return back()->with('success', 'Presensi berhasil diperbarui.');
     }
 
+    public function quickStatus(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'siswa_id' => ['required', 'integer', 'exists:siswa,id'],
+            'tanggal' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'status' => ['required', 'string', 'in:hadir,sakit,izin,alpha'],
+        ]);
+        $siswa = Siswa::query()->active()->findOrFail($validated['siswa_id']);
+
+        if (! $request->user()->canRecordManualAttendanceFor($siswa)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin mengubah presensi Generus ini.',
+            ], 403);
+        }
+
+        $presensi = DB::transaction(function () use ($validated, $request, $siswa) {
+            $existing = Presensi::query()
+                ->where('siswa_id', $siswa->id)
+                ->whereDate('tanggal', $validated['tanggal'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing && ($existing->qr_code_used || data_get($existing->metadata, 'face.method') === 'face')) {
+                return null;
+            }
+
+            $status = $validated['status'];
+            $isToday = $validated['tanggal'] === now()->toDateString();
+            $metadata = array_merge($existing?->metadata ?? [], [
+                'manual_input' => [
+                    'source' => 'group_summary_quick_status',
+                    'updated_by' => $request->user()->id,
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ]);
+            $attributes = [
+                'siswa_id' => $siswa->id,
+                'tanggal' => $validated['tanggal'],
+                'status' => $status,
+                'jam_masuk' => $status === 'hadir' && $isToday ? now()->format('H:i:s') : null,
+                'jam_keluar' => null,
+                'keterangan' => $status === 'alpha' ? 'Tanpa keterangan' : null,
+                'is_verified' => true,
+                'verified_by' => $request->user()->id,
+                'verified_at' => now(),
+                'metadata' => $metadata,
+            ];
+
+            if ($existing) {
+                $existing->update($attributes);
+
+                return $existing->fresh('siswa');
+            }
+
+            return Presensi::query()->create($attributes)->load('siswa');
+        });
+
+        if (! $presensi) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Presensi hasil scan tidak dapat ditimpa dari input cepat. Gunakan Koreksi Presensi.',
+            ], 409);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Presensi '.$siswa->nama.' berhasil diperbarui.',
+            'data' => new PresensiResource($presensi),
+        ]);
+    }
+
+    public function shareSummary(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'tanggal' => ['nullable', 'date_format:Y-m-d'],
+            'school_grade' => ['nullable', 'string', Rule::in(TargetGrade::values())],
+            'pamong_id' => ['nullable', 'integer', 'exists:users,id'],
+            'kelompok' => ['nullable', 'string', 'max:80'],
+            'group' => ['nullable', 'string', 'max:80'],
+        ]);
+        $tanggal = $validated['tanggal'] ?? now()->toDateString();
+        $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
+        $filters = [
+            'school_grade' => $validated['school_grade'] ?? null,
+            'pamong_id' => isset($validated['pamong_id']) ? (int) $validated['pamong_id'] : null,
+            'kelompok' => $this->attendanceOverview->normalizeGroupFilter($validated['kelompok'] ?? null),
+        ];
+        $onlyGroup = $this->attendanceOverview->normalizeGroupFilter($validated['group'] ?? null);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->attendanceOverview->shareText($request->user(), $tanggal, $filters, $onlyGroup),
+        ]);
+    }
+
     /**
      * Remove the specified presensi.
      * Also reverses any attendance points that were awarded for this presensi.
@@ -228,27 +334,27 @@ class PresensiController extends Controller
         $siswa = $presensi->siswa;
         if ($siswa) {
             try {
-                $transactions = \App\Models\PointTransaction::where('siswa_id', $siswa->id)
-                    ->where('reference_type', \App\Models\Presensi::class)
+                $transactions = PointTransaction::where('siswa_id', $siswa->id)
+                    ->where('reference_type', Presensi::class)
                     ->where('reference_id', $presensi->id)
                     ->get();
 
                 if ($transactions->isNotEmpty()) {
-                    $gamificationService = app(\App\Services\GamificationService::class);
+                    $gamificationService = app(GamificationService::class);
                     $siswaPoint = $gamificationService->getOrCreateSiswaPoint($siswa);
-                    
+
                     foreach ($transactions as $transaction) {
                         // Reverse the points
                         $siswaPoint->addPoints(
                             -$transaction->points,
                             'attendance',
-                            'Hapus presensi: ' . $presensi->tanggal . ' (-' . $transaction->points . ' poin)',
+                            'Hapus presensi: '.$presensi->tanggal.' (-'.$transaction->points.' poin)',
                             $presensi
                         );
                     }
                 }
             } catch (\Exception $e) {
-                \Log::warning('Gagal reverse poin kehadiran: ' . $e->getMessage());
+                \Log::warning('Gagal reverse poin kehadiran: '.$e->getMessage());
             }
         }
 
@@ -308,10 +414,10 @@ class PresensiController extends Controller
             }
 
             $rawToken = $request->validated('token');
-            
+
             // Try to parse as pamong or siswa QR
             $parsedPayload = $this->pamongQrService->parsePayload($rawToken);
-            
+
             if ($parsedPayload && $parsedPayload['type'] === 'pamong') {
                 if (! $schedule->targetsPamong()) {
                     return response()->json([
@@ -334,23 +440,23 @@ class PresensiController extends Controller
                     'code' => 'BARCODE_TIDAK_SESUAI',
                 ], 400);
             }
-            
+
             // Handle siswa QR scan (existing logic)
             return $this->handleSiswaScan($rawToken, $request);
-            
-        } catch (\App\Exceptions\QrTokenExpiredException $e) {
+
+        } catch (QrTokenExpiredException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Barcode tidak sesuai.',
                 'detail' => 'Barcode tidak sesuai atau sudah kedaluwarsa. Silakan generate ulang QR Code.',
                 'code' => 'BARCODE_TIDAK_SESUAI',
             ], 400);
-        } catch (\App\Exceptions\DuplicateAttendanceException $e) {
+        } catch (DuplicateAttendanceException $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 400);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak ditemukan.',
@@ -409,9 +515,9 @@ class PresensiController extends Controller
     protected function handlePamongScan(array $parsedPayload, ScanQrRequest $request): JsonResponse
     {
         $pamong = User::findOrFail($parsedPayload['id']);
-        
+
         // Verify this is actually a pamong
-        if (!$this->pamongQrService->isPamong($pamong)) {
+        if (! $this->pamongQrService->isPamong($pamong)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Barcode tidak sesuai.',
@@ -488,12 +594,12 @@ class PresensiController extends Controller
     {
         $studentId = null;
         $token = null;
-        
+
         // Try PKG format first (PKG|1|STUDENT_ID|TOKEN|HASH)
         $delimiter = config('qrcode.payload.delimiter', '|');
         $prefix = config('qrcode.payload.prefix', 'PKG');
-        
-        if (str_starts_with($rawToken, $prefix . $delimiter)) {
+
+        if (str_starts_with($rawToken, $prefix.$delimiter)) {
             $parts = explode($delimiter, $rawToken);
             if (count($parts) >= 4) {
                 $studentId = (int) $parts[2];
@@ -507,7 +613,7 @@ class PresensiController extends Controller
                 $token = $qrData['token'];
             }
         }
-        
+
         if (! $studentId || ! $token) {
             return response()->json([
                 'success' => false,
@@ -550,7 +656,7 @@ class PresensiController extends Controller
         $presensi = $result['presensi'];
         $siswa = $presensi->siswa;
         $statusText = $presensi->status === 'hadir' ? 'HADIR' : 'TERLAMBAT';
-        $message = "{$siswa->nama}, {$statusText}!`nKAMU TELAH TERDAFTAR PADA HARI INI.`nJam: ".now()->format('H:i:s')."`nLANCAR BAROKAH!";
+        $message = "{$siswa->nama}, {$statusText}!`nKAMU TELAH TERDAFTAR PADA HARI INI.`nJam: ".now()->format('H:i:s').'`nLANCAR BAROKAH!';
 
         return response()->json([
             'success' => true,
@@ -570,6 +676,16 @@ class PresensiController extends Controller
      */
     public function recap(Request $request)
     {
+        $query = array_merge($request->query(), [
+            'tab' => 'rekap',
+            'panel' => 'laporan-periode',
+        ]);
+
+        return redirect(route('presensi.index', $query).'#laporan-periode');
+    }
+
+    public function periodPanel(Request $request)
+    {
         $startDate = $request->start_date
             ? Carbon::parse($request->start_date)->startOfDay()
             : now()->startOfMonth()->startOfDay();
@@ -582,7 +698,7 @@ class PresensiController extends Controller
             : 'all';
         $schoolGrade = TargetGrade::normalizeSchoolClassInput($request->input('school_grade'));
         $binaanPamongId = $request->filled('pamong_id') ? $request->integer('pamong_id') : null;
-        $kelompok = Siswa::normalizeKelompok($request->input('kelompok'));
+        $kelompok = $this->attendanceOverview->normalizeGroupFilter($request->input('kelompok'));
         $pamongRole = in_array($request->input('pamong_role'), User::attendanceRoleNames(), true)
             ? $request->input('pamong_role')
             : null;
@@ -634,8 +750,11 @@ class PresensiController extends Controller
             $perPage,
             $page,
             [
-                'path' => $request->url(),
-                'query' => $request->query(),
+                'path' => route('presensi.index'),
+                'query' => array_merge($request->query(), [
+                    'tab' => 'rekap',
+                    'panel' => 'laporan-periode',
+                ]),
             ]
         );
 
@@ -649,7 +768,7 @@ class PresensiController extends Controller
         $binaanPamongOptions = User::query()->where('status', 'active')
             ->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))
             ->orderBy('name')->get(['id', 'name', 'username']);
-        $kelompokOptions = Siswa::kelompokOptions();
+        $kelompokOptions = $this->attendanceOverview->groupOptions();
         $teamOptions = OrganizationalTeam::query()
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -660,7 +779,7 @@ class PresensiController extends Controller
             User::ROLE_ADMIN => 'Admin',
         ];
 
-        return view('presensi.recap', compact(
+        return view('presensi.partials.period-report', compact(
             'records',
             'recap',
             'typeRecap',
@@ -735,9 +854,10 @@ class PresensiController extends Controller
     {
         $validated = $request->validate([
             'tanggal' => ['nullable', 'date', 'date_format:Y-m-d'],
-            'school_grade' => ['nullable', 'string', \Illuminate\Validation\Rule::in(TargetGrade::values())],
+            'school_grade' => ['nullable', 'string', Rule::in(TargetGrade::values())],
             'pamong_id' => ['nullable', 'integer', 'exists:users,id'],
             'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
+            'kelompok' => ['nullable', 'string', 'max:80'],
             'status' => ['nullable', 'string', 'in:hadir,terlambat,izin,sakit,alpha,tidak_hadir'],
             'verified' => ['nullable', 'in:0,1'],
         ]);
@@ -745,12 +865,7 @@ class PresensiController extends Controller
         $tanggal = $validated['tanggal'] ?? now()->toDateString();
         $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
 
-        $query = Presensi::query()
-            ->whereDate('tanggal', $tanggal)
-            ->whereHas('siswa', fn ($student) => $student
-                ->when($validated['school_grade'] ?? null, fn ($query, $grade) => $query->where('school_grade', $grade))
-                ->when($validated['pamong_id'] ?? null, fn ($query, $pamongId) => $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $pamongId)))
-                ->when($validated['kelas_id'] ?? null, fn ($query, $legacyClassId) => $query->where('kelas_id', $legacyClassId)));
+        $query = $this->buildListingQuery($request, $tanggal);
 
         $this->applyStatusFilter($query, $validated['status'] ?? null);
 
@@ -786,7 +901,7 @@ class PresensiController extends Controller
         }
 
         $validated = $request->validate([
-            'school_grade' => ['nullable', 'required_without:pamong_id', 'string', \Illuminate\Validation\Rule::in(TargetGrade::values())],
+            'school_grade' => ['nullable', 'required_without:pamong_id', 'string', Rule::in(TargetGrade::values())],
             'pamong_id' => ['nullable', 'required_without:school_grade', 'integer', 'exists:users,id'],
             'tanggal' => ['required', 'date', 'date_format:Y-m-d'],
             'status' => ['required', 'string', 'in:hadir,terlambat,izin,sakit,alpha,tidak_hadir'],
@@ -885,7 +1000,7 @@ class PresensiController extends Controller
             'kelas' => $kelasName,
             'status' => $status,
             'verified' => $verified,
-        ]))->download('data-presensi-' . $tanggal . '.xlsx');
+        ]))->download('data-presensi-'.$tanggal.'.xlsx');
     }
 
     /**
@@ -898,6 +1013,7 @@ class PresensiController extends Controller
         }
 
         $export = new PresensiTemplateExport(true);
+
         return $export->download('template-presensi.xlsx');
     }
 
@@ -938,7 +1054,7 @@ class PresensiController extends Controller
                 'imported_by' => auth()->id(),
             ]);
             $results = $import->import($request->file('file'));
-            
+
             $message = "Impor selesai. Berhasil: {$results['success']}, Gagal: {$results['failed']}";
             $message .= " (presensi siswa baru: {$results['siswa_created']}, presensi siswa diperbarui: {$results['siswa_updated']}, presensi pamong baru: {$results['pamong_created']}, presensi pamong diperbarui: {$results['pamong_updated']})";
             if (($results['points_awarded'] ?? 0) > 0) {
@@ -952,7 +1068,7 @@ class PresensiController extends Controller
                 $endLabel = Carbon::parse($recapQuery['end_date'])->translatedFormat('d M Y');
                 $message .= ". Rentang data: {$startLabel} - {$endLabel}";
             }
-            
+
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -975,16 +1091,16 @@ class PresensiController extends Controller
 
             return back()->with('success', $message);
         } catch (\Exception $e) {
-            \Log::error('Import Presensi Error: ' . $e->getMessage());
-            
+            \Log::error('Import Presensi Error: '.$e->getMessage());
+
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal import data: ' . $e->getMessage(),
+                    'message' => 'Gagal import data: '.$e->getMessage(),
                 ], 500);
             }
 
-            return back()->with('error', 'Gagal import data: ' . $e->getMessage());
+            return back()->with('error', 'Gagal import data: '.$e->getMessage());
         }
     }
 
@@ -1032,9 +1148,18 @@ class PresensiController extends Controller
                 fn ($query) => $query->whereBetween('tanggal', $tanggal),
                 fn ($query) => $query->whereDate('tanggal', $tanggal)
             )
-            ->whereHas('siswa', fn ($student) => $student
-                ->when($request->filled('school_grade'), fn ($query) => $query->where('school_grade', $request->string('school_grade')))
-                ->when($request->filled('pamong_id'), fn ($query) => $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id')))));
+            ->whereHas('siswa', function ($student) use ($request) {
+                $user = $request->user();
+                $student->active()
+                    ->when($request->filled('school_grade'), fn ($query) => $query->where('school_grade', $request->string('school_grade')))
+                    ->when($request->filled('pamong_id'), fn ($query) => $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id'))));
+
+                if (! ($user->isAdmin() || $user->isPengurusPkg() || $user->isPamongExcluded())) {
+                    $student->assignedTo($user->id);
+                }
+
+                $this->applyStudentGroupFilter($student, $request->input('kelompok'));
+            });
     }
 
     protected function buildSiswaRecapRows(
@@ -1071,14 +1196,15 @@ class PresensiController extends Controller
             ])
             ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
             ->whereHas('siswa', function ($query) use ($schoolGrade, $pamongId, $kelompok) {
+                $user = request()->user();
                 $query->active()
                     ->when($schoolGrade, fn ($query, $grade) => $query->where('school_grade', $grade))
                     ->when($pamongId, fn ($query, $id) => $query->byPamong($id))
-                    ->when($kelompok, function ($query, string $kelompok) {
-                        Siswa::hasKelompokColumn()
-                            ? $query->where('kelompok', $kelompok)
-                            : $query->where('alamat', $kelompok);
-                    });
+                    ->when($kelompok, fn ($query) => $this->applyStudentGroupFilter($query, $kelompok));
+
+                if (! ($user->isAdmin() || $user->isPengurusPkg() || $user->isPamongExcluded())) {
+                    $query->assignedTo($user->id);
+                }
             });
 
         $this->applyStatusFilter($query, $status);
@@ -1093,7 +1219,7 @@ class PresensiController extends Controller
                 $status = $this->normalizeStatusFilter($item->status) ?: $item->status;
 
                 return [
-                    'key' => 'siswa-' . $item->id,
+                    'key' => 'siswa-'.$item->id,
                     'type' => 'siswa',
                     'type_label' => 'Siswa',
                     'date' => $date->format('d M Y'),
@@ -1170,7 +1296,7 @@ class PresensiController extends Controller
                     ?: 'Tanpa bidang';
 
                 return [
-                    'key' => 'pamong-' . $item->id,
+                    'key' => 'pamong-'.$item->id,
                     'type' => 'pamong',
                     'type_label' => 'Pamong/Pengurus',
                     'date' => $date->format('d M Y'),
@@ -1232,7 +1358,7 @@ class PresensiController extends Controller
             'sakit' => $rows->where('status', 'sakit')->count(),
             'alpha' => $rows->where('status', 'alpha')->count(),
             'persentase_numeric' => $percent,
-            'persentase' => rtrim(rtrim(number_format($percent, 1, '.', ''), '0'), '.') . '%',
+            'persentase' => rtrim(rtrim(number_format($percent, 1, '.', ''), '0'), '.').'%',
         ];
     }
 
@@ -1313,94 +1439,54 @@ class PresensiController extends Controller
             'terlambat' => 'Terlambat',
             'izin' => 'Izin',
             'sakit' => 'Sakit',
-            'alpha', 'tidak_hadir' => 'Tidak Hadir',
+            'alpha', 'tidak_hadir' => 'Alpa (Tanpa Keterangan)',
             default => null,
         };
     }
 
     protected function buildKelompokSummary(Request $request, string $tanggal): array
     {
-        $kelompokOptions = Siswa::kelompokOptions();
-        $siswaColumns = ['id', 'nis', 'nama', 'school_grade', 'alamat'];
+        return $this->attendanceOverview->groupSummary($request->user(), $tanggal, [
+            'school_grade' => $request->input('school_grade'),
+            'pamong_id' => $request->filled('pamong_id') ? $request->integer('pamong_id') : null,
+            'kelompok' => $this->attendanceOverview->normalizeGroupFilter($request->input('kelompok')),
+        ]);
+    }
 
-        if (Siswa::hasKelompokColumn()) {
-            $siswaColumns[] = 'kelompok';
+    protected function applyStudentGroupFilter($query, ?string $value): void
+    {
+        $group = $this->attendanceOverview->normalizeGroupFilter($value);
+        if (! $group) {
+            return;
         }
 
-        $students = Siswa::query()
-            ->select($siswaColumns)
-            ->active()
-            ->when($request->school_grade, fn ($query, $grade) => $query->where('school_grade', $grade))
-            ->when($request->pamong_id, fn ($query, $pamongId) => $query->byPamong((int) $pamongId))
-            ->orderBy('nama')
-            ->get()
-            ->filter(fn (Siswa $siswa) => in_array($siswa->kelompok, array_keys($kelompokOptions), true))
-            ->values();
+        $validGroups = array_keys(Siswa::kelompokOptions());
+        if (! Siswa::hasKelompokColumn()) {
+            $group === AttendanceOverviewService::UNASSIGNED_GROUP
+                ? $query->where(fn ($nested) => $nested->whereNull('alamat')->orWhere('alamat', '')->orWhereNotIn('alamat', $validGroups))
+                : $query->where('alamat', $group);
 
-        $attendanceByStudent = Presensi::query()
-            ->select(['siswa_id', 'status', 'jam_masuk'])
-            ->whereDate('tanggal', $tanggal)
-            ->whereIn('siswa_id', $students->pluck('id'))
-            ->latest('jam_masuk')
-            ->get()
-            ->unique('siswa_id')
-            ->keyBy('siswa_id');
+            return;
+        }
 
-        return collect($kelompokOptions)
-            ->map(function (string $label, string $value) use ($students, $attendanceByStudent) {
-                $members = $students
-                    ->where('kelompok', $value)
-                    ->sortBy('nama')
-                    ->values();
+        if ($group === AttendanceOverviewService::UNASSIGNED_GROUP) {
+            $query->where(function ($nested) use ($validGroups) {
+                $nested->whereNotIn('kelompok', $validGroups)
+                    ->orWhere(function ($fallback) use ($validGroups) {
+                        $fallback->where(fn ($missing) => $missing->whereNull('kelompok')->orWhere('kelompok', ''))
+                            ->where(fn ($legacy) => $legacy->whereNull('alamat')->orWhere('alamat', '')->orWhereNotIn('alamat', $validGroups));
+                    });
+            });
 
-                $hadir = [];
-                $belumHadir = [];
+            return;
+        }
 
-                foreach ($members as $siswa) {
-                    $attendance = $attendanceByStudent->get($siswa->id);
-                    $entry = [
-                        'id' => $siswa->id,
-                        'nama' => $siswa->nama,
-                        'nis' => $siswa->nis,
-                        'kelas' => $siswa->school_grade_label ?? 'Belum dikonfirmasi',
-                        'school_grade' => $siswa->school_grade,
-                        'foto_url' => $siswa->foto_url,
-                    ];
-
-                    if ($attendance && in_array($attendance->status, ['hadir', 'terlambat'], true)) {
-                        $hadir[] = array_merge($entry, [
-                            'status' => $attendance->status,
-                            'status_label' => $attendance->status === 'hadir' ? 'Hadir' : 'Terlambat',
-                            'jam_masuk' => optional($attendance->jam_masuk)->format('H:i'),
-                        ]);
-                        continue;
-                    }
-
-                    $status = $attendance?->status;
-
-                    $belumHadir[] = array_merge($entry, [
-                        'status' => $status ?: 'belum_hadir',
-                        'status_label' => match ($status) {
-                            'izin' => 'Izin',
-                            'sakit' => 'Sakit',
-                            'tidak_hadir', 'alpha' => 'Tidak hadir',
-                            default => 'Belum hadir',
-                        },
-                        'jam_masuk' => optional($attendance?->jam_masuk)->format('H:i'),
-                    ]);
-                }
-
-                return [
-                    'key' => $value,
-                    'label' => $label,
-                    'total_siswa' => $members->count(),
-                    'hadir_count' => count($hadir),
-                    'belum_hadir_count' => count($belumHadir),
-                    'hadir' => $hadir,
-                    'belum_hadir' => $belumHadir,
-                ];
-            })
-            ->values()
-            ->all();
+        $query->where(function ($nested) use ($group) {
+            $nested->where('kelompok', $group)
+                ->orWhere(function ($fallback) use ($group) {
+                    $fallback->where(fn ($missing) => $missing->whereNull('kelompok')->orWhere('kelompok', ''))
+                        ->where('alamat', $group);
+                });
+        });
     }
 }

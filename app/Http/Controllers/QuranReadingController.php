@@ -13,18 +13,21 @@ use App\Models\QuranSurahProgress;
 use App\Models\Siswa;
 use App\Models\ThemeSetting;
 use App\Models\User;
-use App\Services\QuranKhatamService;
+use App\Services\AttendanceOverviewService;
 use App\Services\QuranBarcodeFlowService;
+use App\Services\QuranKhatamService;
 use App\Services\QuranReadingDocumentService;
 use App\Services\QuranReadingScanService;
 use App\Support\QuranCatalog;
 use App\Support\TargetGrade;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -35,6 +38,7 @@ class QuranReadingController extends Controller
         private readonly QuranReadingScanService $scans,
         private readonly QuranKhatamService $khatam,
         private readonly QuranBarcodeFlowService $barcodeFlows,
+        private readonly AttendanceOverviewService $attendanceOverview,
     ) {}
 
     public function studentIndex(Request $request)
@@ -151,7 +155,7 @@ class QuranReadingController extends Controller
             'cycleHistory' => $selectedSiswa ? $selectedSiswa->quranReadingCycles()->latest('cycle_number')->get() : collect(),
             'schoolGradeOptions' => TargetGrade::schoolClassOptions(),
             'pamongOptions' => User::query()->where('status', 'active')->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))->orderByRaw('COALESCE(name, username)')->get(['id', 'name', 'username']),
-            'kelompokOptions' => Siswa::kelompokOptions(),
+            'kelompokOptions' => $this->attendanceOverview->groupOptions(),
             'capabilities' => [
                 'create' => $user->hasPamongCrudPermission('tracer_bacaan_quran', 'create'),
                 'edit' => $user->hasPamongCrudPermission('tracer_bacaan_quran', 'edit'),
@@ -178,6 +182,91 @@ class QuranReadingController extends Controller
         ]);
 
         return back()->with('success', 'Catatan bacaan tersimpan dan langsung terverifikasi.');
+    }
+
+    public function shareSummary(Request $request)
+    {
+        $validated = $request->validate([
+            'reading_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'search' => ['nullable', 'string', 'max:120'],
+            'school_grade' => ['nullable', 'string', Rule::in(TargetGrade::values())],
+            'pamong_id' => ['nullable', 'integer', 'exists:users,id'],
+            'kelompok' => ['nullable', 'string', 'max:80'],
+        ]);
+        $date = $validated['reading_date'] ?? now()->toDateString();
+        $students = $this->operationalStudentQuery($request)
+            ->get(['id', 'nis', 'nama', 'school_grade', 'kelompok', 'alamat']);
+        $entries = QuranReadingEntry::query()
+            ->whereIn('siswa_id', $students->pluck('id'))
+            ->where('status', '!=', QuranReadingEntry::STATUS_REJECTED)
+            ->orderByDesc('reading_date')
+            ->orderByDesc('id')
+            ->get(['id', 'siswa_id', 'reading_date', 'page_end', 'surah_end', 'ayah_end', 'status']);
+        $daily = $entries->filter(fn (QuranReadingEntry $entry) => $entry->reading_date?->toDateString() === $date)->groupBy('siswa_id');
+        $latest = $entries->unique('siswa_id')->keyBy('siswa_id');
+        $groups = collect($this->attendanceOverview->groupOptions())
+            ->map(function (string $label, string $key) use ($students, $daily, $latest) {
+                $members = $students->filter(function (Siswa $student) use ($key) {
+                    $studentGroup = $student->kelompok && array_key_exists($student->kelompok, Siswa::kelompokOptions())
+                        ? $student->kelompok
+                        : AttendanceOverviewService::UNASSIGNED_GROUP;
+
+                    return $studentGroup === $key;
+                })->sortBy('nama', SORT_NATURAL | SORT_FLAG_CASE)->values();
+
+                return [
+                    'key' => $key,
+                    'label' => $label,
+                    'students' => $members->map(function (Siswa $student) use ($daily, $latest) {
+                        $todayEntries = $daily->get($student->id, collect());
+                        $last = $todayEntries->first() ?: $latest->get($student->id);
+                        $position = $last
+                            ? QuranCatalog::name((int) $last->surah_end).' ayat '.$last->ayah_end.($last->page_end ? ' (halaman '.$last->page_end.')' : '')
+                            : null;
+                        $hasPending = $todayEntries->contains('status', QuranReadingEntry::STATUS_PENDING);
+
+                        return [
+                            'name' => $student->nama,
+                            'count' => $todayEntries->count(),
+                            'position' => $position,
+                            'latest_date' => $last?->reading_date?->toDateString(),
+                            'status' => $todayEntries->isEmpty() ? 'missing' : ($hasPending ? 'pending' : 'verified'),
+                        ];
+                    })->all(),
+                ];
+            })
+            ->filter(fn (array $group) => count($group['students']) > 0)
+            ->values();
+
+        $dateLabel = Carbon::parse($date)->locale('id')->isoFormat('dddd, D MMMM YYYY');
+        $lines = ['*RINGKASAN BACAAN AL-QURAN GENERUS PKG*', 'Tanggal: '.$dateLabel, 'Total Generus: '.$students->count(), ''];
+        foreach ($groups as $group) {
+            $lines[] = '*'.$group['label'].'* ('.count($group['students']).' Generus)';
+            foreach ($group['students'] as $index => $student) {
+                if ($student['status'] === 'missing') {
+                    $lastPosition = $student['position']
+                        ? ' Posisi terakhir '.$student['position'].' pada '.Carbon::parse($student['latest_date'])->format('d/m/Y').'.'
+                        : ' Belum ada riwayat bacaan.';
+                    $lines[] = ($index + 1).'. '.$student['name'].' - Belum mengisi.'.$lastPosition;
+
+                    continue;
+                }
+
+                $verification = $student['status'] === 'pending' ? 'Menunggu verifikasi' : 'Terverifikasi';
+                $lines[] = ($index + 1).'. '.$student['name'].' - '.$student['count'].' catatan; sampai '.$student['position'].'; '.$verification.'.';
+            }
+            $lines[] = '';
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'text' => trim(implode("\n", $lines)),
+                'student_count' => $students->count(),
+                'group_count' => $groups->count(),
+                'reading_count' => $daily->flatten(1)->count(),
+            ],
+        ]);
     }
 
     public function operationalUpdate(Request $request, QuranReadingEntry $entry)
@@ -361,7 +450,7 @@ class QuranReadingController extends Controller
             'selected_ids' => ['nullable', 'array', 'max:50'],
             'selected_ids.*' => ['integer', 'distinct', 'exists:siswa,id'],
             'search' => ['nullable', 'string', 'max:120'],
-            'school_grade' => ['nullable', 'string', \Illuminate\Validation\Rule::in(TargetGrade::values())],
+            'school_grade' => ['nullable', 'string', Rule::in(TargetGrade::values())],
             'pamong_id' => ['nullable', 'integer', 'exists:users,id'],
             'kelompok' => ['nullable', 'string', 'max:80'],
         ]);
@@ -422,6 +511,7 @@ class QuranReadingController extends Controller
 
         if ($this->isStudentRoute($request)) {
             $this->ensureAlumniSubmissionEnabled($request->user('siswa'));
+
             return redirect()->to(route('siswa.quran.index', ['tab' => 'scan']).'#scan');
         }
 
@@ -1038,10 +1128,14 @@ class QuranReadingController extends Controller
         if ($user?->isTeacher()) {
             $query->whereIn('id', $user->getAssignedSiswaIds());
         }
-        if ($request->filled('school_grade')) $query->where('school_grade', $request->string('school_grade'));
-        if ($request->filled('pamong_id')) $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id')));
+        if ($request->filled('school_grade')) {
+            $query->where('school_grade', $request->string('school_grade'));
+        }
+        if ($request->filled('pamong_id')) {
+            $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $request->integer('pamong_id')));
+        }
         if ($request->filled('kelompok')) {
-            $query->where('kelompok', $request->string('kelompok'));
+            $this->applyOperationalGroupFilter($query, (string) $request->string('kelompok'));
         }
         if ($request->filled('search')) {
             $search = trim((string) $request->string('search'));
@@ -1051,6 +1145,35 @@ class QuranReadingController extends Controller
         }
 
         return $query;
+    }
+
+    private function applyOperationalGroupFilter(Builder $query, ?string $value): void
+    {
+        $group = $this->attendanceOverview->normalizeGroupFilter($value);
+        if (! $group) {
+            return;
+        }
+        $valid = array_keys(Siswa::kelompokOptions());
+
+        if ($group === AttendanceOverviewService::UNASSIGNED_GROUP) {
+            $query->where(function (Builder $nested) use ($valid) {
+                $nested->whereNotIn('kelompok', $valid)
+                    ->orWhere(function (Builder $fallback) use ($valid) {
+                        $fallback->where(fn (Builder $missing) => $missing->whereNull('kelompok')->orWhere('kelompok', ''))
+                            ->where(fn (Builder $legacy) => $legacy->whereNull('alamat')->orWhere('alamat', '')->orWhereNotIn('alamat', $valid));
+                    });
+            });
+
+            return;
+        }
+
+        $query->where(function (Builder $nested) use ($group) {
+            $nested->where('kelompok', $group)
+                ->orWhere(function (Builder $fallback) use ($group) {
+                    $fallback->where(fn (Builder $missing) => $missing->whereNull('kelompok')->orWhere('kelompok', ''))
+                        ->where('alamat', $group);
+                });
+        });
     }
 
     private function ensureAlumniSubmissionEnabled(?Siswa $siswa): void

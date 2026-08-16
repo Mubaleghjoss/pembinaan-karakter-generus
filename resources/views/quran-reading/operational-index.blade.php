@@ -41,6 +41,21 @@
     <x-tabs :tabs="$tabs" :default-tab="$activeTab" :sync-query="true">
         <x-tab-panel id="rekap" class="space-y-5">
             <div class="space-y-5" data-quran-bulk-root data-storage-key="pkg-quran-bulk-{{ auth()->id() }}" data-filtered-count="{{ min(50, $siswaList->total()) }}">
+            <section class="pkg-panel-lg" data-quran-daily-share data-endpoint="{{ route('quran.share-summary') }}">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h2 class="font-bold">Ringkasan Harian untuk WhatsApp</h2>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Memuat semua Generus dalam filter, posisi bacaan terakhir, dan status verifikasi.</p>
+                    </div>
+                    <label class="w-full sm:w-auto"><span class="mb-1 block text-xs font-semibold">Tanggal bacaan</span><input type="date" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}" class="pkg-field min-h-11 w-full sm:w-44" data-quran-share-date></label>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button type="button" class="btn-secondary min-h-11" data-quran-share-copy>Salin Teks</button>
+                    <button type="button" class="btn-success min-h-11" data-quran-share-whatsapp>Bagikan ke WhatsApp</button>
+                </div>
+                <p class="mt-3 hidden rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300" data-quran-share-error></p>
+                <pre class="mt-3 hidden max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-xs leading-5 text-gray-700 dark:bg-gray-900 dark:text-gray-200" data-quran-share-preview></pre>
+            </section>
             @if($pendingEntries->isNotEmpty())
                 <section class="pkg-panel overflow-hidden">
                     <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700"><h2 class="font-bold">Antrean verifikasi <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{{ $pendingEntries->count() }}</span></h2></div>
@@ -202,3 +217,7 @@
         @vite('resources/js/quran-bulk-print.js')
     @endpush
 @endif
+
+@push('scripts')
+    @vite('resources/js/quran-daily-share.js')
+@endpush

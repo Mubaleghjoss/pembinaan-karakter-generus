@@ -146,8 +146,8 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
-                $q->where('nama', 'like', '%' . $search . '%')
-                  ->orWhere('nis', 'like', '%' . $search . '%');
+                $q->where('nama', 'like', '%'.$search.'%')
+                    ->orWhere('nis', 'like', '%'.$search.'%');
             });
         }
 
@@ -174,6 +174,32 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
             $query->whereHas('pamongAssignments', fn ($assignment) => $assignment->where('pamong_id', $filters['pamong_id']));
         }
 
+        if (! empty($filters['kelompok'])) {
+            $validKelompok = array_keys(Siswa::kelompokOptions());
+
+            if (! Siswa::hasKelompokColumn()) {
+                $filters['kelompok'] === '__unassigned__'
+                    ? $query->where(fn ($groupQuery) => $groupQuery->whereNull('alamat')->orWhere('alamat', '')->orWhereNotIn('alamat', $validKelompok))
+                    : $query->where('alamat', $filters['kelompok']);
+            } elseif ($filters['kelompok'] === '__unassigned__') {
+                $query->where(function ($groupQuery) use ($validKelompok) {
+                    $groupQuery->whereNotIn('kelompok', $validKelompok)
+                        ->orWhere(function ($fallback) use ($validKelompok) {
+                            $fallback->where(fn ($missing) => $missing->whereNull('kelompok')->orWhere('kelompok', ''))
+                                ->where(fn ($legacy) => $legacy->whereNull('alamat')->orWhere('alamat', '')->orWhereNotIn('alamat', $validKelompok));
+                        });
+                });
+            } else {
+                $query->where(function ($groupQuery) use ($filters) {
+                    $groupQuery->where('kelompok', $filters['kelompok'])
+                        ->orWhere(function ($fallback) use ($filters) {
+                            $fallback->where(fn ($missing) => $missing->whereNull('kelompok')->orWhere('kelompok', ''))
+                                ->where('alamat', $filters['kelompok']);
+                        });
+                });
+            }
+        }
+
         // Filter berdasarkan status
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -190,22 +216,22 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
 
             if ($filters['biodata_status'] === 'complete') {
                 $query->whereNotNull('nama')->where('nama', '!=', '')
-                      ->whereNotNull($kelompokField)->where($kelompokField, '!=', '')
-                      ->whereNotNull('tanggal_lahir')
-                      ->whereNotNull('school_grade')
-                      ->whereNotNull('phone')->where('phone', '!=', '')
-                      ->whereNotNull('phone_wali')->where('phone_wali', '!=', '')
-                      ->whereNotNull('foto_path')->where('foto_path', '!=', '');
+                    ->whereNotNull($kelompokField)->where($kelompokField, '!=', '')
+                    ->whereNotNull('tanggal_lahir')
+                    ->whereNotNull('school_grade')
+                    ->whereNotNull('phone')->where('phone', '!=', '')
+                    ->whereNotNull('phone_wali')->where('phone_wali', '!=', '')
+                    ->whereNotNull('foto_path')->where('foto_path', '!=', '');
             } elseif ($filters['biodata_status'] === 'incomplete') {
                 $query->where(function ($q) {
                     $kelompokField = Siswa::hasKelompokColumn() ? 'kelompok' : 'alamat';
                     $q->whereNull('nama')->orWhere('nama', '')
-                      ->orWhereNull($kelompokField)->orWhere($kelompokField, '')
-                      ->orWhereNull('tanggal_lahir')
-                      ->orWhereNull('school_grade')
-                      ->orWhereNull('phone')->orWhere('phone', '')
-                      ->orWhereNull('phone_wali')->orWhere('phone_wali', '')
-                      ->orWhereNull('foto_path')->orWhere('foto_path', '');
+                        ->orWhereNull($kelompokField)->orWhere($kelompokField, '')
+                        ->orWhereNull('tanggal_lahir')
+                        ->orWhereNull('school_grade')
+                        ->orWhereNull('phone')->orWhere('phone', '')
+                        ->orWhereNull('phone_wali')->orWhere('phone_wali', '')
+                        ->orWhereNull('foto_path')->orWhere('foto_path', '');
                 });
             }
         }
@@ -216,7 +242,7 @@ class EloquentSiswaRepository implements SiswaRepositoryInterface
             $query->orderBy($filters['sort_by'], $sortOrder);
         } else {
             $query->orderByRaw('last_login_at IS NOT NULL ASC')
-                  ->orderBy('last_login_at', 'desc');
+                ->orderBy('last_login_at', 'desc');
         }
 
         return $query->paginate($perPage);

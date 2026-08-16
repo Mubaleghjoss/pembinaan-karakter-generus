@@ -93,17 +93,17 @@ class GenerusRecapFeatureTest extends TestCase
             'completed_at' => now(),
         ]);
 
-        $response = $this->actingAs($admin)->get(route('presensi.generus-recap', [
+        $response = $this->actingAs($admin)->get(route('presensi.panel.generus', [
             'start_date' => '2026-06-01',
             'end_date' => '2026-06-30',
             'semester' => 2,
         ]));
 
         $response->assertOk()
-            ->assertSee('Rekap Generus PKG')
+            ->assertSee('Cakupan data: semua Generus aktif')
             ->assertSee('Panunggangan Utara')
             ->assertSee('Sawah Dalam')
-            ->assertSee('Rekap Generus');
+            ->assertSee('Tugas PKG');
 
         $response->assertViewHas('rows', function ($rows) {
             $north = $rows->firstWhere('key', Siswa::KELOMPOK_PANUNGGANGAN_UTARA);
@@ -124,8 +124,7 @@ class GenerusRecapFeatureTest extends TestCase
                 && $empty['total_students'] === 0;
         });
 
-        $response->assertViewHas('totals', fn (array $totals) =>
-            $totals['total_students'] === 2
+        $response->assertViewHas('totals', fn (array $totals) => $totals['total_students'] === 2
             && $totals['task']['verified'] === 1
             && $totals['task']['submitted'] === 2
             && $totals['attendance']['present'] === 1
@@ -146,10 +145,10 @@ class GenerusRecapFeatureTest extends TestCase
             'siswa_id' => $assignedStudent->id,
         ]);
 
-        $response = $this->actingAs($pamong)->get(route('presensi.generus-recap'));
+        $response = $this->actingAs($pamong)->get(route('presensi.panel.generus'));
 
         $response->assertOk()
-            ->assertSee('Scope: Generus binaan')
+            ->assertSee('Cakupan data: Generus binaan')
             ->assertViewHas('totals', fn (array $totals) => $totals['total_students'] === 1)
             ->assertViewHas('rows', function ($rows) use ($assignedStudent, $outsideStudent) {
                 $north = $rows->firstWhere('key', $assignedStudent->kelompok);
@@ -165,19 +164,27 @@ class GenerusRecapFeatureTest extends TestCase
         $pamong->pamongPermission()->update(['menu_permissions' => ['materi']]);
 
         $this->actingAs($pamong)
-            ->get(route('presensi.generus-recap'))
+            ->get(route('presensi.panel.generus'))
             ->assertForbidden();
     }
 
-    public function test_presensi_page_and_sidebar_link_to_generus_recap(): void
+    public function test_legacy_url_redirects_to_the_single_presensi_page(): void
     {
         $admin = $this->adminUser();
 
         $this->actingAs($admin)
+            ->get(route('presensi.generus-recap', ['semester' => 2]))
+            ->assertRedirect(route('presensi.index', [
+                'semester' => 2,
+                'tab' => 'rekap',
+                'panel' => 'rekap-generus',
+            ]).'#rekap-generus');
+
+        $this->actingAs($admin)
             ->get(route('presensi.index', ['tab' => 'rekap']))
             ->assertOk()
-            ->assertSee('Rekap Generus PKG')
-            ->assertSee(route('presensi.generus-recap'), false);
+            ->assertSee('Rekap Generus Tugas/RPP')
+            ->assertSee('generusPanel:', false);
     }
 
     private function adminUser(): User

@@ -132,6 +132,17 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelompok</label>
+                    <select x-model="filters.kelompok" @change="loadStudents()" class="w-full pkg-field text-sm">
+                        <option value="">Semua Kelompok</option>
+                        <template x-for="(label, value) in kelompokOptions" :key="value">
+                            <option :value="value" x-text="label"></option>
+                        </template>
+                        <option value="__unassigned__">Belum Ada Data Kelompok</option>
+                    </select>
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status Siswa</label>
                     <select x-model="filters.status" 
                             @change="loadStudents()"

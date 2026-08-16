@@ -1,18 +1,70 @@
 <?php
 
+use App\Http\Controllers\AdminBroadcastController;
+use App\Http\Controllers\AttendanceScheduleController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\OrtuAuthController;
+use App\Http\Controllers\Auth\SiswaAuthController;
+use App\Http\Controllers\Auth\WebAuthnController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BeritaController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CatatanRapatController;
+use App\Http\Controllers\CekKehadiranController;
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\ChatGroupController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DataPullController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\FaceAttendanceController;
+use App\Http\Controllers\GamificationController;
+use App\Http\Controllers\GenerusRecapController;
+use App\Http\Controllers\GenerusRegistrationController;
+use App\Http\Controllers\KarakterController;
 use App\Http\Controllers\KelasController;
+use App\Http\Controllers\LaporanPenyaksianController;
+use App\Http\Controllers\ManualAttendanceController;
 use App\Http\Controllers\MateriController;
 use App\Http\Controllers\MateriRppJournalController;
 use App\Http\Controllers\MateriTargetController;
+use App\Http\Controllers\OrtuChatController;
+use App\Http\Controllers\OrtuDashboardController;
+use App\Http\Controllers\OrtuJadwalController;
+use App\Http\Controllers\OrtuManagementController;
+use App\Http\Controllers\OrtuTugasController;
+use App\Http\Controllers\PamongChatController;
 use App\Http\Controllers\PamongController;
+use App\Http\Controllers\PamongPresensiController;
+use App\Http\Controllers\PersiapanAcaraController;
 use App\Http\Controllers\PresensiController;
+use App\Http\Controllers\PresentationController;
+use App\Http\Controllers\ProfileAssignmentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\QuranReadingController;
+use App\Http\Controllers\RemoteMediaController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RpgGameController;
+use App\Http\Controllers\ScheduleReminderController;
+use App\Http\Controllers\Security\CspReportController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ShareInfoController;
+use App\Http\Controllers\SiswaChatController;
 use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\SiswaDashboardController;
+use App\Http\Controllers\SiswaKarakterController;
+use App\Http\Controllers\SiswaMateriRppJournalController;
+use App\Http\Controllers\TeacherAvailabilityController;
+use App\Http\Controllers\TeacherConfirmationController;
+use App\Http\Controllers\TeacherMaterialController;
+use App\Http\Controllers\TeacherPlanningController;
+use App\Http\Controllers\TeacherPortalController;
+use App\Http\Controllers\TracerKarakterController;
+use App\Http\Controllers\TugasPkgController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserGroupChatController;
+use App\Models\RpgMap;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -36,116 +88,116 @@ use Illuminate\Support\Facades\Route;
 }); */
 
 // Public routes (no auth required)
-Route::get('/', [App\Http\Controllers\PublicController::class, 'index'])->name('public.index');
-Route::get('/berita-publik/{slug}', [App\Http\Controllers\PublicController::class, 'legacyBerita'])
+Route::get('/', [PublicController::class, 'index'])->name('public.index');
+Route::get('/berita-publik/{slug}', [PublicController::class, 'legacyBerita'])
     ->name('public.berita.legacy');
-Route::get('/berita/{slug}', [App\Http\Controllers\PublicController::class, 'berita'])
+Route::get('/berita/{slug}', [PublicController::class, 'berita'])
     ->where('slug', '(?!create$)[A-Za-z0-9-]+')
     ->name('public.berita');
-Route::get('/sq/{code}', [App\Http\Controllers\QuranReadingController::class, 'openPublicScan'])
+Route::get('/sq/{code}', [QuranReadingController::class, 'openPublicScan'])
     ->where('code', '[A-Za-z0-9_-]{44}')
     ->middleware('throttle:quran-public-open')
     ->name('public.quran.scan.open');
-Route::get('/scan-presensi', [App\Http\Controllers\PublicController::class, 'scanner'])->name('public.scanner');
-Route::post('/scan-presensi/bacaan-quran', [App\Http\Controllers\QuranReadingController::class, 'publicScanUpload'])
+Route::get('/scan-presensi', [PublicController::class, 'scanner'])->name('public.scanner');
+Route::post('/scan-presensi/bacaan-quran', [QuranReadingController::class, 'publicScanUpload'])
     ->middleware('throttle:quran-public-scan')
     ->name('public.quran.scan.upload');
-Route::post('/scan-presensi/bacaan-quran/barcode/identify', [App\Http\Controllers\QuranReadingController::class, 'publicBarcodeIdentify'])
+Route::post('/scan-presensi/bacaan-quran/barcode/identify', [QuranReadingController::class, 'publicBarcodeIdentify'])
     ->middleware('throttle:quran-barcode')
     ->name('public.quran.barcode.identify');
-Route::post('/scan-presensi/bacaan-quran/barcode/store', [App\Http\Controllers\QuranReadingController::class, 'publicBarcodeStore'])
+Route::post('/scan-presensi/bacaan-quran/barcode/store', [QuranReadingController::class, 'publicBarcodeStore'])
     ->middleware('throttle:quran-barcode')
     ->name('public.quran.barcode.store');
-Route::get('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'publicScanConfirmForm'])
+Route::get('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [QuranReadingController::class, 'publicScanConfirmForm'])
     ->name('public.quran.scan.confirm');
-Route::post('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'publicScanConfirm'])
+Route::post('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [QuranReadingController::class, 'publicScanConfirm'])
     ->middleware('throttle:quran-public-scan')
     ->name('public.quran.scan.confirm.store');
-Route::get('/scan-presensi/bacaan-quran/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'publicScanImage'])
+Route::get('/scan-presensi/bacaan-quran/{scan}/gambar', [QuranReadingController::class, 'publicScanImage'])
     ->name('public.quran.scan.image');
-Route::get('/materi', [App\Http\Controllers\PublicController::class, 'materiIndex'])->name('materi.index');
-Route::get('/materi-publik/{materi}/pdf/{index}', [App\Http\Controllers\PublicController::class, 'materiPdfView'])
+Route::get('/materi', [PublicController::class, 'materiIndex'])->name('materi.index');
+Route::get('/materi-publik/{materi}/pdf/{index}', [PublicController::class, 'materiPdfView'])
     ->whereNumber('index')
     ->name('public.materi.pdf.view');
-Route::get('/materi-publik/{materi}/pdf/{index}/download', [App\Http\Controllers\PublicController::class, 'materiPdfDownload'])
+Route::get('/materi-publik/{materi}/pdf/{index}/download', [PublicController::class, 'materiPdfDownload'])
     ->whereNumber('index')
     ->name('public.materi.pdf.download');
-Route::get('/materi-publik/{materi}', [App\Http\Controllers\PublicController::class, 'materiShow'])->name('public.materi.show');
-Route::get('/presentasi-publik/{presentation:slug}', [App\Http\Controllers\PresentationController::class, 'publicShow'])
+Route::get('/materi-publik/{materi}', [PublicController::class, 'materiShow'])->name('public.materi.show');
+Route::get('/presentasi-publik/{presentation:slug}', [PresentationController::class, 'publicShow'])
     ->name('public.presentations.show');
-Route::get('/kalender', [App\Http\Controllers\CalendarController::class, 'publicIndex'])->name('public.calendar.index');
-Route::get('/kalender/events', [App\Http\Controllers\CalendarController::class, 'publicEvents'])->name('public.calendar.events');
+Route::get('/kalender', [CalendarController::class, 'publicIndex'])->name('public.calendar.index');
+Route::get('/kalender/events', [CalendarController::class, 'publicEvents'])->name('public.calendar.events');
 // Pendataan guru privat. Sengaja tidak ditampilkan pada navigasi publik.
-Route::get('/pendataanguru', [App\Http\Controllers\TeacherAvailabilityController::class, 'index'])
+Route::get('/pendataanguru', [TeacherAvailabilityController::class, 'index'])
     ->name('public.teacher-availability.index');
-Route::post('/pendataanguru/akses', [App\Http\Controllers\TeacherAvailabilityController::class, 'unlock'])
+Route::post('/pendataanguru/akses', [TeacherAvailabilityController::class, 'unlock'])
     ->middleware('throttle:5,1')
     ->name('public.teacher-availability.unlock');
-Route::post('/pendataanguru', [App\Http\Controllers\TeacherAvailabilityController::class, 'store'])
+Route::post('/pendataanguru', [TeacherAvailabilityController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('public.teacher-availability.store');
-Route::get('/pendataanguru/selesai', [App\Http\Controllers\TeacherAvailabilityController::class, 'success'])
+Route::get('/pendataanguru/selesai', [TeacherAvailabilityController::class, 'success'])
     ->name('public.teacher-availability.success');
-Route::get('/pendataanguru/hasil/{teacherProfile}/{downloadToken}/pdf', [App\Http\Controllers\TeacherAvailabilityController::class, 'pdf'])
+Route::get('/pendataanguru/hasil/{teacherProfile}/{downloadToken}/pdf', [TeacherAvailabilityController::class, 'pdf'])
     ->middleware('throttle:30,1')
     ->name('public.teacher-availability.pdf');
-Route::get('/konfirmasi-pengajar/{token}', [App\Http\Controllers\TeacherConfirmationController::class, 'show'])
+Route::get('/konfirmasi-pengajar/{token}', [TeacherConfirmationController::class, 'show'])
     ->middleware('throttle:30,1')
     ->name('public.teacher-confirmation.show');
-Route::post('/konfirmasi-pengajar/{token}', [App\Http\Controllers\TeacherConfirmationController::class, 'store'])
+Route::post('/konfirmasi-pengajar/{token}', [TeacherConfirmationController::class, 'store'])
     ->middleware('throttle:10,1')
     ->name('public.teacher-confirmation.store');
 // Public QR Scan endpoint (no auth required for public scanner)
 Route::post('/qr/scan', [PresensiController::class, 'scan'])->name('qr.scan.post');
-Route::post('/face-presensi/scan', [App\Http\Controllers\FaceAttendanceController::class, 'scan'])
+Route::post('/face-presensi/scan', [FaceAttendanceController::class, 'scan'])
     ->middleware('throttle:qr-scan')
     ->name('face-presensi.scan');
 
 // Pendaftaran Generus privat. Sengaja tidak ditampilkan pada navigasi publik.
-Route::get('/daftarpkg', [App\Http\Controllers\GenerusRegistrationController::class, 'index'])
+Route::get('/daftarpkg', [GenerusRegistrationController::class, 'index'])
     ->name('public.generus-registration.short.index');
-Route::post('/daftarpkg/akses', [App\Http\Controllers\GenerusRegistrationController::class, 'unlock'])
+Route::post('/daftarpkg/akses', [GenerusRegistrationController::class, 'unlock'])
     ->middleware('throttle:5,1')
     ->name('public.generus-registration.short.unlock');
-Route::get('/daftarpkg/cari-generus', [App\Http\Controllers\GenerusRegistrationController::class, 'searchStudents'])
+Route::get('/daftarpkg/cari-generus', [GenerusRegistrationController::class, 'searchStudents'])
     ->middleware('throttle:30,1')
     ->name('public.generus-registration.short.search');
-Route::post('/daftarpkg/verifikasi-akun', [App\Http\Controllers\GenerusRegistrationController::class, 'verifyExisting'])
+Route::post('/daftarpkg/verifikasi-akun', [GenerusRegistrationController::class, 'verifyExisting'])
     ->middleware('throttle:5,1')
     ->name('public.generus-registration.short.verify');
-Route::post('/daftarpkg', [App\Http\Controllers\GenerusRegistrationController::class, 'storeShort'])
+Route::post('/daftarpkg', [GenerusRegistrationController::class, 'storeShort'])
     ->middleware('throttle:5,1')
     ->name('public.generus-registration.short.store');
-Route::get('/daftarpkg/hasil/{registration}/{downloadToken}', [App\Http\Controllers\GenerusRegistrationController::class, 'result'])
+Route::get('/daftarpkg/hasil/{registration}/{downloadToken}', [GenerusRegistrationController::class, 'result'])
     ->name('public.generus-registration.short.result');
-Route::get('/daftarpkg/hasil/{registration}/{downloadToken}/pdf', [App\Http\Controllers\GenerusRegistrationController::class, 'pdf'])
+Route::get('/daftarpkg/hasil/{registration}/{downloadToken}/pdf', [GenerusRegistrationController::class, 'pdf'])
     ->name('public.generus-registration.short.pdf');
 
 // Tautan privat lama tetap diterima untuk masa transisi.
-Route::get('/pendaftaran-generus/hasil/{registration}/{downloadToken}', [App\Http\Controllers\GenerusRegistrationController::class, 'result'])
+Route::get('/pendaftaran-generus/hasil/{registration}/{downloadToken}', [GenerusRegistrationController::class, 'result'])
     ->name('public.generus-registration.result');
-Route::get('/pendaftaran-generus/hasil/{registration}/{downloadToken}/pdf', [App\Http\Controllers\GenerusRegistrationController::class, 'pdf'])
+Route::get('/pendaftaran-generus/hasil/{registration}/{downloadToken}/pdf', [GenerusRegistrationController::class, 'pdf'])
     ->name('public.generus-registration.pdf');
-Route::get('/pendaftaran-generus/{token}', [App\Http\Controllers\GenerusRegistrationController::class, 'show'])
+Route::get('/pendaftaran-generus/{token}', [GenerusRegistrationController::class, 'show'])
     ->middleware('throttle:30,1')
     ->name('public.generus-registration.show');
-Route::post('/pendaftaran-generus/{token}', [App\Http\Controllers\GenerusRegistrationController::class, 'store'])
+Route::post('/pendaftaran-generus/{token}', [GenerusRegistrationController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('public.generus-registration.store');
 
 // Laporan Penyaksian - Public Form (like Google Form)
-Route::get('/lapor-pkg', [App\Http\Controllers\LaporanPenyaksianController::class, 'create'])->name('laporan-penyaksian.create');
-Route::post('/lapor-pkg', [App\Http\Controllers\LaporanPenyaksianController::class, 'store'])->name('laporan-penyaksian.store');
-Route::get('/lapor-pkg/siswa-list', [App\Http\Controllers\LaporanPenyaksianController::class, 'getSiswaList'])->name('laporan-penyaksian.siswa-list');
-Route::get('/lapor-pkg/pamong-list', [App\Http\Controllers\LaporanPenyaksianController::class, 'getPamongList'])->name('laporan-penyaksian.pamong-list');
-Route::get('/lapor-pkg/generus-list', [App\Http\Controllers\LaporanPenyaksianController::class, 'getGenerusList'])->name('laporan-penyaksian.generus-list');
-Route::get('/game-29-karakter', [App\Http\Controllers\RpgGameController::class, 'publicIndex'])
+Route::get('/lapor-pkg', [LaporanPenyaksianController::class, 'create'])->name('laporan-penyaksian.create');
+Route::post('/lapor-pkg', [LaporanPenyaksianController::class, 'store'])->name('laporan-penyaksian.store');
+Route::get('/lapor-pkg/siswa-list', [LaporanPenyaksianController::class, 'getSiswaList'])->name('laporan-penyaksian.siswa-list');
+Route::get('/lapor-pkg/pamong-list', [LaporanPenyaksianController::class, 'getPamongList'])->name('laporan-penyaksian.pamong-list');
+Route::get('/lapor-pkg/generus-list', [LaporanPenyaksianController::class, 'getGenerusList'])->name('laporan-penyaksian.generus-list');
+Route::get('/game-29-karakter', [RpgGameController::class, 'publicIndex'])
     ->middleware('throttle:rpg-public')
     ->name('public.rpg.index');
-Route::get('/game-29-karakter/{rpgMap}/main', [App\Http\Controllers\RpgGameController::class, 'publicPlay'])
+Route::get('/game-29-karakter/{rpgMap}/main', [RpgGameController::class, 'publicPlay'])
     ->middleware('throttle:rpg-public')
     ->name('public.rpg.play');
-Route::post('/game-29-karakter/{rpgMap}/presence', [App\Http\Controllers\RpgGameController::class, 'publicPresence'])
+Route::post('/game-29-karakter/{rpgMap}/presence', [RpgGameController::class, 'publicPresence'])
     ->middleware('throttle:rpg-presence')
     ->name('public.rpg.presence');
 Route::get('/rpg-admin', function () {
@@ -155,10 +207,10 @@ Route::get('/rpg-admin', function () {
 
     return redirect()->route('admin.rpg.index');
 });
-Route::get('/rpg-admin/play/{rpgMap}', function (App\Models\RpgMap $rpgMap) {
+Route::get('/rpg-admin/play/{rpgMap}', function (RpgMap $rpgMap) {
     return redirect()->route('public.rpg.play', $rpgMap);
 });
-Route::post('/rpg-admin/play/{rpgMap}/presence', [App\Http\Controllers\RpgGameController::class, 'publicPresence'])
+Route::post('/rpg-admin/play/{rpgMap}/presence', [RpgGameController::class, 'publicPresence'])
     ->middleware('throttle:rpg-presence');
 
 // Authentication routes
@@ -176,28 +228,28 @@ Route::get('/csrf-token', function () {
         ->header('Expires', '0');
 });
 
-Route::post('/security/csp-report', App\Http\Controllers\Security\CspReportController::class)
+Route::post('/security/csp-report', CspReportController::class)
     ->middleware('throttle:csp-report')
     ->name('security.csp-report');
 
 // Shared WebAuthn biometric routes (public - no auth needed for login flow)
 Route::prefix('webauthn')->name('webauthn.')->group(function () {
-    Route::post('/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('login-options');
-    Route::post('/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('login');
-    Route::get('/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('has-credentials');
+    Route::post('/login-options', [WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('login-options');
+    Route::post('/login', [WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('login');
+    Route::get('/has-credentials', [WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('has-credentials');
 });
 
 // Siswa Authentication routes
 Route::prefix('siswa')->name('siswa.')->group(function () {
-    Route::get('/login', [App\Http\Controllers\Auth\SiswaAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [App\Http\Controllers\Auth\SiswaAuthController::class, 'login'])->name('login.post');
-    Route::post('/logout', [App\Http\Controllers\Auth\SiswaAuthController::class, 'logout'])->name('logout');
+    Route::get('/login', [SiswaAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [SiswaAuthController::class, 'login'])->name('login.post');
+    Route::post('/logout', [SiswaAuthController::class, 'logout'])->name('logout');
 
     // WebAuthn biometric routes (public - no auth needed for login flow)
-    Route::post('/webauthn/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('webauthn.login-options');
-    Route::post('/webauthn/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('webauthn.login');
-    Route::get('/webauthn/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('webauthn.has-credentials');
-    
+    Route::post('/webauthn/login-options', [WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('webauthn.login-options');
+    Route::post('/webauthn/login', [WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('webauthn.login');
+    Route::get('/webauthn/has-credentials', [WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('webauthn.has-credentials');
+
     // Protected siswa routes
     Route::middleware('auth.siswa')->group(function () {
         Route::post('/push-subscriptions', [PushSubscriptionController::class, 'storeSiswa'])
@@ -206,21 +258,21 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
             ->name('pwa.push-subscriptions.destroy');
 
         // WebAuthn protected routes (registration & management)
-        Route::get('/webauthn/register-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'registerOptions'])->name('webauthn.register-options');
-        Route::post('/webauthn/register', [App\Http\Controllers\Auth\WebAuthnController::class, 'register'])->name('webauthn.register');
-        Route::get('/webauthn/status', [App\Http\Controllers\Auth\WebAuthnController::class, 'status'])->name('webauthn.status');
-        Route::delete('/webauthn/{id}', [App\Http\Controllers\Auth\WebAuthnController::class, 'destroy'])->name('webauthn.destroy');
-        Route::post('/webauthn/dismiss-prompt', [App\Http\Controllers\Auth\WebAuthnController::class, 'dismissPrompt'])->name('webauthn.dismiss-prompt');
-        Route::get('/biometrik', [App\Http\Controllers\Auth\WebAuthnController::class, 'settingsPage'])->name('biometrik');
+        Route::get('/webauthn/register-options', [WebAuthnController::class, 'registerOptions'])->name('webauthn.register-options');
+        Route::post('/webauthn/register', [WebAuthnController::class, 'register'])->name('webauthn.register');
+        Route::get('/webauthn/status', [WebAuthnController::class, 'status'])->name('webauthn.status');
+        Route::delete('/webauthn/{id}', [WebAuthnController::class, 'destroy'])->name('webauthn.destroy');
+        Route::post('/webauthn/dismiss-prompt', [WebAuthnController::class, 'dismissPrompt'])->name('webauthn.dismiss-prompt');
+        Route::get('/biometrik', [WebAuthnController::class, 'settingsPage'])->name('biometrik');
 
-        Route::get('/dashboard', [App\Http\Controllers\SiswaDashboardController::class, 'index'])->name('dashboard');
-        Route::put('/profil-penempatan', [App\Http\Controllers\ProfileAssignmentController::class, 'updateSiswa'])->name('profile-assignment.update');
-        Route::get('/materi', [App\Http\Controllers\MateriController::class, 'siswaIndex'])->name('materi.index');
-        Route::get('/materi/{materi}', [App\Http\Controllers\MateriController::class, 'siswaShow'])->name('materi.show');
+        Route::get('/dashboard', [SiswaDashboardController::class, 'index'])->name('dashboard');
+        Route::put('/profil-penempatan', [ProfileAssignmentController::class, 'updateSiswa'])->name('profile-assignment.update');
+        Route::get('/materi', [MateriController::class, 'siswaIndex'])->name('materi.index');
+        Route::get('/materi/{materi}', [MateriController::class, 'siswaShow'])->name('materi.show');
         Route::post('/materi-targets/{target}/toggle', [MateriTargetController::class, 'siswaToggle'])->name('materi-targets.toggle');
-        Route::get('/jurnal-rpp', [App\Http\Controllers\SiswaMateriRppJournalController::class, 'index'])->name('materi-rpp-journals.index');
-        Route::get('/jurnal-rpp/{scheduleReminder}', [App\Http\Controllers\SiswaMateriRppJournalController::class, 'show'])->name('materi-rpp-journals.show');
-        Route::post('/jurnal-rpp/{scheduleReminder}', [App\Http\Controllers\SiswaMateriRppJournalController::class, 'store'])->name('materi-rpp-journals.store');
+        Route::get('/jurnal-rpp', [SiswaMateriRppJournalController::class, 'index'])->name('materi-rpp-journals.index');
+        Route::get('/jurnal-rpp/{scheduleReminder}', [SiswaMateriRppJournalController::class, 'show'])->name('materi-rpp-journals.show');
+        Route::post('/jurnal-rpp/{scheduleReminder}', [SiswaMateriRppJournalController::class, 'store'])->name('materi-rpp-journals.store');
         Route::get('/pr', function () {
             return redirect()
                 ->route('siswa.tugas-pkg.index')
@@ -236,154 +288,154 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
                 ->route('siswa.tugas-pkg.index')
                 ->with('success', 'Pengumpulan tugas lama sudah tidak dipakai. Gunakan alur Tugas PKG.');
         })->name('pr.submit');
-        Route::get('/kartu', [App\Http\Controllers\SiswaDashboardController::class, 'kartu'])->name('kartu');
-        Route::get('/kartu/print', [App\Http\Controllers\SiswaDashboardController::class, 'kartuPrint'])->name('kartu.print');
-        Route::get('/face-profile', [App\Http\Controllers\FaceAttendanceController::class, 'profile'])->name('face-profile.show');
-        Route::post('/face-profile/enroll', [App\Http\Controllers\FaceAttendanceController::class, 'enroll'])->name('face-profile.enroll');
+        Route::get('/kartu', [SiswaDashboardController::class, 'kartu'])->name('kartu');
+        Route::get('/kartu/print', [SiswaDashboardController::class, 'kartuPrint'])->name('kartu.print');
+        Route::get('/face-profile', [FaceAttendanceController::class, 'profile'])->name('face-profile.show');
+        Route::post('/face-profile/enroll', [FaceAttendanceController::class, 'enroll'])->name('face-profile.enroll');
 
         // Canonical Tugas PKG routes
         Route::prefix('/tugas-pkg')->name('tugas-pkg.')->group(function () {
-            Route::get('/', [App\Http\Controllers\SiswaKarakterController::class, 'index'])->name('index');
-            Route::post('/{karakter}/submit', [App\Http\Controllers\SiswaKarakterController::class, 'toggle'])->name('submit');
-            Route::get('/riwayat', [App\Http\Controllers\SiswaKarakterController::class, 'history'])->name('history');
-            Route::get('/terverifikasi', [App\Http\Controllers\SiswaKarakterController::class, 'verifiedHistory'])->name('verified-history');
+            Route::get('/', [SiswaKarakterController::class, 'index'])->name('index');
+            Route::post('/{karakter}/submit', [SiswaKarakterController::class, 'toggle'])->name('submit');
+            Route::get('/riwayat', [SiswaKarakterController::class, 'history'])->name('history');
+            Route::get('/terverifikasi', [SiswaKarakterController::class, 'verifiedHistory'])->name('verified-history');
         });
 
         // Tugas PKG compatibility routes
-        Route::get('/karakter', [App\Http\Controllers\SiswaKarakterController::class, 'index'])->name('karakter.index');
-        Route::post('/karakter/{karakter}/toggle', [App\Http\Controllers\SiswaKarakterController::class, 'toggle'])->name('karakter.toggle');
-        Route::get('/karakter/history', [App\Http\Controllers\SiswaKarakterController::class, 'history'])->name('karakter.history');
-        Route::get('/karakter/verified-history', [App\Http\Controllers\SiswaKarakterController::class, 'verifiedHistory'])->name('karakter.verified-history');
-        
+        Route::get('/karakter', [SiswaKarakterController::class, 'index'])->name('karakter.index');
+        Route::post('/karakter/{karakter}/toggle', [SiswaKarakterController::class, 'toggle'])->name('karakter.toggle');
+        Route::get('/karakter/history', [SiswaKarakterController::class, 'history'])->name('karakter.history');
+        Route::get('/karakter/verified-history', [SiswaKarakterController::class, 'verifiedHistory'])->name('karakter.verified-history');
+
         // Kehadiran PKG
-        Route::get('/kehadiran', [App\Http\Controllers\CekKehadiranController::class, 'siswaIndex'])->name('kehadiran.index');
+        Route::get('/kehadiran', [CekKehadiranController::class, 'siswaIndex'])->name('kehadiran.index');
 
         Route::prefix('bacaan-quran')->name('quran.')->group(function () {
-            Route::get('/', [App\Http\Controllers\QuranReadingController::class, 'studentIndex'])->name('index');
-            Route::post('/', [App\Http\Controllers\QuranReadingController::class, 'studentStore'])->name('store');
-            Route::get('/laporan', [App\Http\Controllers\QuranReadingController::class, 'studentReport'])->name('report');
-            Route::get('/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'studentSheet'])->name('sheet');
-            Route::get('/peta-khatam', [App\Http\Controllers\QuranReadingController::class, 'studentKhatamMap'])->name('khatam-map');
-            Route::get('/paket-bolak-balik', [App\Http\Controllers\QuranReadingController::class, 'studentDuplex'])->name('duplex');
-            Route::get('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanForm'])->name('scan');
-            Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->name('scan.upload');
-            Route::post('/barcode/identify', [App\Http\Controllers\QuranReadingController::class, 'studentBarcodeIdentify'])->middleware('throttle:quran-barcode')->name('barcode.identify');
-            Route::post('/barcode/store', [App\Http\Controllers\QuranReadingController::class, 'studentBarcodeStore'])->middleware('throttle:quran-barcode')->name('barcode.store');
-            Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'studentScanConfirmForm'])->name('scan.confirm');
-            Route::post('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'studentScanConfirm'])->name('scan.confirm.store');
-            Route::get('/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'studentScanImage'])->name('scan.image');
-            Route::put('/{entry}', [App\Http\Controllers\QuranReadingController::class, 'studentUpdate'])->name('update');
+            Route::get('/', [QuranReadingController::class, 'studentIndex'])->name('index');
+            Route::post('/', [QuranReadingController::class, 'studentStore'])->name('store');
+            Route::get('/laporan', [QuranReadingController::class, 'studentReport'])->name('report');
+            Route::get('/lembar-lanjutan', [QuranReadingController::class, 'studentSheet'])->name('sheet');
+            Route::get('/peta-khatam', [QuranReadingController::class, 'studentKhatamMap'])->name('khatam-map');
+            Route::get('/paket-bolak-balik', [QuranReadingController::class, 'studentDuplex'])->name('duplex');
+            Route::get('/scan', [QuranReadingController::class, 'scanForm'])->name('scan');
+            Route::post('/scan', [QuranReadingController::class, 'scanUpload'])->name('scan.upload');
+            Route::post('/barcode/identify', [QuranReadingController::class, 'studentBarcodeIdentify'])->middleware('throttle:quran-barcode')->name('barcode.identify');
+            Route::post('/barcode/store', [QuranReadingController::class, 'studentBarcodeStore'])->middleware('throttle:quran-barcode')->name('barcode.store');
+            Route::get('/scan/{scan}/konfirmasi', [QuranReadingController::class, 'studentScanConfirmForm'])->name('scan.confirm');
+            Route::post('/scan/{scan}/konfirmasi', [QuranReadingController::class, 'studentScanConfirm'])->name('scan.confirm.store');
+            Route::get('/scan/{scan}/gambar', [QuranReadingController::class, 'studentScanImage'])->name('scan.image');
+            Route::put('/{entry}', [QuranReadingController::class, 'studentUpdate'])->name('update');
         });
-        
+
         // Profile routes
-        Route::get('/profile', [App\Http\Controllers\SiswaDashboardController::class, 'profile'])->name('profile');
-        Route::get('/profile/surat-pernyataan', [App\Http\Controllers\GenerusRegistrationController::class, 'siswaPreview'])->name('profile.statement.preview');
-        Route::get('/profile/surat-pernyataan/unduh', [App\Http\Controllers\GenerusRegistrationController::class, 'siswaDownload'])->name('profile.statement.download');
-        Route::post('/profile/update-photo', [App\Http\Controllers\SiswaDashboardController::class, 'updatePhoto'])->name('profile.update-photo');
-        Route::post('/profile/update', [App\Http\Controllers\SiswaDashboardController::class, 'updateProfile'])->name('profile.update');
-        Route::post('/profile/update-account', [App\Http\Controllers\SiswaDashboardController::class, 'updateAccount'])->name('profile.update-account');
-        
+        Route::get('/profile', [SiswaDashboardController::class, 'profile'])->name('profile');
+        Route::get('/profile/surat-pernyataan', [GenerusRegistrationController::class, 'siswaPreview'])->name('profile.statement.preview');
+        Route::get('/profile/surat-pernyataan/unduh', [GenerusRegistrationController::class, 'siswaDownload'])->name('profile.statement.download');
+        Route::post('/profile/update-photo', [SiswaDashboardController::class, 'updatePhoto'])->name('profile.update-photo');
+        Route::post('/profile/update', [SiswaDashboardController::class, 'updateProfile'])->name('profile.update');
+        Route::post('/profile/update-account', [SiswaDashboardController::class, 'updateAccount'])->name('profile.update-account');
+
         // Chat routes
-        Route::get('/chat', [App\Http\Controllers\SiswaChatController::class, 'index'])->name('chat.index');
-        Route::get('/chat/messages', [App\Http\Controllers\SiswaChatController::class, 'getMessages'])->name('chat.messages');
-        Route::post('/chat/send', [App\Http\Controllers\SiswaChatController::class, 'sendMessage'])->name('chat.send');
-        Route::get('/chat/unread', [App\Http\Controllers\SiswaChatController::class, 'getUnreadCount'])->name('chat.unread');
-        Route::get('/chat/unread-counts', [App\Http\Controllers\SiswaChatController::class, 'getUnreadCountPerContact'])->name('chat.unread.counts');
-        
+        Route::get('/chat', [SiswaChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/messages', [SiswaChatController::class, 'getMessages'])->name('chat.messages');
+        Route::post('/chat/send', [SiswaChatController::class, 'sendMessage'])->name('chat.send');
+        Route::get('/chat/unread', [SiswaChatController::class, 'getUnreadCount'])->name('chat.unread');
+        Route::get('/chat/unread-counts', [SiswaChatController::class, 'getUnreadCountPerContact'])->name('chat.unread.counts');
+
         // Group Chat routes for Siswa
         Route::prefix('group-chat')->name('group-chat.')->group(function () {
-            Route::get('/', [App\Http\Controllers\UserGroupChatController::class, 'index'])->name('index');
-            Route::get('/unread', [App\Http\Controllers\UserGroupChatController::class, 'getUnreadCount'])->name('unread');
-            Route::get('/{chatGroup}/messages', [App\Http\Controllers\UserGroupChatController::class, 'getMessages'])->name('messages');
-            Route::post('/{chatGroup}/send', [App\Http\Controllers\UserGroupChatController::class, 'sendMessage'])->name('send');
-            Route::get('/{chatGroup}/info', [App\Http\Controllers\UserGroupChatController::class, 'getGroupInfo'])->name('info');
+            Route::get('/', [UserGroupChatController::class, 'index'])->name('index');
+            Route::get('/unread', [UserGroupChatController::class, 'getUnreadCount'])->name('unread');
+            Route::get('/{chatGroup}/messages', [UserGroupChatController::class, 'getMessages'])->name('messages');
+            Route::post('/{chatGroup}/send', [UserGroupChatController::class, 'sendMessage'])->name('send');
+            Route::get('/{chatGroup}/info', [UserGroupChatController::class, 'getGroupInfo'])->name('info');
         });
-        
+
         // Gamification routes for Siswa
         Route::prefix('gamification')->name('gamification.')->group(function () {
-            Route::get('/', [App\Http\Controllers\GamificationController::class, 'dashboard'])->name('dashboard');
-            Route::get('/leaderboard', [App\Http\Controllers\GamificationController::class, 'leaderboard'])->name('leaderboard');
-            Route::get('/badges', [App\Http\Controllers\GamificationController::class, 'badges'])->name('badges');
-            Route::get('/badges/{badge}', [App\Http\Controllers\GamificationController::class, 'badgeDetail'])->name('badge-detail');
-            Route::get('/history', [App\Http\Controllers\GamificationController::class, 'pointHistory'])->name('history');
-            Route::get('/widget', [App\Http\Controllers\GamificationController::class, 'widgetData'])->name('widget');
-            Route::get('/certificate/{level}/download', [App\Http\Controllers\CertificateController::class, 'download'])->name('certificate.download');
+            Route::get('/', [GamificationController::class, 'dashboard'])->name('dashboard');
+            Route::get('/leaderboard', [GamificationController::class, 'leaderboard'])->name('leaderboard');
+            Route::get('/badges', [GamificationController::class, 'badges'])->name('badges');
+            Route::get('/badges/{badge}', [GamificationController::class, 'badgeDetail'])->name('badge-detail');
+            Route::get('/history', [GamificationController::class, 'pointHistory'])->name('history');
+            Route::get('/widget', [GamificationController::class, 'widgetData'])->name('widget');
+            Route::get('/certificate/{level}/download', [CertificateController::class, 'download'])->name('certificate.download');
         });
-        
+
         // RPG Quest routes for Siswa
         Route::prefix('rpg')->name('rpg.')->group(function () {
-            Route::get('/', [App\Http\Controllers\RpgGameController::class, 'index'])->name('index');
-            Route::get('/beta-3d', [App\Http\Controllers\RpgGameController::class, 'beta3d'])->name('beta-3d');
-            Route::get('/{rpgMap}/play', [App\Http\Controllers\RpgGameController::class, 'play'])->name('play');
-            Route::post('/{rpgMap}/move', [App\Http\Controllers\RpgGameController::class, 'move'])->name('move');
-            Route::post('/{rpgMap}/answer', [App\Http\Controllers\RpgGameController::class, 'answer'])->name('answer');
-            Route::get('/{rpgMap}/state', [App\Http\Controllers\RpgGameController::class, 'getGameState'])->name('state');
-            Route::post('/character', [App\Http\Controllers\RpgGameController::class, 'updateCharacter'])->name('character');
-            Route::post('/heartbeat', [App\Http\Controllers\RpgGameController::class, 'heartbeat'])->name('heartbeat');
-            Route::post('/{rpgMap}/reset', [App\Http\Controllers\RpgGameController::class, 'resetSession'])->name('reset');
+            Route::get('/', [RpgGameController::class, 'index'])->name('index');
+            Route::get('/beta-3d', [RpgGameController::class, 'beta3d'])->name('beta-3d');
+            Route::get('/{rpgMap}/play', [RpgGameController::class, 'play'])->name('play');
+            Route::post('/{rpgMap}/move', [RpgGameController::class, 'move'])->name('move');
+            Route::post('/{rpgMap}/answer', [RpgGameController::class, 'answer'])->name('answer');
+            Route::get('/{rpgMap}/state', [RpgGameController::class, 'getGameState'])->name('state');
+            Route::post('/character', [RpgGameController::class, 'updateCharacter'])->name('character');
+            Route::post('/heartbeat', [RpgGameController::class, 'heartbeat'])->name('heartbeat');
+            Route::post('/{rpgMap}/reset', [RpgGameController::class, 'resetSession'])->name('reset');
         });
-        
+
         // Calendar routes for Siswa
         Route::prefix('calendar')->name('calendar.')->group(function () {
-            Route::get('/', [App\Http\Controllers\CalendarController::class, 'siswaIndex'])->name('index');
-            Route::get('/events', [App\Http\Controllers\CalendarController::class, 'siswaEvents'])->name('events');
+            Route::get('/', [CalendarController::class, 'siswaIndex'])->name('index');
+            Route::get('/events', [CalendarController::class, 'siswaEvents'])->name('events');
         });
     });
 });
 
 // Ortu (Parent) Authentication & Portal routes
 Route::prefix('ortu')->name('ortu.')->group(function () {
-    Route::get('/login', [App\Http\Controllers\Auth\OrtuAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [App\Http\Controllers\Auth\OrtuAuthController::class, 'login'])->name('login.post');
-    Route::post('/logout', [App\Http\Controllers\Auth\OrtuAuthController::class, 'logout'])->name('logout');
+    Route::get('/login', [OrtuAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [OrtuAuthController::class, 'login'])->name('login.post');
+    Route::post('/logout', [OrtuAuthController::class, 'logout'])->name('logout');
 
     // WebAuthn biometric routes (public - no auth needed for login flow)
-    Route::post('/webauthn/login-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('webauthn.login-options');
-    Route::post('/webauthn/login', [App\Http\Controllers\Auth\WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('webauthn.login');
-    Route::get('/webauthn/has-credentials', [App\Http\Controllers\Auth\WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('webauthn.has-credentials');
+    Route::post('/webauthn/login-options', [WebAuthnController::class, 'loginOptions'])->middleware('throttle:biometric')->name('webauthn.login-options');
+    Route::post('/webauthn/login', [WebAuthnController::class, 'login'])->middleware('throttle:biometric')->name('webauthn.login');
+    Route::get('/webauthn/has-credentials', [WebAuthnController::class, 'hasCredentials'])->middleware('throttle:biometric')->name('webauthn.has-credentials');
 
     // Protected ortu routes
     Route::middleware('auth.ortu')->group(function () {
-        Route::get('/dashboard', [App\Http\Controllers\OrtuDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/materi', [App\Http\Controllers\MateriController::class, 'ortuIndex'])->name('materi.index');
-        Route::get('/materi/{materi}', [App\Http\Controllers\MateriController::class, 'ortuShow'])->name('materi.show');
+        Route::get('/dashboard', [OrtuDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/materi', [MateriController::class, 'ortuIndex'])->name('materi.index');
+        Route::get('/materi/{materi}', [MateriController::class, 'ortuShow'])->name('materi.show');
 
         // WebAuthn biometric routes (ortu)
-        Route::get('/webauthn/register-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'registerOptions'])->name('webauthn.register-options');
-        Route::post('/webauthn/register', [App\Http\Controllers\Auth\WebAuthnController::class, 'register'])->name('webauthn.register');
-        Route::get('/webauthn/status', [App\Http\Controllers\Auth\WebAuthnController::class, 'status'])->name('webauthn.status');
-        Route::delete('/webauthn/{id}', [App\Http\Controllers\Auth\WebAuthnController::class, 'destroy'])->name('webauthn.destroy');
-        Route::post('/webauthn/dismiss-prompt', [App\Http\Controllers\Auth\WebAuthnController::class, 'dismissPrompt'])->name('webauthn.dismiss-prompt');
-        Route::get('/biometrik', [App\Http\Controllers\Auth\WebAuthnController::class, 'settingsPage'])->name('biometrik');
+        Route::get('/webauthn/register-options', [WebAuthnController::class, 'registerOptions'])->name('webauthn.register-options');
+        Route::post('/webauthn/register', [WebAuthnController::class, 'register'])->name('webauthn.register');
+        Route::get('/webauthn/status', [WebAuthnController::class, 'status'])->name('webauthn.status');
+        Route::delete('/webauthn/{id}', [WebAuthnController::class, 'destroy'])->name('webauthn.destroy');
+        Route::post('/webauthn/dismiss-prompt', [WebAuthnController::class, 'dismissPrompt'])->name('webauthn.dismiss-prompt');
+        Route::get('/biometrik', [WebAuthnController::class, 'settingsPage'])->name('biometrik');
 
         // Jadwal (view-only)
-        Route::get('/jadwal', [App\Http\Controllers\OrtuJadwalController::class, 'index'])->name('jadwal');
-        Route::get('/jadwal/events', [App\Http\Controllers\OrtuJadwalController::class, 'getEvents'])->name('jadwal.events');
+        Route::get('/jadwal', [OrtuJadwalController::class, 'index'])->name('jadwal');
+        Route::get('/jadwal/events', [OrtuJadwalController::class, 'getEvents'])->name('jadwal.events');
 
         // Tugas PKG
-        Route::get('/tugas', [App\Http\Controllers\OrtuTugasController::class, 'index'])->name('tugas');
-        Route::post('/tugas/{checklist}/comment', [App\Http\Controllers\OrtuTugasController::class, 'addComment'])->name('tugas.comment');
+        Route::get('/tugas', [OrtuTugasController::class, 'index'])->name('tugas');
+        Route::post('/tugas/{checklist}/comment', [OrtuTugasController::class, 'addComment'])->name('tugas.comment');
 
         // Kehadiran PKG
-        Route::get('/kehadiran', [App\Http\Controllers\CekKehadiranController::class, 'ortuIndex'])->name('kehadiran');
+        Route::get('/kehadiran', [CekKehadiranController::class, 'ortuIndex'])->name('kehadiran');
 
-        Route::get('/bacaan-quran', [App\Http\Controllers\QuranReadingController::class, 'parentIndex'])->name('quran.index');
-        Route::get('/bacaan-quran/laporan', [App\Http\Controllers\QuranReadingController::class, 'parentReport'])->name('quran.report');
+        Route::get('/bacaan-quran', [QuranReadingController::class, 'parentIndex'])->name('quran.index');
+        Route::get('/bacaan-quran/laporan', [QuranReadingController::class, 'parentReport'])->name('quran.report');
 
         // Chat Pamong
-        Route::get('/chat', [App\Http\Controllers\OrtuChatController::class, 'index'])->name('chat');
-        Route::get('/chat/messages', [App\Http\Controllers\OrtuChatController::class, 'getMessages'])->name('chat.messages');
-        Route::post('/chat/send', [App\Http\Controllers\OrtuChatController::class, 'sendMessage'])->name('chat.send');
+        Route::get('/chat', [OrtuChatController::class, 'index'])->name('chat');
+        Route::get('/chat/messages', [OrtuChatController::class, 'getMessages'])->name('chat.messages');
+        Route::post('/chat/send', [OrtuChatController::class, 'sendMessage'])->name('chat.send');
 
         // Settings
-        Route::get('/settings', [App\Http\Controllers\OrtuDashboardController::class, 'settings'])->name('settings');
-        Route::get('/settings/surat-pernyataan', [App\Http\Controllers\GenerusRegistrationController::class, 'ortuPreview'])->name('settings.statement.preview');
-        Route::get('/settings/surat-pernyataan/unduh', [App\Http\Controllers\GenerusRegistrationController::class, 'ortuDownload'])->name('settings.statement.download');
-        Route::post('/settings/update', [App\Http\Controllers\OrtuDashboardController::class, 'updateSettings'])->name('settings.update');
-        Route::post('/settings/password', [App\Http\Controllers\OrtuDashboardController::class, 'updatePassword'])->name('settings.password');
+        Route::get('/settings', [OrtuDashboardController::class, 'settings'])->name('settings');
+        Route::get('/settings/surat-pernyataan', [GenerusRegistrationController::class, 'ortuPreview'])->name('settings.statement.preview');
+        Route::get('/settings/surat-pernyataan/unduh', [GenerusRegistrationController::class, 'ortuDownload'])->name('settings.statement.download');
+        Route::post('/settings/update', [OrtuDashboardController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/settings/password', [OrtuDashboardController::class, 'updatePassword'])->name('settings.password');
 
         // Certificate Download
-        Route::get('/certificate/{level}/download', [App\Http\Controllers\CertificateController::class, 'download'])->name('certificate.download');
+        Route::get('/certificate/{level}/download', [CertificateController::class, 'download'])->name('certificate.download');
     });
 });
 
@@ -419,47 +471,47 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::prefix('guru')->name('guru.')->middleware('guru.profile')->group(function () {
-        Route::get('/password-awal', [App\Http\Controllers\TeacherPortalController::class, 'initialPassword'])->name('password.initial');
-        Route::put('/password-awal', [App\Http\Controllers\TeacherPortalController::class, 'updateInitialPassword'])->name('password.initial.update');
+        Route::get('/password-awal', [TeacherPortalController::class, 'initialPassword'])->name('password.initial');
+        Route::put('/password-awal', [TeacherPortalController::class, 'updateInitialPassword'])->name('password.initial.update');
 
         Route::middleware('guru.password')->group(function () {
-            Route::get('/', [App\Http\Controllers\TeacherPortalController::class, 'dashboard'])->name('dashboard');
-            Route::get('/jadwal', [App\Http\Controllers\TeacherPortalController::class, 'schedule'])->name('schedule');
-            Route::get('/jadwal/{assignment}', [App\Http\Controllers\TeacherPortalController::class, 'scheduleShow'])->name('schedule.show');
-            Route::patch('/jadwal/{assignment}/konfirmasi', [App\Http\Controllers\TeacherPortalController::class, 'confirmSchedule'])->name('schedule.confirm');
-            Route::post('/jadwal/{assignment}/permohonan', [App\Http\Controllers\TeacherPortalController::class, 'requestScheduleChange'])->name('schedule.request');
-            Route::get('/materi', [App\Http\Controllers\TeacherPortalController::class, 'materials'])->name('materials');
-            Route::get('/profil', [App\Http\Controllers\TeacherPortalController::class, 'profile'])->name('profile');
-            Route::put('/profil', [App\Http\Controllers\TeacherPortalController::class, 'updateProfile'])->name('profile.update');
-            Route::put('/kesediaan', [App\Http\Controllers\TeacherPortalController::class, 'updateAvailability'])->name('availability.update');
-            Route::put('/tema', [App\Http\Controllers\TeacherPortalController::class, 'updateTheme'])->name('theme.update');
-            Route::get('/ubah-password', [App\Http\Controllers\TeacherPortalController::class, 'password'])->name('password.edit');
-            Route::put('/ubah-password', [App\Http\Controllers\TeacherPortalController::class, 'updatePassword'])->name('password.update');
-            Route::get('/surat-kesediaan', [App\Http\Controllers\TeacherPortalController::class, 'statement'])->name('statement');
-            Route::get('/kartu-id', [App\Http\Controllers\TeacherPortalController::class, 'idCard'])->name('id-card');
+            Route::get('/', [TeacherPortalController::class, 'dashboard'])->name('dashboard');
+            Route::get('/jadwal', [TeacherPortalController::class, 'schedule'])->name('schedule');
+            Route::get('/jadwal/{assignment}', [TeacherPortalController::class, 'scheduleShow'])->name('schedule.show');
+            Route::patch('/jadwal/{assignment}/konfirmasi', [TeacherPortalController::class, 'confirmSchedule'])->name('schedule.confirm');
+            Route::post('/jadwal/{assignment}/permohonan', [TeacherPortalController::class, 'requestScheduleChange'])->name('schedule.request');
+            Route::get('/materi', [TeacherPortalController::class, 'materials'])->name('materials');
+            Route::get('/profil', [TeacherPortalController::class, 'profile'])->name('profile');
+            Route::put('/profil', [TeacherPortalController::class, 'updateProfile'])->name('profile.update');
+            Route::put('/kesediaan', [TeacherPortalController::class, 'updateAvailability'])->name('availability.update');
+            Route::put('/tema', [TeacherPortalController::class, 'updateTheme'])->name('theme.update');
+            Route::get('/ubah-password', [TeacherPortalController::class, 'password'])->name('password.edit');
+            Route::put('/ubah-password', [TeacherPortalController::class, 'updatePassword'])->name('password.update');
+            Route::get('/surat-kesediaan', [TeacherPortalController::class, 'statement'])->name('statement');
+            Route::get('/kartu-id', [TeacherPortalController::class, 'idCard'])->name('id-card');
         });
     });
 
     // WebAuthn biometric routes (admin/pamong)
-    Route::get('/webauthn/register-options', [App\Http\Controllers\Auth\WebAuthnController::class, 'registerOptions'])->name('webauthn.register-options');
-    Route::post('/webauthn/register', [App\Http\Controllers\Auth\WebAuthnController::class, 'register'])->name('webauthn.register');
-    Route::get('/webauthn/status', [App\Http\Controllers\Auth\WebAuthnController::class, 'status'])->name('webauthn.status');
-    Route::delete('/webauthn/{id}', [App\Http\Controllers\Auth\WebAuthnController::class, 'destroy'])->name('webauthn.destroy');
-    Route::post('/webauthn/dismiss-prompt', [App\Http\Controllers\Auth\WebAuthnController::class, 'dismissPrompt'])->name('webauthn.dismiss-prompt');
-    Route::get('/biometrik', [App\Http\Controllers\Auth\WebAuthnController::class, 'settingsPage'])->name('biometrik');
+    Route::get('/webauthn/register-options', [WebAuthnController::class, 'registerOptions'])->name('webauthn.register-options');
+    Route::post('/webauthn/register', [WebAuthnController::class, 'register'])->name('webauthn.register');
+    Route::get('/webauthn/status', [WebAuthnController::class, 'status'])->name('webauthn.status');
+    Route::delete('/webauthn/{id}', [WebAuthnController::class, 'destroy'])->name('webauthn.destroy');
+    Route::post('/webauthn/dismiss-prompt', [WebAuthnController::class, 'dismissPrompt'])->name('webauthn.dismiss-prompt');
+    Route::get('/biometrik', [WebAuthnController::class, 'settingsPage'])->name('biometrik');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/secondary-panels', [DashboardController::class, 'secondaryPanels'])->name('dashboard.secondary-panels');
-    Route::put('/profil-penempatan', [App\Http\Controllers\ProfileAssignmentController::class, 'updatePamong'])->name('profile-assignment.update');
+    Route::put('/profil-penempatan', [ProfileAssignmentController::class, 'updatePamong'])->name('profile-assignment.update');
 
     // Profile management
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/id-card', [ProfileController::class, 'idCard'])->name('profile.id-card');
     Route::get('/profile/id-card/print', [ProfileController::class, 'idCardPrint'])->name('profile.id-card.print');
     Route::post('/profile/id-card/refresh-qr', [ProfileController::class, 'refreshIdCardQr'])->name('profile.id-card.refresh-qr');
-    Route::get('/face-profile', [App\Http\Controllers\FaceAttendanceController::class, 'profile'])->name('face-profile.show');
-    Route::post('/face-profile/enroll', [App\Http\Controllers\FaceAttendanceController::class, 'enroll'])->name('face-profile.enroll');
+    Route::get('/face-profile', [FaceAttendanceController::class, 'profile'])->name('face-profile.show');
+    Route::post('/face-profile/enroll', [FaceAttendanceController::class, 'enroll'])->name('face-profile.enroll');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update.post');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
@@ -467,41 +519,41 @@ Route::middleware('auth')->group(function () {
         ->name('profile.mobile-menu-favorites.update');
 
     // Pendataan dan penjadwalan guru MT/MS.
-    Route::get('/pendataan-guru', [App\Http\Controllers\TeacherPlanningController::class, 'index'])->name('teacher-planning.index');
-    Route::put('/pendataan-guru/akses', [App\Http\Controllers\TeacherPlanningController::class, 'updateInvite'])->name('teacher-planning.invite.update');
-    Route::put('/pendataan-guru/pesan-selesai', [App\Http\Controllers\TeacherPlanningController::class, 'updateSuccessMessage'])->name('teacher-planning.success-message.update');
-    Route::put('/pendataan-guru/kontak-admin', [App\Http\Controllers\TeacherPlanningController::class, 'updateAdminContact'])->name('teacher-planning.admin-contact.update');
-    Route::put('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'updateProfile'])->name('teacher-planning.profiles.update');
-    Route::post('/pendataan-guru/profil/{teacherProfile}/akun', [App\Http\Controllers\TeacherPlanningController::class, 'createAccount'])->name('teacher-planning.profiles.account.store');
-    Route::post('/pendataan-guru/profil/{teacherProfile}/akun/reset-password', [App\Http\Controllers\TeacherPlanningController::class, 'resetAccountPassword'])->name('teacher-planning.profiles.account.reset');
-    Route::delete('/pendataan-guru/profil/{teacherProfile}', [App\Http\Controllers\TeacherPlanningController::class, 'destroyProfile'])->name('teacher-planning.profiles.destroy');
-    Route::get('/pendataan-guru/profil/{teacherProfile}/surat', [App\Http\Controllers\TeacherPlanningController::class, 'statementPreview'])->name('teacher-planning.profiles.statement.preview');
-    Route::get('/pendataan-guru/profil/{teacherProfile}/surat/unduh', [App\Http\Controllers\TeacherPlanningController::class, 'statementDownload'])->name('teacher-planning.profiles.statement.download');
-    Route::post('/pendataan-guru/template', [App\Http\Controllers\TeacherPlanningController::class, 'storeTemplate'])->name('teacher-planning.templates.store');
-    Route::patch('/pendataan-guru/template/{teacherScheduleTemplate}/toggle', [App\Http\Controllers\TeacherPlanningController::class, 'toggleTemplate'])->name('teacher-planning.templates.toggle');
-    Route::post('/pendataan-guru/jadwal/generate', [App\Http\Controllers\TeacherPlanningController::class, 'generate'])->name('teacher-planning.generate');
-    Route::put('/pendataan-guru/sesi/{teacherScheduleSession}/materi', [App\Http\Controllers\TeacherPlanningController::class, 'syncSessionMaterials'])->name('teacher-planning.sessions.materials.sync');
-    Route::put('/pendataan-guru/sesi/{teacherScheduleSession}/{role}', [App\Http\Controllers\TeacherPlanningController::class, 'assign'])->name('teacher-planning.sessions.assign');
-    Route::patch('/pendataan-guru/sesi/{teacherScheduleSession}/swap', [App\Http\Controllers\TeacherPlanningController::class, 'swap'])->name('teacher-planning.sessions.swap');
-    Route::patch('/pendataan-guru/periode/{teacherSchedulePeriod}/publish', [App\Http\Controllers\TeacherPlanningController::class, 'publish'])->name('teacher-planning.periods.publish');
-    Route::delete('/pendataan-guru/periode/{teacherSchedulePeriod}', [App\Http\Controllers\TeacherPlanningController::class, 'destroyPeriod'])->name('teacher-planning.periods.destroy');
-    Route::post('/pendataan-guru/penugasan/{assignment}/whatsapp/{stage}', [App\Http\Controllers\TeacherPlanningController::class, 'whatsapp'])->name('teacher-planning.assignments.whatsapp');
-    Route::patch('/pendataan-guru/penugasan/{assignment}/terkirim/{stage}', [App\Http\Controllers\TeacherPlanningController::class, 'markWhatsappSent'])->name('teacher-planning.assignments.sent');
-    Route::patch('/pendataan-guru/penugasan/{assignment}/status', [App\Http\Controllers\TeacherPlanningController::class, 'updateConfirmationStatus'])->name('teacher-planning.assignments.status');
-    Route::patch('/pendataan-guru/permohonan/{teacherScheduleRequest}/status', [App\Http\Controllers\TeacherPlanningController::class, 'updateScheduleRequest'])->name('teacher-planning.requests.status');
-    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/excel', [App\Http\Controllers\TeacherPlanningController::class, 'exportExcel'])->name('teacher-planning.export.excel');
-    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/pdf', [App\Http\Controllers\TeacherPlanningController::class, 'exportPdf'])->name('teacher-planning.export.pdf');
-    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/gambar', [App\Http\Controllers\TeacherPlanningController::class, 'exportImage'])->name('teacher-planning.export.image');
-    Route::get('/pendataan-guru/materi', [App\Http\Controllers\TeacherMaterialController::class, 'index'])->name('teacher-materials.index');
-    Route::post('/pendataan-guru/materi', [App\Http\Controllers\TeacherMaterialController::class, 'store'])->name('teacher-materials.store');
-    Route::put('/pendataan-guru/materi/{teacherMaterial}', [App\Http\Controllers\TeacherMaterialController::class, 'update'])->name('teacher-materials.update');
-    Route::delete('/pendataan-guru/materi/{teacherMaterial}', [App\Http\Controllers\TeacherMaterialController::class, 'destroy'])->name('teacher-materials.destroy');
+    Route::get('/pendataan-guru', [TeacherPlanningController::class, 'index'])->name('teacher-planning.index');
+    Route::put('/pendataan-guru/akses', [TeacherPlanningController::class, 'updateInvite'])->name('teacher-planning.invite.update');
+    Route::put('/pendataan-guru/pesan-selesai', [TeacherPlanningController::class, 'updateSuccessMessage'])->name('teacher-planning.success-message.update');
+    Route::put('/pendataan-guru/kontak-admin', [TeacherPlanningController::class, 'updateAdminContact'])->name('teacher-planning.admin-contact.update');
+    Route::put('/pendataan-guru/profil/{teacherProfile}', [TeacherPlanningController::class, 'updateProfile'])->name('teacher-planning.profiles.update');
+    Route::post('/pendataan-guru/profil/{teacherProfile}/akun', [TeacherPlanningController::class, 'createAccount'])->name('teacher-planning.profiles.account.store');
+    Route::post('/pendataan-guru/profil/{teacherProfile}/akun/reset-password', [TeacherPlanningController::class, 'resetAccountPassword'])->name('teacher-planning.profiles.account.reset');
+    Route::delete('/pendataan-guru/profil/{teacherProfile}', [TeacherPlanningController::class, 'destroyProfile'])->name('teacher-planning.profiles.destroy');
+    Route::get('/pendataan-guru/profil/{teacherProfile}/surat', [TeacherPlanningController::class, 'statementPreview'])->name('teacher-planning.profiles.statement.preview');
+    Route::get('/pendataan-guru/profil/{teacherProfile}/surat/unduh', [TeacherPlanningController::class, 'statementDownload'])->name('teacher-planning.profiles.statement.download');
+    Route::post('/pendataan-guru/template', [TeacherPlanningController::class, 'storeTemplate'])->name('teacher-planning.templates.store');
+    Route::patch('/pendataan-guru/template/{teacherScheduleTemplate}/toggle', [TeacherPlanningController::class, 'toggleTemplate'])->name('teacher-planning.templates.toggle');
+    Route::post('/pendataan-guru/jadwal/generate', [TeacherPlanningController::class, 'generate'])->name('teacher-planning.generate');
+    Route::put('/pendataan-guru/sesi/{teacherScheduleSession}/materi', [TeacherPlanningController::class, 'syncSessionMaterials'])->name('teacher-planning.sessions.materials.sync');
+    Route::put('/pendataan-guru/sesi/{teacherScheduleSession}/{role}', [TeacherPlanningController::class, 'assign'])->name('teacher-planning.sessions.assign');
+    Route::patch('/pendataan-guru/sesi/{teacherScheduleSession}/swap', [TeacherPlanningController::class, 'swap'])->name('teacher-planning.sessions.swap');
+    Route::patch('/pendataan-guru/periode/{teacherSchedulePeriod}/publish', [TeacherPlanningController::class, 'publish'])->name('teacher-planning.periods.publish');
+    Route::delete('/pendataan-guru/periode/{teacherSchedulePeriod}', [TeacherPlanningController::class, 'destroyPeriod'])->name('teacher-planning.periods.destroy');
+    Route::post('/pendataan-guru/penugasan/{assignment}/whatsapp/{stage}', [TeacherPlanningController::class, 'whatsapp'])->name('teacher-planning.assignments.whatsapp');
+    Route::patch('/pendataan-guru/penugasan/{assignment}/terkirim/{stage}', [TeacherPlanningController::class, 'markWhatsappSent'])->name('teacher-planning.assignments.sent');
+    Route::patch('/pendataan-guru/penugasan/{assignment}/status', [TeacherPlanningController::class, 'updateConfirmationStatus'])->name('teacher-planning.assignments.status');
+    Route::patch('/pendataan-guru/permohonan/{teacherScheduleRequest}/status', [TeacherPlanningController::class, 'updateScheduleRequest'])->name('teacher-planning.requests.status');
+    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/excel', [TeacherPlanningController::class, 'exportExcel'])->name('teacher-planning.export.excel');
+    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/pdf', [TeacherPlanningController::class, 'exportPdf'])->name('teacher-planning.export.pdf');
+    Route::get('/pendataan-guru/periode/{teacherSchedulePeriod}/gambar', [TeacherPlanningController::class, 'exportImage'])->name('teacher-planning.export.image');
+    Route::get('/pendataan-guru/materi', [TeacherMaterialController::class, 'index'])->name('teacher-materials.index');
+    Route::post('/pendataan-guru/materi', [TeacherMaterialController::class, 'store'])->name('teacher-materials.store');
+    Route::put('/pendataan-guru/materi/{teacherMaterial}', [TeacherMaterialController::class, 'update'])->name('teacher-materials.update');
+    Route::delete('/pendataan-guru/materi/{teacherMaterial}', [TeacherMaterialController::class, 'destroy'])->name('teacher-materials.destroy');
 
     // Student management - Import/Export (harus sebelum resource agar tidak bentrok)
     Route::get('/siswa/template-import', [SiswaController::class, 'downloadTemplate'])->name('siswa.import.template');
     Route::get('/siswa/export-accounts', [SiswaController::class, 'exportAccounts'])->name('siswa.export-accounts');
     Route::post('/siswa/import', [SiswaController::class, 'import'])->name('siswa.import');
-    
+
     // Student management - Resource & Card
     Route::get('/siswa/cards/print', [SiswaController::class, 'printCards'])->name('siswa.cards.print');
     Route::resource('siswa', SiswaController::class);
@@ -509,7 +561,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/siswa/{siswa}/card/print', [SiswaController::class, 'printCardOnly'])->name('siswa.card.print');
     Route::get('/siswa/{siswa}/card/download', [SiswaController::class, 'downloadCard'])->name('siswa.card.download');
     Route::get('/siswa/{siswa}/qr-code', [SiswaController::class, 'getQrCode'])->name('siswa.qrcode'); // Web-based QR generation
-    
+
     // Siswa Account Management
     Route::post('/siswa/{siswa}/reset-password', [SiswaController::class, 'resetPassword'])->name('siswa.reset-password');
     Route::post('/siswa/{siswa}/generate-password', [SiswaController::class, 'generatePassword'])->name('siswa.generate-password');
@@ -524,15 +576,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/siswa/{siswa}/update-ortu-account', [SiswaController::class, 'updateOrtuAccount'])->name('siswa.update-ortu-account');
 
     // Ortu Management (Dedicated Menu)
-    Route::get('/ortu-management', [App\Http\Controllers\OrtuManagementController::class, 'index'])->name('ortu-management.index');
-    Route::post('/ortu-management/{siswa}/reset', [App\Http\Controllers\OrtuManagementController::class, 'resetPassword'])->name('ortu-management.reset');
-    Route::post('/ortu-management/reset-all', [App\Http\Controllers\OrtuManagementController::class, 'resetAllPasswords'])->name('ortu-management.reset-all');
+    Route::get('/ortu-management', [OrtuManagementController::class, 'index'])->name('ortu-management.index');
+    Route::post('/ortu-management/{siswa}/reset', [OrtuManagementController::class, 'resetPassword'])->name('ortu-management.reset');
+    Route::post('/ortu-management/reset-all', [OrtuManagementController::class, 'resetAllPasswords'])->name('ortu-management.reset-all');
 
     // Share Info Management
-    Route::post('/share-info', [App\Http\Controllers\ShareInfoController::class, 'store'])->name('share-info.store');
-    Route::put('/share-info/{shareInfo}', [App\Http\Controllers\ShareInfoController::class, 'update'])->name('share-info.update');
-    Route::patch('/share-info/{shareInfo}/toggle', [App\Http\Controllers\ShareInfoController::class, 'toggle'])->name('share-info.toggle');
-    Route::delete('/share-info/{shareInfo}', [App\Http\Controllers\ShareInfoController::class, 'destroy'])->name('share-info.destroy');
+    Route::post('/share-info', [ShareInfoController::class, 'store'])->name('share-info.store');
+    Route::put('/share-info/{shareInfo}', [ShareInfoController::class, 'update'])->name('share-info.update');
+    Route::patch('/share-info/{shareInfo}/toggle', [ShareInfoController::class, 'toggle'])->name('share-info.toggle');
+    Route::delete('/share-info/{shareInfo}', [ShareInfoController::class, 'destroy'])->name('share-info.destroy');
 
     // Class management
     Route::get('/kelas', [KelasController::class, 'index'])->name('kelas.index');
@@ -549,28 +601,32 @@ Route::middleware('auth')->group(function () {
 
     // Attendance management
     Route::redirect('/absen-manual', '/presensi?tab=input#input')->name('manual-attendance.index');
-    Route::get('/absen-manual/siswa', [App\Http\Controllers\ManualAttendanceController::class, 'students'])->name('manual-attendance.students');
-    Route::post('/absen-manual/siswa', [App\Http\Controllers\ManualAttendanceController::class, 'storeSiswa'])->name('manual-attendance.siswa.store');
-    Route::post('/absen-manual/pamong', [App\Http\Controllers\ManualAttendanceController::class, 'storePamong'])->name('manual-attendance.pamong.store');
+    Route::get('/absen-manual/siswa', [ManualAttendanceController::class, 'students'])->name('manual-attendance.students');
+    Route::post('/absen-manual/siswa', [ManualAttendanceController::class, 'storeSiswa'])->name('manual-attendance.siswa.store');
+    Route::post('/absen-manual/pamong', [ManualAttendanceController::class, 'storePamong'])->name('manual-attendance.pamong.store');
     Route::get('/presensi', [PresensiController::class, 'index'])->name('presensi.index');
     Route::get('/presensi/siswa', [PresensiController::class, 'students'])->name('presensi.students');
     Route::get('/presensi/recap', [PresensiController::class, 'recap'])->name('presensi.recap');
-    Route::get('/presensi/rekap-generus', [App\Http\Controllers\GenerusRecapController::class, 'index'])->name('presensi.generus-recap');
+    Route::get('/presensi/rekap-generus', [GenerusRecapController::class, 'index'])->name('presensi.generus-recap');
+    Route::get('/presensi/panel/laporan-periode', [PresensiController::class, 'periodPanel'])->middleware('throttle:60,1')->name('presensi.panel.period');
+    Route::get('/presensi/panel/rekap-generus', [GenerusRecapController::class, 'panel'])->middleware('throttle:60,1')->name('presensi.panel.generus');
     Route::get('/presensi/create', [PresensiController::class, 'create'])->name('presensi.create');
     Route::get('/presensi/export', [PresensiController::class, 'export'])->name('presensi.export');
     Route::get('/presensi/template-import', [PresensiController::class, 'downloadTemplate'])->name('presensi.import.template');
     Route::post('/presensi/import', [PresensiController::class, 'import'])->name('presensi.import');
     Route::post('/presensi/bulk', [PresensiController::class, 'bulkStore'])->name('presensi.bulk');
     Route::post('/presensi/bulk-verify', [PresensiController::class, 'bulkVerify'])->name('presensi.bulk-verify');
+    Route::put('/presensi/status-cepat', [PresensiController::class, 'quickStatus'])->middleware('throttle:60,1')->name('presensi.quick-status');
+    Route::get('/presensi/ringkasan-wa', [PresensiController::class, 'shareSummary'])->middleware('throttle:60,1')->name('presensi.share-summary');
     Route::post('/presensi', [PresensiController::class, 'store'])->name('presensi.store');
     Route::put('/presensi/{presensi}', [PresensiController::class, 'update'])->name('presensi.update');
     Route::delete('/presensi/{presensi}', [PresensiController::class, 'destroy'])->name('presensi.destroy');
     Route::post('/presensi/{presensi}/verify', [PresensiController::class, 'verify'])->name('presensi.verify');
 
     // Attendance Schedule (Jadwal Presensi)
-    Route::resource('attendance-schedule', App\Http\Controllers\AttendanceScheduleController::class);
-    Route::patch('/attendance-schedule/{attendanceSchedule}/activate', [App\Http\Controllers\AttendanceScheduleController::class, 'activate'])->name('attendance-schedule.activate');
-    Route::patch('/attendance-schedule/{attendanceSchedule}/deactivate', [App\Http\Controllers\AttendanceScheduleController::class, 'deactivate'])->name('attendance-schedule.deactivate');
+    Route::resource('attendance-schedule', AttendanceScheduleController::class);
+    Route::patch('/attendance-schedule/{attendanceSchedule}/activate', [AttendanceScheduleController::class, 'activate'])->name('attendance-schedule.activate');
+    Route::patch('/attendance-schedule/{attendanceSchedule}/deactivate', [AttendanceScheduleController::class, 'deactivate'])->name('attendance-schedule.deactivate');
 
     // Presensi Web Endpoints (for AJAX calls with session auth)
     Route::get('/presensi/data', [PresensiController::class, 'getData'])->name('presensi.data');
@@ -587,7 +643,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/pamong/{pamong}/change-password', [PamongController::class, 'changePassword'])->name('pamong.change-password');
 
     // Kelas Web Endpoints
-    Route::get('/kelas-list', [App\Http\Controllers\KelasController::class, 'getList'])->name('kelas.list');
+    Route::get('/kelas-list', [KelasController::class, 'getList'])->name('kelas.list');
 
     // Reports (requires permission)
     Route::middleware(['role.permission:view_reports'])->group(function () {
@@ -607,16 +663,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/berita/{berita}/download', [BeritaController::class, 'downloadPdf'])->name('berita.download');
 
     // Materi Management
-    Route::get('/presentasi', [App\Http\Controllers\PresentationController::class, 'index'])->name('presentations.index');
-    Route::post('/presentasi', [App\Http\Controllers\PresentationController::class, 'store'])->name('presentations.store');
-    Route::get('/presentasi/{presentation:slug}/edit', [App\Http\Controllers\PresentationController::class, 'edit'])->name('presentations.edit');
-    Route::put('/presentasi/{presentation:slug}', [App\Http\Controllers\PresentationController::class, 'update'])->name('presentations.update');
-    Route::post('/presentasi/{presentation:slug}/gambar', [App\Http\Controllers\PresentationController::class, 'uploadAsset'])->name('presentations.assets.store');
-    Route::get('/presentasi/{presentation:slug}/tayang', [App\Http\Controllers\PresentationController::class, 'preview'])->name('presentations.preview');
-    Route::get('/presentasi/{presentation:slug}/unduh/pdf', [App\Http\Controllers\PresentationController::class, 'exportPdf'])->name('presentations.export.pdf');
-    Route::get('/presentasi/{presentation:slug}/unduh/pptx', [App\Http\Controllers\PresentationController::class, 'exportPptx'])->name('presentations.export.pptx');
-    Route::patch('/presentasi/{presentation:slug}/publikasi', [App\Http\Controllers\PresentationController::class, 'togglePublish'])->name('presentations.publish');
-    Route::delete('/presentasi/{presentation:slug}', [App\Http\Controllers\PresentationController::class, 'destroy'])->name('presentations.destroy');
+    Route::get('/presentasi', [PresentationController::class, 'index'])->name('presentations.index');
+    Route::post('/presentasi', [PresentationController::class, 'store'])->name('presentations.store');
+    Route::get('/presentasi/{presentation:slug}/edit', [PresentationController::class, 'edit'])->name('presentations.edit');
+    Route::put('/presentasi/{presentation:slug}', [PresentationController::class, 'update'])->name('presentations.update');
+    Route::post('/presentasi/{presentation:slug}/gambar', [PresentationController::class, 'uploadAsset'])->name('presentations.assets.store');
+    Route::get('/presentasi/{presentation:slug}/tayang', [PresentationController::class, 'preview'])->name('presentations.preview');
+    Route::get('/presentasi/{presentation:slug}/unduh/pdf', [PresentationController::class, 'exportPdf'])->name('presentations.export.pdf');
+    Route::get('/presentasi/{presentation:slug}/unduh/pptx', [PresentationController::class, 'exportPptx'])->name('presentations.export.pptx');
+    Route::patch('/presentasi/{presentation:slug}/publikasi', [PresentationController::class, 'togglePublish'])->name('presentations.publish');
+    Route::delete('/presentasi/{presentation:slug}', [PresentationController::class, 'destroy'])->name('presentations.destroy');
     Route::get('/materi-targets', [MateriTargetController::class, 'index'])->name('materi-targets.index');
     Route::post('/materi-targets', [MateriTargetController::class, 'store'])->name('materi-targets.store');
     Route::patch('/materi-targets/{target}', [MateriTargetController::class, 'update'])->name('materi-targets.update');
@@ -639,26 +695,26 @@ Route::middleware('auth')->group(function () {
     Route::patch('/materi/{materi}/toggle-status', [MateriController::class, 'toggleStatus'])->name('materi.toggle-status');
 
     // Canonical Tugas PKG routes
-    Route::get('/tugas-pkg', [App\Http\Controllers\TugasPkgController::class, 'index'])->name('tugas-pkg.index');
-    Route::get('/tugas-pkg/master', [App\Http\Controllers\KarakterController::class, 'index'])->name('tugas-pkg.master');
-    Route::post('/tugas-pkg/master', [App\Http\Controllers\KarakterController::class, 'store'])->name('tugas-pkg.store');
-    Route::match(['put', 'patch'], '/tugas-pkg/master/{karakter}', [App\Http\Controllers\KarakterController::class, 'update'])->name('tugas-pkg.update');
-    Route::patch('/tugas-pkg/master/{karakter}/toggle-status', [App\Http\Controllers\KarakterController::class, 'toggleStatus'])->name('tugas-pkg.toggle-status');
-    Route::post('/tugas-pkg/master/bulk-action', [App\Http\Controllers\KarakterController::class, 'bulkAction'])->name('tugas-pkg.bulk-action');
-    Route::get('/tugas-pkg/verifikasi', [App\Http\Controllers\TracerKarakterController::class, 'index'])->name('tugas-pkg.verification');
-    Route::get('/tugas-pkg/verifikasi/rekap', [App\Http\Controllers\TracerKarakterController::class, 'rekap'])->name('tugas-pkg.rekap');
-    Route::get('/tugas-pkg/verifikasi/detail-siswa', [App\Http\Controllers\TracerKarakterController::class, 'detailSiswa'])->name('tugas-pkg.detail-siswa');
-    Route::get('/tugas-pkg/verifikasi/export', [App\Http\Controllers\TracerKarakterController::class, 'export'])->name('tugas-pkg.export');
-    Route::get('/tugas-pkg/verifikasi/template-import', [App\Http\Controllers\TracerKarakterController::class, 'downloadTemplate'])->name('tugas-pkg.import.template');
-    Route::post('/tugas-pkg/verifikasi/import', [App\Http\Controllers\TracerKarakterController::class, 'import'])->name('tugas-pkg.import');
-    Route::get('/tugas-pkg/verifikasi/{siswa}/check', [App\Http\Controllers\TracerKarakterController::class, 'checkKarakter'])->name('tugas-pkg.check');
-    Route::post('/tugas-pkg/verifikasi/{siswa}/check', [App\Http\Controllers\TracerKarakterController::class, 'storeCheck'])->name('tugas-pkg.store-check');
-    Route::get('/tugas-pkg/verifikasi/{siswa}/history', [App\Http\Controllers\TracerKarakterController::class, 'history'])->name('tugas-pkg.history');
-    Route::post('/tugas-pkg/verifikasi/bulk-action', [App\Http\Controllers\TracerKarakterController::class, 'bulkAction'])->name('tugas-pkg.verification.bulk-action');
-    Route::put('/tugas-pkg/verifikasi/{checklist}/verify', [App\Http\Controllers\SiswaKarakterController::class, 'verify'])->name('tugas-pkg.verification.verify');
-    Route::put('/tugas-pkg/verifikasi/{checklist}/unverify', [App\Http\Controllers\SiswaKarakterController::class, 'unverify'])->name('tugas-pkg.verification.unverify');
-    Route::delete('/tugas-pkg/verifikasi/{checklist}', [App\Http\Controllers\SiswaKarakterController::class, 'destroy'])->name('tugas-pkg.verification.destroy');
-    Route::post('/tugas-pkg/verifikasi/{id}/restore', [App\Http\Controllers\SiswaKarakterController::class, 'restore'])->name('tugas-pkg.verification.restore');
+    Route::get('/tugas-pkg', [TugasPkgController::class, 'index'])->name('tugas-pkg.index');
+    Route::get('/tugas-pkg/master', [KarakterController::class, 'index'])->name('tugas-pkg.master');
+    Route::post('/tugas-pkg/master', [KarakterController::class, 'store'])->name('tugas-pkg.store');
+    Route::match(['put', 'patch'], '/tugas-pkg/master/{karakter}', [KarakterController::class, 'update'])->name('tugas-pkg.update');
+    Route::patch('/tugas-pkg/master/{karakter}/toggle-status', [KarakterController::class, 'toggleStatus'])->name('tugas-pkg.toggle-status');
+    Route::post('/tugas-pkg/master/bulk-action', [KarakterController::class, 'bulkAction'])->name('tugas-pkg.bulk-action');
+    Route::get('/tugas-pkg/verifikasi', [TracerKarakterController::class, 'index'])->name('tugas-pkg.verification');
+    Route::get('/tugas-pkg/verifikasi/rekap', [TracerKarakterController::class, 'rekap'])->name('tugas-pkg.rekap');
+    Route::get('/tugas-pkg/verifikasi/detail-siswa', [TracerKarakterController::class, 'detailSiswa'])->name('tugas-pkg.detail-siswa');
+    Route::get('/tugas-pkg/verifikasi/export', [TracerKarakterController::class, 'export'])->name('tugas-pkg.export');
+    Route::get('/tugas-pkg/verifikasi/template-import', [TracerKarakterController::class, 'downloadTemplate'])->name('tugas-pkg.import.template');
+    Route::post('/tugas-pkg/verifikasi/import', [TracerKarakterController::class, 'import'])->name('tugas-pkg.import');
+    Route::get('/tugas-pkg/verifikasi/{siswa}/check', [TracerKarakterController::class, 'checkKarakter'])->name('tugas-pkg.check');
+    Route::post('/tugas-pkg/verifikasi/{siswa}/check', [TracerKarakterController::class, 'storeCheck'])->name('tugas-pkg.store-check');
+    Route::get('/tugas-pkg/verifikasi/{siswa}/history', [TracerKarakterController::class, 'history'])->name('tugas-pkg.history');
+    Route::post('/tugas-pkg/verifikasi/bulk-action', [TracerKarakterController::class, 'bulkAction'])->name('tugas-pkg.verification.bulk-action');
+    Route::put('/tugas-pkg/verifikasi/{checklist}/verify', [SiswaKarakterController::class, 'verify'])->name('tugas-pkg.verification.verify');
+    Route::put('/tugas-pkg/verifikasi/{checklist}/unverify', [SiswaKarakterController::class, 'unverify'])->name('tugas-pkg.verification.unverify');
+    Route::delete('/tugas-pkg/verifikasi/{checklist}', [SiswaKarakterController::class, 'destroy'])->name('tugas-pkg.verification.destroy');
+    Route::post('/tugas-pkg/verifikasi/{id}/restore', [SiswaKarakterController::class, 'restore'])->name('tugas-pkg.verification.restore');
 
     // Legacy task routes redirected to Tugas PKG
     Route::get('/pr', function () {
@@ -712,37 +768,37 @@ Route::middleware('auth')->group(function () {
 
     // Settings
     Route::middleware('admin.only')->group(function () {
-        Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
-        Route::put('/settings', [App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
-        Route::put('/settings/general', [App\Http\Controllers\SettingsController::class, 'updateGeneral'])->name('settings.update.general');
-        Route::put('/settings/id-card', [App\Http\Controllers\SettingsController::class, 'updateIdCard'])->name('settings.update.id-card');
-        Route::put('/settings/theme', [App\Http\Controllers\SettingsController::class, 'updateTheme'])->name('settings.update.theme');
-        Route::put('/settings/kelas', [App\Http\Controllers\SettingsController::class, 'updateTingkat'])->name('settings.update.kelas');
-        Route::put('/settings/footer', [App\Http\Controllers\SettingsController::class, 'updateFooter'])->name('settings.update.footer');
-        Route::put('/settings/permissions', [App\Http\Controllers\SettingsController::class, 'updateDefaultPermissions'])->name('settings.update.permissions');
-        Route::put('/settings/popup', [App\Http\Controllers\SettingsController::class, 'updatePopups'])->name('settings.update.popup');
-        Route::put('/settings/face-attendance', [App\Http\Controllers\SettingsController::class, 'updateFaceAttendance'])->name('settings.update.face-attendance');
-        Route::put('/settings/registration-access', [App\Http\Controllers\SettingsController::class, 'updateRegistrationAccess'])->name('settings.update.registration-access');
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::put('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.update.general');
+        Route::put('/settings/id-card', [SettingsController::class, 'updateIdCard'])->name('settings.update.id-card');
+        Route::put('/settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.update.theme');
+        Route::put('/settings/kelas', [SettingsController::class, 'updateTingkat'])->name('settings.update.kelas');
+        Route::put('/settings/footer', [SettingsController::class, 'updateFooter'])->name('settings.update.footer');
+        Route::put('/settings/permissions', [SettingsController::class, 'updateDefaultPermissions'])->name('settings.update.permissions');
+        Route::put('/settings/popup', [SettingsController::class, 'updatePopups'])->name('settings.update.popup');
+        Route::put('/settings/face-attendance', [SettingsController::class, 'updateFaceAttendance'])->name('settings.update.face-attendance');
+        Route::put('/settings/registration-access', [SettingsController::class, 'updateRegistrationAccess'])->name('settings.update.registration-access');
 
         // Backup & Restore
-        Route::get('/settings/backup', [App\Http\Controllers\BackupController::class, 'index'])->name('settings.backup');
-        Route::post('/settings/backup/database', [App\Http\Controllers\BackupController::class, 'backupDatabase'])->name('settings.backup.database');
-        Route::post('/settings/backup/files', [App\Http\Controllers\BackupController::class, 'backupFiles'])->name('settings.backup.files');
-        Route::post('/settings/backup/all', [App\Http\Controllers\BackupController::class, 'backupAll'])->name('settings.backup.all');
-        Route::get('/settings/backup/download/{filename}', [App\Http\Controllers\BackupController::class, 'download'])->name('settings.backup.download');
-        Route::delete('/settings/backup/{filename}', [App\Http\Controllers\BackupController::class, 'delete'])->name('settings.backup.delete');
+        Route::get('/settings/backup', [BackupController::class, 'index'])->name('settings.backup');
+        Route::post('/settings/backup/database', [BackupController::class, 'backupDatabase'])->name('settings.backup.database');
+        Route::post('/settings/backup/files', [BackupController::class, 'backupFiles'])->name('settings.backup.files');
+        Route::post('/settings/backup/all', [BackupController::class, 'backupAll'])->name('settings.backup.all');
+        Route::get('/settings/backup/download/{filename}', [BackupController::class, 'download'])->name('settings.backup.download');
+        Route::delete('/settings/backup/{filename}', [BackupController::class, 'delete'])->name('settings.backup.delete');
     });
 
     // User Management
-    Route::resource('users', App\Http\Controllers\UserController::class);
-    Route::patch('/users/{user}/toggle-status', [App\Http\Controllers\UserController::class, 'toggleStatus'])->name('users.toggle-status');
-    Route::get('/users-template', [App\Http\Controllers\UserController::class, 'downloadTemplate'])->name('users.template');
-    Route::post('/users-import', [App\Http\Controllers\UserController::class, 'import'])->name('users.import');
+    Route::resource('users', UserController::class);
+    Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::get('/users-template', [UserController::class, 'downloadTemplate'])->name('users.template');
+    Route::post('/users-import', [UserController::class, 'import'])->name('users.import');
 
     // Karakter Management
-    Route::resource('karakter', App\Http\Controllers\KarakterController::class)->except(['create', 'show', 'edit']);
-    Route::patch('/karakter/{karakter}/toggle-status', [App\Http\Controllers\KarakterController::class, 'toggleStatus'])->name('karakter.toggle-status');
-    Route::post('/karakter/bulk-action', [App\Http\Controllers\KarakterController::class, 'bulkAction'])->name('karakter.bulk-action');
+    Route::resource('karakter', KarakterController::class)->except(['create', 'show', 'edit']);
+    Route::patch('/karakter/{karakter}/toggle-status', [KarakterController::class, 'toggleStatus'])->name('karakter.toggle-status');
+    Route::post('/karakter/bulk-action', [KarakterController::class, 'bulkAction'])->name('karakter.bulk-action');
 
     // Pamong (Teachers) & Assignment
     Route::get('/pamong', [PamongController::class, 'index'])->name('pamong.index');
@@ -770,213 +826,214 @@ Route::middleware('auth')->group(function () {
     Route::get('/pamong/students-by-kelas', [PamongController::class, 'getStudentsByKelas'])->name('pamong.students-by-kelas');
     Route::post('/pamong/{pamong}/reset-password', [PamongController::class, 'resetPassword'])->name('pamong.reset-password');
     Route::post('/pamong/{pamong}/reset-password-custom', [PamongController::class, 'resetPasswordCustom'])->name('pamong.reset-password-custom');
-    
+
     // Pamong Chat
-    Route::get('/pamong-chat', [App\Http\Controllers\PamongChatController::class, 'index'])->name('pamong.chat.index');
-    Route::get('/pamong-chat/messages', [App\Http\Controllers\PamongChatController::class, 'getMessages'])->name('pamong.chat.messages');
-    Route::post('/pamong-chat/send', [App\Http\Controllers\PamongChatController::class, 'sendMessage'])->name('pamong.chat.send');
-    Route::get('/pamong-chat/unread', [App\Http\Controllers\PamongChatController::class, 'getUnreadCount'])->name('pamong.chat.unread');
-    Route::get('/pamong-chat/unread-counts', [App\Http\Controllers\PamongChatController::class, 'getUnreadCountPerContact'])->name('pamong.chat.unread.counts');
-    Route::get('/pamong-chat/broadcast', [App\Http\Controllers\PamongChatController::class, 'broadcastForm'])->name('pamong.chat.broadcast');
-    Route::post('/pamong-chat/broadcast', [App\Http\Controllers\PamongChatController::class, 'sendBroadcast'])->name('pamong.chat.broadcast.send');
-    Route::post('/pamong-chat/broadcast/send', [App\Http\Controllers\PamongChatController::class, 'sendBroadcast'])->name('pamong.chat.broadcast.send-legacy');
-    Route::post('/pamong-chat/groups', [App\Http\Controllers\PamongChatController::class, 'storeGroup'])
+    Route::get('/pamong-chat', [PamongChatController::class, 'index'])->name('pamong.chat.index');
+    Route::get('/pamong-chat/messages', [PamongChatController::class, 'getMessages'])->name('pamong.chat.messages');
+    Route::post('/pamong-chat/send', [PamongChatController::class, 'sendMessage'])->name('pamong.chat.send');
+    Route::get('/pamong-chat/unread', [PamongChatController::class, 'getUnreadCount'])->name('pamong.chat.unread');
+    Route::get('/pamong-chat/unread-counts', [PamongChatController::class, 'getUnreadCountPerContact'])->name('pamong.chat.unread.counts');
+    Route::get('/pamong-chat/broadcast', [PamongChatController::class, 'broadcastForm'])->name('pamong.chat.broadcast');
+    Route::post('/pamong-chat/broadcast', [PamongChatController::class, 'sendBroadcast'])->name('pamong.chat.broadcast.send');
+    Route::post('/pamong-chat/broadcast/send', [PamongChatController::class, 'sendBroadcast'])->name('pamong.chat.broadcast.send-legacy');
+    Route::post('/pamong-chat/groups', [PamongChatController::class, 'storeGroup'])
         ->middleware('pamong.permission:group_chat,create')
         ->name('pamong.chat.groups.store');
-    Route::get('/pamong-chat/groups/{chatGroup}', [App\Http\Controllers\PamongChatController::class, 'editGroup'])
+    Route::get('/pamong-chat/groups/{chatGroup}', [PamongChatController::class, 'editGroup'])
         ->middleware('pamong.permission:group_chat,view')
         ->name('pamong.chat.groups.edit');
-    Route::put('/pamong-chat/groups/{chatGroup}', [App\Http\Controllers\PamongChatController::class, 'updateGroup'])
+    Route::put('/pamong-chat/groups/{chatGroup}', [PamongChatController::class, 'updateGroup'])
         ->middleware('pamong.permission:group_chat,view')
         ->name('pamong.chat.groups.update');
-    
+
     // Admin Broadcast
-    Route::get('/admin-broadcast', [App\Http\Controllers\AdminBroadcastController::class, 'index'])->name('admin.broadcast.index');
-    Route::post('/admin-broadcast/siswa', [App\Http\Controllers\AdminBroadcastController::class, 'sendToSiswa'])->name('admin.broadcast.siswa');
-    Route::post('/admin-broadcast/users', [App\Http\Controllers\AdminBroadcastController::class, 'sendToUsers'])->name('admin.broadcast.users');
-    Route::post('/admin-broadcast/pamong-groups', [App\Http\Controllers\AdminBroadcastController::class, 'sendToPamongGroups'])->name('admin.broadcast.pamong-groups');
+    Route::get('/admin-broadcast', [AdminBroadcastController::class, 'index'])->name('admin.broadcast.index');
+    Route::post('/admin-broadcast/siswa', [AdminBroadcastController::class, 'sendToSiswa'])->name('admin.broadcast.siswa');
+    Route::post('/admin-broadcast/users', [AdminBroadcastController::class, 'sendToUsers'])->name('admin.broadcast.users');
+    Route::post('/admin-broadcast/pamong-groups', [AdminBroadcastController::class, 'sendToPamongGroups'])->name('admin.broadcast.pamong-groups');
 
     // Chat Groups (Admin)
-    Route::resource('chat-groups', App\Http\Controllers\ChatGroupController::class);
-    Route::post('/chat-groups/{chatGroup}/add-all-pamong', [App\Http\Controllers\ChatGroupController::class, 'addAllPamong'])->name('chat-groups.add-all-pamong');
-    Route::post('/chat-groups/{chatGroup}/add-all-siswa', [App\Http\Controllers\ChatGroupController::class, 'addAllSiswa'])->name('chat-groups.add-all-siswa');
-    Route::post('/chat-groups/{chatGroup}/add-all-users', [App\Http\Controllers\ChatGroupController::class, 'addAllUsers'])->name('chat-groups.add-all-users');
-    Route::get('/chat-groups/{chatGroup}/messages', [App\Http\Controllers\ChatGroupController::class, 'getMessages'])->name('chat-groups.messages');
-    Route::post('/chat-groups/{chatGroup}/send', [App\Http\Controllers\ChatGroupController::class, 'sendMessage'])->name('chat-groups.send');
-    Route::delete('/chat-groups/{chatGroup}/members/{member}', [App\Http\Controllers\ChatGroupController::class, 'removeMember'])->name('chat-groups.remove-member');
-    Route::post('/admin-broadcast/pamong', [App\Http\Controllers\AdminBroadcastController::class, 'sendToPamong'])->name('admin.broadcast.pamong');
+    Route::resource('chat-groups', ChatGroupController::class);
+    Route::post('/chat-groups/{chatGroup}/add-all-pamong', [ChatGroupController::class, 'addAllPamong'])->name('chat-groups.add-all-pamong');
+    Route::post('/chat-groups/{chatGroup}/add-all-siswa', [ChatGroupController::class, 'addAllSiswa'])->name('chat-groups.add-all-siswa');
+    Route::post('/chat-groups/{chatGroup}/add-all-users', [ChatGroupController::class, 'addAllUsers'])->name('chat-groups.add-all-users');
+    Route::get('/chat-groups/{chatGroup}/messages', [ChatGroupController::class, 'getMessages'])->name('chat-groups.messages');
+    Route::post('/chat-groups/{chatGroup}/send', [ChatGroupController::class, 'sendMessage'])->name('chat-groups.send');
+    Route::delete('/chat-groups/{chatGroup}/members/{member}', [ChatGroupController::class, 'removeMember'])->name('chat-groups.remove-member');
+    Route::post('/admin-broadcast/pamong', [AdminBroadcastController::class, 'sendToPamong'])->name('admin.broadcast.pamong');
 
     // Group Chat routes for Pamong/Admin
-    Route::get('/group-chat', [App\Http\Controllers\UserGroupChatController::class, 'index'])->name('group-chat.index');
-    Route::get('/group-chat/unread', [App\Http\Controllers\UserGroupChatController::class, 'getUnreadCount'])->name('group-chat.unread');
-    Route::get('/group-chat/{chatGroup}/messages', [App\Http\Controllers\UserGroupChatController::class, 'getMessages'])->name('group-chat.messages');
-    Route::post('/group-chat/{chatGroup}/send', [App\Http\Controllers\UserGroupChatController::class, 'sendMessage'])->name('group-chat.send');
-    Route::get('/group-chat/{chatGroup}/info', [App\Http\Controllers\UserGroupChatController::class, 'getGroupInfo'])->name('group-chat.info');
+    Route::get('/group-chat', [UserGroupChatController::class, 'index'])->name('group-chat.index');
+    Route::get('/group-chat/unread', [UserGroupChatController::class, 'getUnreadCount'])->name('group-chat.unread');
+    Route::get('/group-chat/{chatGroup}/messages', [UserGroupChatController::class, 'getMessages'])->name('group-chat.messages');
+    Route::post('/group-chat/{chatGroup}/send', [UserGroupChatController::class, 'sendMessage'])->name('group-chat.send');
+    Route::get('/group-chat/{chatGroup}/info', [UserGroupChatController::class, 'getGroupInfo'])->name('group-chat.info');
 
     // Karakter Harian (browse page)
-    Route::get('/karakter-harian', [App\Http\Controllers\TracerKarakterController::class, 'karakterHarian'])->name('karakter-harian.index');
+    Route::get('/karakter-harian', [TracerKarakterController::class, 'karakterHarian'])->name('karakter-harian.index');
 
     // Tracer Karakter
 
     Route::prefix('tracer-bacaan-quran')->name('quran.')->middleware('pamong.permission:tracer_bacaan_quran,view')->group(function () {
-        Route::get('/', [App\Http\Controllers\QuranReadingController::class, 'operationalIndex'])->name('index');
-        Route::post('/', [App\Http\Controllers\QuranReadingController::class, 'operationalStore'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('store');
-        Route::put('/catatan/{entry}', [App\Http\Controllers\QuranReadingController::class, 'operationalUpdate'])->middleware('pamong.permission:tracer_bacaan_quran,edit')->name('update');
-        Route::patch('/catatan/{entry}/verifikasi', [App\Http\Controllers\QuranReadingController::class, 'verify'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('verify');
-        Route::patch('/catatan/{entry}/tolak', [App\Http\Controllers\QuranReadingController::class, 'reject'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('reject');
-        Route::patch('/progres/{submission}/verifikasi', [App\Http\Controllers\QuranReadingController::class, 'verifyProgress'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('progress.verify');
-        Route::patch('/progres/{submission}/tolak', [App\Http\Controllers\QuranReadingController::class, 'rejectProgress'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('progress.reject');
-        Route::put('/{siswa}/progres-khatam', [App\Http\Controllers\QuranReadingController::class, 'correctKhatamProgress'])->middleware('pamong.permission:tracer_bacaan_quran,edit')->name('progress.correct');
-        Route::post('/lembar-massal', [App\Http\Controllers\QuranReadingController::class, 'bulkSheets'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('bulk-sheets');
-        Route::get('/dokumen-kosong/bulanan', [App\Http\Controllers\QuranReadingController::class, 'blankMonthly'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.monthly');
-        Route::get('/dokumen-kosong/referensi-114-surat', [App\Http\Controllers\QuranReadingController::class, 'blankSurahReference'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.reference');
-        Route::get('/dokumen-kosong/paket-bolak-balik', [App\Http\Controllers\QuranReadingController::class, 'blankDuplex'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.duplex');
-        Route::get('/{siswa}/laporan', [App\Http\Controllers\QuranReadingController::class, 'operationalReport'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('report');
-        Route::get('/{siswa}/lembar-lanjutan', [App\Http\Controllers\QuranReadingController::class, 'operationalSheet'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('sheet');
-        Route::get('/{siswa}/peta-khatam', [App\Http\Controllers\QuranReadingController::class, 'operationalKhatamMap'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('khatam-map');
-        Route::get('/{siswa}/paket-bolak-balik', [App\Http\Controllers\QuranReadingController::class, 'operationalDuplex'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('duplex');
-        Route::post('/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.upload');
-        Route::post('/barcode/identify', [App\Http\Controllers\QuranReadingController::class, 'operationalBarcodeIdentify'])->middleware(['pamong.permission:tracer_bacaan_quran,create', 'throttle:quran-barcode'])->name('barcode.identify');
-        Route::post('/barcode/store', [App\Http\Controllers\QuranReadingController::class, 'operationalBarcodeStore'])->middleware(['pamong.permission:tracer_bacaan_quran,create', 'throttle:quran-barcode'])->name('barcode.store');
-        Route::get('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm');
-        Route::post('/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'operationalScanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm.store');
-        Route::get('/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'operationalScanImage'])->name('scan.image');
-        Route::get('/{siswa}/scan', [App\Http\Controllers\QuranReadingController::class, 'scanForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan');
-        Route::post('/{siswa}/scan', [App\Http\Controllers\QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.upload');
-        Route::get('/{siswa}/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'scanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.confirm');
-        Route::post('/{siswa}/scan/{scan}/konfirmasi', [App\Http\Controllers\QuranReadingController::class, 'scanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.confirm.store');
-        Route::get('/{siswa}/scan/{scan}/gambar', [App\Http\Controllers\QuranReadingController::class, 'scanImage'])->name('scan.legacy.image');
+        Route::get('/', [QuranReadingController::class, 'operationalIndex'])->name('index');
+        Route::get('/ringkasan-wa', [QuranReadingController::class, 'shareSummary'])->middleware('throttle:60,1')->name('share-summary');
+        Route::post('/', [QuranReadingController::class, 'operationalStore'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('store');
+        Route::put('/catatan/{entry}', [QuranReadingController::class, 'operationalUpdate'])->middleware('pamong.permission:tracer_bacaan_quran,edit')->name('update');
+        Route::patch('/catatan/{entry}/verifikasi', [QuranReadingController::class, 'verify'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('verify');
+        Route::patch('/catatan/{entry}/tolak', [QuranReadingController::class, 'reject'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('reject');
+        Route::patch('/progres/{submission}/verifikasi', [QuranReadingController::class, 'verifyProgress'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('progress.verify');
+        Route::patch('/progres/{submission}/tolak', [QuranReadingController::class, 'rejectProgress'])->middleware('pamong.permission:tracer_bacaan_quran,verify')->name('progress.reject');
+        Route::put('/{siswa}/progres-khatam', [QuranReadingController::class, 'correctKhatamProgress'])->middleware('pamong.permission:tracer_bacaan_quran,edit')->name('progress.correct');
+        Route::post('/lembar-massal', [QuranReadingController::class, 'bulkSheets'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('bulk-sheets');
+        Route::get('/dokumen-kosong/bulanan', [QuranReadingController::class, 'blankMonthly'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.monthly');
+        Route::get('/dokumen-kosong/referensi-114-surat', [QuranReadingController::class, 'blankSurahReference'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.reference');
+        Route::get('/dokumen-kosong/paket-bolak-balik', [QuranReadingController::class, 'blankDuplex'])->middleware(['pamong.permission:tracer_bacaan_quran,export', 'throttle:10,1'])->name('blank.duplex');
+        Route::get('/{siswa}/laporan', [QuranReadingController::class, 'operationalReport'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('report');
+        Route::get('/{siswa}/lembar-lanjutan', [QuranReadingController::class, 'operationalSheet'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('sheet');
+        Route::get('/{siswa}/peta-khatam', [QuranReadingController::class, 'operationalKhatamMap'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('khatam-map');
+        Route::get('/{siswa}/paket-bolak-balik', [QuranReadingController::class, 'operationalDuplex'])->middleware('pamong.permission:tracer_bacaan_quran,export')->name('duplex');
+        Route::post('/scan', [QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.upload');
+        Route::post('/barcode/identify', [QuranReadingController::class, 'operationalBarcodeIdentify'])->middleware(['pamong.permission:tracer_bacaan_quran,create', 'throttle:quran-barcode'])->name('barcode.identify');
+        Route::post('/barcode/store', [QuranReadingController::class, 'operationalBarcodeStore'])->middleware(['pamong.permission:tracer_bacaan_quran,create', 'throttle:quran-barcode'])->name('barcode.store');
+        Route::get('/scan/{scan}/konfirmasi', [QuranReadingController::class, 'operationalScanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm');
+        Route::post('/scan/{scan}/konfirmasi', [QuranReadingController::class, 'operationalScanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.confirm.store');
+        Route::get('/scan/{scan}/gambar', [QuranReadingController::class, 'operationalScanImage'])->name('scan.image');
+        Route::get('/{siswa}/scan', [QuranReadingController::class, 'scanForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan');
+        Route::post('/{siswa}/scan', [QuranReadingController::class, 'scanUpload'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.upload');
+        Route::get('/{siswa}/scan/{scan}/konfirmasi', [QuranReadingController::class, 'scanConfirmForm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.confirm');
+        Route::post('/{siswa}/scan/{scan}/konfirmasi', [QuranReadingController::class, 'scanConfirm'])->middleware('pamong.permission:tracer_bacaan_quran,create')->name('scan.legacy.confirm.store');
+        Route::get('/{siswa}/scan/{scan}/gambar', [QuranReadingController::class, 'scanImage'])->name('scan.legacy.image');
     });
 
-    Route::get('/tracer-karakter', [App\Http\Controllers\TracerKarakterController::class, 'index'])->name('tracer-karakter.index');
-    Route::get('/tracer-karakter/rekap', [App\Http\Controllers\TracerKarakterController::class, 'rekap'])->name('tracer-karakter.rekap');
-    Route::get('/tracer-karakter/detail-siswa', [App\Http\Controllers\TracerKarakterController::class, 'detailSiswa'])->name('tracer-karakter.detail-siswa');
-    Route::get('/tracer-karakter/export', [App\Http\Controllers\TracerKarakterController::class, 'export'])->name('tracer-karakter.export');
-    Route::get('/tracer-karakter/template-import', [App\Http\Controllers\TracerKarakterController::class, 'downloadTemplate'])->name('tracer-karakter.import.template');
-    Route::post('/tracer-karakter/import', [App\Http\Controllers\TracerKarakterController::class, 'import'])->name('tracer-karakter.import');
-    Route::get('/tracer-karakter/{siswa}/check', [App\Http\Controllers\TracerKarakterController::class, 'checkKarakter'])->name('tracer-karakter.check');
-    Route::post('/tracer-karakter/{siswa}/check', [App\Http\Controllers\TracerKarakterController::class, 'storeCheck'])->name('tracer-karakter.store-check');
-    Route::get('/tracer-karakter/{siswa}/history', [App\Http\Controllers\TracerKarakterController::class, 'history'])->name('tracer-karakter.history');
-    Route::post('/tracer-karakter/bulk-action', [App\Http\Controllers\TracerKarakterController::class, 'bulkAction'])->name('tracer-karakter.bulk-action');
-    
+    Route::get('/tracer-karakter', [TracerKarakterController::class, 'index'])->name('tracer-karakter.index');
+    Route::get('/tracer-karakter/rekap', [TracerKarakterController::class, 'rekap'])->name('tracer-karakter.rekap');
+    Route::get('/tracer-karakter/detail-siswa', [TracerKarakterController::class, 'detailSiswa'])->name('tracer-karakter.detail-siswa');
+    Route::get('/tracer-karakter/export', [TracerKarakterController::class, 'export'])->name('tracer-karakter.export');
+    Route::get('/tracer-karakter/template-import', [TracerKarakterController::class, 'downloadTemplate'])->name('tracer-karakter.import.template');
+    Route::post('/tracer-karakter/import', [TracerKarakterController::class, 'import'])->name('tracer-karakter.import');
+    Route::get('/tracer-karakter/{siswa}/check', [TracerKarakterController::class, 'checkKarakter'])->name('tracer-karakter.check');
+    Route::post('/tracer-karakter/{siswa}/check', [TracerKarakterController::class, 'storeCheck'])->name('tracer-karakter.store-check');
+    Route::get('/tracer-karakter/{siswa}/history', [TracerKarakterController::class, 'history'])->name('tracer-karakter.history');
+    Route::post('/tracer-karakter/bulk-action', [TracerKarakterController::class, 'bulkAction'])->name('tracer-karakter.bulk-action');
+
     // Karakter Verification (Tugas PKG) - integrated in tracer-karakter
-    Route::put('/karakter/verification/{checklist}/verify', [App\Http\Controllers\SiswaKarakterController::class, 'verify'])->name('karakter.verification.verify');
-    Route::put('/karakter/verification/{checklist}/unverify', [App\Http\Controllers\SiswaKarakterController::class, 'unverify'])->name('karakter.verification.unverify');
-    Route::delete('/karakter/verification/{checklist}', [App\Http\Controllers\SiswaKarakterController::class, 'destroy'])->name('karakter.verification.destroy');
-    Route::post('/karakter/verification/{id}/restore', [App\Http\Controllers\SiswaKarakterController::class, 'restore'])->name('karakter.verification.restore');
+    Route::put('/karakter/verification/{checklist}/verify', [SiswaKarakterController::class, 'verify'])->name('karakter.verification.verify');
+    Route::put('/karakter/verification/{checklist}/unverify', [SiswaKarakterController::class, 'unverify'])->name('karakter.verification.unverify');
+    Route::delete('/karakter/verification/{checklist}', [SiswaKarakterController::class, 'destroy'])->name('karakter.verification.destroy');
+    Route::post('/karakter/verification/{id}/restore', [SiswaKarakterController::class, 'restore'])->name('karakter.verification.restore');
 
     // Cek Kehadiran PKG
-    Route::get('/cek-kehadiran', [App\Http\Controllers\CekKehadiranController::class, 'index'])->name('cek-kehadiran.index');
-    Route::delete('/cek-kehadiran/{transaction}', [App\Http\Controllers\CekKehadiranController::class, 'destroy'])->name('cek-kehadiran.destroy');
+    Route::get('/cek-kehadiran', [CekKehadiranController::class, 'index'])->name('cek-kehadiran.index');
+    Route::delete('/cek-kehadiran/{transaction}', [CekKehadiranController::class, 'destroy'])->name('cek-kehadiran.destroy');
 
     // Calendar
-    Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'adminIndex'])->name('calendar.index');
-    Route::get('/calendar/events', [App\Http\Controllers\CalendarController::class, 'adminEvents'])->name('calendar.events');
-    Route::get('/calendar/date-stats', [App\Http\Controllers\CalendarController::class, 'getDateStats'])->name('calendar.date-stats');
-    Route::get('/calendar/share-text', [App\Http\Controllers\CalendarController::class, 'adminShareText'])->name('calendar.share-text');
-    Route::get('/calendar/export', [App\Http\Controllers\CalendarController::class, 'adminExport'])->name('calendar.export');
+    Route::get('/calendar', [CalendarController::class, 'adminIndex'])->name('calendar.index');
+    Route::get('/calendar/events', [CalendarController::class, 'adminEvents'])->name('calendar.events');
+    Route::get('/calendar/date-stats', [CalendarController::class, 'getDateStats'])->name('calendar.date-stats');
+    Route::get('/calendar/share-text', [CalendarController::class, 'adminShareText'])->name('calendar.share-text');
+    Route::get('/calendar/export', [CalendarController::class, 'adminExport'])->name('calendar.export');
 
     // Schedule Reminder (Jadwal Pengingat untuk Kalender)
-    Route::resource('schedule-reminder', App\Http\Controllers\ScheduleReminderController::class);
-    Route::patch('/schedule-reminder/{scheduleReminder}/toggle', [App\Http\Controllers\ScheduleReminderController::class, 'toggle'])->name('schedule-reminder.toggle');
-    Route::get('/schedule-reminder-events', [App\Http\Controllers\ScheduleReminderController::class, 'getEvents'])->name('schedule-reminder.events');
+    Route::resource('schedule-reminder', ScheduleReminderController::class);
+    Route::patch('/schedule-reminder/{scheduleReminder}/toggle', [ScheduleReminderController::class, 'toggle'])->name('schedule-reminder.toggle');
+    Route::get('/schedule-reminder-events', [ScheduleReminderController::class, 'getEvents'])->name('schedule-reminder.events');
 
     // Laporan Penyaksian (Admin/Pamong Management)
-    Route::get('/laporan-penyaksian', [App\Http\Controllers\LaporanPenyaksianController::class, 'index'])->name('laporan-penyaksian.index');
-    Route::delete('/laporan-penyaksian/bulk', [App\Http\Controllers\LaporanPenyaksianController::class, 'bulkDestroy'])->name('laporan-penyaksian.bulk-destroy');
-    Route::get('/laporan-penyaksian/{laporanPenyaksian}', [App\Http\Controllers\LaporanPenyaksianController::class, 'show'])->name('laporan-penyaksian.show');
-    Route::put('/laporan-penyaksian/{laporanPenyaksian}', [App\Http\Controllers\LaporanPenyaksianController::class, 'update'])->name('laporan-penyaksian.update');
-    Route::delete('/laporan-penyaksian/{laporanPenyaksian}', [App\Http\Controllers\LaporanPenyaksianController::class, 'destroy'])->name('laporan-penyaksian.destroy');
+    Route::get('/laporan-penyaksian', [LaporanPenyaksianController::class, 'index'])->name('laporan-penyaksian.index');
+    Route::delete('/laporan-penyaksian/bulk', [LaporanPenyaksianController::class, 'bulkDestroy'])->name('laporan-penyaksian.bulk-destroy');
+    Route::get('/laporan-penyaksian/{laporanPenyaksian}', [LaporanPenyaksianController::class, 'show'])->name('laporan-penyaksian.show');
+    Route::put('/laporan-penyaksian/{laporanPenyaksian}', [LaporanPenyaksianController::class, 'update'])->name('laporan-penyaksian.update');
+    Route::delete('/laporan-penyaksian/{laporanPenyaksian}', [LaporanPenyaksianController::class, 'destroy'])->name('laporan-penyaksian.destroy');
 
     // Pamong Presensi (Presensi Pamong/Guru)
-    Route::get('/pamong-presensi', [App\Http\Controllers\PamongPresensiController::class, 'index'])->name('pamong-presensi.index');
-    Route::get('/pamong-presensi/summary', [App\Http\Controllers\PamongPresensiController::class, 'summary'])->name('pamong-presensi.summary');
-    Route::post('/pamong-presensi', [App\Http\Controllers\PamongPresensiController::class, 'store'])->name('pamong-presensi.store');
-    Route::put('/pamong-presensi/{pamongPresensi}', [App\Http\Controllers\PamongPresensiController::class, 'update'])->name('pamong-presensi.update');
-    Route::delete('/pamong-presensi/{pamongPresensi}', [App\Http\Controllers\PamongPresensiController::class, 'destroy'])->name('pamong-presensi.destroy');
-    Route::post('/pamong-presensi/{pamongPresensi}/verify', [App\Http\Controllers\PamongPresensiController::class, 'verify'])->name('pamong-presensi.verify');
-    Route::get('/pamong-presensi/data', [App\Http\Controllers\PamongPresensiController::class, 'getData'])->name('pamong-presensi.data');
-    Route::get('/pamong-presensi/stats', [App\Http\Controllers\PamongPresensiController::class, 'getStats'])->name('pamong-presensi.stats');
-    Route::get('/pamong-presensi/export', [App\Http\Controllers\PamongPresensiController::class, 'export'])->name('pamong-presensi.export');
-    Route::get('/pamong-presensi/template-import', [App\Http\Controllers\PamongPresensiController::class, 'downloadTemplate'])->name('pamong-presensi.import.template');
-    Route::post('/pamong-presensi/import', [App\Http\Controllers\PamongPresensiController::class, 'import'])->name('pamong-presensi.import');
-    Route::get('/pamong-presensi/card/{user}', [App\Http\Controllers\PamongPresensiController::class, 'card'])->name('pamong-presensi.card');
-    Route::get('/pamong-presensi/card/{user}/print', [App\Http\Controllers\PamongPresensiController::class, 'cardPrint'])->name('pamong-presensi.card.print');
-    Route::post('/pamong-presensi/refresh-qr/{user}', [App\Http\Controllers\PamongPresensiController::class, 'refreshQr'])->name('pamong-presensi.refresh-qr');
+    Route::get('/pamong-presensi', [PamongPresensiController::class, 'index'])->name('pamong-presensi.index');
+    Route::get('/pamong-presensi/summary', [PamongPresensiController::class, 'summary'])->name('pamong-presensi.summary');
+    Route::post('/pamong-presensi', [PamongPresensiController::class, 'store'])->name('pamong-presensi.store');
+    Route::put('/pamong-presensi/{pamongPresensi}', [PamongPresensiController::class, 'update'])->name('pamong-presensi.update');
+    Route::delete('/pamong-presensi/{pamongPresensi}', [PamongPresensiController::class, 'destroy'])->name('pamong-presensi.destroy');
+    Route::post('/pamong-presensi/{pamongPresensi}/verify', [PamongPresensiController::class, 'verify'])->name('pamong-presensi.verify');
+    Route::get('/pamong-presensi/data', [PamongPresensiController::class, 'getData'])->name('pamong-presensi.data');
+    Route::get('/pamong-presensi/stats', [PamongPresensiController::class, 'getStats'])->name('pamong-presensi.stats');
+    Route::get('/pamong-presensi/export', [PamongPresensiController::class, 'export'])->name('pamong-presensi.export');
+    Route::get('/pamong-presensi/template-import', [PamongPresensiController::class, 'downloadTemplate'])->name('pamong-presensi.import.template');
+    Route::post('/pamong-presensi/import', [PamongPresensiController::class, 'import'])->name('pamong-presensi.import');
+    Route::get('/pamong-presensi/card/{user}', [PamongPresensiController::class, 'card'])->name('pamong-presensi.card');
+    Route::get('/pamong-presensi/card/{user}/print', [PamongPresensiController::class, 'cardPrint'])->name('pamong-presensi.card.print');
+    Route::post('/pamong-presensi/refresh-qr/{user}', [PamongPresensiController::class, 'refreshQr'])->name('pamong-presensi.refresh-qr');
 
-    Route::get('/media/sync-proxy', [App\Http\Controllers\RemoteMediaController::class, 'show'])->name('admin.media.sync-proxy');
+    Route::get('/media/sync-proxy', [RemoteMediaController::class, 'show'])->name('admin.media.sync-proxy');
 
     // Admin Data Pull (Tarik data dari server online)
     Route::middleware('admin.only')->group(function () {
-        Route::get('/data-pull', [App\Http\Controllers\DataPullController::class, 'index'])->name('admin.data-pull.index');
-        Route::post('/data-pull/save-settings', [App\Http\Controllers\DataPullController::class, 'saveSettings'])->name('admin.data-pull.save-settings');
-        Route::post('/data-pull/save-export-key', [App\Http\Controllers\DataPullController::class, 'saveExportKey'])->name('admin.data-pull.save-export-key');
-        Route::post('/data-pull/test', [App\Http\Controllers\DataPullController::class, 'testConnection'])->name('admin.data-pull.test');
-        Route::post('/data-pull/pull', [App\Http\Controllers\DataPullController::class, 'pull'])->name('admin.data-pull.pull');
-        Route::post('/data-pull/sync-media', [App\Http\Controllers\DataPullController::class, 'syncMediaOnly'])->name('admin.data-pull.sync-media');
-        Route::get('/data-pull/unavailable-media-report', [App\Http\Controllers\DataPullController::class, 'downloadUnavailableMediaReport'])->name('admin.data-pull.unavailable-media-report');
+        Route::get('/data-pull', [DataPullController::class, 'index'])->name('admin.data-pull.index');
+        Route::post('/data-pull/save-settings', [DataPullController::class, 'saveSettings'])->name('admin.data-pull.save-settings');
+        Route::post('/data-pull/save-export-key', [DataPullController::class, 'saveExportKey'])->name('admin.data-pull.save-export-key');
+        Route::post('/data-pull/test', [DataPullController::class, 'testConnection'])->name('admin.data-pull.test');
+        Route::post('/data-pull/pull', [DataPullController::class, 'pull'])->name('admin.data-pull.pull');
+        Route::post('/data-pull/sync-media', [DataPullController::class, 'syncMediaOnly'])->name('admin.data-pull.sync-media');
+        Route::get('/data-pull/unavailable-media-report', [DataPullController::class, 'downloadUnavailableMediaReport'])->name('admin.data-pull.unavailable-media-report');
     });
 
     // Admin Gamification Management (tanpa prefix admin/ karena sudah di dalam middleware auth)
     Route::prefix('gamification')->name('admin.gamification.')->group(function () {
-        Route::get('/badges', [App\Http\Controllers\GamificationController::class, 'adminBadges'])->name('badges');
-        Route::post('/badges', [App\Http\Controllers\GamificationController::class, 'adminCreateBadge'])->name('badges.store');
-        Route::put('/badges/{badge}', [App\Http\Controllers\GamificationController::class, 'adminUpdateBadge'])->name('badges.update');
-        Route::delete('/badges/{badge}', [App\Http\Controllers\GamificationController::class, 'adminDeleteBadge'])->name('badges.destroy');
-        Route::get('/levels', [App\Http\Controllers\GamificationController::class, 'adminLevels'])->name('levels');
-        Route::post('/levels', [App\Http\Controllers\GamificationController::class, 'adminCreateLevel'])->name('levels.store');
-        Route::put('/levels/{level}', [App\Http\Controllers\GamificationController::class, 'adminUpdateLevel'])->name('levels.update');
-        Route::delete('/levels/{level}', [App\Http\Controllers\GamificationController::class, 'adminDeleteLevel'])->name('levels.destroy');
-        Route::post('/point-config', [App\Http\Controllers\GamificationController::class, 'adminSavePointConfig'])->name('point-config');
-        Route::post('/periods', [App\Http\Controllers\GamificationController::class, 'adminStorePeriod'])->name('periods.store');
-        Route::post('/periods/{period}/activate', [App\Http\Controllers\GamificationController::class, 'adminActivatePeriod'])->name('periods.activate');
-        Route::post('/periods/{period}/close', [App\Http\Controllers\GamificationController::class, 'adminClosePeriod'])->name('periods.close');
-        Route::post('/periods/sync-active', [App\Http\Controllers\GamificationController::class, 'adminSyncActivePeriodTransactions'])->name('periods.sync-active');
-        Route::post('/periods/{period}/sync', [App\Http\Controllers\GamificationController::class, 'adminSyncPeriodTransactions'])->name('periods.sync');
-        Route::post('/periods/{period}/restore-archived-tasks', [App\Http\Controllers\GamificationController::class, 'adminRestoreArchivedPeriodTasks'])->name('periods.restore-archived-tasks');
-        Route::get('/analytics', [App\Http\Controllers\GamificationController::class, 'adminAnalytics'])->name('analytics');
-        Route::get('/export-analytics', [App\Http\Controllers\GamificationController::class, 'exportAnalytics'])->name('export-analytics');
-        Route::post('/adjust-points', [App\Http\Controllers\GamificationController::class, 'adminAdjustPoints'])->name('adjust-points');
-        Route::get('/transactions', [App\Http\Controllers\GamificationController::class, 'adminTransactions'])->name('transactions');
-        Route::put('/transactions/{transaction}', [App\Http\Controllers\GamificationController::class, 'adminUpdateTransaction'])->name('transactions.update');
-        Route::delete('/transactions/{transaction}', [App\Http\Controllers\GamificationController::class, 'adminDeleteTransaction'])->name('transactions.destroy');
-        Route::post('/reset-character-points', [App\Http\Controllers\GamificationController::class, 'adminResetCharacterPoints'])->name('reset-character-points');
-        Route::post('/reset-badges', [App\Http\Controllers\GamificationController::class, 'adminResetBadges'])->name('reset-badges');
-        Route::post('/full-reset', [App\Http\Controllers\GamificationController::class, 'adminFullReset'])->name('full-reset');
+        Route::get('/badges', [GamificationController::class, 'adminBadges'])->name('badges');
+        Route::post('/badges', [GamificationController::class, 'adminCreateBadge'])->name('badges.store');
+        Route::put('/badges/{badge}', [GamificationController::class, 'adminUpdateBadge'])->name('badges.update');
+        Route::delete('/badges/{badge}', [GamificationController::class, 'adminDeleteBadge'])->name('badges.destroy');
+        Route::get('/levels', [GamificationController::class, 'adminLevels'])->name('levels');
+        Route::post('/levels', [GamificationController::class, 'adminCreateLevel'])->name('levels.store');
+        Route::put('/levels/{level}', [GamificationController::class, 'adminUpdateLevel'])->name('levels.update');
+        Route::delete('/levels/{level}', [GamificationController::class, 'adminDeleteLevel'])->name('levels.destroy');
+        Route::post('/point-config', [GamificationController::class, 'adminSavePointConfig'])->name('point-config');
+        Route::post('/periods', [GamificationController::class, 'adminStorePeriod'])->name('periods.store');
+        Route::post('/periods/{period}/activate', [GamificationController::class, 'adminActivatePeriod'])->name('periods.activate');
+        Route::post('/periods/{period}/close', [GamificationController::class, 'adminClosePeriod'])->name('periods.close');
+        Route::post('/periods/sync-active', [GamificationController::class, 'adminSyncActivePeriodTransactions'])->name('periods.sync-active');
+        Route::post('/periods/{period}/sync', [GamificationController::class, 'adminSyncPeriodTransactions'])->name('periods.sync');
+        Route::post('/periods/{period}/restore-archived-tasks', [GamificationController::class, 'adminRestoreArchivedPeriodTasks'])->name('periods.restore-archived-tasks');
+        Route::get('/analytics', [GamificationController::class, 'adminAnalytics'])->name('analytics');
+        Route::get('/export-analytics', [GamificationController::class, 'exportAnalytics'])->name('export-analytics');
+        Route::post('/adjust-points', [GamificationController::class, 'adminAdjustPoints'])->name('adjust-points');
+        Route::get('/transactions', [GamificationController::class, 'adminTransactions'])->name('transactions');
+        Route::put('/transactions/{transaction}', [GamificationController::class, 'adminUpdateTransaction'])->name('transactions.update');
+        Route::delete('/transactions/{transaction}', [GamificationController::class, 'adminDeleteTransaction'])->name('transactions.destroy');
+        Route::post('/reset-character-points', [GamificationController::class, 'adminResetCharacterPoints'])->name('reset-character-points');
+        Route::post('/reset-badges', [GamificationController::class, 'adminResetBadges'])->name('reset-badges');
+        Route::post('/full-reset', [GamificationController::class, 'adminFullReset'])->name('full-reset');
     });
 
     // Admin RPG Quest Management
-    Route::get('/admin/rpg', [App\Http\Controllers\RpgGameController::class, 'adminIndex'])
+    Route::get('/admin/rpg', [RpgGameController::class, 'adminIndex'])
         ->middleware('pamong.permission:game,view')
         ->name('admin.rpg.index');
 
     Route::prefix('rpg-admin')->name('admin.rpg.')->group(function () {
-        Route::post('/maps', [App\Http\Controllers\RpgGameController::class, 'adminStoreMap'])->name('maps.store');
-        Route::post('/maps/{rpgMap}/duplicate', [App\Http\Controllers\RpgGameController::class, 'adminDuplicateMap'])->name('maps.duplicate');
-        Route::put('/maps/{rpgMap}', [App\Http\Controllers\RpgGameController::class, 'adminUpdateMap'])->name('maps.update');
-        Route::delete('/maps/{rpgMap}', [App\Http\Controllers\RpgGameController::class, 'adminDeleteMap'])->name('maps.destroy');
-        Route::get('/maps/{rpgMap}/detail', [App\Http\Controllers\RpgGameController::class, 'adminGetMap'])->name('maps.detail');
-        Route::post('/npcs', [App\Http\Controllers\RpgGameController::class, 'adminStoreNpc'])->name('npcs.store');
-        Route::put('/npcs/{rpgNpc}', [App\Http\Controllers\RpgGameController::class, 'adminUpdateNpc'])->name('npcs.update');
-        Route::delete('/npcs/{rpgNpc}', [App\Http\Controllers\RpgGameController::class, 'adminDeleteNpc'])->name('npcs.destroy');
+        Route::post('/maps', [RpgGameController::class, 'adminStoreMap'])->name('maps.store');
+        Route::post('/maps/{rpgMap}/duplicate', [RpgGameController::class, 'adminDuplicateMap'])->name('maps.duplicate');
+        Route::put('/maps/{rpgMap}', [RpgGameController::class, 'adminUpdateMap'])->name('maps.update');
+        Route::delete('/maps/{rpgMap}', [RpgGameController::class, 'adminDeleteMap'])->name('maps.destroy');
+        Route::get('/maps/{rpgMap}/detail', [RpgGameController::class, 'adminGetMap'])->name('maps.detail');
+        Route::post('/npcs', [RpgGameController::class, 'adminStoreNpc'])->name('npcs.store');
+        Route::put('/npcs/{rpgNpc}', [RpgGameController::class, 'adminUpdateNpc'])->name('npcs.update');
+        Route::delete('/npcs/{rpgNpc}', [RpgGameController::class, 'adminDeleteNpc'])->name('npcs.destroy');
     });
 
     // Admin Certificate / Reward Template Management
     Route::prefix('certificate')->name('admin.certificate.')->group(function () {
-        Route::get('/settings/{level}', [App\Http\Controllers\CertificateController::class, 'settings'])->name('settings');
-        Route::post('/upload/{level}/{rewardType}', [App\Http\Controllers\CertificateController::class, 'uploadTemplate'])->name('upload-template');
-        Route::put('/settings/{level}/{rewardType}', [App\Http\Controllers\CertificateController::class, 'updateTemplateSettings'])->name('update-template');
-        Route::get('/preview/{level}/{rewardType}', [App\Http\Controllers\CertificateController::class, 'preview'])->name('preview');
+        Route::get('/settings/{level}', [CertificateController::class, 'settings'])->name('settings');
+        Route::post('/upload/{level}/{rewardType}', [CertificateController::class, 'uploadTemplate'])->name('upload-template');
+        Route::put('/settings/{level}/{rewardType}', [CertificateController::class, 'updateTemplateSettings'])->name('update-template');
+        Route::get('/preview/{level}/{rewardType}', [CertificateController::class, 'preview'])->name('preview');
     });
 
     // Export Data
     Route::prefix('export')->name('export.')->group(function () {
-        Route::get('/', [App\Http\Controllers\ExportController::class, 'index'])->name('index');
-        Route::get('/presensi', [App\Http\Controllers\ExportController::class, 'presensi'])->name('presensi');
-        Route::get('/rekap-presensi', [App\Http\Controllers\ExportController::class, 'rekapPresensi'])->name('rekap-presensi');
-        Route::get('/leaderboard', [App\Http\Controllers\ExportController::class, 'leaderboard'])->name('leaderboard');
-        Route::get('/period-collection', [App\Http\Controllers\ExportController::class, 'periodCollection'])->name('period-collection');
-        Route::get('/siswa', [App\Http\Controllers\ExportController::class, 'siswa'])->name('siswa');
+        Route::get('/', [ExportController::class, 'index'])->name('index');
+        Route::get('/presensi', [ExportController::class, 'presensi'])->name('presensi');
+        Route::get('/rekap-presensi', [ExportController::class, 'rekapPresensi'])->name('rekap-presensi');
+        Route::get('/leaderboard', [ExportController::class, 'leaderboard'])->name('leaderboard');
+        Route::get('/period-collection', [ExportController::class, 'periodCollection'])->name('period-collection');
+        Route::get('/siswa', [ExportController::class, 'siswa'])->name('siswa');
     });
 
     // PWA Manifest
@@ -1128,18 +1185,18 @@ Route::get('/group-chat-redirect', function () {
 
 // Catatan Rapat / Musyawarah (Kanban Board)
 Route::middleware('auth')->group(function () {
-    Route::get('/catatan-rapat', [App\Http\Controllers\CatatanRapatController::class, 'index'])->name('catatan-rapat.index');
-    Route::post('/catatan-rapat', [App\Http\Controllers\CatatanRapatController::class, 'store'])->name('catatan-rapat.store');
-    Route::put('/catatan-rapat/{catatanRapat}', [App\Http\Controllers\CatatanRapatController::class, 'update'])->name('catatan-rapat.update');
-    Route::delete('/catatan-rapat/{catatanRapat}', [App\Http\Controllers\CatatanRapatController::class, 'destroy'])->name('catatan-rapat.destroy');
-    Route::post('/catatan-rapat/move', [App\Http\Controllers\CatatanRapatController::class, 'move'])->name('catatan-rapat.move');
-    Route::post('/catatan-rapat/settings', [App\Http\Controllers\CatatanRapatController::class, 'updateSettings'])->name('catatan-rapat.settings');
+    Route::get('/catatan-rapat', [CatatanRapatController::class, 'index'])->name('catatan-rapat.index');
+    Route::post('/catatan-rapat', [CatatanRapatController::class, 'store'])->name('catatan-rapat.store');
+    Route::put('/catatan-rapat/{catatanRapat}', [CatatanRapatController::class, 'update'])->name('catatan-rapat.update');
+    Route::delete('/catatan-rapat/{catatanRapat}', [CatatanRapatController::class, 'destroy'])->name('catatan-rapat.destroy');
+    Route::post('/catatan-rapat/move', [CatatanRapatController::class, 'move'])->name('catatan-rapat.move');
+    Route::post('/catatan-rapat/settings', [CatatanRapatController::class, 'updateSettings'])->name('catatan-rapat.settings');
 
     // Persiapan Acara
-    Route::get('/persiapan-acara', [App\Http\Controllers\PersiapanAcaraController::class, 'index'])->name('persiapan-acara.index');
-    Route::post('/persiapan-acara', [App\Http\Controllers\PersiapanAcaraController::class, 'store'])->name('persiapan-acara.store');
-    Route::put('/persiapan-acara/{persiapanAcara}', [App\Http\Controllers\PersiapanAcaraController::class, 'update'])->name('persiapan-acara.update');
-    Route::delete('/persiapan-acara/{persiapanAcara}', [App\Http\Controllers\PersiapanAcaraController::class, 'destroy'])->name('persiapan-acara.destroy');
+    Route::get('/persiapan-acara', [PersiapanAcaraController::class, 'index'])->name('persiapan-acara.index');
+    Route::post('/persiapan-acara', [PersiapanAcaraController::class, 'store'])->name('persiapan-acara.store');
+    Route::put('/persiapan-acara/{persiapanAcara}', [PersiapanAcaraController::class, 'update'])->name('persiapan-acara.update');
+    Route::delete('/persiapan-acara/{persiapanAcara}', [PersiapanAcaraController::class, 'destroy'])->name('persiapan-acara.destroy');
 });
 
 Route::fallback(function () {

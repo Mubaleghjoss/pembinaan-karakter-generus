@@ -280,16 +280,6 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                                 <span class="nav-text">Presensi Siswa</span>
                             </a>
                             @endif
-                            @if(auth()->user()->hasPamongMenuAccess('presensi') || auth()->user()->hasPamongMenuAccess('pamong_presensi'))
-                            <a href="{{ route('presensi.recap') }}" class="nav-item @if(request()->routeIs('presensi.recap')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
-                                <span class="nav-text">Rekap Presensi</span>
-                            </a>
-                            @endif
-                            @if(auth()->user()->hasPamongMenuAccess('presensi'))
-                            <a href="{{ route('presensi.generus-recap') }}" class="nav-item @if(request()->routeIs('presensi.generus-recap')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
-                                <span class="nav-text">Rekap Generus</span>
-                            </a>
-                            @endif
                             @if($canAccessManualAttendanceMenu && ! $canAccessGeneralPresensi)
                             <a href="{{ route('presensi.index', ['tab' => 'input']) }}#input" class="nav-item @if(request()->routeIs('manual-attendance.*') || (request()->routeIs('presensi.index') && request('tab') === 'input')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Input Manual</span>

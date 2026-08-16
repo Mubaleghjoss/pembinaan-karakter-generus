@@ -72,6 +72,46 @@
     </x-tabs>
 
     @include('presensi.partials.edit-modal')
+
+    @if($canCreateManualAttendance ?? false)
+    <div x-cloak x-show="quickModal.open" class="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-6" @keydown.escape.window="closeQuickModal()">
+        <section x-show="quickModal.open" x-transition.opacity.duration.150ms role="dialog" aria-modal="true" aria-labelledby="quick-status-title" class="pkg-modal w-full max-w-md p-5" @click.outside="closeQuickModal()">
+            <div class="flex min-w-0 items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h2 id="quick-status-title" class="text-balance text-lg font-bold text-gray-900 dark:text-white">Input Presensi</h2>
+                    <p class="mt-1 truncate text-sm font-semibold text-gray-700 dark:text-gray-200" x-text="quickModal.student?.nama"></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400"><span x-text="quickModal.student?.nis"></span> &middot; <span x-text="quickModal.student?.kelas"></span></p>
+                </div>
+                <button type="button" @click="closeQuickModal()" class="inline-flex size-11 shrink-0 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Tutup modal input presensi">
+                    <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 6 12 12M18 6 6 18"/></svg>
+                </button>
+            </div>
+
+            <fieldset class="mt-5">
+                <legend class="text-sm font-semibold text-gray-900 dark:text-white">Pilih status</legend>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <template x-for="option in [
+                        { value: 'hadir', label: 'Hadir' },
+                        { value: 'sakit', label: 'Sakit' },
+                        { value: 'izin', label: 'Izin' },
+                        { value: 'alpha', label: 'Alpa', copy: 'Tanpa Keterangan' }
+                    ]" :key="option.value">
+                        <label class="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700" :class="quickModal.status === option.value ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950/30' : ''">
+                            <input data-quick-status-option type="radio" class="pkg-check" x-model="quickModal.status" :value="option.value">
+                            <span class="min-w-0"><strong class="block text-sm" x-text="option.label"></strong><span x-show="option.copy" class="block text-xs text-gray-500 dark:text-gray-400" x-text="option.copy"></span></span>
+                        </label>
+                    </template>
+                </div>
+            </fieldset>
+
+            <p x-show="quickModal.error" x-text="quickModal.error" class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200" role="alert"></p>
+            <div class="mt-5 grid grid-cols-2 gap-2">
+                <button type="button" class="btn-secondary min-h-11 justify-center" @click="closeQuickModal()">Batal</button>
+                <button type="button" class="btn-primary min-h-11 justify-center disabled:opacity-60" :disabled="quickModal.saving" @click="saveQuickStatus()" x-text="quickModal.saving ? 'Menyimpan...' : 'Simpan'"></button>
+            </div>
+        </section>
+    </div>
+    @endif
 </div>
 
 <!-- QR Scanner Modal -->
@@ -110,12 +150,24 @@ function presensiManager() {
         presensiBulkVerify: @json(route('presensi.bulk-verify')),
         presensiVerify: @json(route('presensi.verify', ['presensi' => '__ID__'])),
         presensiUpdate: @json(route('presensi.update', ['presensi' => '__ID__'])),
+        quickStatus: @json(route('presensi.quick-status')),
+        shareSummary: @json(route('presensi.share-summary')),
+        periodPanel: @json(route('presensi.panel.period')),
+        generusPanel: @json(route('presensi.panel.generus')),
     };
 
     return {
         // Common state
         schoolGrades: @json($schoolGradeOptions),
+        kelompokOptions: @json($kelompokOptions),
         pamongOptions: @json($pamongOptions->map(fn ($pamong) => ['id' => $pamong->id, 'name' => $pamong->name ?: $pamong->username])->values()),
+        attendanceCategories: [
+            { key: 'hadir', label: 'Hadir', count: 'hadir_count', panelClass: 'border-green-200 bg-green-50/80 dark:border-green-900/50 dark:bg-green-950/20', textClass: 'text-green-800 dark:text-green-300' },
+            { key: 'sakit', label: 'Sakit', count: 'sakit_count', panelClass: 'border-amber-200 bg-amber-50/80 dark:border-amber-900/50 dark:bg-amber-950/20', textClass: 'text-amber-800 dark:text-amber-300' },
+            { key: 'izin', label: 'Izin', count: 'izin_count', panelClass: 'border-blue-200 bg-blue-50/80 dark:border-blue-900/50 dark:bg-blue-950/20', textClass: 'text-blue-800 dark:text-blue-300' },
+            { key: 'alpha', label: 'Alpa (Tanpa Keterangan)', count: 'alpha_count', panelClass: 'border-red-200 bg-red-50/80 dark:border-red-900/50 dark:bg-red-950/20', textClass: 'text-red-800 dark:text-red-300' },
+            { key: 'belum_hadir', label: 'Belum Presensi', count: 'belum_hadir_count', panelClass: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50', textClass: 'text-slate-700 dark:text-slate-200' }
+        ],
         loading: false,
         bulkVerifying: false,
         editModal: {
@@ -136,10 +188,22 @@ function presensiManager() {
         stats: { total: 0, hadir: 0, terlambat: 0, tidak_hadir: 0, verified: 0 },
         filters: {
             tanggal: initialDate,
-            school_grade: '',
-            pamong_id: '',
+            school_grade: @json(request('school_grade', '')),
+            pamong_id: @json(request('pamong_id', '')),
+            kelompok: @json(request('kelompok', '')),
+            status: @json(request('status', '')),
+            verified: @json(request('verified', ''))
+        },
+        quickModal: {
+            open: false,
+            saving: false,
+            student: null,
             status: '',
-            verified: ''
+            error: ''
+        },
+        reportPanels: {
+            period: { loading: false, loaded: false, html: '', error: '' },
+            generus: { loading: false, loaded: false, html: '', error: '' }
         },
         
         // Manual input state
@@ -163,7 +227,31 @@ function presensiManager() {
         
         async init() {
             await this.loadPresensi();
-            await this.loadStats();
+            const requestedPanel = @json(request('panel'));
+            if (requestedPanel === 'laporan-periode') await this.loadReportPanel('period');
+            if (requestedPanel === 'rekap-generus') await this.loadReportPanel('generus');
+        },
+
+        async loadReportPanel(key) {
+            const panel = this.reportPanels[key];
+            if (!panel || panel.loading || panel.loaded) return;
+            panel.loading = true;
+            panel.error = '';
+            try {
+                const params = new URLSearchParams(window.location.search);
+                params.delete('tab');
+                params.delete('panel');
+                const endpoint = key === 'period' ? endpoints.periodPanel : endpoints.generusPanel;
+                const response = await fetch(`${endpoint}?${params.toString()}`, { headers: { 'Accept': 'text/html' } });
+                if (!response.ok) throw new Error('Panel laporan belum dapat dimuat.');
+                panel.html = await response.text();
+                panel.loaded = true;
+                this.$nextTick(() => window.Alpine?.initTree?.(document.querySelector(`[data-report-panel="${key}"]`)));
+            } catch (error) {
+                panel.error = error.message || 'Panel laporan belum dapat dimuat.';
+            } finally {
+                panel.loading = false;
+            }
         },
         
         async loadPresensi() {
@@ -174,6 +262,7 @@ function presensiManager() {
                     tanggal: this.filters.tanggal,
                     school_grade: this.filters.school_grade,
                     pamong_id: this.filters.pamong_id,
+                    kelompok: this.filters.kelompok,
                     status: this.filters.status,
                     verified: this.filters.verified
                 });
@@ -200,6 +289,7 @@ function presensiManager() {
 
             if (this.filters.school_grade) params.set('school_grade', this.filters.school_grade);
             if (this.filters.pamong_id) params.set('pamong_id', this.filters.pamong_id);
+            if (this.filters.kelompok) params.set('kelompok', this.filters.kelompok);
             if (this.filters.status) params.set('status', this.filters.status);
             if (this.filters.verified !== '') params.set('verified', this.filters.verified);
 
@@ -216,8 +306,8 @@ function presensiManager() {
                 terlambat: 'Terlambat',
                 izin: 'Izin',
                 sakit: 'Sakit',
-                alpha: 'Tidak Hadir',
-                tidak_hadir: 'Tidak Hadir'
+                alpha: 'Alpa (Tanpa Keterangan)',
+                tidak_hadir: 'Alpa (Tanpa Keterangan)'
             };
 
             return labels[status] || '-';
@@ -237,7 +327,8 @@ function presensiManager() {
                 const params = new URLSearchParams({
                     tanggal: this.filters.tanggal,
                     school_grade: this.filters.school_grade,
-                    pamong_id: this.filters.pamong_id
+                    pamong_id: this.filters.pamong_id,
+                    kelompok: this.filters.kelompok
                 });
                 
                 const response = await fetch(`${endpoints.presensiStats}?${params}`, {
@@ -274,7 +365,6 @@ function presensiManager() {
                 
                 if (response.ok) {
                     item.is_verified = true;
-                    this.loadStats();
                     window.showNotification('Presensi berhasil diverifikasi', 'success');
                 }
             } catch (error) {
@@ -304,6 +394,7 @@ function presensiManager() {
                         tanggal: this.filters.tanggal,
                         school_grade: this.filters.school_grade || null,
                         pamong_id: this.filters.pamong_id || null,
+                        kelompok: this.filters.kelompok || null,
                         status: this.filters.status || null,
                         verified: this.filters.verified === '' ? null : this.filters.verified
                     })
@@ -313,7 +404,6 @@ function presensiManager() {
                 if (response.ok && data.success) {
                     window.showNotification(data.message || 'Data presensi berhasil diverifikasi', 'success');
                     await this.loadPresensi();
-                    await this.loadStats();
                 } else {
                     window.showNotification(data.message || 'Gagal verifikasi data presensi', 'error');
                 }
@@ -383,7 +473,6 @@ function presensiManager() {
 
                 this.editModal.open = false;
                 await this.loadPresensi();
-                await this.loadStats();
                 window.showNotification('Presensi berhasil diperbarui', 'success');
             } catch (error) {
                 console.error('Error updating presensi:', error);
@@ -438,27 +527,107 @@ function presensiManager() {
         },
 
         selectSiswaFromRekap(student) {
-            this.selectSiswaForManual(student);
-            this.manualInput.tanggal = this.filters.tanggal || this.manualInput.tanggal;
-            this.manualInput.status = '';
-            this.manualInput.jam_masuk = '';
-            this.manualInput.keterangan = '';
+            this.quickModal = {
+                open: true,
+                saving: false,
+                student,
+                status: ['hadir', 'sakit', 'izin', 'alpha'].includes(student.status) ? student.status : '',
+                error: ''
+            };
+            this.$nextTick(() => document.querySelector('[data-quick-status-option]')?.focus());
+        },
 
-            if (typeof this.setActiveTab === 'function') {
-                this.setActiveTab('input');
-            } else {
-                window.location.hash = 'input';
+        closeQuickModal() {
+            if (this.quickModal.saving) return;
+            this.quickModal.open = false;
+            this.quickModal.error = '';
+        },
+
+        async saveQuickStatus() {
+            if (!this.quickModal.student || !this.quickModal.status) {
+                this.quickModal.error = 'Pilih status presensi terlebih dahulu.';
+                return;
             }
 
-            window.dispatchEvent(new CustomEvent('pkg:open-section', {
-                detail: { id: 'manual-attendance' }
-            }));
+            this.quickModal.saving = true;
+            this.quickModal.error = '';
+            try {
+                const response = await fetch(endpoints.quickStatus, {
+                    method: 'PUT',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify({
+                        siswa_id: this.quickModal.student.id,
+                        tanggal: this.filters.tanggal,
+                        status: this.quickModal.status
+                    })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.message || Object.values(data.errors || {}).flat()[0] || 'Presensi belum dapat disimpan.');
+                this.quickModal.open = false;
+                await this.loadPresensi();
+                window.showNotification(data.message || 'Presensi berhasil diperbarui', 'success');
+            } catch (error) {
+                this.quickModal.error = error.message || 'Presensi belum dapat disimpan.';
+            } finally {
+                this.quickModal.saving = false;
+            }
+        },
 
-            this.$nextTick(() => {
-                const manualPanel = document.querySelector('[data-manual-input-panel]');
-                manualPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                manualPanel?.querySelector('[data-manual-status]')?.focus();
+        shareFilterParams(groupKey = '') {
+            const params = new URLSearchParams({ tanggal: this.filters.tanggal });
+            if (this.filters.school_grade) params.set('school_grade', this.filters.school_grade);
+            if (this.filters.pamong_id) params.set('pamong_id', this.filters.pamong_id);
+            if (this.filters.kelompok) params.set('kelompok', this.filters.kelompok);
+            if (groupKey) params.set('group', groupKey);
+            return params;
+        },
+
+        async attendanceShareText(groupKey = '') {
+            const response = await fetch(`${endpoints.shareSummary}?${this.shareFilterParams(groupKey)}`, {
+                headers: { 'Accept': 'application/json' }
             });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.message || 'Ringkasan belum dapat dibuat.');
+            return data.data.text;
+        },
+
+        async copyAttendanceSummary(groupKey = '') {
+            try {
+                const text = await this.attendanceShareText(groupKey);
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    textarea.remove();
+                }
+                window.showNotification('Teks rekap berhasil disalin', 'success');
+            } catch (error) {
+                window.showNotification(error.message || 'Teks belum dapat disalin', 'error');
+            }
+        },
+
+        async shareAttendanceWhatsApp(groupKey = '') {
+            const target = window.open('about:blank', '_blank');
+            try {
+                const text = await this.attendanceShareText(groupKey);
+                const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                if (target) target.location.href = url;
+                else window.location.href = url;
+            } catch (error) {
+                target?.close();
+                window.showNotification(error.message || 'WhatsApp belum dapat dibuka', 'error');
+            }
         },
         
         resetManualInput() {
@@ -502,7 +671,6 @@ function presensiManager() {
                     window.showNotification('Presensi berhasil disimpan', 'success');
                     this.resetManualInput();
                     this.loadPresensi();
-                    this.loadStats();
                 } else {
                     window.showNotification(data.message || 'Gagal menyimpan presensi', 'error');
                 }
@@ -545,7 +713,6 @@ function presensiManager() {
                 if (response.ok) {
                     window.showNotification(data.message || 'Presensi massal berhasil disimpan', 'success');
                     this.loadPresensi();
-                    this.loadStats();
                 } else {
                     window.showNotification(data.message || 'Gagal menyimpan presensi', 'error');
                 }

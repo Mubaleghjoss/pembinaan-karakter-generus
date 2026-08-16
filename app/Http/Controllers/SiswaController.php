@@ -10,9 +10,8 @@ use App\Http\Requests\Siswa\UpdateSiswaRequest;
 use App\Http\Resources\SiswaResource;
 use App\Imports\SiswaImport;
 use App\Models\Level;
-use App\Models\Siswa;
-use App\Models\SiswaPoint;
 use App\Models\PamongSiswa;
+use App\Models\Siswa;
 use App\Models\User;
 use App\Models\WebAuthnCredential;
 use App\Services\Contracts\SiswaServiceInterface;
@@ -22,11 +21,17 @@ use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
  * Controller untuk mengelola Siswa (Web)
@@ -40,7 +45,7 @@ class SiswaController extends Controller
         protected SiswaServiceInterface $siswaService
     ) {
         $this->middleware('auth');
-        
+
         // Apply pamong permission middleware for CRUD operations
         $this->middleware('pamong.permission:siswa,view')->only(['index', 'getList', 'printCards']);
         $this->middleware('pamong.permission:siswa,create')->only(['create', 'store']);
@@ -60,8 +65,15 @@ class SiswaController extends Controller
             $filters['search'] = $request->search;
         }
 
-        if ($request->school_grade) $filters['school_grade'] = $request->school_grade;
-        if ($request->pamong_id) $filters['pamong_id'] = $request->pamong_id;
+        if ($request->school_grade) {
+            $filters['school_grade'] = $request->school_grade;
+        }
+        if ($request->pamong_id) {
+            $filters['pamong_id'] = $request->pamong_id;
+        }
+        if ($request->filled('kelompok')) {
+            $filters['kelompok'] = $this->normalizeKelompokFilter($request->input('kelompok'));
+        }
 
         $siswa = $this->siswaService->paginate($filters, 20);
         $kelas = collect();
@@ -106,7 +118,7 @@ class SiswaController extends Controller
         // Level distribution
         $levelDistribution = Level::active()->orderBy('level')
             ->withCount(['siswaPoints as siswa_count' => function ($q) {
-                $q->whereHas('siswa', fn($s) => $s->active());
+                $q->whereHas('siswa', fn ($s) => $s->active());
             }])
             ->get();
 
@@ -248,7 +260,7 @@ class SiswaController extends Controller
         $request->validate([
             'type' => 'required|in:single,bulk,class',
             'student_id' => 'required_if:type,single|exists:siswa,id',
-            'class_id' => ['required_if:type,class', 'nullable', \Illuminate\Validation\Rule::in(TargetGrade::values())],
+            'class_id' => ['required_if:type,class', 'nullable', Rule::in(TargetGrade::values())],
         ]);
 
         $students = collect();
@@ -390,16 +402,23 @@ class SiswaController extends Controller
         $perPage = in_array($requestedPerPage, ['all', 'semua'], true)
             ? max(1, Siswa::query()->count())
             : max(1, (int) $requestedPerPage);
-        
+
         $filters = [];
-        
+
         if ($request->filled('search')) {
             $filters['search'] = $request->search;
         }
 
-        if ($request->filled('school_grade')) $filters['school_grade'] = $request->school_grade;
-        if ($request->filled('pamong_id')) $filters['pamong_id'] = $request->integer('pamong_id');
-        
+        if ($request->filled('school_grade')) {
+            $filters['school_grade'] = $request->school_grade;
+        }
+        if ($request->filled('pamong_id')) {
+            $filters['pamong_id'] = $request->integer('pamong_id');
+        }
+        if ($request->filled('kelompok')) {
+            $filters['kelompok'] = $this->normalizeKelompokFilter($request->input('kelompok'));
+        }
+
         if ($request->filled('status')) {
             if (in_array((string) $request->status, ['1', '0'], true)) {
                 $filters['is_active'] = $request->status == '1';
@@ -407,7 +426,7 @@ class SiswaController extends Controller
                 $filters['status'] = (string) $request->status;
             }
         }
-        
+
         if ($request->filled('biodata_status')) {
             $filters['biodata_status'] = $request->biodata_status;
         }
@@ -427,6 +446,15 @@ class SiswaController extends Controller
             'data' => SiswaResource::collection($siswa->getCollection())->resolve($request),
             'meta' => $meta,
         ] + $meta);
+    }
+
+    private function normalizeKelompokFilter(?string $value): ?string
+    {
+        if ($value === '__unassigned__') {
+            return $value;
+        }
+
+        return Siswa::normalizeKelompok($value);
     }
 
     public function updateAlumniLifecycle(Request $request, Siswa $siswa): JsonResponse
@@ -514,12 +542,12 @@ class SiswaController extends Controller
      */
     public function downloadTemplate()
     {
-        $export = new SiswaTemplateExport();
+        $export = new SiswaTemplateExport;
         $spreadsheet = $export->create();
         $writer = new Xlsx($spreadsheet);
 
         $filename = 'template_import_siswa.xlsx';
-        
+
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
         }, $filename, [
@@ -540,35 +568,35 @@ class SiswaController extends Controller
         try {
             // Ensure temp directory exists
             $tempDir = storage_path('app/temp');
-            if (!is_dir($tempDir)) {
+            if (! is_dir($tempDir)) {
                 mkdir($tempDir, 0755, true);
             }
 
             // Store uploaded files temporarily with unique names
             $excelFile = $request->file('file');
-            $excelFileName = 'import_' . time() . '_' . uniqid() . '.' . $excelFile->getClientOriginalExtension();
+            $excelFileName = 'import_'.time().'_'.uniqid().'.'.$excelFile->getClientOriginalExtension();
             $excelFile->move($tempDir, $excelFileName);
-            $fullExcelPath = $tempDir . '/' . $excelFileName;
+            $fullExcelPath = $tempDir.'/'.$excelFileName;
 
             // Verify file exists
-            if (!file_exists($fullExcelPath)) {
+            if (! file_exists($fullExcelPath)) {
                 throw new \Exception('File Excel gagal disimpan');
             }
 
             $photoZipPath = null;
             if ($request->hasFile('photos')) {
                 $photoFile = $request->file('photos');
-                $photoFileName = 'photos_' . time() . '_' . uniqid() . '.zip';
+                $photoFileName = 'photos_'.time().'_'.uniqid().'.zip';
                 $photoFile->move($tempDir, $photoFileName);
-                $photoZipPath = $tempDir . '/' . $photoFileName;
-                
-                if (!file_exists($photoZipPath)) {
+                $photoZipPath = $tempDir.'/'.$photoFileName;
+
+                if (! file_exists($photoZipPath)) {
                     throw new \Exception('File ZIP foto gagal disimpan');
                 }
             }
 
             // Process import
-            $importer = new SiswaImport();
+            $importer = new SiswaImport;
             $result = $importer->import($fullExcelPath, $photoZipPath);
 
             // Cleanup temp files
@@ -587,7 +615,7 @@ class SiswaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengimport data: ' . $e->getMessage(),
+                'message' => 'Gagal mengimport data: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -684,7 +712,7 @@ class SiswaController extends Controller
 
         $siswaList = $query->get();
 
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data Akun Siswa');
 
@@ -700,8 +728,8 @@ class SiswaController extends Controller
         // Header style: bold, white text, blue background
         $headerStyle = [
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
-            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '4472C4']],
-            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER, 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4472C4']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
         ];
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray($headerStyle);
         $sheet->getRowDimension(1)->setRowHeight(25);
@@ -710,17 +738,17 @@ class SiswaController extends Controller
         foreach ($siswaList as $index => $siswa) {
             $row = $index + 2;
             $sheet->setCellValue("A{$row}", $index + 1);
-            $sheet->setCellValueExplicit("B{$row}", $siswa->nis, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("B{$row}", $siswa->nis, DataType::TYPE_STRING);
             $sheet->setCellValue("C{$row}", $siswa->nama);
             $sheet->setCellValue("D{$row}", $siswa->jenis_kelamin === 'L' ? 'Laki-laki' : ($siswa->jenis_kelamin === 'P' ? 'Perempuan' : ($siswa->jenis_kelamin ?? '-')));
             $sheet->setCellValue("E{$row}", $siswa->tanggal_lahir ? $siswa->tanggal_lahir->format('d/m/Y') : '-');
             $sheet->setCellValue("F{$row}", $siswa->kelompok_label ?? '-');
-            $sheet->setCellValueExplicit("G{$row}", $siswa->phone ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("G{$row}", $siswa->phone ?? '-', DataType::TYPE_STRING);
             $sheet->setCellValue("H{$row}", $siswa->school_grade_label ?? '-');
             $sheet->setCellValue("I{$row}", $siswa->nama_wali ?? '-');
-            $sheet->setCellValueExplicit("J{$row}", $siswa->phone_wali ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("J{$row}", $siswa->phone_wali ?? '-', DataType::TYPE_STRING);
             $sheet->setCellValue("K{$row}", $siswa->email_wali ?? '-');
-            $sheet->setCellValueExplicit("L{$row}", $siswa->password_plain ?? $siswa->nis, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("L{$row}", $siswa->password_plain ?? $siswa->nis, DataType::TYPE_STRING);
             $sheet->setCellValue("M{$row}", $siswa->is_active ? 'Aktif' : 'Tidak Aktif');
         }
 
@@ -729,7 +757,7 @@ class SiswaController extends Controller
         $borderStyle = [
             'borders' => [
                 'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'borderStyle' => Border::BORDER_THIN,
                     'color' => ['rgb' => '000000'],
                 ],
             ],
@@ -740,7 +768,7 @@ class SiswaController extends Controller
         for ($r = 2; $r <= $lastRow; $r++) {
             if ($r % 2 === 0) {
                 $sheet->getStyle("A{$r}:{$lastCol}{$r}")->getFill()
-                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                    ->setFillType(Fill::FILL_SOLID)
                     ->getStartColor()->setRGB('D9E2F3');
             }
         }
@@ -751,9 +779,9 @@ class SiswaController extends Controller
         }
 
         // Center 'No' column
-        $sheet->getStyle("A2:A{$lastRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("A2:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $filename = 'data_akun_siswa_' . date('Y-m-d_His') . '.xlsx';
+        $filename = 'data_akun_siswa_'.date('Y-m-d_His').'.xlsx';
         $writer = new Xlsx($spreadsheet);
 
         return response()->streamDownload(function () use ($writer) {
@@ -769,7 +797,7 @@ class SiswaController extends Controller
     public function bulkResetPassword(Request $request): JsonResponse
     {
         $request->validate([
-            'school_grade' => ['nullable', 'string', \Illuminate\Validation\Rule::in(TargetGrade::values())],
+            'school_grade' => ['nullable', 'string', Rule::in(TargetGrade::values())],
             'ids' => 'nullable|array',
             'ids.*' => 'exists:siswa,id',
         ]);
@@ -778,15 +806,15 @@ class SiswaController extends Controller
         set_time_limit(300);
 
         $query = Siswa::query()->select(['id', 'nis']);
-        
-        if ($request->has('ids') && !empty($request->ids)) {
+
+        if ($request->has('ids') && ! empty($request->ids)) {
             $query->whereIn('id', $request->ids);
         } elseif ($request->filled('school_grade')) {
             $query->where('school_grade', $request->school_grade);
         }
 
         $count = 0;
-        
+
         // Process in smaller chunks with direct DB update
         $query->chunkById(50, function ($students) use (&$count) {
             foreach ($students as $student) {
@@ -824,7 +852,7 @@ class SiswaController extends Controller
     public function updateOrtuAccount(Request $request, Siswa $siswa)
     {
         $request->validate([
-            'ortu_username' => 'required|string|min:3|max:50|unique:siswa,ortu_username,' . $siswa->id,
+            'ortu_username' => 'required|string|min:3|max:50|unique:siswa,ortu_username,'.$siswa->id,
             'ortu_password' => 'nullable|string|min:4',
         ]);
 
@@ -853,7 +881,7 @@ class SiswaController extends Controller
         ]);
 
         return Builder::create()
-            ->writer(new SvgWriter())
+            ->writer(new SvgWriter)
             ->data($qrData)
             ->size(200)
             ->margin(10)

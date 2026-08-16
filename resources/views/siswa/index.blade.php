@@ -63,6 +63,7 @@ function siswaManager() {
     return {
         // Common state
         schoolGrades: @json($schoolGradeOptions),
+        kelompokOptions: @json($kelompokOptions + ['__unassigned__' => 'Belum Ada Data Kelompok']),
         pamongOptions: @json($pamongOptions->map(fn ($pamong) => ['id' => $pamong->id, 'name' => $pamong->name ?: $pamong->username])->values()),
         loading: false,
         
@@ -87,11 +88,12 @@ function siswaManager() {
         pagination: {},
         currentPage: 1,
         filters: {
-            search: '',
-            school_grade: '',
-            pamong_id: '',
-            status: '',
-            biodata_status: ''
+            search: @json(request('search', '')),
+            school_grade: @json(request('school_grade', '')),
+            pamong_id: @json(request('pamong_id', '')),
+            kelompok: @json(request('kelompok', '')),
+            status: @json(request('status', '')),
+            biodata_status: @json(request('biodata_status', ''))
         },
         
         // QR tab state
@@ -164,6 +166,7 @@ function siswaManager() {
                     search: this.filters.search,
                     school_grade: this.filters.school_grade,
                     pamong_id: this.filters.pamong_id,
+                    kelompok: this.filters.kelompok,
                     status: this.filters.status,
                     biodata_status: this.filters.biodata_status || ''
                 });

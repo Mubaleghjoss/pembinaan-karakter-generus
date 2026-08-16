@@ -92,16 +92,6 @@ class OperationalMobileNavigation
         $add('Presensi', 'attendance', 'Presensi Siswa', 'attendance', route('presensi.index'), $request->routeIs('presensi.index') && $request->query('tab') !== 'input', $canGeneralAttendance);
         $add(
             'Presensi',
-            'attendance_recap',
-            'Rekap Presensi',
-            'report',
-            route('presensi.recap'),
-            $request->routeIs('presensi.recap'),
-            $can('presensi') || $can('pamong_presensi')
-        );
-        $add('Presensi', 'generus_recap', 'Rekap Generus', 'report', route('presensi.generus-recap'), $request->routeIs('presensi.generus-recap'), $can('presensi'));
-        $add(
-            'Presensi',
             'manual_attendance',
             'Input Manual',
             'check',

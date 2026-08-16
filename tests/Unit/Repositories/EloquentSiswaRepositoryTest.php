@@ -7,6 +7,7 @@ use App\Models\Siswa;
 use App\Repositories\EloquentSiswaRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class EloquentSiswaRepositoryTest extends TestCase
@@ -145,6 +146,21 @@ class EloquentSiswaRepositoryTest extends TestCase
         $result = $this->repository->paginate(['kelas_id' => $kelas->id], 10);
 
         $this->assertEquals(5, $result->total());
+    }
+
+    /** @test */
+    public function it_filters_students_by_group_and_includes_unknown_values_as_unassigned(): void
+    {
+        $north = Siswa::factory()->create(['kelompok' => Siswa::KELOMPOK_PANUNGGANGAN_UTARA]);
+        $unknown = Siswa::factory()->create();
+        DB::table('siswa')->where('id', $unknown->id)->update(['kelompok' => 'Kelompok Lama', 'alamat' => 'Kelompok Lama']);
+
+        $northResult = $this->repository->paginate(['kelompok' => Siswa::KELOMPOK_PANUNGGANGAN_UTARA], 20);
+        $unassignedResult = $this->repository->paginate(['kelompok' => '__unassigned__'], 20);
+
+        $this->assertSame([$north->id], $northResult->getCollection()->pluck('id')->all());
+        $this->assertContains($unknown->id, $unassignedResult->getCollection()->pluck('id')->all());
+        $this->assertNotContains($north->id, $unassignedResult->getCollection()->pluck('id')->all());
     }
 
     /** @test */

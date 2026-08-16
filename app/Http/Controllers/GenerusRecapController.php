@@ -15,6 +15,16 @@ class GenerusRecapController extends Controller
 {
     public function index(Request $request)
     {
+        $query = array_merge($request->query(), [
+            'tab' => 'rekap',
+            'panel' => 'rekap-generus',
+        ]);
+
+        return redirect(route('presensi.index', $query).'#rekap-generus');
+    }
+
+    public function panel(Request $request)
+    {
         $user = $request->user();
 
         abort_unless(
@@ -75,7 +85,7 @@ class GenerusRecapController extends Controller
             $selectedKelompok
         );
 
-        return view('presensi.generus-recap', [
+        return view('presensi.partials.generus-report', [
             'rows' => $rows,
             'totals' => $totals,
             'startDate' => $startDate,

@@ -1,5 +1,6 @@
 {{-- Rekap Presensi Tab Content --}}
 <div class="space-y-3 sm:space-y-4">
+    @if(false)
     <x-collapsible-section title="Ringkasan Kehadiran" description="Jumlah kehadiran berdasarkan filter aktif." compact>
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
         <div class="pkg-card-soft rounded-2xl p-3 sm:p-4">
@@ -74,19 +75,30 @@
     </div>
     </x-collapsible-section>
 
+    @endif
+
     <x-collapsible-section title="Filter Rekap" description="Atur tanggal, Pamong, kelas sekolah, status, dan verifikasi." compact>
-    <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6">
+    <div class="pkg-filter-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tanggal</label>
-                <input type="date" x-model="filters.tanggal" @change="loadPresensi(); loadStats()"
+                <input type="date" x-model="filters.tanggal" @change="loadPresensi()"
                        class="w-full pkg-field text-sm">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
-                <select x-model="filters.school_grade" @change="loadPresensi(); loadStats()"
+                <select x-model="filters.school_grade" @change="loadPresensi()"
                         class="w-full pkg-field text-sm">
                     <option value="">Semua Kelas Sekolah</option>
                     <template x-for="(label, value) in schoolGrades" :key="value">
+                        <option :value="value" x-text="label"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Kelompok</label>
+                <select x-model="filters.kelompok" @change="loadPresensi()" class="pkg-field w-full text-sm">
+                    <option value="">Semua Kelompok</option>
+                    <template x-for="(label, value) in kelompokOptions" :key="value">
                         <option :value="value" x-text="label"></option>
                     </template>
                 </select>
@@ -98,7 +110,7 @@
                     <option value="">Semua Status</option>
                     <option value="hadir">Hadir</option>
                     <option value="terlambat">Terlambat</option>
-                    <option value="alpha">Tidak Hadir</option>
+                    <option value="alpha">Alpa (Tanpa Keterangan)</option>
                     <option value="izin">Izin</option>
                     <option value="sakit">Sakit</option>
                 </select>
@@ -113,7 +125,7 @@
                 </select>
             </div>
             <div class="flex items-end">
-                <button @click="loadPresensi(); loadStats();" 
+                <button @click="loadPresensi()"
                         class="pkg-btn-primary w-full py-2 px-4 font-medium">
                     <svg class="w-4 h-4 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -124,23 +136,24 @@
     </div>
     </x-collapsible-section>
 
-    <x-collapsible-section title="Ringkasan Kelompok" description="Siswa yang sudah dan belum hadir pada setiap kelompok." compact>
+    <x-collapsible-section title="Ringkasan Kelompok" description="Pusat pemantauan Hadir, Sakit, Izin, Alpa, dan Belum Presensi." :open="true" compact>
     <div class="space-y-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Ringkasan Kelompok</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Pantau siswa yang sudah hadir dan yang belum hadir per kelompok pada tanggal terpilih.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Status seluruh Generus pada tanggal terpilih, termasuk yang belum memiliki data kelompok.</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pamong</label>
-                <select x-model="filters.pamong_id" @change="loadPresensi(); loadStats()" class="w-full pkg-field text-sm">
+                <select x-model="filters.pamong_id" @change="loadPresensi()" class="w-full pkg-field text-sm">
                     <option value="">Semua Pamong</option>
                     <template x-for="pamong in pamongOptions" :key="pamong.id"><option :value="pamong.id" x-text="pamong.name"></option></template>
                 </select>
             </div>
-            <a href="{{ route('presensi.generus-recap') }}" class="btn-secondary shrink-0 px-3 py-2 text-sm">
-                Rekap Generus PKG
-            </a>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" @click="copyAttendanceSummary()" class="btn-secondary min-h-11 px-3 py-2 text-sm">Salin Semua</button>
+                <button type="button" @click="shareAttendanceWhatsApp()" class="btn-success min-h-11 px-3 py-2 text-sm">Bagikan Semua ke WhatsApp</button>
+            </div>
         </div>
 
         <div x-show="groupSummary.length === 0" class="pkg-empty-state">
@@ -161,9 +174,12 @@
                                 Total <span class="font-semibold" x-text="group.total_siswa"></span> siswa
                             </p>
                         </div>
-                        <div class="text-right text-xs text-gray-500 dark:text-gray-400">
-                            <div>Hadir: <span class="font-semibold text-green-600 dark:text-green-400" x-text="group.hadir_count"></span></div>
-                            <div>Belum hadir: <span class="font-semibold text-amber-600 dark:text-amber-400" x-text="group.belum_hadir_count"></span></div>
+                        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-right text-xs text-gray-500 dark:text-gray-400">
+                            <div>Hadir <span class="font-semibold text-green-600 dark:text-green-400" x-text="group.hadir_count"></span></div>
+                            <div>Sakit <span class="font-semibold text-amber-600 dark:text-amber-400" x-text="group.sakit_count"></span></div>
+                            <div>Izin <span class="font-semibold text-blue-600 dark:text-blue-400" x-text="group.izin_count"></span></div>
+                            <div>Alpa <span class="font-semibold text-red-600 dark:text-red-400" x-text="group.alpha_count"></span></div>
+                            <div class="col-span-2">Belum Presensi <span class="font-semibold" x-text="group.belum_hadir_count"></span></div>
                         </div>
                     </div>
 
@@ -187,15 +203,40 @@
                                                     <span x-show="student.kelas"> - <span x-text="student.kelas"></span></span>
                                                 </p>
                                             </div>
-                                            <div class="text-right">
+                                            <div class="flex flex-col items-end gap-2 text-right">
                                                 <p class="text-xs font-semibold text-green-700 dark:text-green-300" x-text="student.status_label"></p>
                                                 <p class="text-xs text-gray-500 dark:text-gray-400" x-text="student.jam_masuk || '-'"></p>
+                                                @if($canCreateManualAttendance ?? false)
+                                                <button type="button" x-show="!student.has_scan_proof" @click="selectSiswaFromRekap(student)" class="btn-secondary min-h-9 px-2.5 py-1 text-xs">Ubah</button>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
                                 </template>
                             </div>
                         </div>
+
+                        <template x-for="category in attendanceCategories.filter(item => ['sakit', 'izin', 'alpha'].includes(item.key))" :key="category.key">
+                            <div x-show="group[category.key].length > 0" class="rounded-2xl border p-4" :class="category.panelClass">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-sm font-semibold" :class="category.textClass" x-text="category.label"></p>
+                                    <span class="rounded-full bg-white/80 px-2.5 py-1 text-xs font-semibold dark:bg-slate-900/50" :class="category.textClass" x-text="group[category.count]"></span>
+                                </div>
+                                <div class="mt-3 space-y-2">
+                                    <template x-for="student in group[category.key]" :key="category.key + '-' + group.key + '-' + student.id">
+                                        <div class="flex min-w-0 items-start justify-between gap-3 rounded-2xl bg-white/85 px-3 py-2.5 dark:bg-slate-900/60">
+                                            <div class="min-w-0">
+                                                <p class="truncate text-sm font-semibold text-gray-900 dark:text-white" x-text="student.nama"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400"><span x-text="student.nis"></span><span x-show="student.kelas"> - <span x-text="student.kelas"></span></span></p>
+                                            </div>
+                                            @if($canCreateManualAttendance ?? false)
+                                            <button type="button" @click="selectSiswaFromRekap(student)" class="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs">Ubah</button>
+                                            @endif
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
 
                         <div class="rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
                             <div class="flex items-center justify-between gap-3">
@@ -220,10 +261,9 @@
                                                 <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300" x-text="student.status_label"></span>
                                                 @if($canCreateManualAttendance ?? false)
                                                 <button type="button"
-                                                        x-show="student.status === 'belum_hadir'"
                                                         @click="selectSiswaFromRekap(student)"
-                                                        class="btn-secondary px-2.5 py-1 text-xs">
-                                                    Input
+                                                        class="btn-secondary min-h-9 px-2.5 py-1 text-xs">
+                                                    Input/Ubah
                                                 </button>
                                                 @endif
                                             </div>
@@ -233,13 +273,18 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="mt-4 grid grid-cols-2 gap-2 border-t border-gray-200/80 pt-4 dark:border-gray-700/80">
+                        <button type="button" @click="copyAttendanceSummary(group.key)" class="btn-secondary min-h-11 px-3 py-2 text-sm">Salin Teks</button>
+                        <button type="button" @click="shareAttendanceWhatsApp(group.key)" class="btn-success min-h-11 px-3 py-2 text-sm">Bagikan WA</button>
+                    </div>
                 </div>
             </template>
         </div>
     </div>
     </x-collapsible-section>
 
-    <x-collapsible-section title="Data Presensi" description="Daftar presensi dan aksi verifikasi atau koreksi status." compact>
+    <x-collapsible-section title="Data Presensi Harian" description="Daftar rinci, bukti, verifikasi, dan koreksi status." compact>
         <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Data Presensi</h3>
@@ -255,9 +300,6 @@
                 </button>
                 <a :href="exportUrl()" class="btn-secondary px-3 py-2 text-sm">
                     Unduh Excel
-                </a>
-                <a href="{{ route('presensi.recap') }}" class="pkg-btn-secondary px-3 py-2 text-sm">
-                    Lihat Rekap Bulanan
                 </a>
             </div>
         </div>
@@ -369,4 +411,34 @@
             </table>
         </div>
     </x-collapsible-section>
+
+    <div id="laporan-periode" @click.capture="loadReportPanel('period')">
+        <x-collapsible-section title="Laporan Periode Siswa/Pamong" description="Laporan rentang tanggal dimuat hanya saat diperlukan." :open="request('panel') === 'laporan-periode'" compact>
+            <div data-report-panel="period">
+                <div x-show="!reportPanels.period.loaded" class="pkg-card-soft flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Buka rekap periode untuk siswa, Pamong, dan pengurus tanpa meninggalkan halaman Presensi.</p>
+                    <button type="button" @click="loadReportPanel('period')" :disabled="reportPanels.period.loading" class="btn-secondary min-h-11 shrink-0 px-4 py-2">
+                        <span x-show="!reportPanels.period.loading">Muat Laporan Periode</span><span x-show="reportPanels.period.loading">Memuat...</span>
+                    </button>
+                </div>
+                <p x-show="reportPanels.period.error" class="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300" x-text="reportPanels.period.error"></p>
+                <div x-show="reportPanels.period.loaded" x-html="reportPanels.period.html"></div>
+            </div>
+        </x-collapsible-section>
+    </div>
+
+    <div id="rekap-generus" @click.capture="loadReportPanel('generus')">
+        <x-collapsible-section title="Rekap Generus Tugas/RPP" description="Ringkasan Tugas PKG, kehadiran, dan target RPP dimuat saat dibuka." :open="request('panel') === 'rekap-generus'" compact>
+            <div data-report-panel="generus">
+                <div x-show="!reportPanels.generus.loaded" class="pkg-card-soft flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Lihat performa Generus per kelompok dalam panel yang ringkas.</p>
+                    <button type="button" @click="loadReportPanel('generus')" :disabled="reportPanels.generus.loading" class="btn-secondary min-h-11 shrink-0 px-4 py-2">
+                        <span x-show="!reportPanels.generus.loading">Muat Rekap Generus</span><span x-show="reportPanels.generus.loading">Memuat...</span>
+                    </button>
+                </div>
+                <p x-show="reportPanels.generus.error" class="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300" x-text="reportPanels.generus.error"></p>
+                <div x-show="reportPanels.generus.loaded" x-html="reportPanels.generus.html"></div>
+            </div>
+        </x-collapsible-section>
+    </div>
 </div>
