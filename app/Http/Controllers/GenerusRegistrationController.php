@@ -33,6 +33,10 @@ class GenerusRegistrationController extends Controller
     private const DIRECT_TIME_SESSION = 'generus_registration.direct_at';
     private const ACCESS_TTL_SECONDS = 3600;
 
+    // Template pesan WhatsApp untuk tautan daftar ulang. Placeholder: {nama}, {link}.
+    private const WA_TEMPLATE_KEY = 'daftar_ulang_wa_template';
+    private const WA_TEMPLATE_DEFAULT = "Assalamu'alaikum. Mohon daftar ulang / lengkapi biodata dan tanda tangan surat pernyataan untuk ananda {nama} melalui tautan berikut:\n{link}\nTerima kasih.";
+
     public function __construct(
         private readonly GenerusRegistrationService $registrationService,
         private readonly GenerusRegistrationDocumentService $documentService
@@ -315,6 +319,7 @@ class GenerusRegistrationController extends Controller
 
         $theme = ThemeSetting::current();
         $signedCount = $rows->where('signed', true)->count();
+        $waTemplate = \App\Models\Setting::get(self::WA_TEMPLATE_KEY, self::WA_TEMPLATE_DEFAULT);
 
         return view('admin.generus-registration.index', [
             'rows' => $rows,
@@ -322,7 +327,28 @@ class GenerusRegistrationController extends Controller
             'theme' => $theme,
             'totalCount' => $rows->count(),
             'signedCount' => $signedCount,
+            'waTemplate' => $waTemplate,
         ]);
+    }
+
+    /**
+     * Simpan template pesan WhatsApp untuk tautan daftar ulang.
+     * Placeholder yang didukung: {nama} = nama Generus, {link} = tautan daftar ulang.
+     */
+    public function saveWaTemplate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'wa_template' => ['required', 'string', 'max:2000'],
+        ], [
+            'wa_template.required' => 'Teks pesan tidak boleh kosong.',
+            'wa_template.max' => 'Teks pesan terlalu panjang (maks 2000 karakter).',
+        ]);
+
+        \App\Models\Setting::set(self::WA_TEMPLATE_KEY, $validated['wa_template'], 'daftar_ulang');
+
+        return redirect()
+            ->route('admin.generus-registration.index')
+            ->with('success', 'Template pesan WhatsApp berhasil disimpan.');
     }
 
     public function adminPreview(Siswa $siswa): Response

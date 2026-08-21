@@ -224,24 +224,41 @@
                     <svg class="nav-icon mr-3 h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                     <span class="nav-text">Chat</span>
                 </a>
-                <a href="{{ route('siswa.gamification.dashboard') }}" class="nav-item @if(request()->routeIs('siswa.gamification.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors">
-                    <svg class="nav-icon mr-3 h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.95a1 1 0 00.95.69h4.15c.969 0 1.371 1.24.588 1.81l-3.358 2.44a1 1 0 00-.364 1.118l1.286 3.95c.3.921-.755 1.688-1.539 1.118l-3.358-2.44a1 1 0 00-1.176 0l-3.358 2.44c-.784.57-1.838-.197-1.539-1.118l1.286-3.95a1 1 0 00-.364-1.118l-3.358-2.44c-.783-.57-.38-1.81.588-1.81h4.15a1 1 0 00.95-.69l1.286-3.95z"/></svg>
-                    <span class="nav-text">Poin</span>
-                </a>
-                <a href="{{ route('siswa.rpg.index') }}" class="nav-item @if(request()->routeIs('siswa.rpg.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors">
-                    <svg class="nav-icon mr-3 h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.868v4.264a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span class="nav-text">Game</span>
-                </a>
+
+                <div class="my-3 border-t border-gray-200 dark:border-gray-700"></div>
+
+                @php
+                    $siswaExtrasActive = request()->routeIs('siswa.gamification.*')
+                        || request()->routeIs('siswa.rpg.*')
+                        || request()->routeIs('siswa.biometrik');
+                @endphp
+                <!-- Lainnya (opsional): Poin, Game, Biometrik -->
+                <div x-data="{ open: {{ $siswaExtrasActive ? 'true' : 'false' }} }" class="space-y-1">
+                    <button type="button" @click="open = !open" class="nav-item {{ $siswaExtrasActive ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }} flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors">
+                        <span class="flex items-center">
+                            <svg class="nav-icon mr-3 h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+                            <span class="nav-text">Lainnya</span>
+                        </span>
+                        <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="open" x-transition x-cloak class="space-y-1 pl-3">
+                        <a href="{{ route('siswa.gamification.dashboard') }}" class="nav-item @if(request()->routeIs('siswa.gamification.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+                            <span class="nav-text">Poin &amp; Peringkat</span>
+                        </a>
+                        <a href="{{ route('siswa.rpg.index') }}" class="nav-item @if(request()->routeIs('siswa.rpg.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+                            <span class="nav-text">Game 29 Karakter</span>
+                        </a>
+                        <a href="{{ route('siswa.biometrik') }}" class="nav-item @if(request()->routeIs('siswa.biometrik')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+                            <span class="nav-text">Biometrik</span>
+                        </a>
+                    </div>
+                </div>
 
                 <div class="my-3 border-t border-gray-200 dark:border-gray-700"></div>
 
                 <a href="{{ route('siswa.profile') }}" class="nav-item @if(request()->routeIs('siswa.profile') || request()->routeIs('siswa.kartu*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors">
                     <svg class="nav-icon mr-3 h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.88 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <span class="nav-text">Profil</span>
-                </a>
-                <a href="{{ route('siswa.biometrik') }}" class="nav-item @if(request()->routeIs('siswa.biometrik')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors">
-                    <svg class="nav-icon mr-3 h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-2.21 1.79-4 4-4m-8 4a4 4 0 108 0M6 20h12"/></svg>
-                    <span class="nav-text">Biometrik</span>
                 </a>
             </div>
         </nav>

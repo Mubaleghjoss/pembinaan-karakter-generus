@@ -17,6 +17,37 @@
         <div class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200">{{ session('success') }}</div>
     @endif
 
+    @if($errors->any())
+        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+            <ul class="list-disc space-y-1 pl-5">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+        </div>
+    @endif
+
+    <!-- Pengaturan Template Pesan WhatsApp -->
+    <section x-data="{ open: {{ $errors->any() ? 'true' : 'false' }} }" class="mb-6 pkg-panel-lg p-4 sm:p-5">
+        <button type="button" @click="open = !open" class="flex w-full items-center justify-between text-left">
+            <span>
+                <span class="block font-bold text-gray-900 dark:text-white">Template Pesan WhatsApp</span>
+                <span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">Atur teks yang otomatis terisi saat menekan tombol "Kirim WA".</span>
+            </span>
+            <svg class="h-5 w-5 shrink-0 text-gray-400 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div x-show="open" x-cloak class="mt-4">
+            <form method="POST" action="{{ route('admin.generus-registration.wa-template') }}" class="space-y-3">
+                @csrf
+                @method('PUT')
+                <textarea name="wa_template" rows="5" class="pkg-field w-full font-mono text-sm" maxlength="2000" required>{{ old('wa_template', $waTemplate) }}</textarea>
+                <div class="flex flex-wrap items-center gap-3">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Gunakan <code class="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">{nama}</code> untuk nama Generus dan
+                        <code class="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">{link}</code> untuk tautan daftar ulang.
+                    </p>
+                    <button type="submit" class="btn-primary ml-auto px-4 py-2 text-sm font-bold">Simpan Template</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
     <div class="mb-6 grid gap-4 sm:grid-cols-3">
         <div class="pkg-card-soft rounded-2xl p-4">
             <p class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Generus</p>
@@ -100,7 +131,11 @@
                                     <button type="button" class="btn-secondary !px-2.5 !py-1.5 text-xs" data-copy-link="{{ $row['direct_url'] }}">Salin Link</button>
                                     @php
                                         $waTarget = $row['parent_wa'] ?: $row['student_wa'];
-                                        $waMsg = rawurlencode("Assalamu'alaikum. Mohon daftar ulang / lengkapi biodata dan tanda tangan surat pernyataan untuk ananda {$s->nama} melalui tautan berikut:\n{$row['direct_url']}\nTerima kasih.");
+                                        $waMsg = rawurlencode(str_replace(
+                                            ['{nama}', '{link}'],
+                                            [$s->nama, $row['direct_url']],
+                                            $waTemplate
+                                        ));
                                     @endphp
                                     @if($waTarget)
                                         <a href="{{ $waTarget }}?text={{ $waMsg }}" target="_blank" rel="noopener" class="btn-success !px-2.5 !py-1.5 text-xs">Kirim WA</a>

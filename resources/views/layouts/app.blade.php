@@ -180,14 +180,23 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                         $gamificationGroupActive = request()->routeIs('admin.gamification.*')
                             || request()->routeIs('admin.rpg.*');
                         $adminToolsGroupVisible = auth()->user()->isAdmin()
-                            || auth()->user()->hasPamongMenuAccess('teacher_scheduling');
+                            || auth()->user()->hasPamongMenuAccess('teacher_scheduling')
+                            || auth()->user()->hasPamongMenuAccess('export');
                         $adminToolsGroupActive = request()->routeIs('settings.*')
                             || request()->routeIs('users.*')
                             || request()->routeIs('pamong.*')
                             || request()->routeIs('teacher-planning.*')
                             || request()->routeIs('admin.data-pull.*')
                             || request()->routeIs('admin.generus-registration.*')
-                            || request()->routeIs('admin.certificate.*');
+                            || request()->routeIs('admin.certificate.*')
+                            || request()->routeIs('export.*');
+                        // Grup "Data Peserta": gabungkan Siswa, Orang Tua, Binaan Pamong, Pamong.
+                        $peopleGroupVisible = auth()->user()->hasPamongMenuAccess('siswa')
+                            || auth()->user()->isAdmin();
+                        $peopleGroupActive = (request()->routeIs('siswa.*') && ! request()->routeIs('siswa.login'))
+                            || request()->routeIs('ortu-management.*')
+                            || request()->routeIs('kelas.*')
+                            || (request()->routeIs('pamong.*') && ! request()->routeIs('pamong-presensi.*') && ! request()->routeIs('pamong.chat.*'));
                         $contentGroupVisible = auth()->user()->hasPamongMenuAccess('berita')
                             || auth()->user()->hasPamongMenuAccess('materi')
                             || auth()->user()->isAdmin()
@@ -219,43 +228,35 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                     </a>
                     @endif
                     
-                    @if(auth()->user()->hasPamongMenuAccess('siswa'))
-                    <!-- Siswa -->
-                    <a href="{{ route('siswa.index') }}" class="nav-item @if(request()->routeIs('siswa.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                        <svg class="nav-icon w-5 h-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                        <span class="nav-text">Siswa</span>
-                    </a>
-                    @endif
-                    
-                    @if(auth()->user()->hasPamongMenuAccess('siswa'))
-                    <!-- Orang Tua -->
-                    <a href="{{ route('ortu-management.index') }}" class="nav-item @if(request()->routeIs('ortu-management.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                        <svg class="nav-icon w-5 h-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                        <span class="nav-text">Orang Tua</span>
-                    </a>
-                    @endif
-                    
-                    @if(auth()->user()->isAdmin())
-                    <!-- Pamong -->
-                    <a href="{{ route('pamong.index') }}" class="nav-item @if(request()->routeIs('pamong.*') && !request()->routeIs('pamong-presensi.*') && !request()->routeIs('pamong.chat.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                        <svg class="nav-icon w-5 h-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                        <span class="nav-text">Pamong</span>
-                    </a>
-                    @endif
-                    
-                    @if(auth()->user()->hasPamongMenuAccess('siswa'))
-                    <!-- Binaan Pamong -->
-                    <a href="{{ route('kelas.index') }}" class="nav-item @if(request()->routeIs('kelas.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                        <svg class="nav-icon w-5 h-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        <span class="nav-text">Binaan Pamong</span>
-                    </a>
-                    @endif
-
-                    @if(auth()->user()->hasPamongMenuAccess('export'))
-                    <a href="{{ route('export.index') }}" class="nav-item @if(request()->routeIs('export.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                        <svg class="nav-icon w-5 h-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16"/></svg>
-                        <span class="nav-text">Ekspor Data</span>
-                    </a>
+                    @if($peopleGroupVisible)
+                    <!-- Data Peserta (Siswa, Orang Tua, Binaan, Pamong) -->
+                    <div x-data="{ open: {{ $peopleGroupActive ? 'true' : 'false' }} }" class="space-y-1">
+                        <button type="button" @click="open = !open" class="nav-item {{ $peopleGroupActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
+                            <span class="flex items-center">
+                                <svg class="nav-icon w-5 h-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                <span class="nav-text">Data Peserta</span>
+                            </span>
+                            <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="open" x-transition x-cloak class="space-y-1 pl-3">
+                            @if(auth()->user()->hasPamongMenuAccess('siswa'))
+                            <a href="{{ route('siswa.index') }}" class="nav-item @if(request()->routeIs('siswa.*') && ! request()->routeIs('siswa.login')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Siswa / Generus</span>
+                            </a>
+                            <a href="{{ route('ortu-management.index') }}" class="nav-item @if(request()->routeIs('ortu-management.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Orang Tua</span>
+                            </a>
+                            <a href="{{ route('kelas.index') }}" class="nav-item @if(request()->routeIs('kelas.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Binaan Pamong</span>
+                            </a>
+                            @endif
+                            @if(auth()->user()->isAdmin())
+                            <a href="{{ route('pamong.index') }}" class="nav-item @if(request()->routeIs('pamong.*') && !request()->routeIs('pamong-presensi.*') && !request()->routeIs('pamong.chat.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Pamong</span>
+                            </a>
+                            @endif
+                        </div>
+                    </div>
                     @endif
                     
                     <div class="flex items-center gap-2 px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
@@ -495,6 +496,11 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             </a>
                             <a href="{{ route('admin.certificate.settings', 1) }}" class="nav-item @if(request()->routeIs('admin.certificate.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Sertifikat Level</span>
+                            </a>
+                            @endif
+                            @if(auth()->user()->hasPamongMenuAccess('export'))
+                            <a href="{{ route('export.index') }}" class="nav-item @if(request()->routeIs('export.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Ekspor Data</span>
                             </a>
                             @endif
                         </div>
