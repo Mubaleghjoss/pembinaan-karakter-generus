@@ -29,6 +29,8 @@ class GenerusRegistrationController extends Controller
     private const VERIFIED_SISWA_SESSION = 'generus_registration.verified_siswa_id';
     private const VERIFIED_TIME_SESSION = 'generus_registration.verified_at';
     private const ACCOUNT_CREATED_FLASH = 'generus_registration.account_created';
+    private const DIRECT_SISWA_SESSION = 'generus_registration.direct_siswa_id';
+    private const DIRECT_TIME_SESSION = 'generus_registration.direct_at';
     private const ACCESS_TTL_SECONDS = 3600;
 
     public function __construct(
@@ -137,8 +139,9 @@ class GenerusRegistrationController extends Controller
 
     public function storeShort(StoreGenerusRegistrationRequest $request): RedirectResponse
     {
-        $invite = $this->requireSessionInvite($request);
-        $existingSiswa = $this->resolveVerifiedExistingStudent($request);
+        $directSiswa = $this->directLinkStudent($request);
+        $invite = $directSiswa ? null : $this->requireSessionInvite($request);
+        $existingSiswa = $directSiswa ?: $this->resolveVerifiedExistingStudent($request);
         [$registration, $downloadToken, $accountCreated] = $this->registrationService->register(
             $invite,
             $request->validated(),
@@ -146,12 +149,55 @@ class GenerusRegistrationController extends Controller
             $existingSiswa
         );
         $this->clearVerifiedStudent($request);
+        $this->clearDirectLink($request);
         $request->session()->flash(self::ACCOUNT_CREATED_FLASH, $accountCreated);
 
         return redirect()->route('public.generus-registration.short.result', [
             'registration' => $registration,
             'downloadToken' => $downloadToken,
         ]);
+    }
+
+    /**
+     * Tautan langsung khusus per-Generus yang sudah punya akun.
+     * Dibuka dari daftar admin/link WhatsApp; membuka form dalam mode "existing"
+     * dengan biodata ter-preload, tanpa perlu kode akses undangan.
+     */
+    public function directExisting(Request $request, string $token): RedirectResponse
+    {
+        $siswa = $this->studentFromDirectToken($token);
+
+        $request->session()->put([
+            self::DIRECT_SISWA_SESSION => $siswa->id,
+            self::DIRECT_TIME_SESSION => now()->timestamp,
+        ]);
+        $this->clearVerifiedStudent($request);
+
+        return redirect()->route('public.generus-registration.direct.form');
+    }
+
+    public function directForm(Request $request)
+    {
+        $siswa = $this->directLinkStudent($request);
+
+        if (! $siswa) {
+            return redirect()
+                ->route('public.generus-registration.short.index')
+                ->withErrors(['access_code' => 'Tautan pendaftaran tidak valid atau sudah berakhir.']);
+        }
+
+        $theme = ThemeSetting::current();
+        $kelompokOptions = Siswa::kelompokOptions();
+        $schoolGradeOptions = TargetGrade::schoolClassOptions();
+        $initialStudent = $this->studentFormData($siswa);
+
+        return view('public.generus-registration.direct-form', compact(
+            'theme',
+            'kelompokOptions',
+            'schoolGradeOptions',
+            'siswa',
+            'initialStudent'
+        ));
     }
 
     public function show(Request $request, string $token): RedirectResponse
@@ -220,6 +266,101 @@ class GenerusRegistrationController extends Controller
         return $this->documentService->response($this->authenticatedRegistration('ortu'));
     }
 
+    // ================= ADMIN: daftar & tautan daftar-ulang =================
+
+    /**
+     * Tabel admin: seluruh Generus aktif + status surat pernyataan,
+     * nomor WA (klik langsung), dan tautan daftar-ulang per anak.
+     */
+    public function adminIndex(Request $request)
+    {
+        $search = trim((string) $request->query('q', ''));
+
+        $students = Siswa::query()
+            ->where('is_active', true)
+            ->whereIn('status', ['active', 'graduated'])
+            ->when($search !== '', fn ($q) => $q->where(function ($sub) use ($search) {
+                $sub->where('nama', 'like', "%{$search}%")
+                    ->orWhere('nama_wali', 'like', "%{$search}%")
+                    ->orWhere('nis', 'like', "%{$search}%");
+            }))
+            ->orderBy('nama')
+            ->get();
+
+        $registrations = GenerusRegistration::query()
+            ->whereIn('siswa_id', $students->pluck('id'))
+            ->get()
+            ->keyBy('siswa_id');
+
+        $rows = $students->map(function (Siswa $siswa) use ($registrations) {
+            $registration = $registrations->get($siswa->id);
+
+            return [
+                'siswa' => $siswa,
+                'registration' => $registration,
+                'signed' => (bool) $registration?->statement_accepted_at,
+                'direct_url' => route('public.generus-registration.direct', [
+                    'token' => self::directTokenFor($siswa),
+                ]),
+                'student_wa' => $this->waLink($siswa->phone),
+                'parent_wa' => $this->waLink($siswa->phone_wali),
+                'preview_url' => $registration
+                    ? route('admin.generus-registration.preview', ['siswa' => $siswa->id])
+                    : null,
+                'download_url' => $registration
+                    ? route('admin.generus-registration.download', ['siswa' => $siswa->id])
+                    : null,
+            ];
+        });
+
+        $theme = ThemeSetting::current();
+        $signedCount = $rows->where('signed', true)->count();
+
+        return view('admin.generus-registration.index', [
+            'rows' => $rows,
+            'search' => $search,
+            'theme' => $theme,
+            'totalCount' => $rows->count(),
+            'signedCount' => $signedCount,
+        ]);
+    }
+
+    public function adminPreview(Siswa $siswa): Response
+    {
+        return $this->documentService->response($this->registrationForSiswa($siswa), false);
+    }
+
+    public function adminDownload(Siswa $siswa): Response
+    {
+        return $this->documentService->response($this->registrationForSiswa($siswa));
+    }
+
+    private function registrationForSiswa(Siswa $siswa): GenerusRegistration
+    {
+        return GenerusRegistration::query()->where('siswa_id', $siswa->id)->firstOrFail();
+    }
+
+    /**
+     * Ubah nomor telepon lokal menjadi tautan wa.me (format 62...).
+     */
+    private function waLink(?string $phone): ?string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $phone) ?: '';
+        if ($digits === '') {
+            return null;
+        }
+        if (str_starts_with($digits, '0')) {
+            $digits = '62'.substr($digits, 1);
+        } elseif (! str_starts_with($digits, '62')) {
+            $digits = '62'.$digits;
+        }
+        if (strlen($digits) < 10) {
+            return null;
+        }
+
+        return 'https://wa.me/'.$digits;
+    }
+
     private function formResponse(Request $request, GenerusRegistrationInvite $invite, string $formAction)
     {
         $theme = ThemeSetting::current();
@@ -286,6 +427,54 @@ class GenerusRegistrationController extends Controller
             ->where('is_active', true)
             ->where('status', 'active')
             ->findOrFail($id);
+    }
+
+    /**
+     * Buat token tautan langsung yang stabil per-Generus (tidak kedaluwarsa),
+     * memakai APP_KEY sebagai kunci HMAC sehingga tidak bisa ditebak/diubah.
+     */
+    public static function directTokenFor(Siswa $siswa): string
+    {
+        $payload = 'gr-direct:'.$siswa->id;
+        $signature = substr(hash_hmac('sha256', $payload, (string) config('app.key')), 0, 24);
+
+        return $siswa->id.'-'.$signature;
+    }
+
+    private function studentFromDirectToken(string $token): Siswa
+    {
+        if (! preg_match('/^(\d+)-([a-f0-9]{24})$/', $token, $matches)) {
+            abort(404);
+        }
+
+        $id = (int) $matches[1];
+        $expected = substr(hash_hmac('sha256', 'gr-direct:'.$id, (string) config('app.key')), 0, 24);
+        abort_unless(hash_equals($expected, $matches[2]), 404);
+
+        return Siswa::query()
+            ->where('is_active', true)
+            ->where('status', 'active')
+            ->findOrFail($id);
+    }
+
+    private function directLinkStudent(Request $request): ?Siswa
+    {
+        $openedAt = (int) $request->session()->get(self::DIRECT_TIME_SESSION, 0);
+
+        if (! $openedAt || now()->timestamp - $openedAt > self::ACCESS_TTL_SECONDS) {
+            $this->clearDirectLink($request);
+            return null;
+        }
+
+        return Siswa::query()
+            ->where('is_active', true)
+            ->where('status', 'active')
+            ->find($request->session()->get(self::DIRECT_SISWA_SESSION));
+    }
+
+    private function clearDirectLink(Request $request): void
+    {
+        $request->session()->forget([self::DIRECT_SISWA_SESSION, self::DIRECT_TIME_SESSION]);
     }
 
     private function verifiedStudent(Request $request): ?Siswa

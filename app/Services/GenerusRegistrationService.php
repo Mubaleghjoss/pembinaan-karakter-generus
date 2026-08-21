@@ -15,7 +15,7 @@ use Throwable;
 class GenerusRegistrationService
 {
     public function register(
-        GenerusRegistrationInvite $invite,
+        ?GenerusRegistrationInvite $invite,
         array $data,
         Request $request,
         ?Siswa $existingSiswa = null
@@ -45,9 +45,11 @@ class GenerusRegistrationService
                 $parentSignaturePath,
                 $studentSignaturePath
             ) {
-                $lockedInvite = GenerusRegistrationInvite::query()->lockForUpdate()->findOrFail($invite->id);
+                $lockedInvite = $invite
+                    ? GenerusRegistrationInvite::query()->lockForUpdate()->find($invite->id)
+                    : null;
 
-                if (! $lockedInvite->isAvailable()) {
+                if ($invite && (! $lockedInvite || ! $lockedInvite->isAvailable())) {
                     throw ValidationException::withMessages([
                         'invitation' => 'Kode akses sudah tidak berlaku atau kuotanya habis.',
                     ]);
@@ -89,7 +91,7 @@ class GenerusRegistrationService
     }
 
     private function createRegistration(
-        GenerusRegistrationInvite $invite,
+        ?GenerusRegistrationInvite $invite,
         array $data,
         Request $request,
         string $downloadToken,
@@ -133,13 +135,13 @@ class GenerusRegistrationService
         ]);
 
         $registration->update(['siswa_id' => $siswa->id]);
-        $invite->increment('used_count');
+        $invite?->increment('used_count');
 
         return [$registration->fresh('siswa'), true, []];
     }
 
     private function updateExistingRegistration(
-        GenerusRegistrationInvite $invite,
+        ?GenerusRegistrationInvite $invite,
         Siswa $existingSiswa,
         array $data,
         Request $request,
@@ -205,14 +207,14 @@ class GenerusRegistrationService
             $registration->update($payload);
         } else {
             $registration = GenerusRegistration::query()->create($payload);
-            $invite->increment('used_count');
+            $invite?->increment('used_count');
         }
 
         return [$registration->fresh('siswa'), false, $oldSignaturePaths];
     }
 
     private function registrationPayload(
-        GenerusRegistrationInvite $invite,
+        ?GenerusRegistrationInvite $invite,
         array $data,
         Request $request,
         string $publicId,
@@ -222,7 +224,7 @@ class GenerusRegistrationService
     ): array {
         return [
             'public_id' => $publicId,
-            'invite_id' => $invite->id,
+            'invite_id' => $invite?->id,
             'download_token_hash' => hash('sha256', $downloadToken),
             'parent_name' => trim($data['parent_name']),
             'parent_phone' => $this->normalizePhone($data['parent_phone']),

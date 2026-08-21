@@ -168,6 +168,12 @@ Route::post('/daftarpkg/verifikasi-akun', [GenerusRegistrationController::class,
 Route::post('/daftarpkg', [GenerusRegistrationController::class, 'storeShort'])
     ->middleware('throttle:5,1')
     ->name('public.generus-registration.short.store');
+// Tautan langsung per-Generus (akun sudah ada). Dibagikan ke Orang Tua tanpa kode akses.
+Route::get('/daftarpkg/ulang/{token}', [GenerusRegistrationController::class, 'directExisting'])
+    ->middleware('throttle:30,1')
+    ->name('public.generus-registration.direct');
+Route::get('/daftarpkg/ulang-formulir', [GenerusRegistrationController::class, 'directForm'])
+    ->name('public.generus-registration.direct.form');
 Route::get('/daftarpkg/hasil/{registration}/{downloadToken}', [GenerusRegistrationController::class, 'result'])
     ->name('public.generus-registration.short.result');
 Route::get('/daftarpkg/hasil/{registration}/{downloadToken}/pdf', [GenerusRegistrationController::class, 'pdf'])
@@ -770,7 +776,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware('admin.only')->group(function () {
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
-        Route::put('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.update.general');
         Route::put('/settings/id-card', [SettingsController::class, 'updateIdCard'])->name('settings.update.id-card');
         Route::put('/settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.update.theme');
         Route::put('/settings/kelas', [SettingsController::class, 'updateTingkat'])->name('settings.update.kelas');
@@ -779,6 +784,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/settings/popup', [SettingsController::class, 'updatePopups'])->name('settings.update.popup');
         Route::put('/settings/face-attendance', [SettingsController::class, 'updateFaceAttendance'])->name('settings.update.face-attendance');
         Route::put('/settings/registration-access', [SettingsController::class, 'updateRegistrationAccess'])->name('settings.update.registration-access');
+
+        // Daftar Generus + tautan daftar-ulang + status surat pernyataan
+        Route::get('/daftar-ulang-generus', [GenerusRegistrationController::class, 'adminIndex'])->name('admin.generus-registration.index');
+        Route::get('/daftar-ulang-generus/{siswa}/surat', [GenerusRegistrationController::class, 'adminPreview'])->name('admin.generus-registration.preview');
+        Route::get('/daftar-ulang-generus/{siswa}/surat/unduh', [GenerusRegistrationController::class, 'adminDownload'])->name('admin.generus-registration.download');
 
         // Backup & Restore
         Route::get('/settings/backup', [BackupController::class, 'index'])->name('settings.backup');

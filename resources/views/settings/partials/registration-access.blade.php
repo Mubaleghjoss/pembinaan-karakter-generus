@@ -66,6 +66,7 @@
             <div class="flex flex-wrap gap-3">
                 <button type="submit" class="btn-primary min-h-11 px-5 py-2.5 font-bold">Simpan Pengaturan</button>
                 <a href="{{ route('public.generus-registration.short.index') }}" target="_blank" rel="noopener" class="btn-secondary min-h-11 px-5 py-2.5 font-bold">Buka /daftarpkg</a>
+                <a href="{{ route('admin.generus-registration.index') }}" class="btn-success min-h-11 px-5 py-2.5 font-bold">Daftar Ulang &amp; Tautan Generus</a>
             </div>
         </form>
     </section>
