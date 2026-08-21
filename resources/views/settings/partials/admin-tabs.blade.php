@@ -17,6 +17,7 @@
         ['key' => 'user', 'label' => 'Pengguna', 'route' => route('settings.index', ['tab' => 'user']), 'active' => (($tab ?? null) === 'user') || request()->routeIs('users.*'), 'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197'],
         ['key' => 'pamong', 'label' => 'Tim PKG', 'route' => route('settings.index', ['tab' => 'pamong']), 'active' => (($tab ?? null) === 'pamong') || request()->routeIs('pamong.*'), 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857'],
         ['key' => 'backup', 'label' => 'Backup', 'route' => route('settings.index', ['tab' => 'backup']), 'active' => (($tab ?? null) === 'backup') || request()->routeIs('settings.backup*'), 'icon' => 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4'],
+        ['key' => 'daftarulang', 'label' => 'Daftar Ulang', 'route' => route('admin.generus-registration.index'), 'active' => request()->routeIs('admin.generus-registration.*'), 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
     ];
 @endphp
 

@@ -107,6 +107,11 @@ class SettingsController extends Controller
 
             return view('settings.backup', compact('backups', 'tab'));
         }
+
+        // Tab "Daftar Ulang" mengarah ke halaman khusus (tabel WA + status surat pernyataan).
+        if ($tab === 'daftarulang' || $tab === 'daftar_ulang') {
+            return redirect()->route('admin.generus-registration.index');
+        }
         
         $validTabs = ['general', 'id_card', 'theme', 'kelas', 'permissions', 'share_info', 'face_attendance', 'popup', 'registration'];
         $tab = in_array($tab, $validTabs, true) ? $tab : 'general';

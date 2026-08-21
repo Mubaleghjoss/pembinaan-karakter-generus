@@ -186,6 +186,7 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             || request()->routeIs('pamong.*')
                             || request()->routeIs('teacher-planning.*')
                             || request()->routeIs('admin.data-pull.*')
+                            || request()->routeIs('admin.generus-registration.*')
                             || request()->routeIs('admin.certificate.*');
                         $contentGroupVisible = auth()->user()->hasPamongMenuAccess('berita')
                             || auth()->user()->hasPamongMenuAccess('materi')
@@ -483,8 +484,11 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             </a>
                             @endif
                             @if(auth()->user()->isAdmin())
-                            <a href="{{ route('settings.index') }}" class="nav-item @if(request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('pamong.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                            <a href="{{ route('settings.index') }}" class="nav-item @if((request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('pamong.*')) && ! request()->routeIs('admin.generus-registration.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Pengaturan</span>
+                            </a>
+                            <a href="{{ route('admin.generus-registration.index') }}" class="nav-item @if(request()->routeIs('admin.generus-registration.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Daftar Ulang Generus</span>
                             </a>
                             <a href="{{ route('admin.data-pull.index') }}" class="nav-item @if(request()->routeIs('admin.data-pull.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Tarik Data</span>
