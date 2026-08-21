@@ -776,6 +776,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('admin.only')->group(function () {
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::put('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.update.general');
         Route::put('/settings/id-card', [SettingsController::class, 'updateIdCard'])->name('settings.update.id-card');
         Route::put('/settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.update.theme');
         Route::put('/settings/kelas', [SettingsController::class, 'updateTingkat'])->name('settings.update.kelas');
