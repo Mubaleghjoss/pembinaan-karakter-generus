@@ -55,7 +55,22 @@ class SiswaAuthController extends Controller
 
         $siswa = Siswa::where('nis', $request->nis)->first();
 
-        if (! $siswa || ! $siswa->canLogin() || ! Hash::check($request->password, $siswa->password)) {
+        if (! $siswa || ! $siswa->canLogin()) {
+            $this->loginThrottle->recordFailure($request, 'siswa', $identity);
+
+            return redirect()->route('siswa.login')
+                ->withErrors(['nis' => 'NIS atau password salah.'])
+                ->withInput($request->only('nis'));
+        }
+
+        // Default password = NIS. Jika password siswa belum pernah diset (null/kosong),
+        // inisialisasi sekali ke NIS supaya akun lama tetap bisa login memakai NIS.
+        if (blank($siswa->password)) {
+            $siswa->password = $siswa->nis;
+            $siswa->save();
+        }
+
+        if (! Hash::check($request->password, $siswa->password)) {
             $this->loginThrottle->recordFailure($request, 'siswa', $identity);
 
             return redirect()->route('siswa.login')
