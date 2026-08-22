@@ -278,10 +278,15 @@ function initializeScrollReveal(scope = document) {
                 scrollRevealObserver.unobserve(entry.target);
             });
         }, {
-            threshold: 0.14,
-            rootMargin: '0px 0px -12% 0px',
+            // threshold 0: reveal segera setelah bagian mana pun elemen masuk viewport.
+            // (threshold tinggi seperti 0.14 tak pernah tercapai untuk section yang
+            //  lebih tinggi dari layar, sehingga isinya tampak blank.)
+            threshold: 0,
+            rootMargin: '0px 0px -8% 0px',
         });
     }
+
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
 
     let revealIndex = 0;
     const isMobile = window.innerWidth < 768;
@@ -300,7 +305,16 @@ function initializeScrollReveal(scope = document) {
         const stagger = Math.min((revealIndex % 4) * staggerStep, maxDelay);
         element.style.setProperty('--reveal-delay', `${stagger}ms`);
         element.dataset.revealProcessed = 'true';
-        scrollRevealObserver.observe(element);
+
+        // Jika elemen sudah berada (atau dimulai) di dalam viewport saat load,
+        // langsung tampilkan agar tidak ada layar blank menunggu observer.
+        const rect = element.getBoundingClientRect();
+        if (rect.top < viewportHeight && rect.bottom > 0) {
+            element.classList.add('is-visible');
+        } else {
+            scrollRevealObserver.observe(element);
+        }
+
         revealIndex += 1;
     });
 }
