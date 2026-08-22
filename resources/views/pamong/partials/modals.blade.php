@@ -169,6 +169,36 @@
                     Untuk akun pamong yang boleh mengisi presensi semua murid PKG, centang menu <strong>Input Manual</strong>, lalu di detailnya pilih <strong>Semua Siswa</strong>.
                 </div>
 
+                <template x-if="Object.keys(permissionPresets).length > 0">
+                    <div class="mb-5 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                        <div class="mb-3 flex items-start justify-between gap-3">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Paket Cepat</h4>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Klik satu paket untuk mengisi menu &amp; detail izin otomatis. Masih bisa disesuaikan sebelum disimpan.</p>
+                            </div>
+                            <span x-show="activeBulkPresetKey()"
+                                  class="whitespace-nowrap rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+                                  x-text="'Aktif: ' + (permissionPresets[activeBulkPresetKey()]?.label || '')"></span>
+                        </div>
+                        <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                            <template x-for="(preset, key) in permissionPresets" :key="key">
+                                <button type="button"
+                                        @click="applyBulkPreset(key)"
+                                        class="rounded-lg border px-3 py-2.5 text-left transition"
+                                        :class="activeBulkPresetKey() === key ? 'border-emerald-300 bg-emerald-50 ring-2 ring-emerald-200 dark:border-emerald-700 dark:bg-emerald-900/20 dark:ring-emerald-900/40' : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-700 dark:hover:bg-blue-900/20'">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-sm font-semibold text-gray-900 dark:text-white" x-text="preset.label"></span>
+                                        <span class="whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                              :class="activeBulkPresetKey() === key ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'"
+                                              x-text="activeBulkPresetKey() === key ? 'Dipakai' : 'Terapkan'"></span>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400" x-text="preset.description"></p>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
                 <div class="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                     <section>
                         <div class="mb-3 flex items-center justify-between gap-3">

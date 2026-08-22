@@ -136,6 +136,7 @@ function pamongManager() {
         crudOperationLabels: @json($crudOperationLabels),
         defaultMenuPermissions: @json($defaultPermissions['menu_permissions'] ?? []),
         defaultCrudPermissions: @json($defaultPermissions['crud_permissions'] ?? []),
+        permissionPresets: @json($permissionPresets ?? (object) []),
         
         // Bulk permissions modal state
         showBulkPermissionsModal: false,
@@ -674,6 +675,57 @@ function pamongManager() {
             this.bulkMenuPermissions = this.permissionMenusFor(pamong);
             this.bulkCrudPermissions = this.permissionCrudFor(pamong);
             this.showBulkPermissionsModal = true;
+        },
+
+        applyBulkPreset(presetKey) {
+            const preset = this.permissionPresets[presetKey];
+            if (!preset) {
+                return;
+            }
+
+            this.bulkMenuPermissions = [...(preset.menu_permissions || [])];
+
+            const nextCrud = {};
+            Object.entries(preset.crud_permissions || {}).forEach(([module, operations]) => {
+                const allowed = this.availableCrud[module] || [];
+                nextCrud[module] = (Array.isArray(operations) ? operations : []).filter(op => allowed.includes(op));
+            });
+            this.bulkCrudPermissions = nextCrud;
+
+            window.showNotification(`Paket "${preset.label}" diterapkan. Sesuaikan bila perlu, lalu Simpan.`, 'success');
+        },
+
+        activeBulkPresetKey() {
+            const selectedMenus = [...this.bulkMenuPermissions].sort();
+
+            return Object.keys(this.permissionPresets).find((presetKey) => {
+                const preset = this.permissionPresets[presetKey];
+                if (!preset) {
+                    return false;
+                }
+
+                const presetMenus = [...(preset.menu_permissions || [])].sort();
+                if (selectedMenus.length !== presetMenus.length) {
+                    return false;
+                }
+                if (selectedMenus.some((menu, index) => menu !== presetMenus[index])) {
+                    return false;
+                }
+
+                const modules = [...new Set([
+                    ...Object.keys(this.bulkCrudPermissions || {}),
+                    ...Object.keys(preset.crud_permissions || {}),
+                ])];
+
+                return modules.every((module) => {
+                    const currentOps = [...(this.bulkCrudPermissions?.[module] || [])].sort();
+                    const presetOps = [...(preset.crud_permissions?.[module] || [])].sort();
+                    if (currentOps.length !== presetOps.length) {
+                        return false;
+                    }
+                    return currentOps.every((operation, index) => operation === presetOps[index]);
+                });
+            }) || '';
         },
         
         toggleAllMenus() {

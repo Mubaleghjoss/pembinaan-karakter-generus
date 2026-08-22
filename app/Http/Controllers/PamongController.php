@@ -73,12 +73,13 @@ class PamongController extends Controller
         $availableMenus = PamongPermission::getAvailableMenus();
         $availableCrud = PamongPermission::getAvailableCrudOperations();
         $crudOperationLabels = PamongPermission::getCrudOperationLabels();
+        $permissionPresets = OperationalPermissionPreset::all();
         $defaultPermissions = [
             'menu_permissions' => PamongPermission::getDefaultMenuPermissions(),
             'crud_permissions' => PamongPermission::getDefaultCrudPermissions(),
         ];
 
-        return view('pamong.index', compact('teams', 'editingTeam', 'editingMember', 'assignablePamong', 'availableMenus', 'availableCrud', 'crudOperationLabels', 'defaultPermissions'));
+        return view('pamong.index', compact('teams', 'editingTeam', 'editingMember', 'assignablePamong', 'availableMenus', 'availableCrud', 'crudOperationLabels', 'defaultPermissions', 'permissionPresets'));
     }
 
     /**

@@ -439,6 +439,68 @@ class SettingsController extends Controller
     }
 
     /**
+     * Create or update a custom operational permission preset.
+     */
+    public function storePreset(Request $request)
+    {
+        $validated = $request->validate([
+            'preset_key' => 'nullable|string|max:64',
+            'label' => 'required|string|max:120',
+            'description' => 'nullable|string|max:255',
+            'menu_permissions' => 'required|array|min:1',
+            'menu_permissions.*' => 'string',
+            'crud_permissions' => 'nullable|array',
+        ]);
+
+        $key = OperationalPermissionPreset::save(
+            $validated['preset_key'] ?? null,
+            $validated['label'],
+            $validated['description'] ?? null,
+            $validated['menu_permissions'],
+            $validated['crud_permissions'] ?? []
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Paket izin berhasil disimpan.',
+                'preset_key' => $key,
+                'presets' => OperationalPermissionPreset::all(),
+            ]);
+        }
+
+        return redirect()->route('settings.index', ['tab' => 'permissions'])
+            ->with('success', 'Paket izin berhasil disimpan.');
+    }
+
+    /**
+     * Delete a custom preset (or revert a built-in override).
+     */
+    public function destroyPreset(Request $request)
+    {
+        $validated = $request->validate([
+            'preset_key' => 'required|string|max:64',
+        ]);
+
+        $deleted = OperationalPermissionPreset::delete($validated['preset_key']);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => $deleted,
+                'message' => $deleted
+                    ? 'Paket izin dihapus.'
+                    : 'Paket bawaan tanpa perubahan tidak dapat dihapus.',
+                'presets' => OperationalPermissionPreset::all(),
+            ], $deleted ? 200 : 422);
+        }
+
+        return redirect()->route('settings.index', ['tab' => 'permissions'])
+            ->with($deleted ? 'success' : 'error', $deleted
+                ? 'Paket izin dihapus.'
+                : 'Paket bawaan tanpa perubahan tidak dapat dihapus.');
+    }
+
+    /**
      * Update automatic popup settings.
      */
     public function updatePopups(Request $request)

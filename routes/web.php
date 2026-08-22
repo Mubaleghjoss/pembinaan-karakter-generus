@@ -839,6 +839,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/settings/kelas', [SettingsController::class, 'updateTingkat'])->name('settings.update.kelas');
         Route::put('/settings/footer', [SettingsController::class, 'updateFooter'])->name('settings.update.footer');
         Route::put('/settings/permissions', [SettingsController::class, 'updateDefaultPermissions'])->name('settings.update.permissions');
+        Route::post('/settings/permissions/presets', [SettingsController::class, 'storePreset'])->name('settings.permissions.presets.store');
+        Route::delete('/settings/permissions/presets', [SettingsController::class, 'destroyPreset'])->name('settings.permissions.presets.destroy');
         Route::put('/settings/popup', [SettingsController::class, 'updatePopups'])->name('settings.update.popup');
         Route::put('/settings/face-attendance', [SettingsController::class, 'updateFaceAttendance'])->name('settings.update.face-attendance');
         Route::put('/settings/registration-access', [SettingsController::class, 'updateRegistrationAccess'])->name('settings.update.registration-access');

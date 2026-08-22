@@ -30,24 +30,83 @@
             @method('PUT')
 
             <div class="mb-8">
-                <div class="mb-4 flex items-center justify-between">
+                <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h3 class="text-lg font-medium text-gray-900 dark:text-white">Paket Izin Bidang</h3>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Pilih paket siap pakai untuk mempercepat pengaturan default Pengurus PKG, lalu sesuaikan bila perlu.</p>
+                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Klik <strong>Terapkan</strong> untuk memuat paket ke pengaturan default di bawah. Anda juga bisa membuat, mengubah, atau menghapus paket sendiri.</p>
                     </div>
                 </div>
+
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    @foreach($permissionPresets as $presetKey => $preset)
-                    <button type="button"
-                            @click="applyPreset('{{ $presetKey }}')"
-                            class="rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-700 dark:hover:bg-blue-900/20">
-                        <div class="flex items-center justify-between gap-3">
-                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ $preset['label'] }}</h4>
-                            <span class="rounded-full bg-blue-100 px-2 py-1 text-[11px] font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">Terapkan</span>
+                    <template x-for="(preset, key) in presets" :key="key">
+                        <div class="flex flex-col rounded-xl border border-gray-200 bg-white p-4 transition dark:border-gray-700 dark:bg-gray-800"
+                             :class="editingPresetKey === key ? 'ring-2 ring-emerald-300 dark:ring-emerald-900/40' : ''">
+                            <div class="flex items-start justify-between gap-2">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white" x-text="preset.label"></h4>
+                                <span class="whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                      :class="preset.source === 'custom' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200' : (preset.source === 'override' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')"
+                                      x-text="preset.source === 'custom' ? 'Kustom' : (preset.source === 'override' ? 'Bawaan (diubah)' : 'Bawaan')"></span>
+                            </div>
+                            <p class="mt-1 flex-1 text-xs text-gray-500 dark:text-gray-400" x-text="preset.description || 'Tanpa deskripsi.'"></p>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button type="button"
+                                        @click="applyPreset(key)"
+                                        class="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-blue-700">
+                                    Terapkan
+                                </button>
+                                <button type="button"
+                                        @click="editPreset(key)"
+                                        class="rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+                                    Ubah
+                                </button>
+                                <button type="button"
+                                        x-show="preset.deletable"
+                                        @click="deletePreset(key)"
+                                        class="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/40">
+                                    <span x-text="preset.source === 'override' ? 'Kembalikan' : 'Hapus'"></span>
+                                </button>
+                            </div>
                         </div>
-                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ $preset['description'] }}</p>
-                    </button>
-                    @endforeach
+                    </template>
+                </div>
+
+                <!-- Save current selection as preset -->
+                <div class="mt-4 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/60 p-4 dark:border-emerald-800 dark:bg-emerald-900/10">
+                    <div class="flex items-center justify-between gap-2">
+                        <h4 class="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+                            <span x-text="editingPresetKey ? 'Perbarui Paket' : 'Simpan Pilihan Saat Ini sebagai Paket'"></span>
+                        </h4>
+                        <button type="button"
+                                x-show="editingPresetKey"
+                                @click="cancelPresetEdit()"
+                                class="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                            Batal ubah
+                        </button>
+                    </div>
+                    <p class="mt-1 text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                        Centang menu &amp; CRUD di bawah sesuai kebutuhan, beri nama, lalu simpan. Paket akan langsung tersedia di seluruh halaman hak akses (edit pamong &amp; kelola massal).
+                    </p>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nama Paket</label>
+                            <input type="text" x-model="presetLabel" placeholder="mis. Tim Presensi Kelas X"
+                                   class="pkg-field w-full text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Deskripsi (opsional)</label>
+                            <input type="text" x-model="presetDescription" placeholder="Ringkasan singkat paket ini"
+                                   class="pkg-field w-full text-sm">
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center gap-3">
+                        <button type="button"
+                                @click="savePreset()"
+                                :disabled="savingPreset"
+                                class="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60">
+                            <span x-text="editingPresetKey ? 'Simpan Perubahan Paket' : 'Simpan Paket Baru'"></span>
+                        </button>
+                        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="'Menu terpilih: ' + selectedMenus.length"></span>
+                    </div>
                 </div>
             </div>
 
@@ -512,7 +571,146 @@ function permissionsForm() {
         presets: @json($permissionPresets),
         selectedMenus: @json($defaultPermissions['menu_permissions']),
         crudPermissions: @json($defaultPermissions['crud_permissions']),
-        
+
+        // Preset builder state
+        presetLabel: '',
+        presetDescription: '',
+        editingPresetKey: '',
+        savingPreset: false,
+        presetStoreUrl: '{{ route('settings.permissions.presets.store') }}',
+        presetDestroyUrl: '{{ route('settings.permissions.presets.destroy') }}',
+
+        editPreset(presetKey) {
+            const preset = this.presets[presetKey];
+            if (!preset) {
+                return;
+            }
+
+            this.applyPreset(presetKey);
+            this.editingPresetKey = presetKey;
+            this.presetLabel = preset.label || '';
+            this.presetDescription = preset.description || '';
+
+            this.$nextTick(() => {
+                window.showNotification?.(`Mengubah paket "${preset.label}". Sesuaikan lalu Simpan Perubahan.`, 'info');
+            });
+        },
+
+        cancelPresetEdit() {
+            this.editingPresetKey = '';
+            this.presetLabel = '';
+            this.presetDescription = '';
+        },
+
+        crudPermissionsForSave() {
+            const payload = {};
+            Object.entries(this.crudPermissions || {}).forEach(([module, ops]) => {
+                const allowed = this.availableCrud[module] || [];
+                const clean = (Array.isArray(ops) ? ops : []).filter(op => allowed.includes(op));
+                if (clean.length > 0) {
+                    payload[module] = clean;
+                }
+            });
+            return payload;
+        },
+
+        async savePreset() {
+            if (this.savingPreset) {
+                return;
+            }
+            if (!this.presetLabel.trim()) {
+                window.showNotification?.('Beri nama paket terlebih dahulu', 'warning');
+                return;
+            }
+            if (this.selectedMenus.length === 0) {
+                window.showNotification?.('Pilih minimal satu menu untuk paket ini', 'warning');
+                return;
+            }
+
+            this.savingPreset = true;
+            try {
+                const response = await fetch(this.presetStoreUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+                    },
+                    body: JSON.stringify({
+                        preset_key: this.editingPresetKey || null,
+                        label: this.presetLabel.trim(),
+                        description: this.presetDescription.trim(),
+                        menu_permissions: this.selectedMenus,
+                        crud_permissions: this.crudPermissionsForSave()
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.presets = data.presets || this.presets;
+                    this.editingPresetKey = '';
+                    this.presetLabel = '';
+                    this.presetDescription = '';
+                    window.showNotification?.(data.message || 'Paket izin berhasil disimpan', 'success');
+                } else {
+                    window.showNotification?.(data.message || 'Gagal menyimpan paket', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving preset:', error);
+                window.showNotification?.('Terjadi kesalahan saat menyimpan paket', 'error');
+            } finally {
+                this.savingPreset = false;
+            }
+        },
+
+        async deletePreset(presetKey) {
+            const preset = this.presets[presetKey];
+            if (!preset) {
+                return;
+            }
+
+            const isOverride = preset.source === 'override';
+            const confirmed = window.showConfirmation
+                ? await window.showConfirmation(
+                    isOverride
+                        ? `Kembalikan paket "${preset.label}" ke pengaturan bawaan?`
+                        : `Hapus paket "${preset.label}"? Tindakan ini tidak dapat dibatalkan.`,
+                    {
+                        title: isOverride ? 'Kembalikan paket bawaan' : 'Hapus paket',
+                        confirmText: isOverride ? 'Kembalikan' : 'Hapus',
+                        tone: isOverride ? 'warning' : 'danger'
+                    })
+                : confirm(isOverride ? `Kembalikan "${preset.label}" ke bawaan?` : `Hapus "${preset.label}"?`);
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetch(this.presetDestroyUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+                    },
+                    body: JSON.stringify({ preset_key: presetKey })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.presets = data.presets || this.presets;
+                    if (this.editingPresetKey === presetKey) {
+                        this.cancelPresetEdit();
+                    }
+                    window.showNotification?.(data.message || 'Paket dihapus', 'success');
+                } else {
+                    window.showNotification?.(data.message || 'Gagal menghapus paket', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting preset:', error);
+                window.showNotification?.('Terjadi kesalahan saat menghapus paket', 'error');
+            }
+        },
+
         getCrudLabel(operation) {
             const labels = {
                 'view': 'Lihat',
