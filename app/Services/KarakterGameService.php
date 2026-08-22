@@ -145,4 +145,20 @@ class KarakterGameService
 
         return [$correct, $ms];
     }
+
+    /**
+     * Daftar teks poin karakter untuk game arcade "Pecah Karakter".
+     * Tiap balok berisi NAMA karakter (target dipecahkan) — ringan, hanya nama.
+     * Dikirim ke browser; penilaian arcade dilakukan klien (skor disubmit 1x).
+     */
+    public function arcadeWords(int $limit = 40): array
+    {
+        return $this->activeCharacters()
+            ->map(fn ($c) => $this->normalizeAnswer($c->nama))
+            ->filter()
+            ->unique()
+            ->take($limit)
+            ->values()
+            ->all();
+    }
 }

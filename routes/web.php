@@ -220,6 +220,23 @@ Route::get('/game-29-karakter/{rpgMap}/main', [RpgGameController::class, 'public
 Route::post('/game-29-karakter/{rpgMap}/presence', [RpgGameController::class, 'publicPresence'])
     ->middleware('throttle:rpg-presence')
     ->name('public.rpg.presence');
+
+// Game arcade "Pecah Karakter" — bisa dimainkan siswa & staff (admin/pamong).
+// Leaderboard terpisah per peran; PvP lintas-peran via kode; tidak beri poin siswa.
+Route::prefix('arcade')->name('arcade.')->group(function () {
+    Route::get('/', [App\Http\Controllers\ArcadeGameController::class, 'index'])->name('index');
+    Route::get('/main', [App\Http\Controllers\ArcadeGameController::class, 'play'])->name('play');
+    Route::post('/skor', [App\Http\Controllers\ArcadeGameController::class, 'submitScore'])
+        ->middleware('throttle:60,1')->name('score');
+    Route::post('/match', [App\Http\Controllers\ArcadeGameController::class, 'createMatch'])
+        ->middleware('throttle:30,1')->name('match.create');
+    Route::post('/match/join', [App\Http\Controllers\ArcadeGameController::class, 'joinMatch'])
+        ->middleware('throttle:30,1')->name('match.join');
+    Route::post('/match/{match}/skor', [App\Http\Controllers\ArcadeGameController::class, 'submitMatch'])
+        ->middleware('throttle:60,1')->name('match.submit');
+    Route::get('/match/{match}/state', [App\Http\Controllers\ArcadeGameController::class, 'matchStatus'])
+        ->middleware('throttle:180,1')->name('match.state');
+});
 Route::get('/rpg-admin', function () {
     if (! auth()->check()) {
         return redirect()->route('public.rpg.index');
