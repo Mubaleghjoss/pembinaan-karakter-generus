@@ -271,35 +271,36 @@
                     </div>
                 </div>
                 
-                <div class="hidden md:flex items-center space-x-4 lg:space-x-6">
-                    <a href="{{ route('public.index') }}" class="pkg-public-nav-link font-medium transition-colors">
-                        Beranda
-                    </a>
-                    <a href="{{ route('public.rpg.index') }}" class="pkg-public-nav-link font-medium transition-colors">
-                        Game 29 Karakter
-                    </a>
-                    <a href="{{ route('public.calendar.index') }}" class="pkg-public-nav-link font-medium transition-colors">
-                        Kalender
-                    </a>
-                    <a href="{{ route('materi.index') }}" class="pkg-public-nav-link font-medium transition-colors">
-                        Materi
-                    </a>
-                    <a href="{{ route('public.scanner') }}" class="pkg-public-nav-link font-medium transition-colors">
-                        Scan Presensi
-                    </a>
-                    <a href="{{ route('laporan-penyaksian.create') }}" class="pkg-public-nav-link flex items-center font-medium transition-colors">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        Lapor PKG
-                    </a>
-                    <button id="public-theme-toggle" type="button" class="pkg-theme-toggle inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition" aria-pressed="false">
+                <div class="hidden xl:flex items-center gap-1">
+                    @php
+                        $navItems = [
+                            ['label' => 'Beranda', 'route' => 'public.index', 'active' => 'public.index'],
+                            ['label' => 'Game', 'route' => 'public.rpg.index', 'active' => 'public.rpg.*'],
+                            ['label' => '29 Karakter', 'route' => 'public.karakter.index', 'active' => 'public.karakter.*'],
+                            ['label' => 'Kalender', 'route' => 'public.calendar.index', 'active' => 'public.calendar.*'],
+                            ['label' => 'Materi', 'route' => 'materi.index', 'active' => 'materi.*'],
+                            ['label' => 'Scan Presensi', 'route' => 'public.scanner', 'active' => 'public.scanner'],
+                            ['label' => 'Lapor PKG', 'route' => 'laporan-penyaksian.create', 'active' => 'laporan-penyaksian.*'],
+                        ];
+                    @endphp
+                    @foreach($navItems as $ni)
+                        @php $niActive = request()->routeIs($ni['active']); @endphp
+                        <a href="{{ route($ni['route']) }}"
+                           class="pkg-public-nav-link {{ $niActive ? 'is-active' : '' }} whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition-colors"
+                           @if($niActive) aria-current="page" @endif>
+                            {{ $ni['label'] }}
+                        </a>
+                    @endforeach
+
+                    <span class="pkg-public-nav-sep mx-1" aria-hidden="true"></span>
+
+                    <button id="public-theme-toggle" type="button" class="pkg-theme-toggle inline-flex h-9 w-9 items-center justify-center rounded-full transition" aria-pressed="false" aria-label="Ganti mode terang/gelap" title="Ganti mode">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>
                         </svg>
-                        <span class="pkg-theme-toggle-label">Mode Gelap</span>
+                        <span class="sr-only pkg-theme-toggle-label">Mode Gelap</span>
                     </button>
-                    
+
                     {{-- PWA Install Button (Desktop) --}}
                     <button id="pwa-install-btn" style="display: none;" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full font-bold transition-all shadow-lg flex items-center gap-2 text-sm">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
@@ -307,23 +308,23 @@
                     </button>
 
                     @if(Auth::guard('siswa')->check())
-                        <a href="{{ route('siswa.dashboard') }}" class="bg-white text-primary px-6 py-2 rounded-full font-bold hover:bg-white/90 transition-all shadow-lg flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                            Kembali ke Dashboard
+                        <a href="{{ route('siswa.dashboard') }}" class="pkg-public-nav-login ml-1 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            Dashboard
                         </a>
                     @elseif(Auth::guard('web')->check())
-                        <a href="{{ route('dashboard') }}" class="bg-white text-primary px-6 py-2 rounded-full font-bold hover:bg-white/90 transition-all shadow-lg flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                            Kembali ke Dashboard
+                        <a href="{{ route('dashboard') }}" class="pkg-public-nav-login ml-1 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            Dashboard
                         </a>
                     @elseif(Auth::guard('ortu')->check())
-                        <a href="{{ route('ortu.dashboard') }}" class="bg-white text-primary px-6 py-2 rounded-full font-bold hover:bg-white/90 transition-all shadow-lg flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                            Kembali ke Dashboard
+                        <a href="{{ route('ortu.dashboard') }}" class="pkg-public-nav-login ml-1 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            Dashboard
                         </a>
                     @else
                         <div class="relative" id="login-dropdown">
-                            <button id="login-btn" class="bg-white text-primary px-6 py-2.5 rounded-full font-bold hover:bg-white/90 transition-all shadow-lg flex items-center gap-2">
+                            <button id="login-btn" class="pkg-public-nav-login ml-1 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
                                 Login
                                 <svg class="w-3 h-3 transition-transform duration-200" id="login-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -362,7 +363,7 @@
                 </div>
                 
                 <!-- Mobile menu button -->
-                <button id="mobile-menu-toggle" type="button" class="pkg-mobile-menu-toggle md:hidden" aria-expanded="false" aria-controls="mobile-menu" aria-label="Buka menu navigasi">
+                <button id="mobile-menu-toggle" type="button" class="pkg-mobile-menu-toggle xl:hidden" aria-expanded="false" aria-controls="mobile-menu" aria-label="Buka menu navigasi">
                     <svg class="pkg-menu-open-icon h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
@@ -375,8 +376,8 @@
         </div>
         
         <!-- Mobile menu -->
-        <button id="mobile-menu-overlay" type="button" class="pkg-mobile-menu-overlay md:hidden" aria-label="Tutup menu navigasi" aria-hidden="true" tabindex="-1"></button>
-        <aside id="mobile-menu" class="pkg-mobile-menu-shell md:hidden" aria-hidden="true" aria-label="Navigasi mobile" tabindex="-1" inert>
+        <button id="mobile-menu-overlay" type="button" class="pkg-mobile-menu-overlay xl:hidden" aria-label="Tutup menu navigasi" aria-hidden="true" tabindex="-1"></button>
+        <aside id="mobile-menu" class="pkg-mobile-menu-shell xl:hidden" aria-hidden="true" aria-label="Navigasi mobile" tabindex="-1" inert>
             <div class="pkg-mobile-menu-panel-header">
                 <div class="pkg-mobile-menu-panel-brand">
                     @if($theme->logo_path)
@@ -406,6 +407,12 @@
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 3.75h4.5l1.5 3H18a2.25 2.25 0 012.25 2.25v6A2.25 2.25 0 0118 17.25h-1.5l-1.5 3h-6l-1.5-3H6A2.25 2.25 0 013.75 15v-6A2.25 2.25 0 016 6.75h2.25l1.5-3z"/></svg>
                         </span>
                         <span class="pkg-mobile-menu-text">Game 29 Karakter</span>
+                    </a>
+                    <a href="{{ route('public.karakter.index') }}" class="pkg-mobile-menu-link {{ request()->routeIs('public.karakter.*') ? 'is-active' : '' }}" @if(request()->routeIs('public.karakter.*')) aria-current="page" @endif>
+                        <span class="pkg-mobile-menu-icon">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                        </span>
+                        <span class="pkg-mobile-menu-text">29 Karakter Luhur</span>
                     </a>
                     <a href="{{ route('public.calendar.index') }}" class="pkg-mobile-menu-link {{ request()->routeIs('public.calendar.*') ? 'is-active' : '' }}" @if(request()->routeIs('public.calendar.*')) aria-current="page" @endif>
                         <span class="pkg-mobile-menu-icon">
@@ -660,7 +667,7 @@
             if (event.key === 'Escape' && mobileMenuOpen) setMobileMenu(false, { restoreFocus: true });
         });
         window.addEventListener('resize', () => {
-            if (window.innerWidth >= 768) setMobileMenu(false);
+            if (window.innerWidth >= 1280) setMobileMenu(false);
         });
 
         const publicNavigation = document.getElementById('public-navigation');

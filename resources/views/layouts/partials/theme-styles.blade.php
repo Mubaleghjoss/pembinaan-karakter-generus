@@ -277,6 +277,50 @@
 
     .pkg-public-nav-link:hover {
         color: var(--pkg-brand);
+        background: color-mix(in srgb, var(--pkg-brand, #0f766e) 10%, transparent);
+    }
+
+    .pkg-public-nav-link.is-active {
+        color: var(--pkg-brand);
+        background: color-mix(in srgb, var(--pkg-brand, #0f766e) 14%, transparent);
+        font-weight: 700;
+    }
+
+    .pkg-public-nav-sep {
+        width: 1px;
+        height: 1.5rem;
+        background: color-mix(in srgb, var(--pkg-border) 80%, transparent);
+    }
+
+    .pkg-public-nav-login {
+        color: #fff;
+        background: linear-gradient(135deg, var(--pkg-brand, #0f766e), color-mix(in srgb, var(--pkg-brand, #0f766e) 60%, #0ea5e9));
+        box-shadow: 0 8px 20px color-mix(in srgb, var(--pkg-brand, #0f766e) 30%, transparent);
+    }
+
+    .pkg-public-nav-login:hover {
+        filter: brightness(1.06);
+        transform: translateY(-1px);
+    }
+
+    .pkg-public-login-menu {
+        background: var(--pkg-surface, #fff);
+        border: 1px solid color-mix(in srgb, var(--pkg-border) 88%, transparent);
+        z-index: 60;
+    }
+
+    .pkg-public-login-item {
+        color: var(--pkg-public-nav-text);
+    }
+
+    .pkg-public-login-item:hover {
+        background: color-mix(in srgb, var(--pkg-brand, #0f766e) 12%, transparent);
+        color: var(--pkg-brand);
+    }
+
+    .pkg-theme-toggle:hover {
+        background: color-mix(in srgb, var(--pkg-brand, #0f766e) 12%, transparent);
+        color: var(--pkg-brand);
     }
 
     .pkg-public-nav-copy {

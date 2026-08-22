@@ -1,8 +1,8 @@
 @php
     $authPublicNavigationItems = [
         ['label' => 'Beranda', 'route' => 'public.index', 'active' => 'public.index'],
-        ['label' => 'Game 29 Karakter', 'route' => 'public.rpg.index', 'active' => 'public.rpg.*'],
-        ['label' => '29 Karakter Luhur', 'route' => 'public.karakter.index', 'active' => 'public.karakter.*'],
+        ['label' => 'Game', 'route' => 'public.rpg.index', 'active' => 'public.rpg.*'],
+        ['label' => '29 Karakter', 'route' => 'public.karakter.index', 'active' => 'public.karakter.*'],
         ['label' => 'Kalender', 'route' => 'public.calendar.index', 'active' => 'public.calendar.*'],
         ['label' => 'Materi', 'route' => 'materi.index', 'active' => 'materi.*'],
         ['label' => 'Scan Presensi', 'route' => 'public.scanner', 'active' => 'public.scanner'],
@@ -23,21 +23,47 @@
                 </div>
             </a>
 
-            <div class="hidden items-center gap-3 lg:flex">
+            <div class="hidden items-center gap-1 xl:flex">
                 @foreach($authPublicNavigationItems as $item)
-                    <a href="{{ route($item['route']) }}" class="pkg-public-nav-link whitespace-nowrap text-sm font-semibold transition-colors">
+                    @php $isActive = request()->routeIs($item['active']); @endphp
+                    <a href="{{ route($item['route']) }}"
+                       class="pkg-public-nav-link {{ $isActive ? 'is-active' : '' }} whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition-colors"
+                       @if($isActive) aria-current="page" @endif>
                         {{ $item['label'] }}
                     </a>
                 @endforeach
-                <button type="button" data-auth-public-theme-toggle class="pkg-theme-toggle inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition" aria-pressed="false">
+
+                <span class="pkg-public-nav-sep mx-1" aria-hidden="true"></span>
+
+                <button type="button" data-auth-public-theme-toggle class="pkg-theme-toggle inline-flex h-9 w-9 items-center justify-center rounded-full transition" aria-pressed="false" aria-label="Ganti mode terang/gelap" title="Ganti mode">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>
                     </svg>
-                    <span data-auth-public-theme-label>Mode Gelap</span>
+                    <span class="sr-only" data-auth-public-theme-label>Mode Gelap</span>
                 </button>
+
+                <div class="relative" x-data="{ open: false }" @keydown.escape="open = false">
+                    <button type="button" @click="open = !open" :aria-expanded="open"
+                            class="pkg-public-nav-login ml-1 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h6a3 3 0 013 3v1"/>
+                        </svg>
+                        Login
+                        <svg class="h-3.5 w-3.5 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-cloak @click.outside="open = false"
+                         x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
+                         class="pkg-public-login-menu absolute right-0 mt-2 w-48 overflow-hidden rounded-2xl p-1.5 shadow-xl">
+                        <a href="{{ route('siswa.login') }}" class="pkg-public-login-item flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold">Siswa</a>
+                        <a href="{{ route('ortu.login') }}" class="pkg-public-login-item flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold">Orang Tua</a>
+                        <a href="{{ route('login') }}" class="pkg-public-login-item flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold">Pamong &amp; Guru</a>
+                    </div>
+                </div>
             </div>
 
-            <button id="auth-mobile-menu-toggle" type="button" class="pkg-mobile-menu-toggle lg:hidden" aria-expanded="false" aria-controls="auth-mobile-menu" aria-label="Buka menu navigasi">
+            <button id="auth-mobile-menu-toggle" type="button" class="pkg-mobile-menu-toggle xl:hidden" aria-expanded="false" aria-controls="auth-mobile-menu" aria-label="Buka menu navigasi">
                 <svg class="pkg-menu-open-icon h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
@@ -49,8 +75,8 @@
         </div>
     </div>
 
-    <button id="auth-mobile-menu-overlay" type="button" class="pkg-mobile-menu-overlay lg:hidden" aria-label="Tutup menu navigasi" aria-hidden="true" tabindex="-1"></button>
-    <aside id="auth-mobile-menu" class="pkg-mobile-menu-shell lg:hidden" aria-hidden="true" aria-label="Navigasi mobile" tabindex="-1" inert>
+    <button id="auth-mobile-menu-overlay" type="button" class="pkg-mobile-menu-overlay xl:hidden" aria-label="Tutup menu navigasi" aria-hidden="true" tabindex="-1"></button>
+    <aside id="auth-mobile-menu" class="pkg-mobile-menu-shell xl:hidden" aria-hidden="true" aria-label="Navigasi mobile" tabindex="-1" inert>
         <div class="pkg-mobile-menu-panel-header">
             <div class="pkg-mobile-menu-panel-brand">
                 @if(!empty($siteSettings['site_logo']))
@@ -136,7 +162,7 @@
                 if (event.key === 'Escape') setMenu(false);
             });
             window.addEventListener('resize', () => {
-                if (window.innerWidth >= 1024) setMenu(false);
+                if (window.innerWidth >= 1280) setMenu(false);
             });
 
             function syncThemeButtons() {
