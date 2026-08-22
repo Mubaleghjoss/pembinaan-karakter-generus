@@ -431,6 +431,7 @@ class KarakterGameController extends Controller
             'p1_score' => $duel->p1_score,
             'p2_score' => $duel->p2_score,
             'p1_points' => $p1Points,
+            'p2_points' => $p2Points ?? null,
         ];
     }
 

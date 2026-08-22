@@ -26,11 +26,11 @@
     <div class="mb-4 grid grid-cols-2 gap-3">
         <div class="rounded-xl border-2 border-blue-200 bg-blue-50 p-3 text-center dark:border-blue-800 dark:bg-blue-900/30">
             <p class="text-xs font-bold text-blue-600 dark:text-blue-300">Kamu</p>
-            <p class="text-2xl font-black text-blue-800 dark:text-blue-200" x-text="p1"></p>
+            <p class="text-2xl font-black text-blue-800 dark:text-blue-200" x-text="myScore"></p>
         </div>
         <div class="rounded-xl border-2 border-rose-200 bg-rose-50 p-3 text-center dark:border-rose-800 dark:bg-rose-900/30">
             <p class="text-xs font-bold text-rose-600 dark:text-rose-300">{{ $duel->opponent_type === 'ai' ? 'AI ('.$duel->ai_difficulty.')' : 'Lawan' }}</p>
-            <p class="text-2xl font-black text-rose-800 dark:text-rose-200" x-text="p2"></p>
+            <p class="text-2xl font-black text-rose-800 dark:text-rose-200" x-text="oppScore"></p>
         </div>
     </div>
 
@@ -113,6 +113,9 @@
             chosen: null,
             p1: {{ $duel->p1_score }},
             p2: {{ $duel->p2_score }},
+            // Skor dari perspektif pemain ini (P2 = yang gabung via kode).
+            get myScore() { return this.isP1 ? this.p1 : this.p2; },
+            get oppScore() { return this.isP1 ? this.p2 : this.p1; },
             locked: false,
             finished: false,
             feedback: '',
@@ -186,10 +189,14 @@
             showResult(result) {
                 this.finished = true;
                 if (!result) return;
-                if (result.winner === 'p1') { this.outcomeText = 'MENANG!'; this.outcomeClass = 'text-emerald-600'; }
-                else if (result.winner === 'draw') { this.outcomeText = 'SERI'; this.outcomeClass = 'text-amber-600'; }
+                // Tentukan menang/kalah dari perspektif pemain ini.
+                const myWin = (this.isP1 && result.winner === 'p1') || (!this.isP1 && result.winner === 'p2');
+                if (result.winner === 'draw') { this.outcomeText = 'SERI'; this.outcomeClass = 'text-amber-600'; }
+                else if (myWin) { this.outcomeText = 'MENANG!'; this.outcomeClass = 'text-emerald-600'; }
                 else { this.outcomeText = 'KALAH'; this.outcomeClass = 'text-rose-600'; }
-                if (result.p1_points) this.pointsText = '+' + result.p1_points + ' poin';
+                // Poin yang didapat pemain ini.
+                const myPoints = this.isP1 ? result.p1_points : result.p2_points;
+                if (myPoints) this.pointsText = '+' + myPoints + ' poin';
             }
         };
     }
