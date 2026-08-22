@@ -33,6 +33,7 @@
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('siswa.game.solo', 'rangkai') }}" class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200">Latihan Solo</a>
                 <button type="button" onclick="openDuel('rangkai')" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Duel vs AI</button>
+                <button type="button" onclick="openPvp('rangkai')" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Lawan Teman</button>
             </div>
         </div>
 
@@ -50,8 +51,20 @@
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('siswa.game.solo', 'tebak') }}" class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200">Latihan Solo</a>
                 <button type="button" onclick="openDuel('tebak')" class="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Duel vs AI</button>
+                <button type="button" onclick="openPvp('tebak')" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Lawan Teman</button>
             </div>
         </div>
+    </div>
+
+    {{-- Gabung duel teman via kode --}}
+    <div class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-900/20">
+        <p class="mb-2 text-sm font-bold text-indigo-800 dark:text-indigo-200">Punya kode dari teman?</p>
+        <form method="POST" action="{{ route('siswa.game.duel.join') }}" class="flex flex-wrap gap-2">
+            @csrf
+            <input type="text" name="join_code" maxlength="6" placeholder="KODE" required
+                class="w-32 rounded-lg border border-indigo-300 bg-white px-3 py-2 text-center text-lg font-black uppercase tracking-widest text-indigo-900 outline-none dark:border-indigo-700 dark:bg-gray-800 dark:text-indigo-100">
+            <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700">Gabung Duel</button>
+        </form>
     </div>
     @endif
 </div>
@@ -73,6 +86,9 @@
     </div>
 </div>
 
+{{-- Form tersembunyi untuk buat lobby PvP --}}
+<form id="pvpForm" method="POST" class="hidden">@csrf</form>
+
 @push('scripts')
 <script>
     function openDuel(mode) {
@@ -81,6 +97,11 @@
         const modal = document.getElementById('duelModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+    }
+    function openPvp(mode) {
+        const form = document.getElementById('pvpForm');
+        form.action = '{{ url('siswa/game/duel/pvp') }}/' + mode;
+        form.submit();
     }
 </script>
 @endpush

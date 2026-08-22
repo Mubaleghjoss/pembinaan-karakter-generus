@@ -243,8 +243,11 @@
                         <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="open" x-transition x-cloak class="space-y-1 pl-3">
-                        <a href="{{ route('siswa.game.index') }}" class="nav-item @if(request()->routeIs('siswa.game.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+                        <a href="{{ route('siswa.game.index') }}" class="nav-item @if(request()->routeIs('siswa.game.index') || request()->routeIs('siswa.game.solo') || request()->routeIs('siswa.game.duel*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
                             <span class="nav-text">Game 29 Karakter</span>
+                        </a>
+                        <a href="{{ route('siswa.game.boss') }}" class="nav-item @if(request()->routeIs('siswa.game.boss')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+                            <span class="nav-text">Boss Online</span>
                         </a>
                         <a href="{{ route('siswa.gamification.dashboard') }}" class="nav-item @if(request()->routeIs('siswa.gamification.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
                             <span class="nav-text">Poin &amp; Peringkat</span>

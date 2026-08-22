@@ -9,6 +9,19 @@
         <a href="{{ route('siswa.game.index') }}" class="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400">Keluar</a>
     </div>
 
+    {{-- Ruang tunggu PvP (menunggu lawan gabung) --}}
+    @if($duel->opponent_type === 'pvp' && $duel->status === 'waiting' && $isP1)
+    <div x-show="waiting" class="rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-6 text-center dark:border-indigo-800 dark:bg-indigo-900/30">
+        <p class="text-sm font-semibold text-indigo-700 dark:text-indigo-200">Bagikan kode ini ke temanmu:</p>
+        <p class="my-3 text-4xl font-black tracking-widest text-indigo-800 dark:text-indigo-100">{{ $duel->join_code }}</p>
+        <p class="text-xs text-indigo-500 dark:text-indigo-300">Menunggu lawan bergabung...</p>
+        <div class="mt-3 flex justify-center">
+            <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-indigo-300 border-t-indigo-600"></span>
+        </div>
+    </div>
+    @endif
+
+    <div x-show="!waiting">
     {{-- Skor --}}
     <div class="mb-4 grid grid-cols-2 gap-3">
         <div class="rounded-xl border-2 border-blue-200 bg-blue-50 p-3 text-center dark:border-blue-800 dark:bg-blue-900/30">
@@ -79,6 +92,7 @@
             <a href="{{ route('siswa.game.index') }}" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">Menu Game</a>
         </div>
     </div>
+    </div>{{-- /x-show !waiting --}}
 </div>
 
 @push('scripts')
@@ -88,6 +102,9 @@
             mode: @json($duel->mode),
             duelId: {{ $duel->id }},
             questions: @json($questions),
+            opponentType: @json($duel->opponent_type),
+            isP1: @json($isP1),
+            waiting: @json($duel->opponent_type === 'pvp' && $duel->status === 'waiting' && $isP1),
             idx: 0,
             total: {{ count($questions) }},
             typed: '',
@@ -106,7 +123,25 @@
             timer: 0,
             _t0: 0,
             _interval: null,
-            init() { this.loadRound(); },
+            _pollInterval: null,
+            init() {
+                if (this.waiting) { this.startWaitingPoll(); }
+                else { this.loadRound(); }
+            },
+            startWaitingPoll() {
+                // Poll ringan tiap 2.5s: cek apakah lawan sudah gabung (status active).
+                this._pollInterval = setInterval(async () => {
+                    try {
+                        const res = await fetch('{{ url('siswa/game/duel') }}/' + this.duelId + '/state', {headers:{'Accept':'application/json'}});
+                        const data = await res.json();
+                        if (data.status === 'active') {
+                            clearInterval(this._pollInterval);
+                            this.waiting = false;
+                            this.loadRound();
+                        }
+                    } catch(e) {}
+                }, 2500);
+            },
             q() { return this.questions[this.idx] || {}; },
             loadRound() {
                 if (this.mode === 'rangkai') {

@@ -18,6 +18,7 @@ use App\Http\Controllers\DataPullController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FaceAttendanceController;
 use App\Http\Controllers\GamificationController;
+use App\Http\Controllers\BossBattleController;
 use App\Http\Controllers\KarakterGameController;
 use App\Http\Controllers\KarakterLuhurController;
 use App\Http\Controllers\GenerusRecapController;
@@ -391,11 +392,22 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
                 ->middleware('throttle:60,1')->name('solo.submit');
             Route::post('/duel/ai/{mode}', [KarakterGameController::class, 'createAiDuel'])
                 ->middleware('throttle:30,1')->name('duel.ai');
+            Route::post('/duel/pvp/{mode}', [KarakterGameController::class, 'createPvpDuel'])
+                ->middleware('throttle:30,1')->name('duel.pvp');
+            Route::post('/duel/join', [KarakterGameController::class, 'joinPvpDuel'])
+                ->middleware('throttle:30,1')->name('duel.join');
             Route::get('/duel/{duel}', [KarakterGameController::class, 'showDuel'])->name('duel.show');
             Route::post('/duel/{duel}/answer', [KarakterGameController::class, 'answerDuel'])
                 ->middleware('throttle:120,1')->name('duel.answer');
             Route::get('/duel/{duel}/state', [KarakterGameController::class, 'duelState'])
                 ->middleware('throttle:120,1')->name('duel.state');
+
+            // Boss Online (keroyok bareng)
+            Route::get('/boss', [BossBattleController::class, 'arena'])->name('boss');
+            Route::post('/boss/{boss}/attack', [BossBattleController::class, 'attack'])
+                ->middleware('throttle:180,1')->name('boss.attack');
+            Route::get('/boss/{boss}/state', [BossBattleController::class, 'state'])
+                ->middleware('throttle:180,1')->name('boss.state');
         });
 
         // Calendar routes for Siswa
@@ -1045,6 +1057,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/{karakterLuhur}', [KarakterLuhurController::class, 'update'])->name('update');
         Route::delete('/{karakterLuhur}', [KarakterLuhurController::class, 'destroy'])->name('destroy');
         Route::post('/{karakterLuhur}/toggle', [KarakterLuhurController::class, 'toggle'])->name('toggle');
+    });
+
+    // Boss Online — admin kelola
+    Route::prefix('admin/boss')->name('admin.boss.')->group(function () {
+        Route::get('/', [BossBattleController::class, 'adminIndex'])->name('index');
+        Route::post('/', [BossBattleController::class, 'adminStore'])->name('store');
+        Route::post('/{boss}/end', [BossBattleController::class, 'adminEnd'])->name('end');
     });
 
     Route::prefix('rpg-admin')->name('admin.rpg.')->group(function () {

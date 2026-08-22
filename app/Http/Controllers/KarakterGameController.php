@@ -168,6 +168,76 @@ class KarakterGameController extends Controller
         return redirect()->route('siswa.game.duel.show', $duel);
     }
 
+    // ===================== PvP (lawan teman online) =====================
+
+    /**
+     * Buat lobby PvP: hasilkan kode gabung, tunggu lawan.
+     */
+    public function createPvpDuel(Request $request, string $mode)
+    {
+        $mode = $mode === 'tebak' ? 'tebak' : 'rangkai';
+
+        $questions = $this->gameService->buildQuestions($mode, 5);
+        if (empty($questions)) {
+            return redirect()->route('siswa.game.index')
+                ->with('error', 'Bank karakter belum cukup untuk duel.');
+        }
+
+        // Kode unik 6 karakter (huruf besar + angka, hindari yang mirip).
+        do {
+            $code = strtoupper(Str::random(6));
+        } while (GameDuel::where('join_code', $code)->exists());
+
+        $duel = GameDuel::create([
+            'mode' => $mode,
+            'opponent_type' => 'pvp',
+            'status' => 'waiting',
+            'total_rounds' => count($questions),
+            'p1_siswa_id' => $this->siswa()->id,
+            'questions' => $questions,
+            'p1_answers' => [],
+            'p2_answers' => [],
+            'join_code' => $code,
+            'last_activity_at' => now(),
+        ]);
+
+        return redirect()->route('siswa.game.duel.show', $duel);
+    }
+
+    /**
+     * Gabung ke lobby PvP lewat kode.
+     */
+    public function joinPvpDuel(Request $request)
+    {
+        $code = strtoupper(trim((string) $request->input('join_code')));
+        $duel = GameDuel::where('join_code', $code)
+            ->where('opponent_type', 'pvp')
+            ->where('status', 'waiting')
+            ->first();
+
+        if (! $duel) {
+            return redirect()->route('siswa.game.index')
+                ->with('error', 'Kode tidak ditemukan atau duel sudah dimulai.');
+        }
+
+        if ($duel->p1_siswa_id === $this->siswa()->id) {
+            // Pembuat membuka kembali lobby-nya sendiri.
+            return redirect()->route('siswa.game.duel.show', $duel);
+        }
+
+        if ($duel->p2_siswa_id && $duel->p2_siswa_id !== $this->siswa()->id) {
+            return redirect()->route('siswa.game.index')
+                ->with('error', 'Duel ini sudah penuh.');
+        }
+
+        $duel->p2_siswa_id = $this->siswa()->id;
+        $duel->status = 'active';
+        $duel->touchActivity();
+        $duel->save();
+
+        return redirect()->route('siswa.game.duel.show', $duel);
+    }
+
     public function showDuel(GameDuel $duel)
     {
         $this->authorizeDuel($duel);
@@ -189,6 +259,9 @@ class KarakterGameController extends Controller
             'duel' => $duel,
             'questions' => $clientQuestions,
             'isP1' => $duel->p1_siswa_id === $this->siswa()->id,
+            'joinUrl' => $duel->opponent_type === 'pvp' && $duel->join_code
+                ? route('siswa.game.index')
+                : null,
         ]);
     }
 
