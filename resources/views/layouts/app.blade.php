@@ -464,6 +464,9 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             <a href="{{ route('admin.rpg.index') }}" class="nav-item @if(request()->routeIs('admin.rpg.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Game 29 Karakter</span>
                             </a>
+                            <a href="{{ route('arcade.index') }}" class="nav-item @if(request()->routeIs('arcade.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Pecah Karakter (Arcade)</span>
+                            </a>
                             @endif
                             @if(auth()->user()->isAdmin())
                             <a href="{{ route('admin.boss.index') }}" class="nav-item @if(request()->routeIs('admin.boss.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">

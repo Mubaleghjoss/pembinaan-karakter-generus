@@ -66,6 +66,20 @@
             <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700">Gabung Duel</button>
         </form>
     </div>
+
+    {{-- Game arcade Pecah Karakter --}}
+    <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-900/20">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </span>
+            <div class="min-w-0">
+                <h2 class="font-bold text-gray-900 dark:text-white">Pecah Karakter <span class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/50 dark:text-amber-200">BARU</span></h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Game arcade pecah balok berisi 29 karakter. Ada papan peringkat &amp; bisa tanding lewat kode.</p>
+                <a href="{{ route('arcade.index') }}" class="mt-3 inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600">Main Pecah Karakter</a>
+            </div>
+        </div>
+    </div>
     @endif
 </div>
 
