@@ -585,8 +585,53 @@ function showEventDetail(event) {
                 </a>
             </div>
         `;
+    } else if (props.type === 'teacher_schedule') {
+        const title = calendarEscape(props.title || event.title || 'Jadwal MT/MS');
+        const rombel = props.rombel ? calendarEscape(props.rombel) : '';
+        const mainT = props.main_teacher ? calendarEscape(props.main_teacher) : (props.teacher_name ? calendarEscape(props.teacher_name) : '-');
+        const backupT = props.backup_teacher ? calendarEscape(props.backup_teacher) : '-';
+        const loc = props.location ? calendarEscape(props.location) : '';
+        let sessionsHtml = '';
+        if (Array.isArray(props.sessions) && props.sessions.length) {
+            sessionsHtml = '<div class="mt-4 text-left space-y-2">' + props.sessions.map(s => `
+                <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                    <p class="font-semibold text-emerald-800 dark:text-emerald-200">${calendarEscape(s.rombel || s.title || 'Sesi')}</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-300">${calendarEscape(s.start_time || '')}${s.end_time ? ' - ' + calendarEscape(s.end_time) : ''}${s.main_teacher ? ' &middot; Utama: ' + calendarEscape(s.main_teacher) : ''}${s.backup_teacher ? ' &middot; Cadangan: ' + calendarEscape(s.backup_teacher) : ''}</p>
+                </div>`).join('') + '</div>';
+        }
+        html = `
+            <div class="text-center">
+                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-4 bg-emerald-100 text-emerald-700">MT/MS</div>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">${title}</h2>
+                <p class="text-gray-600 dark:text-gray-300 mt-1">${event.start.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                ${props.start_time ? `<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">${calendarEscape(props.start_time)}${props.end_time ? ' - ' + calendarEscape(props.end_time) : ''}</p>` : ''}
+                ${rombel ? `<span class="mt-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">Rombel: ${rombel}</span>` : ''}
+                ${sessionsHtml ? sessionsHtml : `
+                <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div class="p-3 bg-emerald-50 rounded-lg"><p class="text-gray-500">Pengajar Utama</p><p class="font-semibold text-emerald-700">${mainT}</p></div>
+                    <div class="p-3 bg-blue-50 rounded-lg"><p class="text-gray-500">Cadangan</p><p class="font-semibold text-blue-700">${backupT}</p></div>
+                </div>`}
+                ${loc ? `<p class="mt-3 text-sm text-gray-600 dark:text-gray-300">Lokasi: <strong>${loc}</strong></p>` : ''}
+                ${props.url ? `<a href="${calendarEscape(props.url)}" class="mt-5 inline-block px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition">Buka Jadwal Guru</a>` : ''}
+            </div>
+        `;
     }
-    
+
+    // Fallback: tipe tak dikenal — jangan biarkan modal kosong.
+    if (!html) {
+        const title = calendarEscape(props.title || event.title || 'Detail Jadwal');
+        const desc = props.description ? calendarEscape(props.description) : '';
+        html = `
+            <div class="text-center">
+                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-2xl mb-4 bg-gray-100 text-gray-600">📅</div>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">${title}</h2>
+                <p class="text-gray-600 dark:text-gray-300 mt-1">${event.start ? event.start.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''}</p>
+                ${desc ? `<div class="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-left"><p class="text-sm text-gray-700 dark:text-gray-200">${desc}</p></div>` : ''}
+                ${props.url ? `<a href="${calendarEscape(props.url)}" class="mt-5 inline-block px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition">Buka</a>` : ''}
+            </div>
+        `;
+    }
+
     content.innerHTML = html;
     modal.classList.remove('hidden');
     modal.classList.add('flex');

@@ -108,7 +108,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-Cbiflngg.js",
+    "file": "assets/app-CZCWuYbr.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -133,7 +133,7 @@
       "_browser-BmwtkHN9.js"
     ],
     "css": [
-      "assets/app-DJjuJdZu.css"
+      "assets/app-CybGNcsl.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -159,7 +159,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-ClS2ztKf.js",
+    "file": "assets/QRScanner-1pAg_KXw.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
