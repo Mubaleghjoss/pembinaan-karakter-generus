@@ -497,6 +497,9 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                             <a href="{{ route('admin.certificate.settings', 1) }}" class="nav-item @if(request()->routeIs('admin.certificate.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Sertifikat Level</span>
                             </a>
+                            <a href="{{ route('admin.karakter-luhur.index') }}" class="nav-item @if(request()->routeIs('admin.karakter-luhur.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Bank 29 Karakter</span>
+                            </a>
                             @endif
                             @if(auth()->user()->hasPamongMenuAccess('export'))
                             <a href="{{ route('export.index') }}" class="nav-item @if(request()->routeIs('export.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">

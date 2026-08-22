@@ -113,8 +113,9 @@
                     ['label' => 'Jurnal RPP', 'icon' => 'journal', 'url' => route('siswa.materi-rpp-journals.index'), 'active' => request()->routeIs('siswa.materi-rpp-journals.*'), 'badge' => $siswaJournalBadge],
                     ['label' => 'Kehadiran', 'icon' => 'attendance', 'url' => route('siswa.kehadiran.index'), 'active' => request()->routeIs('siswa.kehadiran.*')],
                     ['label' => "Bacaan Al-Qur'an", 'icon' => 'book', 'url' => route('siswa.quran.index'), 'active' => request()->routeIs('siswa.quran.*')],
-                    ['label' => 'Gamifikasi', 'icon' => 'game', 'url' => route('siswa.gamification.dashboard'), 'active' => request()->routeIs('siswa.gamification.*')],
-                    ['label' => 'RPG Quest', 'icon' => 'rpg', 'url' => route('siswa.rpg.index'), 'active' => request()->routeIs('siswa.rpg.*')],
+                    ['label' => 'Game 29 Karakter', 'icon' => 'game', 'url' => route('siswa.game.index'), 'active' => request()->routeIs('siswa.game.*')],
+                    ['label' => 'Poin & Peringkat', 'icon' => 'game', 'url' => route('siswa.gamification.dashboard'), 'active' => request()->routeIs('siswa.gamification.*')],
+                    ['label' => 'Petualangan', 'icon' => 'rpg', 'url' => route('siswa.rpg.index'), 'active' => request()->routeIs('siswa.rpg.*')],
                 ],
             ],
             [
@@ -242,11 +243,14 @@
                         <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="open" x-transition x-cloak class="space-y-1 pl-3">
+                        <a href="{{ route('siswa.game.index') }}" class="nav-item @if(request()->routeIs('siswa.game.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+                            <span class="nav-text">Game 29 Karakter</span>
+                        </a>
                         <a href="{{ route('siswa.gamification.dashboard') }}" class="nav-item @if(request()->routeIs('siswa.gamification.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
                             <span class="nav-text">Poin &amp; Peringkat</span>
                         </a>
                         <a href="{{ route('siswa.rpg.index') }}" class="nav-item @if(request()->routeIs('siswa.rpg.*')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
-                            <span class="nav-text">Game 29 Karakter</span>
+                            <span class="nav-text">Petualangan</span>
                         </a>
                         <a href="{{ route('siswa.biometrik') }}" class="nav-item @if(request()->routeIs('siswa.biometrik')) bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 @else text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 @endif flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors">
                             <span class="nav-text">Biometrik</span>

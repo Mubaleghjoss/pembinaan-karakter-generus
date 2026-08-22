@@ -133,6 +133,31 @@ class GamificationService
     }
 
     /**
+     * Award points from mini-game duel (rangkai kata / tebak karakter).
+     * Semua poin masuk ke akumulasi leaderboard yang sama (source 'game').
+     * Menang +10, seri +1, kalah +3 (default), bisa dioverride lewat argumen.
+     */
+    public function awardGamePoints(Siswa $siswa, int $points, string $description, $reference = null): ?PointTransaction
+    {
+        if ($points === 0) {
+            return null;
+        }
+
+        $siswaPoint = $this->getOrCreateSiswaPoint($siswa);
+        $transaction = $siswaPoint->addPoints(
+            $points,
+            'game',
+            $description,
+            $reference,
+            $this->buildPeriodMetadata(PointPeriod::current())
+        );
+
+        $this->checkBadgeEligibility($siswa);
+
+        return $transaction;
+    }
+
+    /**
      * Check and award streak bonuses
      */
     private function checkStreakBonus(SiswaPoint $siswaPoint, string $type): void

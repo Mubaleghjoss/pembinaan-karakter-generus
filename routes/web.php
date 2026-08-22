@@ -18,6 +18,8 @@ use App\Http\Controllers\DataPullController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FaceAttendanceController;
 use App\Http\Controllers\GamificationController;
+use App\Http\Controllers\KarakterGameController;
+use App\Http\Controllers\KarakterLuhurController;
 use App\Http\Controllers\GenerusRecapController;
 use App\Http\Controllers\GenerusRegistrationController;
 use App\Http\Controllers\KarakterController;
@@ -379,6 +381,21 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
             Route::post('/character', [RpgGameController::class, 'updateCharacter'])->name('character');
             Route::post('/heartbeat', [RpgGameController::class, 'heartbeat'])->name('heartbeat');
             Route::post('/{rpgMap}/reset', [RpgGameController::class, 'resetSession'])->name('reset');
+        });
+
+        // Game 29 Karakter Luhur (Rangkai Kata & Tebak Karakter)
+        Route::prefix('game')->name('game.')->group(function () {
+            Route::get('/', [KarakterGameController::class, 'index'])->name('index');
+            Route::get('/solo/{mode}', [KarakterGameController::class, 'solo'])->name('solo');
+            Route::post('/solo/{mode}/submit', [KarakterGameController::class, 'soloSubmit'])
+                ->middleware('throttle:60,1')->name('solo.submit');
+            Route::post('/duel/ai/{mode}', [KarakterGameController::class, 'createAiDuel'])
+                ->middleware('throttle:30,1')->name('duel.ai');
+            Route::get('/duel/{duel}', [KarakterGameController::class, 'showDuel'])->name('duel.show');
+            Route::post('/duel/{duel}/answer', [KarakterGameController::class, 'answerDuel'])
+                ->middleware('throttle:120,1')->name('duel.answer');
+            Route::get('/duel/{duel}/state', [KarakterGameController::class, 'duelState'])
+                ->middleware('throttle:120,1')->name('duel.state');
         });
 
         // Calendar routes for Siswa
@@ -1018,6 +1035,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/rpg', [RpgGameController::class, 'adminIndex'])
         ->middleware('pamong.permission:game,view')
         ->name('admin.rpg.index');
+
+    // Bank 29 Karakter Luhur (sumber data game)
+    Route::prefix('bank-karakter')->name('admin.karakter-luhur.')->group(function () {
+        Route::get('/', [KarakterLuhurController::class, 'index'])->name('index');
+        Route::get('/tambah', [KarakterLuhurController::class, 'create'])->name('create');
+        Route::post('/', [KarakterLuhurController::class, 'store'])->name('store');
+        Route::get('/{karakterLuhur}/edit', [KarakterLuhurController::class, 'edit'])->name('edit');
+        Route::put('/{karakterLuhur}', [KarakterLuhurController::class, 'update'])->name('update');
+        Route::delete('/{karakterLuhur}', [KarakterLuhurController::class, 'destroy'])->name('destroy');
+        Route::post('/{karakterLuhur}/toggle', [KarakterLuhurController::class, 'toggle'])->name('toggle');
+    });
 
     Route::prefix('rpg-admin')->name('admin.rpg.')->group(function () {
         Route::post('/maps', [RpgGameController::class, 'adminStoreMap'])->name('maps.store');

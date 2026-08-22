@@ -1,19 +1,14 @@
 @extends('layouts.siswa')
 
-@section('title', 'Game')
+@section('title', 'Petualangan')
 
 @section('content')
 <div class="p-4 lg:p-6 max-w-6xl mx-auto" x-data="rpgIndex()">
     {{-- Header --}}
     <div class="pkg-page-header mb-6">
         <div>
-            <h1 class="pkg-page-heading">Game</h1>
-            <p class="pkg-page-subheading">Jelajahi peta, temui NPC, dan jawab pertanyaan untuk mendapatkan poin.</p>
-        </div>
-        <div class="pkg-page-actions">
-            <a href="{{ route('siswa.rpg.beta-3d') }}" class="btn-secondary">
-                Beta 3D
-            </a>
+            <h1 class="pkg-page-heading">Petualangan 29 Karakter</h1>
+            <p class="pkg-page-subheading">Jelajahi peta 3D, temui NPC, dan jawab pertanyaan untuk mendapatkan poin. Tersedia juga mode 2D ringan.</p>
         </div>
     </div>
 
@@ -82,10 +77,17 @@
                         <span>⭐ {{ $sessions[$map->id] }} poin</span>
                         @endif
                     </div>
-                    <a href="{{ route('siswa.rpg.play', $map) }}" 
-                       class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                        {{ in_array($map->id, $completedMaps) ? 'Main Ulang' : (isset($sessions[$map->id]) ? 'Lanjutkan' : 'Main') }}
-                    </a>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ route('siswa.rpg.beta-3d', ['map' => $map->id]) }}"
+                           class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                            Main 3D
+                        </a>
+                        <a href="{{ route('siswa.rpg.play', $map) }}"
+                           class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors dark:bg-gray-700 dark:text-gray-200"
+                           title="Versi ringan untuk HP lama">
+                            2D
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

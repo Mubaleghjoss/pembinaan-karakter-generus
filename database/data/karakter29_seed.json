@@ -1,0 +1,988 @@
+[
+  {
+    "slug": "berakhlak-mulia",
+    "nomor": 1,
+    "nama": "Berakhlak Mulia",
+    "namaArab": "الْأَخْلَاقُ الْكَرِيمَة",
+    "kategori": "Tri Sukses Generus",
+    "ringkas": "Akhlak Islami",
+    "deskripsi": "Menampilkan perilaku yang mencerminkan nilai-nilai Islam dalam keseharian.",
+    "definisi": "Akhlaqul Karimah adalah keteladanan akhlak Rasulullah ﷺ yang dihadirkan dalam tutur kata, sikap, dan tindakan setiap hari, baik kepada Allah, sesama, maupun lingkungan.",
+    "dalilQuran": [
+      {
+        "arab": "وَإِنَّكَ لَعَلَىٰ خُلُقٍ عَظِيمٍ",
+        "terjemahan": "Dan sesungguhnya engkau benar-benar berbudi pekerti yang luhur.",
+        "sumber": "QS. Al-Qalam: 4"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "إِنَّمَا بُعِثْتُ لِأُتَمِّمَ مَكَارِمَ الْأَخْلَاقِ",
+        "terjemahan": "Sesungguhnya aku diutus untuk menyempurnakan akhlak yang mulia.",
+        "sumber": "HR. Ahmad & Baihaqi"
+      }
+    ],
+    "hikmah": [
+      "Ilmu tanpa akhlak ibarat lampu tanpa cahaya."
+    ],
+    "studiKasus": [
+      "Seorang siswa tetap menyapa petugas kebersihan dan menjaga adab kepada guru meski sedang lelah."
+    ],
+    "tipsAmal": [
+      "Mulai hari dengan senyum dan salam.",
+      "Hindari kata kasar—pilih kata yang membangun."
+    ]
+  },
+  {
+    "slug": "berilmu",
+    "nomor": 2,
+    "nama": "Berilmu (Alim Faqih)",
+    "namaArab": "الْعَالِمُ الْفَقِيه",
+    "kategori": "Tri Sukses Generus",
+    "ringkas": "Ilmu yang Bermanfaat",
+    "deskripsi": "Menguasai ilmu agama dan umum serta mengamalkannya dalam kehidupan.",
+    "definisi": "Alim adalah luas pengetahuan, faqih adalah dalam pemahaman. Ilmu yang dicari bukan untuk pamer, melainkan untuk diamalkan dan dimanfaatkan bagi sesama.",
+    "dalilQuran": [
+      {
+        "arab": "يَرْفَعِ اللَّهُ الَّذِينَ آمَنُوا مِنْكُمْ وَالَّذِينَ أُوتُوا الْعِلْمَ دَرَجَاتٍ",
+        "terjemahan": "Allah akan meninggikan derajat orang-orang yang beriman di antaramu dan orang-orang yang berilmu beberapa derajat.",
+        "sumber": "QS. Al-Mujadalah: 11"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ",
+        "terjemahan": "Menuntut ilmu adalah kewajiban bagi setiap muslim.",
+        "sumber": "HR. Ibnu Majah"
+      }
+    ],
+    "hikmah": [
+      "Ilmu menjaga pemiliknya, sedangkan harta dijaga oleh pemiliknya."
+    ],
+    "studiKasus": [
+      "Seorang pelajar membaca minimal 1 bab buku per hari dan langsung mempraktekkan satu hal yang ia pelajari."
+    ],
+    "tipsAmal": [
+      "Catat 1 ilmu baru setiap hari.",
+      "Ajarkan kembali kepada teman."
+    ]
+  },
+  {
+    "slug": "mandiri",
+    "nomor": 3,
+    "nama": "Mandiri",
+    "namaArab": "الْاِسْتِقْلَال",
+    "kategori": "Tri Sukses Generus",
+    "ringkas": "Kemandirian",
+    "deskripsi": "Mampu mengambil keputusan dan menyelesaikan masalah tanpa bergantung.",
+    "definisi": "Kemandirian adalah keberanian mengelola diri—waktu, tugas, dan kebutuhan—dengan tetap meminta pertolongan Allah dan berkonsultasi pada yang lebih tahu.",
+    "dalilQuran": [
+      {
+        "arab": "وَأَنْ لَيْسَ لِلْإِنْسَانِ إِلَّا مَا سَعَىٰ",
+        "terjemahan": "Dan bahwa manusia hanya memperoleh apa yang telah ia usahakan.",
+        "sumber": "QS. An-Najm: 39"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "الْيَدُ الْعُلْيَا خَيْرٌ مِنَ الْيَدِ السُّفْلَى",
+        "terjemahan": "Tangan di atas lebih baik daripada tangan di bawah.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Mandiri bukan berarti sendiri—melainkan tidak menjadi beban."
+    ],
+    "studiKasus": [
+      "Santri mencuci pakaian dan merapikan kamarnya sendiri tanpa diingatkan."
+    ],
+    "tipsAmal": [
+      "Susun jadwal harian.",
+      "Selesaikan tugas pribadi sebelum minta bantuan."
+    ]
+  },
+  {
+    "slug": "rukun",
+    "nomor": 4,
+    "nama": "Rukun",
+    "namaArab": "الْاِنْسِجَام",
+    "kategori": "6 Thabiat Luhur",
+    "ringkas": "Keharmonisan Sosial",
+    "deskripsi": "Menciptakan suasana damai dan saling menghormati.",
+    "definisi": "Rukun adalah suasana hati dan lingkungan yang tenteram, bebas dari permusuhan dan perpecahan, dibangun lewat saling memaafkan dan menghormati.",
+    "dalilQuran": [
+      {
+        "arab": "وَاعْتَصِمُوا بِحَبْلِ اللَّهِ جَمِيعًا وَلَا تَفَرَّقُوا",
+        "terjemahan": "Dan berpegang teguhlah kalian semua pada tali (agama) Allah, dan janganlah bercerai-berai.",
+        "sumber": "QS. Ali 'Imran: 103"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "لَا تَحَاسَدُوا وَلَا تَنَاجَشُوا وَلَا تَبَاغَضُوا وَكُونُوا عِبَادَ اللَّهِ إِخْوَانًا",
+        "terjemahan": "Janganlah saling dengki, saling membenci... jadilah hamba-hamba Allah yang bersaudara.",
+        "sumber": "HR. Muslim"
+      }
+    ],
+    "hikmah": [
+      "Rumah yang rukun adalah surga di dunia."
+    ],
+    "studiKasus": [
+      "Saat ada perselisihan kecil di kelas, siswa segera saling minta maaf."
+    ],
+    "tipsAmal": [
+      "Awali maaf walau kau yang benar.",
+      "Hindari membicarakan keburukan teman."
+    ]
+  },
+  {
+    "slug": "kompak",
+    "nomor": 5,
+    "nama": "Kompak",
+    "namaArab": "التَّمَاسُك",
+    "kategori": "6 Thabiat Luhur",
+    "ringkas": "Kekompakan Tim",
+    "deskripsi": "Menjaga persatuan dan bekerja sama dalam tim.",
+    "definisi": "Kompak adalah satu hati, satu langkah, dan satu tujuan—berani mengalahkan kepentingan pribadi demi kesuksesan bersama.",
+    "dalilQuran": [
+      {
+        "arab": "إِنَّ اللَّهَ يُحِبُّ الَّذِينَ يُقَاتِلُونَ فِي سَبِيلِهِ صَفًّا كَأَنَّهُمْ بُنْيَانٌ مَرْصُوصٌ",
+        "terjemahan": "Sesungguhnya Allah mencintai orang-orang yang berjuang di jalan-Nya dalam barisan teratur seakan bangunan yang kokoh.",
+        "sumber": "QS. Ash-Shaff: 4"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "يَدُ اللَّهِ مَعَ الْجَمَاعَةِ",
+        "terjemahan": "Tangan (pertolongan) Allah bersama jamaah.",
+        "sumber": "HR. Tirmidzi"
+      }
+    ],
+    "hikmah": [
+      "Lidi sebatang mudah patah, seikat sapu menyapu bersih."
+    ],
+    "studiKasus": [
+      "Tim kelas yang kompak memenangi lomba kebersihan walau dengan alat sederhana."
+    ],
+    "tipsAmal": [
+      "Hadir tepat waktu di setiap kegiatan tim.",
+      "Hindari sikap merasa paling benar."
+    ]
+  },
+  {
+    "slug": "kerja-sama",
+    "nomor": 6,
+    "nama": "Kerja Sama yang Baik",
+    "namaArab": "التَّعَاوُن",
+    "kategori": "6 Thabiat Luhur",
+    "ringkas": "Sinergi Positif",
+    "deskripsi": "Berperan aktif dalam kolaborasi yang produktif.",
+    "definisi": "Ta'awun adalah saling melengkapi peran demi kebaikan bersama, dan menjauhi kerja sama dalam hal dosa dan permusuhan.",
+    "dalilQuran": [
+      {
+        "arab": "وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ۖ وَلَا تَعَاوَنُوا عَلَى الْإِثْمِ وَالْعُدْوَانِ",
+        "terjemahan": "Tolong-menolonglah dalam kebaikan dan takwa, dan jangan tolong-menolong dalam dosa dan permusuhan.",
+        "sumber": "QS. Al-Ma'idah: 2"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "وَاللَّهُ فِي عَوْنِ الْعَبْدِ مَا كَانَ الْعَبْدُ فِي عَوْنِ أَخِيهِ",
+        "terjemahan": "Allah menolong hamba selama hamba menolong saudaranya.",
+        "sumber": "HR. Muslim"
+      }
+    ],
+    "hikmah": [
+      "Beban berat menjadi ringan jika dipikul bersama."
+    ],
+    "studiKasus": [
+      "Piket kelas dibagi tugas adil—menyapu, menghapus, menata—selesai dalam 5 menit."
+    ],
+    "tipsAmal": [
+      "Sepakati pembagian tugas di awal.",
+      "Hargai kontribusi sekecil apa pun."
+    ]
+  },
+  {
+    "slug": "jujur",
+    "nomor": 7,
+    "nama": "Jujur",
+    "namaArab": "الصِّدْق",
+    "kategori": "6 Thabiat Luhur",
+    "ringkas": "Kejujuran",
+    "deskripsi": "Bertindak dan berkata sesuai kenyataan dan kebenaran.",
+    "definisi": "Ash-Shidq adalah kesesuaian antara hati, lisan, dan perbuatan—berani berkata benar walau pahit, dan menjauhi dusta walau menguntungkan.",
+    "dalilQuran": [
+      {
+        "arab": "يَا أَيُّهَا الَّذِينَ آمَنُوا اتَّقُوا اللَّهَ وَكُونُوا مَعَ الصَّادِقِينَ",
+        "terjemahan": "Wahai orang beriman, bertakwalah dan bersamalah dengan orang-orang yang jujur.",
+        "sumber": "QS. At-Taubah: 119"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "عَلَيْكُمْ بِالصِّدْقِ فَإِنَّ الصِّدْقَ يَهْدِي إِلَى الْبِرِّ",
+        "terjemahan": "Hendaknya kalian jujur, karena kejujuran membawa kepada kebaikan.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Kejujuran adalah perhiasan termahal."
+    ],
+    "studiKasus": [
+      "Siswa mengakui contekan dalam ulangan dan menerima konsekuensinya dengan tenang."
+    ],
+    "tipsAmal": [
+      "Akui kesalahan tanpa mencari kambing hitam.",
+      "Tepati janji sekecil apa pun."
+    ]
+  },
+  {
+    "slug": "amanah",
+    "nomor": 8,
+    "nama": "Amanah",
+    "namaArab": "الْأَمَانَة",
+    "kategori": "6 Thabiat Luhur",
+    "ringkas": "Kepercayaan",
+    "deskripsi": "Menjalankan tugas dan tanggung jawab dengan benar dan dapat dipercaya.",
+    "definisi": "Amanah adalah menunaikan hak yang dititipkan—harta, rahasia, jabatan, atau tugas—sesuai porsinya tanpa pengkhianatan.",
+    "dalilQuran": [
+      {
+        "arab": "إِنَّ اللَّهَ يَأْمُرُكُمْ أَنْ تُؤَدُّوا الْأَمَانَاتِ إِلَىٰ أَهْلِهَا",
+        "terjemahan": "Sesungguhnya Allah menyuruh kalian menunaikan amanat kepada yang berhak menerimanya.",
+        "sumber": "QS. An-Nisa': 58"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "أَدِّ الْأَمَانَةَ إِلَى مَنِ ائْتَمَنَكَ",
+        "terjemahan": "Tunaikan amanah kepada orang yang mempercayakannya kepadamu.",
+        "sumber": "HR. Abu Dawud & Tirmidzi"
+      }
+    ],
+    "hikmah": [
+      "Sekali khianat, kepercayaan hilang seumur hidup."
+    ],
+    "studiKasus": [
+      "Bendahara kelas mencatat setiap pemasukan-pengeluaran walau tanpa diawasi."
+    ],
+    "tipsAmal": [
+      "Selesaikan tugas tepat waktu.",
+      "Jangan menyebar rahasia orang lain."
+    ]
+  },
+  {
+    "slug": "mujhid-muzhid",
+    "nomor": 9,
+    "nama": "Mujhid-Muzhid",
+    "namaArab": "مُجْهِد مُزْهِد",
+    "kategori": "6 Thabiat Luhur",
+    "ringkas": "Etos Kerja Islami",
+    "deskripsi": "Bekerja keras, bersungguh-sungguh, dan hidup hemat.",
+    "definisi": "Mujhid berarti bersungguh-sungguh dalam berusaha, muzhid berarti hemat dan zuhud terhadap dunia—keduanya membentuk pribadi produktif yang tidak boros.",
+    "dalilQuran": [
+      {
+        "arab": "وَالَّذِينَ إِذَا أَنْفَقُوا لَمْ يُسْرِفُوا وَلَمْ يَقْتُرُوا وَكَانَ بَيْنَ ذَٰلِكَ قَوَامًا",
+        "terjemahan": "Dan orang-orang yang apabila berinfak, tidak berlebihan dan tidak (pula) kikir, di antara keduanya secara wajar.",
+        "sumber": "QS. Al-Furqan: 67"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "إِنَّ اللَّهَ يُحِبُّ إِذَا عَمِلَ أَحَدُكُمْ عَمَلًا أَنْ يُتْقِنَهُ",
+        "terjemahan": "Sungguh Allah mencintai jika salah seorang kalian mengerjakan sesuatu, ia melakukannya dengan rapi.",
+        "sumber": "HR. Thabrani"
+      }
+    ],
+    "hikmah": [
+      "Hemat pangkal kaya, kerja keras pangkal sukses."
+    ],
+    "studiKasus": [
+      "Santri menabung uang jajan untuk membeli buku, bukan jajan berlebihan."
+    ],
+    "tipsAmal": [
+      "Buat anggaran mingguan.",
+      "Kerjakan tugas tersulit di pagi hari."
+    ]
+  },
+  {
+    "slug": "bersyukur",
+    "nomor": 10,
+    "nama": "Bersyukur",
+    "namaArab": "الشُّكْر",
+    "kategori": "4 Tali Keimanan",
+    "ringkas": "Rasa Syukur",
+    "deskripsi": "Menyadari dan menghargai segala nikmat Allah.",
+    "definisi": "Syukur adalah mengakui nikmat dengan hati, memuji dengan lisan, dan menggunakan nikmat itu untuk taat kepada Pemberinya.",
+    "dalilQuran": [
+      {
+        "arab": "لَئِنْ شَكَرْتُمْ لَأَزِيدَنَّكُمْ",
+        "terjemahan": "Jika kalian bersyukur, niscaya Aku akan menambah (nikmat) untuk kalian.",
+        "sumber": "QS. Ibrahim: 7"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "مَنْ لَمْ يَشْكُرِ النَّاسَ لَمْ يَشْكُرِ اللَّهَ",
+        "terjemahan": "Siapa yang tidak berterima kasih kepada manusia, ia tidak bersyukur kepada Allah.",
+        "sumber": "HR. Abu Dawud & Tirmidzi"
+      }
+    ],
+    "hikmah": [
+      "Bukan kebahagiaan yang membuat kita bersyukur, tetapi syukur yang membuat kita bahagia."
+    ],
+    "studiKasus": [
+      "Setiap pagi siswa menulis 3 nikmat hari sebelumnya yang ia syukuri."
+    ],
+    "tipsAmal": [
+      "Ucapkan Alhamdulillah setelah setiap nikmat kecil.",
+      "Berterima kasih kepada yang membantumu."
+    ]
+  },
+  {
+    "slug": "mempersungguh",
+    "nomor": 11,
+    "nama": "Mempersungguh",
+    "namaArab": "الْاِجْتِهَاد",
+    "kategori": "4 Tali Keimanan",
+    "ringkas": "Komitmen Ibadah",
+    "deskripsi": "Melaksanakan ibadah dengan kesungguhan dan konsistensi.",
+    "definisi": "Mempersungguh adalah memberi yang terbaik dalam ibadah dan amal—khusyuk, tepat waktu, dan istiqamah meski sedikit.",
+    "dalilQuran": [
+      {
+        "arab": "وَاعْبُدْ رَبَّكَ حَتَّىٰ يَأْتِيَكَ الْيَقِينُ",
+        "terjemahan": "Dan sembahlah Tuhanmu hingga datang kepadamu keyakinan (kematian).",
+        "sumber": "QS. Al-Hijr: 99"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "أَحَبُّ الْأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ",
+        "terjemahan": "Amal yang paling dicintai Allah adalah yang paling konsisten meskipun sedikit.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Sedikit tapi rutin lebih baik daripada banyak tapi sesekali."
+    ],
+    "studiKasus": [
+      "Santri menjaga shalat berjamaah Subuh setiap hari, tidak terkecuali saat liburan."
+    ],
+    "tipsAmal": [
+      "Pasang alarm untuk shalat awal waktu.",
+      "Jadikan dzikir pagi-petang sebagai rutinitas."
+    ]
+  },
+  {
+    "slug": "mengagungkan",
+    "nomor": 12,
+    "nama": "Mengagungkan Allah & Syariat-Nya",
+    "namaArab": "تَعْظِيمُ شَعَائِرِ اللَّه",
+    "kategori": "4 Tali Keimanan",
+    "ringkas": "Taqwa dan Pengagungan",
+    "deskripsi": "Mengutamakan Allah dalam segala aspek kehidupan dan tanda-tanda kekuasaan-Nya.",
+    "definisi": "Mengagungkan adalah menempatkan Allah, Al-Qur'an, masjid, dan syariat di posisi tertinggi—dengan adab, ketundukan, dan rasa takut yang dibungkus cinta.",
+    "dalilQuran": [
+      {
+        "arab": "وَمَنْ يُعَظِّمْ شَعَائِرَ اللَّهِ فَإِنَّهَا مِنْ تَقْوَى الْقُلُوبِ",
+        "terjemahan": "Dan barang siapa mengagungkan syiar-syiar Allah, maka sesungguhnya itu adalah bagian dari ketakwaan hati.",
+        "sumber": "QS. Al-Hajj: 32"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "اعْبُدِ اللَّهَ كَأَنَّكَ تَرَاهُ، فَإِنْ لَمْ تَكُنْ تَرَاهُ فَإِنَّهُ يَرَاكَ",
+        "terjemahan": "Sembahlah Allah seakan engkau melihat-Nya; jika engkau tidak melihat-Nya, Dia melihatmu.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Adab di atas ilmu—tanpa adab, ilmu menjadi sumber kesombongan."
+    ],
+    "studiKasus": [
+      "Siswa meletakkan mushaf di tempat tinggi dan berwudhu sebelum menyentuhnya."
+    ],
+    "tipsAmal": [
+      "Hentikan aktivitas saat adzan.",
+      "Jaga adab masuk masjid dan menyebut nama Allah."
+    ]
+  },
+  {
+    "slug": "berdoa",
+    "nomor": 13,
+    "nama": "Berdoa",
+    "namaArab": "الدُّعَاء",
+    "kategori": "4 Tali Keimanan",
+    "ringkas": "Kekuatan Doa",
+    "deskripsi": "Menjadikan doa sebagai senjata utama dalam menghadapi kehidupan.",
+    "definisi": "Doa adalah inti ibadah—ungkapan kelemahan diri di hadapan Allah dan kepercayaan total bahwa hanya Dia tempat bergantung.",
+    "dalilQuran": [
+      {
+        "arab": "وَقَالَ رَبُّكُمُ ادْعُونِي أَسْتَجِبْ لَكُمْ",
+        "terjemahan": "Dan Tuhanmu berfirman, 'Berdoalah kepada-Ku, niscaya akan Kuperkenankan untukmu.'",
+        "sumber": "QS. Ghafir: 60"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "الدُّعَاءُ هُوَ الْعِبَادَةُ",
+        "terjemahan": "Doa adalah ibadah.",
+        "sumber": "HR. Abu Dawud & Tirmidzi"
+      }
+    ],
+    "hikmah": [
+      "Doa orang yang teraniaya tidak ada hijab antaranya dengan Allah."
+    ],
+    "studiKasus": [
+      "Sebelum ujian, siswa berdoa khusyuk lalu mengerjakan dengan tenang."
+    ],
+    "tipsAmal": [
+      "Awali dan akhiri hari dengan doa.",
+      "Doakan orang lain tanpa sepengetahuannya."
+    ]
+  },
+  {
+    "slug": "benar",
+    "nomor": 14,
+    "nama": "Benar",
+    "namaArab": "الْاِسْتِقَامَة",
+    "kategori": "3 Prinsip Kerja",
+    "ringkas": "Kejujuran dalam Tindakan",
+    "deskripsi": "Melakukan sesuatu sesuai prinsip dan aturan yang benar.",
+    "definisi": "Bekerja benar adalah mengikuti tuntunan syariat dan SOP yang berlaku, tidak menempuh jalan pintas yang melanggar.",
+    "dalilQuran": [
+      {
+        "arab": "فَاسْتَقِمْ كَمَا أُمِرْتَ",
+        "terjemahan": "Maka tetaplah engkau (Muhammad) di jalan yang benar sebagaimana telah diperintahkan kepadamu.",
+        "sumber": "QS. Hud: 112"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "قُلْ آمَنْتُ بِاللَّهِ ثُمَّ اسْتَقِمْ",
+        "terjemahan": "Katakanlah: 'Aku beriman kepada Allah,' kemudian beristiqamahlah.",
+        "sumber": "HR. Muslim"
+      }
+    ],
+    "hikmah": [
+      "Hasil curang tidak akan berkah."
+    ],
+    "studiKasus": [
+      "Karyawan menolak menandatangani laporan yang dimanipulasi."
+    ],
+    "tipsAmal": [
+      "Patuhi aturan walau tidak ada yang melihat.",
+      "Hindari menyontek dalam bentuk apa pun."
+    ]
+  },
+  {
+    "slug": "kurup",
+    "nomor": 15,
+    "nama": "Kurup (Efektif & Efisien)",
+    "namaArab": "الْكَفَاءَة",
+    "kategori": "3 Prinsip Kerja",
+    "ringkas": "Efisiensi Produktif",
+    "deskripsi": "Menggunakan waktu dan sumber daya secara optimal.",
+    "definisi": "Kurup adalah cermat memilih cara terbaik—tidak boros waktu, tenaga, atau biaya—untuk mencapai hasil maksimal.",
+    "dalilQuran": [
+      {
+        "arab": "وَالْعَصْرِ ۝ إِنَّ الْإِنْسَانَ لَفِي خُسْرٍ",
+        "terjemahan": "Demi masa, sesungguhnya manusia berada dalam kerugian.",
+        "sumber": "QS. Al-‘Ashr: 1-2"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "نِعْمَتَانِ مَغْبُونٌ فِيهِمَا كَثِيرٌ مِنَ النَّاسِ: الصِّحَّةُ وَالْفَرَاغُ",
+        "terjemahan": "Dua nikmat yang banyak manusia tertipu padanya: kesehatan dan waktu luang.",
+        "sumber": "HR. Bukhari"
+      }
+    ],
+    "hikmah": [
+      "Lebih baik 1 jam efektif daripada 8 jam mengulur-ulur."
+    ],
+    "studiKasus": [
+      "Tim panitia menyelesaikan acara dengan budget kecil melalui perencanaan matang."
+    ],
+    "tipsAmal": [
+      "Buat to-do list harian.",
+      "Matikan notifikasi saat fokus."
+    ]
+  },
+  {
+    "slug": "janji",
+    "nomor": 16,
+    "nama": "Janji",
+    "namaArab": "الْوَفَاءُ بِالْعَهْد",
+    "kategori": "3 Prinsip Kerja",
+    "ringkas": "Integritas Janji",
+    "deskripsi": "Menepati ucapan dan komitmen sebagai bentuk tanggung jawab.",
+    "definisi": "Menepati janji adalah ciri orang beriman; mengingkari janji termasuk tanda-tanda nifaq.",
+    "dalilQuran": [
+      {
+        "arab": "وَأَوْفُوا بِالْعَهْدِ ۖ إِنَّ الْعَهْدَ كَانَ مَسْئُولًا",
+        "terjemahan": "Dan penuhilah janji; sesungguhnya janji itu pasti diminta pertanggungjawabannya.",
+        "sumber": "QS. Al-Isra': 34"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "آيَةُ الْمُنَافِقِ ثَلَاثٌ: إِذَا حَدَّثَ كَذَبَ، وَإِذَا وَعَدَ أَخْلَفَ، وَإِذَا اؤْتُمِنَ خَانَ",
+        "terjemahan": "Tanda munafik ada tiga: bila bicara dusta, bila berjanji ingkar, bila dipercaya khianat.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Sekali ingkar janji, kepercayaan terkikis dua kali."
+    ],
+    "studiKasus": [
+      "Siswa berusaha hadir tepat waktu meski hujan, karena sudah berjanji menemui guru."
+    ],
+    "tipsAmal": [
+      "Jangan mudah berjanji bila tidak yakin.",
+      "Kabari segera jika berhalangan."
+    ]
+  },
+  {
+    "slug": "syukur-nikmat",
+    "nomor": 17,
+    "nama": "Syukur atas Nikmat",
+    "namaArab": "شُكْرُ النِّعْمَة",
+    "kategori": "4 Maqodirulloh",
+    "ringkas": "Syukur yang Ikhlas",
+    "deskripsi": "Tidak sombong, tetap rendah hati atas segala pemberian.",
+    "definisi": "Sikap utama saat menerima nikmat: rendah hati, mengakui semua dari Allah, dan menggunakannya untuk ketaatan.",
+    "dalilQuran": [
+      {
+        "arab": "وَمَا بِكُمْ مِنْ نِعْمَةٍ فَمِنَ اللَّهِ",
+        "terjemahan": "Dan segala nikmat yang ada padamu (datangnya) dari Allah.",
+        "sumber": "QS. An-Nahl: 53"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "انْظُرُوا إِلَى مَنْ هُوَ أَسْفَلَ مِنْكُمْ، وَلَا تَنْظُرُوا إِلَى مَنْ هُوَ فَوْقَكُمْ",
+        "terjemahan": "Lihatlah kepada yang di bawah kalian, dan jangan lihat kepada yang di atas kalian.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Sombong adalah cara tercepat kehilangan nikmat."
+    ],
+    "studiKasus": [
+      "Setelah juara lomba, siswa tetap rendah hati dan membantu temannya berlatih."
+    ],
+    "tipsAmal": [
+      "Sisihkan sedekah saat menerima rezeki.",
+      "Hindari pamer di media sosial."
+    ]
+  },
+  {
+    "slug": "istirja",
+    "nomor": 18,
+    "nama": "Istirja' saat Musibah",
+    "namaArab": "الْاِسْتِرْجَاع",
+    "kategori": "4 Maqodirulloh",
+    "ringkas": "Tawakal & Keteguhan Iman",
+    "deskripsi": "Menerima ujian dengan lapang dada dan berserah diri kepada Allah.",
+    "definisi": "Istirja' adalah ucapan 'Innā lillāhi wa innā ilaihi rāji‘ūn'—pengakuan bahwa segala sesuatu milik Allah dan kembali kepada-Nya.",
+    "dalilQuran": [
+      {
+        "arab": "الَّذِينَ إِذَا أَصَابَتْهُمْ مُصِيبَةٌ قَالُوا إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ",
+        "terjemahan": "(Yaitu) orang-orang yang apabila ditimpa musibah berkata, 'Sesungguhnya kami milik Allah dan kepada-Nya kami kembali.'",
+        "sumber": "QS. Al-Baqarah: 156"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "مَا يُصِيبُ الْمُسْلِمَ مِنْ نَصَبٍ وَلَا وَصَبٍ ... إِلَّا كَفَّرَ اللَّهُ بِهَا مِنْ خَطَايَاهُ",
+        "terjemahan": "Tidaklah seorang muslim ditimpa kelelahan, sakit... kecuali Allah hapuskan dengannya dosa-dosanya.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Musibah datang bukan untuk menghancurkan, tapi untuk membersihkan."
+    ],
+    "studiKasus": [
+      "Saat kehilangan barang berharga, siswa beristirja' dan tidak menyalahkan siapa pun."
+    ],
+    "tipsAmal": [
+      "Ucapkan istirja' segera saat musibah.",
+      "Yakini ada hikmah di balik setiap kejadian."
+    ]
+  },
+  {
+    "slug": "sabar",
+    "nomor": 19,
+    "nama": "Sabar dalam Cobaan",
+    "namaArab": "الصَّبْر",
+    "kategori": "4 Maqodirulloh",
+    "ringkas": "Kesabaran Aktif",
+    "deskripsi": "Tetap teguh dan tabah dalam menghadapi kesulitan.",
+    "definisi": "Sabar adalah menahan diri dari keluh kesah, lisan dari kata-kata negatif, dan anggota badan dari tindakan tercela ketika ujian datang.",
+    "dalilQuran": [
+      {
+        "arab": "وَبَشِّرِ الصَّابِرِينَ",
+        "terjemahan": "Dan sampaikanlah kabar gembira kepada orang-orang yang sabar.",
+        "sumber": "QS. Al-Baqarah: 155"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "الصَّبْرُ ضِيَاءٌ",
+        "terjemahan": "Sabar adalah cahaya.",
+        "sumber": "HR. Muslim"
+      }
+    ],
+    "hikmah": [
+      "Sabar pertama kali datang ujian adalah sabar yang sebenarnya."
+    ],
+    "studiKasus": [
+      "Siswa gagal seleksi tetap belajar lebih giat tanpa menyalahkan keadaan."
+    ],
+    "tipsAmal": [
+      "Tarik napas dalam sebelum bereaksi.",
+      "Banyak baca: Lā ḥaula wa lā quwwata illā billāh."
+    ]
+  },
+  {
+    "slug": "taubat",
+    "nomor": 20,
+    "nama": "Bertaubat atas Kesalahan",
+    "namaArab": "التَّوْبَة",
+    "kategori": "4 Maqodirulloh",
+    "ringkas": "Perbaikan Diri",
+    "deskripsi": "Segera memperbaiki diri setelah menyadari kesalahan.",
+    "definisi": "Taubat adalah meninggalkan dosa, menyesali yang lalu, bertekad tidak mengulangi, dan memperbaiki hubungan dengan yang dizalimi.",
+    "dalilQuran": [
+      {
+        "arab": "وَتُوبُوا إِلَى اللَّهِ جَمِيعًا أَيُّهَ الْمُؤْمِنُونَ لَعَلَّكُمْ تُفْلِحُونَ",
+        "terjemahan": "Dan bertobatlah kalian kepada Allah, hai orang-orang beriman, agar kalian beruntung.",
+        "sumber": "QS. An-Nur: 31"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "كُلُّ بَنِي آدَمَ خَطَّاءٌ، وَخَيْرُ الْخَطَّائِينَ التَّوَّابُونَ",
+        "terjemahan": "Setiap anak Adam pernah berbuat salah, dan sebaik-baik yang bersalah adalah yang bertaubat.",
+        "sumber": "HR. Tirmidzi & Ibnu Majah"
+      }
+    ],
+    "hikmah": [
+      "Pintu taubat terbuka sampai nyawa di tenggorokan."
+    ],
+    "studiKasus": [
+      "Setelah berbohong, siswa segera meminta maaf dan berjanji tidak mengulangi."
+    ],
+    "tipsAmal": [
+      "Istighfar setelah setiap shalat.",
+      "Catat dosa yang ingin ditinggalkan dan evaluasi mingguan."
+    ]
+  },
+  {
+    "slug": "membantu-yang-lemah",
+    "nomor": 21,
+    "nama": "Yang Kuat Membantu yang Lemah",
+    "namaArab": "إِعَانَةُ الضُّعَفَاء",
+    "kategori": "4 Roda Kehidupan",
+    "ringkas": "Kepedulian Sosial",
+    "deskripsi": "Membantu orang lain dengan tulus dan tanpa pamrih.",
+    "definisi": "Kekuatan—fisik, harta, ilmu, atau jabatan—adalah amanah untuk meringankan beban yang lemah, bukan untuk menindas.",
+    "dalilQuran": [
+      {
+        "arab": "وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ",
+        "terjemahan": "Dan tolong-menolonglah kalian dalam kebaikan dan takwa.",
+        "sumber": "QS. Al-Ma'idah: 2"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "الْمُسْلِمُ أَخُو الْمُسْلِمِ، لَا يَظْلِمُهُ وَلَا يُسْلِمُهُ",
+        "terjemahan": "Muslim adalah saudara muslim, tidak menzaliminya dan tidak membiarkannya (dalam kesulitan).",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Sebaik-baik manusia adalah yang paling bermanfaat bagi sesama."
+    ],
+    "studiKasus": [
+      "Senior membantu junior baru beradaptasi dengan suasana asrama."
+    ],
+    "tipsAmal": [
+      "Tawarkan bantuan sebelum diminta.",
+      "Sisihkan sebagian rezeki untuk yang membutuhkan."
+    ]
+  },
+  {
+    "slug": "membantu-yang-belum-bisa",
+    "nomor": 22,
+    "nama": "Yang Bisa Membantu yang Belum Bisa",
+    "namaArab": "تَعْلِيمُ الْجَاهِل",
+    "kategori": "4 Roda Kehidupan",
+    "ringkas": "Bimbingan Ikhlas",
+    "deskripsi": "Menuntun dan membantu yang belum mampu dengan penuh kesabaran.",
+    "definisi": "Berbagi keterampilan dan ilmu kepada yang belum bisa adalah investasi pahala jariyah, bukan ajang merasa lebih hebat.",
+    "dalilQuran": [
+      {
+        "arab": "وَقُلْ رَبِّ زِدْنِي عِلْمًا",
+        "terjemahan": "Dan katakanlah, 'Ya Tuhanku, tambahkanlah ilmu kepadaku.'",
+        "sumber": "QS. Thaha: 114"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ",
+        "terjemahan": "Sebaik-baik kalian adalah yang belajar Al-Qur'an dan mengajarkannya.",
+        "sumber": "HR. Bukhari"
+      }
+    ],
+    "hikmah": [
+      "Mengajar adalah cara terbaik mempertajam ilmu sendiri."
+    ],
+    "studiKasus": [
+      "Siswa yang sudah hafal mengajak teman menghafal bersama dengan sabar."
+    ],
+    "tipsAmal": [
+      "Sisihkan waktu mengajari adik kelas.",
+      "Jangan meremehkan pertanyaan dasar."
+    ]
+  },
+  {
+    "slug": "mengingatkan-yang-lupa",
+    "nomor": 23,
+    "nama": "Yang Ingat Mengingatkan yang Lupa",
+    "namaArab": "التَّذْكِير",
+    "kategori": "4 Roda Kehidupan",
+    "ringkas": "Nasihat Bijak",
+    "deskripsi": "Memberi pengingat yang sopan dan bermanfaat.",
+    "definisi": "Mengingatkan dilakukan dengan kata yang lembut, tempat yang tepat, dan niat ingin menyelamatkan—bukan mempermalukan.",
+    "dalilQuran": [
+      {
+        "arab": "وَذَكِّرْ فَإِنَّ الذِّكْرَىٰ تَنْفَعُ الْمُؤْمِنِينَ",
+        "terjemahan": "Dan tetaplah memberi peringatan, karena peringatan itu bermanfaat bagi orang-orang yang beriman.",
+        "sumber": "QS. Adz-Dzariyat: 55"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "الدِّينُ النَّصِيحَةُ",
+        "terjemahan": "Agama adalah nasihat.",
+        "sumber": "HR. Muslim"
+      }
+    ],
+    "hikmah": [
+      "Nasihat bagai garam—pas takarannya membuat lezat."
+    ],
+    "studiKasus": [
+      "Saat teman lupa shalat, siswa mengingatkannya dengan sapaan ramah, bukan menyindir."
+    ],
+    "tipsAmal": [
+      "Sampaikan nasihat empat mata.",
+      "Awali dengan apresiasi, akhiri dengan doa."
+    ]
+  },
+  {
+    "slug": "menasihati-yang-salah",
+    "nomor": 24,
+    "nama": "Yang Salah Dinasihati agar Bertaubat",
+    "namaArab": "النَّصِيحَة",
+    "kategori": "4 Roda Kehidupan",
+    "ringkas": "Koreksi & Taubat",
+    "deskripsi": "Menegur kesalahan dengan lembut agar kembali ke jalan benar.",
+    "definisi": "Amar makruf nahi mungkar dilakukan dengan hikmah, tidak menjatuhkan, dan tetap mendoakan agar yang ditegur diberi hidayah.",
+    "dalilQuran": [
+      {
+        "arab": "ادْعُ إِلَىٰ سَبِيلِ رَبِّكَ بِالْحِكْمَةِ وَالْمَوْعِظَةِ الْحَسَنَةِ",
+        "terjemahan": "Serulah (manusia) kepada jalan Tuhanmu dengan hikmah dan pelajaran yang baik.",
+        "sumber": "QS. An-Nahl: 125"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "مَنْ رَأَى مِنْكُمْ مُنْكَرًا فَلْيُغَيِّرْهُ بِيَدِهِ",
+        "terjemahan": "Siapa di antara kalian melihat kemungkaran, ubahlah dengan tangannya...",
+        "sumber": "HR. Muslim"
+      }
+    ],
+    "hikmah": [
+      "Tegur dosanya, bukan orangnya."
+    ],
+    "studiKasus": [
+      "Saat teman melakukan ghibah, siswa mengalihkan pembicaraan dengan cara halus."
+    ],
+    "tipsAmal": [
+      "Doakan dulu sebelum menegur.",
+      "Tahan amarah—pakai bahasa yang membangun."
+    ]
+  },
+  {
+    "slug": "bicara-baik",
+    "nomor": 25,
+    "nama": "Berbicara Baik dan Benar",
+    "namaArab": "الْقَوْلُ الْحَسَن",
+    "kategori": "5 Syarat Rukun & Kompak",
+    "ringkas": "Komunikasi Positif",
+    "deskripsi": "Menggunakan lisan untuk kebaikan dan tidak menyakiti.",
+    "definisi": "Lisan yang baik adalah yang berkata jujur, tidak kasar, tidak menggunjing, dan memilih diam ketika tidak ada yang manfaat.",
+    "dalilQuran": [
+      {
+        "arab": "وَقُولُوا لِلنَّاسِ حُسْنًا",
+        "terjemahan": "Dan berkatalah kalian kepada manusia (dengan kata-kata) yang baik.",
+        "sumber": "QS. Al-Baqarah: 83"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الْآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ",
+        "terjemahan": "Siapa beriman kepada Allah dan hari Akhir, hendaklah berkata baik atau diam.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Kata sekali terlontar tak bisa ditarik kembali."
+    ],
+    "studiKasus": [
+      "Siswa keluar dari grup chat yang sering ghibah dan menggunjing guru."
+    ],
+    "tipsAmal": [
+      "Sebelum bicara, tanya: benarkah, baikkah, perlukah?",
+      "Banyak istighfar setelah bicara."
+    ]
+  },
+  {
+    "slug": "saling-percaya",
+    "nomor": 26,
+    "nama": "Jujur dan Saling Percaya",
+    "namaArab": "الثِّقَةُ الْمُتَبَادَلَة",
+    "kategori": "5 Syarat Rukun & Kompak",
+    "ringkas": "Kepercayaan Timbal Balik",
+    "deskripsi": "Membangun relasi berdasarkan kejujuran dan saling percaya.",
+    "definisi": "Kepercayaan dibangun dengan konsistensi jujur dalam ucapan, transparan dalam tindakan, dan menjaga aib saudara.",
+    "dalilQuran": [
+      {
+        "arab": "اجْتَنِبُوا كَثِيرًا مِنَ الظَّنِّ ۖ إِنَّ بَعْضَ الظَّنِّ إِثْمٌ",
+        "terjemahan": "Jauhilah banyak prasangka, karena sebagian prasangka itu dosa.",
+        "sumber": "QS. Al-Hujurat: 12"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "مَنْ سَتَرَ مُسْلِمًا سَتَرَهُ اللَّهُ يَوْمَ الْقِيَامَةِ",
+        "terjemahan": "Barang siapa menutupi (aib) seorang muslim, Allah menutupi (aibnya) di hari Kiamat.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Saling percaya adalah pondasi setiap hubungan yang sehat."
+    ],
+    "studiKasus": [
+      "Sahabat saling menjaga rahasia walau sedang bertengkar."
+    ],
+    "tipsAmal": [
+      "Klarifikasi sebelum berburuk sangka.",
+      "Jaga rahasia teman seperti rahasiamu sendiri."
+    ]
+  },
+  {
+    "slug": "mengalah",
+    "nomor": 27,
+    "nama": "Sabar dan Mengalah",
+    "namaArab": "الْإِيثَار",
+    "kategori": "5 Syarat Rukun & Kompak",
+    "ringkas": "Mengalah untuk Kedamaian",
+    "deskripsi": "Mengutamakan ketenangan dan kerukunan daripada ego.",
+    "definisi": "Mengalah dalam hal yang tidak prinsipil adalah tanda kebesaran jiwa, bukan kekalahan—demi menjaga ukhuwah.",
+    "dalilQuran": [
+      {
+        "arab": "وَيُؤْثِرُونَ عَلَىٰ أَنْفُسِهِمْ وَلَوْ كَانَ بِهِمْ خَصَاصَةٌ",
+        "terjemahan": "Dan mereka mengutamakan (orang lain) atas diri mereka sendiri, meskipun mereka membutuhkan.",
+        "sumber": "QS. Al-Hasyr: 9"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "أَنَا زَعِيمٌ بِبَيْتٍ فِي رَبَضِ الْجَنَّةِ لِمَنْ تَرَكَ الْمِرَاءَ وَإِنْ كَانَ مُحِقًّا",
+        "terjemahan": "Aku jamin rumah di pinggir surga bagi yang meninggalkan perdebatan walau ia benar.",
+        "sumber": "HR. Abu Dawud"
+      }
+    ],
+    "hikmah": [
+      "Mengalah bukan kalah—itu kemenangan terhadap ego."
+    ],
+    "studiKasus": [
+      "Saat berebut tempat duduk, siswa mempersilakan teman yang lebih membutuhkan."
+    ],
+    "tipsAmal": [
+      "Hentikan debat yang tak berfaedah.",
+      "Ambil giliran terakhir dalam hal kenikmatan."
+    ]
+  },
+  {
+    "slug": "tidak-merusak",
+    "nomor": 28,
+    "nama": "Tidak Menyakiti / Merusak Sesama",
+    "namaArab": "حِفْظُ الْحُقُوق",
+    "kategori": "5 Syarat Rukun & Kompak",
+    "ringkas": "Menjaga Hak Sesama",
+    "deskripsi": "Menghormati hak dan perasaan orang lain.",
+    "definisi": "Tidak menyakiti mencakup fisik, lisan, dan harta—termasuk tidak merusak fasilitas umum, alam, dan reputasi orang lain.",
+    "dalilQuran": [
+      {
+        "arab": "وَلَا تَعْثَوْا فِي الْأَرْضِ مُفْسِدِينَ",
+        "terjemahan": "Dan janganlah kalian berbuat kerusakan di muka bumi.",
+        "sumber": "QS. Al-Baqarah: 60"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ",
+        "terjemahan": "Muslim adalah orang yang muslim lainnya selamat dari (gangguan) lisan dan tangannya.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Menjaga hak sesama adalah bukti taqwa kepada Allah."
+    ],
+    "studiKasus": [
+      "Siswa tidak mencoret-coret bangku dan menjaga buku perpustakaan."
+    ],
+    "tipsAmal": [
+      "Berhati-hati dengan kata di media sosial.",
+      "Buang sampah pada tempatnya."
+    ]
+  },
+  {
+    "slug": "empati",
+    "nomor": 29,
+    "nama": "Saling Memperhatikan & Menjaga Perasaan",
+    "namaArab": "الْإِحْسَانُ وَالتَّعَاطُف",
+    "kategori": "5 Syarat Rukun & Kompak",
+    "ringkas": "Empati & Kepedulian",
+    "deskripsi": "Peka terhadap kondisi dan perasaan sesama.",
+    "definisi": "Empati adalah hadir untuk saudara—mendengar, menanyakan kabar, dan memilih kata yang tidak melukai—seakan mengalami hal yang sama.",
+    "dalilQuran": [
+      {
+        "arab": "أَذِلَّةٍ عَلَى الْمُؤْمِنِينَ أَعِزَّةٍ عَلَى الْكَافِرِينَ",
+        "terjemahan": "(Mereka) bersikap lemah lembut terhadap orang-orang mukmin, tegas terhadap orang-orang kafir.",
+        "sumber": "QS. Al-Ma'idah: 54"
+      }
+    ],
+    "dalilHadits": [
+      {
+        "arab": "مَثَلُ الْمُؤْمِنِينَ فِي تَوَادِّهِمْ وَتَرَاحُمِهِمْ كَمَثَلِ الْجَسَدِ الْوَاحِدِ",
+        "terjemahan": "Perumpamaan kaum mukminin dalam saling mencintai dan menyayangi seperti satu tubuh.",
+        "sumber": "HR. Bukhari & Muslim"
+      }
+    ],
+    "hikmah": [
+      "Telinga yang mau mendengar lebih berharga daripada mulut yang menasihati."
+    ],
+    "studiKasus": [
+      "Siswa menemani teman yang sedang sedih, tanpa harus banyak berkomentar."
+    ],
+    "tipsAmal": [
+      "Tanyakan kabar teman secara berkala.",
+      "Simak dulu sebelum memberi solusi."
+    ]
+  }
+]

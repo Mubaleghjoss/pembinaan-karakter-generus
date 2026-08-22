@@ -1,6 +1,6 @@
 @extends('layouts.siswa')
 
-@section('title', 'Beta 3D')
+@section('title', 'Petualangan 3D')
 
 @push('styles')
 <style>
@@ -781,11 +781,11 @@
 <div class="rpg-beta-shell space-y-4 p-4 lg:p-6 mx-auto">
     <div class="pkg-page-header">
         <div>
-            <h1 class="pkg-page-heading">Beta 3D</h1>
-            <p class="pkg-page-subheading">Ruang uji first-person yang membaca data map RPG tanpa mengubah gameplay inti.</p>
+            <h1 class="pkg-page-heading">Petualangan 3D</h1>
+            <p class="pkg-page-subheading">Mode first-person 3D. Pilih peta, temui NPC 29 karakter, dan jawab pertanyaan untuk poin.</p>
         </div>
         <div class="pkg-page-actions">
-            <a href="{{ route('siswa.rpg.index') }}" class="btn-secondary">Kembali ke Game</a>
+            <a href="{{ route('siswa.rpg.index') }}" class="btn-secondary">Kembali</a>
         </div>
     </div>
 
