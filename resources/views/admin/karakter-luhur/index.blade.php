@@ -3,22 +3,22 @@
 @section('title', 'Bank 29 Karakter Luhur')
 
 @section('content')
-<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
     <div class="pkg-page-header">
         <div>
             <h1 class="pkg-page-heading">Bank 29 Karakter Luhur</h1>
-            <p class="pkg-page-subheading">Sumber data untuk game Rangkai Kata &amp; Tebak Karakter. Semakin lengkap studi kasusnya, makin seru gamenya.</p>
+            <p class="pkg-page-subheading">Sumber data game Rangkai Kata &amp; Tebak Karakter dan referensi publik 29 Karakter.</p>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="pkg-page-actions">
             <a href="{{ route('admin.karakter-luhur.create') }}" class="btn-primary px-5 py-2.5 font-bold">+ Tambah Karakter</a>
         </div>
     </div>
 
     @if(session('success'))
-        <div class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200">{{ session('success') }}</div>
+        <div class="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200">{{ session('success') }}</div>
     @endif
 
-    <div class="mb-6 grid gap-4 sm:grid-cols-2">
+    <div class="mb-5 grid grid-cols-2 gap-3 sm:gap-4">
         <div class="pkg-card-soft rounded-2xl p-4">
             <p class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Karakter</p>
             <p class="mt-1 text-2xl font-black text-gray-900 dark:text-white">{{ $total }}</p>
@@ -29,15 +29,63 @@
         </div>
     </div>
 
-    <form method="GET" action="{{ route('admin.karakter-luhur.index') }}" class="mb-5 flex flex-wrap gap-3">
-        <input type="search" name="q" value="{{ $search }}" placeholder="Cari nama / arab / kategori..." class="pkg-field w-full max-w-md">
-        <button type="submit" class="btn-primary px-5 py-2.5 font-bold">Cari</button>
-        @if($search !== '')
-            <a href="{{ route('admin.karakter-luhur.index') }}" class="btn-secondary px-5 py-2.5 font-bold">Reset</a>
-        @endif
+    <form method="GET" action="{{ route('admin.karakter-luhur.index') }}" class="mb-5 flex flex-wrap gap-2 sm:gap-3">
+        <input type="search" name="q" value="{{ $search }}" placeholder="Cari nama / arab / kategori..." class="pkg-field w-full sm:max-w-md">
+        <div class="flex w-full gap-2 sm:w-auto">
+            <button type="submit" class="btn-primary flex-1 px-5 py-2.5 font-bold sm:flex-none">Cari</button>
+            @if($search !== '')
+                <a href="{{ route('admin.karakter-luhur.index') }}" class="btn-secondary flex-1 px-5 py-2.5 font-bold sm:flex-none">Reset</a>
+            @endif
+        </div>
     </form>
 
-    <div class="pkg-panel-lg overflow-hidden">
+    {{-- Kartu (mobile) --}}
+    <div class="pkg-cards-mobile">
+        @forelse($items as $item)
+            <div class="pkg-data-card">
+                <div class="pkg-data-card-head">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="pkg-data-card-badge">{{ $item->nomor }}</span>
+                        <div class="min-w-0">
+                            <p class="pkg-data-card-title">{{ $item->nama }}</p>
+                            @if($item->nama_arab)<p class="pkg-data-card-sub" dir="rtl" lang="ar">{{ $item->nama_arab }}</p>@endif
+                        </div>
+                    </div>
+                    @if($item->is_active)
+                        <span class="pkg-status-badge pkg-status-success shrink-0">Aktif</span>
+                    @else
+                        <span class="pkg-status-badge pkg-status-neutral shrink-0">Nonaktif</span>
+                    @endif
+                </div>
+                <div class="pkg-data-card-meta">
+                    <div class="pkg-data-card-row"><span class="k">Kategori</span><span class="v">{{ $item->kategori ?: '—' }}</span></div>
+                    <div class="pkg-data-card-row"><span class="k">Studi Kasus</span><span class="v">{{ count($item->studiKasusList()) }} skenario</span></div>
+                </div>
+                <div class="pkg-data-card-actions">
+                    <a href="{{ route('admin.karakter-luhur.edit', $item) }}" class="btn-primary">Edit</a>
+                    <form method="POST" action="{{ route('admin.karakter-luhur.toggle', $item) }}">
+                        @csrf
+                        <button type="submit" class="btn-secondary">{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.karakter-luhur.destroy', $item) }}" onsubmit="return confirm('Hapus karakter {{ $item->nama }}?');" class="!flex-none">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-danger !w-auto !px-3" aria-label="Hapus">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @empty
+            <div class="pkg-empty-state pkg-card">
+                <p class="pkg-empty-title">Belum ada karakter</p>
+                <p class="pkg-empty-copy">Klik "Tambah Karakter" atau jalankan seeder.</p>
+            </div>
+        @endforelse
+    </div>
+
+    {{-- Tabel (desktop) --}}
+    <div class="pkg-table-desktop pkg-panel-lg overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800/60">

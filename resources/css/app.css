@@ -1318,6 +1318,129 @@ html.reveal-ready [data-reveal].is-visible {
     border-radius: 0.75rem;
 }
 
+/* =========================================================
+   Data list: tabel di desktop, kartu di mobile (mirip app)
+   ========================================================= */
+/* Kartu item untuk daftar mobile */
+.pkg-data-card {
+    display: block;
+    background: var(--pkg-surface, #ffffff);
+    border: 1px solid var(--pkg-border, rgba(148, 163, 184, 0.22));
+    border-radius: 1rem;
+    padding: 0.9rem 1rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.pkg-data-card + .pkg-data-card {
+    margin-top: 0.625rem;
+}
+
+.pkg-data-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.pkg-data-card-title {
+    font-weight: 800;
+    font-size: 0.975rem;
+    line-height: 1.25;
+    color: var(--pkg-heading, #020617);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.pkg-data-card-sub {
+    margin-top: 0.15rem;
+    font-size: 0.8125rem;
+    color: var(--pkg-text-muted, #64748b);
+    overflow-wrap: anywhere;
+}
+
+/* Baris meta: label kiri, nilai kanan */
+.pkg-data-card-meta {
+    margin-top: 0.75rem;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.pkg-data-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.pkg-data-card-row > .k {
+    color: var(--pkg-text-muted, #64748b);
+    font-weight: 600;
+}
+
+.pkg-data-card-row > .v {
+    color: var(--pkg-heading, #0f172a);
+    font-weight: 700;
+    text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Area aksi kartu: tombol lebar ramah jempol */
+.pkg-data-card-actions {
+    margin-top: 0.85rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pkg-data-card-actions > * {
+    flex: 1 1 auto;
+    min-height: 2.65rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.pkg-data-card-actions form {
+    flex: 1 1 auto;
+    display: flex;
+}
+
+.pkg-data-card-actions form > button {
+    width: 100%;
+    min-height: 2.65rem;
+    border-radius: 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* Ikon lingkaran aksen brand untuk kartu (gaya app toko online) */
+.pkg-data-card-badge {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.85rem;
+    font-weight: 900;
+    font-size: 0.9rem;
+    background: color-mix(in srgb, var(--pkg-brand, #0f766e) 12%, var(--pkg-surface, #fff));
+    color: var(--pkg-brand, #0f766e);
+}
+
+/* Tampilkan kartu HANYA di mobile, tabel di >= md */
+.pkg-cards-mobile { display: block; }
+.pkg-table-desktop { display: none; }
+
+@media (min-width: 768px) {
+    .pkg-cards-mobile { display: none; }
+    .pkg-table-desktop { display: block; }
+}
+
 .pkg-mentorship-board {
     width: 100%;
     max-width: 100%;
