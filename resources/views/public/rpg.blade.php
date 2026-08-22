@@ -39,26 +39,84 @@
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div class="pkg-page-header mb-6">
             <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">Mode tamu 3D</p>
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">Mode tamu</p>
                 <h1 class="pkg-page-heading mt-2">Game 29 Karakter</h1>
                 <p class="pkg-page-subheading mt-2">
-                    Semua map aktif bisa langsung dimainkan sebagai tamu dengan arena 3D utama seperti mode siswa.
+                    Main game edukatif dan petualangan 3D langsung sebagai tamu. Login siswa untuk kumpulkan poin & naik peringkat.
                 </p>
             </div>
             <div class="pkg-page-actions">
                 @if(Auth::guard('siswa')->check())
-                    <a href="{{ route('siswa.rpg.index') }}" class="btn-primary">
+                    <a href="{{ route('siswa.game.index') }}" class="btn-primary">
                         Masuk Game Siswa
                     </a>
-                @elseif($maps->isNotEmpty())
-                    <a href="{{ route('public.rpg.play', $maps->first()) }}?view=3d" class="btn-primary">
-                        Main Map Pertama
+                @else
+                    <a href="{{ route('siswa.login') }}" class="btn-primary">
+                        Login untuk simpan poin
                     </a>
                 @endif
                 <a href="{{ route('public.index') }}" class="btn-secondary">
                     Beranda
                 </a>
             </div>
+        </div>
+
+        {{-- ========================= GAME EDUKATIF ========================= --}}
+        <div class="mb-8">
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">Game Edukatif</h2>
+                <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-200">{{ $karakterCount ?? 0 }} karakter</span>
+            </div>
+
+            @if(($karakterCount ?? 0) < 4)
+                <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                    Bank karakter belum cukup untuk dimainkan. Coba lagi nanti.
+                </div>
+            @else
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <div class="mb-3 flex items-center gap-3">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h7"/></svg>
+                        </span>
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Rangkai Kata</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Susun huruf jadi nama karakter dari petunjuk.</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('public.game.play', 'rangkai') }}" class="inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Coba Sekarang</a>
+                </div>
+
+                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <div class="mb-3 flex items-center gap-3">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Tebak Karakter</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Pilih karakter tepat dari studi kasus.</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('public.game.play', 'tebak') }}" class="inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Coba Sekarang</a>
+                </div>
+            </div>
+            @if(!Auth::guard('siswa')->check())
+                <p class="mt-3 text-center text-xs text-gray-400">Mode duel vs AI, lawan teman, dan Boss Online tersedia setelah login siswa.</p>
+            @endif
+            @endif
+        </div>
+
+        {{-- ========================= PETUALANGAN 3D ========================= --}}
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">Petualangan 3D</h2>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Jelajahi peta 3D, temui NPC, jawab tantangan.</p>
+            </div>
+            @if(!Auth::guard('siswa')->check())
+                <a href="{{ route('siswa.login') }}" class="btn-secondary">
+                    Login untuk simpan poin
+                </a>
+            @endif
         </div>
 
         <div class="mb-6 grid gap-4 sm:grid-cols-3">
@@ -77,20 +135,6 @@
                 <p class="mt-3 text-3xl font-black text-sky-600 dark:text-sky-300">3D</p>
                 <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Gerak, musuh, pickup, dan tembakan otomatis seirama dengan siswa.</p>
             </div>
-        </div>
-
-        <div class="pkg-filter-bar mb-6">
-            <div>
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white">Pilih map</h2>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Tombol utama di setiap kartu membuka langsung mode 3D.
-                </p>
-            </div>
-            @if(!Auth::guard('siswa')->check())
-                <a href="{{ route('siswa.login') }}" class="btn-secondary">
-                    Login untuk simpan poin
-                </a>
-            @endif
         </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -7,7 +7,7 @@
     <div class="mx-auto max-w-2xl px-4 sm:px-6">
         <div class="mb-4 flex items-center justify-between">
             <h1 class="text-xl font-black text-gray-900 dark:text-white">{{ $mode === 'tebak' ? 'Tebak Karakter' : 'Rangkai Kata' }} <span class="text-sm font-medium text-gray-400">(Mode Coba)</span></h1>
-            <a href="{{ route('public.game.index') }}" class="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400">Keluar</a>
+            <a href="{{ route('public.rpg.index') }}" class="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400">Keluar</a>
         </div>
 
         {{-- Progress --}}
@@ -69,7 +69,7 @@
             </div>
             <div class="mt-4 flex justify-center gap-2">
                 <a href="{{ route('public.game.play', $mode) }}" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">Coba Lagi</a>
-                <a href="{{ route('public.game.index') }}" class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-300">Menu Coba</a>
+                <a href="{{ route('public.rpg.index') }}" class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-300">Menu Game</a>
             </div>
         </div>
     </div>

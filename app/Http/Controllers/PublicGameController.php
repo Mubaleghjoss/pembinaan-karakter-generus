@@ -15,19 +15,6 @@ class PublicGameController extends Controller
     public function __construct(private readonly KarakterGameService $gameService) {}
 
     /**
-     * Lobby publik: pilih mode coba.
-     */
-    public function index()
-    {
-        $charCount = $this->gameService->activeCharacters()->count();
-
-        return view('public.game.index', [
-            'charCount' => $charCount,
-            'theme' => ThemeSetting::current(),
-        ]);
-    }
-
-    /**
      * Main coba satu mode (guest). Jawaban ikut dikirim untuk penilaian di klien.
      */
     public function play(string $mode)
@@ -36,7 +23,7 @@ class PublicGameController extends Controller
         $questions = $this->gameService->buildQuestions($mode, 5);
 
         if (empty($questions)) {
-            return redirect()->route('public.game.index')
+            return redirect()->route('public.rpg.index')
                 ->with('error', 'Bank karakter belum tersedia. Coba lagi nanti.');
         }
 

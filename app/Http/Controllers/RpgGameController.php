@@ -485,8 +485,9 @@ class RpgGameController extends Controller
                 ->get();
         });
         $totalChallenges = $maps->sum('npc_count');
+        $karakterCount = \App\Models\KarakterLuhur::where('is_active', true)->count();
 
-        return view('public.rpg', compact('maps', 'theme', 'totalChallenges'));
+        return view('public.rpg', compact('maps', 'theme', 'totalChallenges', 'karakterCount'));
     }
 
     /**

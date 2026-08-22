@@ -204,10 +204,9 @@ Route::get('/lapor-pkg/generus-list', [LaporanPenyaksianController::class, 'getG
 Route::get('/game-29-karakter', [RpgGameController::class, 'publicIndex'])
     ->middleware('throttle:rpg-public')
     ->name('public.rpg.index');
-// Coba game edukatif (Rangkai Kata & Tebak Karakter) tanpa login
-Route::get('/coba-game', [PublicGameController::class, 'index'])
-    ->middleware('throttle:rpg-public')
-    ->name('public.game.index');
+// Coba game edukatif (Rangkai Kata & Tebak Karakter) tanpa login.
+// /coba-game disatukan ke halaman /game-29-karakter.
+Route::get('/coba-game', fn () => redirect()->route('public.rpg.index'));
 Route::get('/coba-game/{mode}', [PublicGameController::class, 'play'])
     ->middleware('throttle:rpg-public')
     ->name('public.game.play');

@@ -1,8 +1,7 @@
 @php
     $authPublicNavigationItems = [
         ['label' => 'Beranda', 'route' => 'public.index', 'active' => 'public.index'],
-        ['label' => 'Coba Game', 'route' => 'public.game.index', 'active' => 'public.game.*'],
-        ['label' => 'Game 3D', 'route' => 'public.rpg.index', 'active' => 'public.rpg.*'],
+        ['label' => 'Game 29 Karakter', 'route' => 'public.rpg.index', 'active' => 'public.rpg.*'],
         ['label' => 'Kalender', 'route' => 'public.calendar.index', 'active' => 'public.calendar.*'],
         ['label' => 'Materi', 'route' => 'materi.index', 'active' => 'materi.*'],
         ['label' => 'Scan Presensi', 'route' => 'public.scanner', 'active' => 'public.scanner'],
