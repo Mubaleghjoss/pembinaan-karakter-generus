@@ -145,6 +145,7 @@ class SettingsController extends Controller
                 $viewData['availableMenus'] = PamongPermission::getAvailableMenus();
                 $viewData['availableCrud'] = PamongPermission::getAvailableCrudOperations();
                 $viewData['crudOperationLabels'] = PamongPermission::getCrudOperationLabels();
+                $viewData['permissionAccounts'] = self::buildPermissionAccountSummary();
                 break;
 
             case 'share_info':
@@ -563,5 +564,56 @@ class SettingsController extends Controller
                     : PamongPermission::FALLBACK_DEFAULT_CRUD_PERMISSIONS,
             ];
         });
+    }
+
+    /**
+     * Build a minimal per-account access summary for the permissions tab:
+     * who each operational account is, its access status, and which menus it can reach.
+     */
+    protected static function buildPermissionAccountSummary(): array
+    {
+        $availableMenus = PamongPermission::getAvailableMenus();
+        $defaultMenus = PamongPermission::getDefaultMenuPermissions();
+
+        $accounts = User::query()
+            ->whereHas('role', fn ($q) => $q->whereIn('name', User::operationalRoleNames()))
+            ->with(['pamongPermission', 'role:id,name,display_name', 'organizationalTeam:id,name'])
+            ->orderBy('username')
+            ->get();
+
+        return $accounts->map(function (User $user) use ($availableMenus, $defaultMenus) {
+            $permission = $user->pamongPermission;
+
+            if ($permission && $permission->is_excluded) {
+                $status = 'full';
+                $menuKeys = array_keys($availableMenus);
+            } elseif ($permission) {
+                $status = 'limited';
+                $menuKeys = is_array($permission->menu_permissions) ? $permission->menu_permissions : [];
+            } else {
+                $status = 'default';
+                $menuKeys = $defaultMenus;
+            }
+
+            $menuLabels = [];
+            foreach ($menuKeys as $key) {
+                if ($key === 'dashboard') {
+                    continue; // dashboard is universal, keep the list focused on real capabilities
+                }
+                $menuLabels[] = $availableMenus[$key] ?? $key;
+            }
+
+            return [
+                'username' => $user->username,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role_label' => $user->operationalRoleLabel(),
+                'team' => $user->organizationalTeam?->name,
+                'status' => $status,
+                'menu_labels' => $menuLabels,
+                'menu_count' => count($menuLabels),
+                'edit_url' => route('pamong.permissions', $user),
+            ];
+        })->all();
     }
 }

@@ -1,11 +1,20 @@
 {{-- Default Tim PKG Permissions Settings --}}
 <div class="pkg-card">
     <div class="p-6">
-        <div class="mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Hak Akses Default Tim PKG</h2>
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                Atur menu dan akses default yang akan diberikan kepada pamong atau pengurus PKG baru. Pengaturan ini akan diterapkan secara otomatis saat akun operasional baru dibuat.
-            </p>
+        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Hak Akses Default Tim PKG</h2>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Atur menu dan akses default yang akan diberikan kepada pamong atau pengurus PKG baru. Pengaturan ini akan diterapkan secara otomatis saat akun operasional baru dibuat.
+                </p>
+            </div>
+            <a href="{{ route('pamong.permissions.index') }}"
+               class="inline-flex flex-shrink-0 items-center gap-1.5 self-start rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857"/>
+                </svg>
+                Kelola Massal Tim PKG
+            </a>
         </div>
 
         <!-- Info Box -->
@@ -23,6 +32,70 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Ringkasan Akses Tiap Akun -->
+        <div x-data="{ q: '' }" class="mb-8">
+            <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Akses Akun Tim Saat Ini</h3>
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Ringkasan status &amp; menu tiap pamong / pengurus PKG. Klik <strong>Atur</strong> untuk mengubah akses akun.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" x-model="q" placeholder="Cari nama / username..."
+                           class="pkg-field w-full text-sm sm:w-56">
+                </div>
+            </div>
+
+            @if(empty($permissionAccounts))
+                <div class="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                    Belum ada akun pamong / pengurus PKG.
+                </div>
+            @else
+                <div class="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                    @foreach($permissionAccounts as $acc)
+                        @php
+                            $statusMap = [
+                                'full' => ['Akses Penuh', 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200'],
+                                'limited' => ['Terbatas', 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'],
+                                'default' => ['Default', 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'],
+                            ];
+                            [$statusLabel, $statusClass] = $statusMap[$acc['status']] ?? $statusMap['default'];
+                            $searchKey = strtolower(($acc['name'] ?? '') . ' ' . $acc['username'] . ' ' . ($acc['email'] ?? ''));
+                        @endphp
+                        <div class="flex items-center gap-3 bg-white p-3 dark:bg-gray-800"
+                             x-show="q === '' || '{{ $searchKey }}'.includes(q.toLowerCase())">
+                            <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-teal-600 text-sm font-semibold text-white">
+                                {{ strtoupper(substr($acc['name'] ?: $acc['username'], 0, 1)) }}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $acc['name'] ?: $acc['username'] }}</span>
+                                    <span class="rounded-full px-2 py-0.5 text-[10px] font-medium {{ $statusClass }}">{{ $statusLabel }}</span>
+                                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-300">{{ $acc['role_label'] }}</span>
+                                    @if($acc['team'])
+                                        <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">{{ $acc['team'] }}</span>
+                                    @endif
+                                </div>
+                                <div class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+                                    @if($acc['status'] === 'full')
+                                        Semua menu &amp; fitur
+                                    @elseif($acc['menu_count'] === 0)
+                                        Belum ada menu diizinkan
+                                    @else
+                                        {{ implode(' · ', array_slice($acc['menu_labels'], 0, 4)) }}{{ $acc['menu_count'] > 4 ? ' · +' . ($acc['menu_count'] - 4) . ' lainnya' : '' }}
+                                    @endif
+                                </div>
+                            </div>
+                            <a href="{{ $acc['edit_url'] }}"
+                               class="flex-shrink-0 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40">
+                                Atur
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+                <p class="mt-2 text-right text-xs text-gray-400 dark:text-gray-500">Total {{ count($permissionAccounts) }} akun tim</p>
+            @endif
         </div>
 
         <form action="{{ route('settings.update.permissions') }}" method="POST" x-data="permissionsForm()">
