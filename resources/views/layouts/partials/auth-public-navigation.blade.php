@@ -2,6 +2,7 @@
     $authPublicNavigationItems = [
         ['label' => 'Beranda', 'route' => 'public.index', 'active' => 'public.index'],
         ['label' => 'Game 29 Karakter', 'route' => 'public.rpg.index', 'active' => 'public.rpg.*'],
+        ['label' => '29 Karakter Luhur', 'route' => 'public.karakter.index', 'active' => 'public.karakter.*'],
         ['label' => 'Kalender', 'route' => 'public.calendar.index', 'active' => 'public.calendar.*'],
         ['label' => 'Materi', 'route' => 'materi.index', 'active' => 'materi.*'],
         ['label' => 'Scan Presensi', 'route' => 'public.scanner', 'active' => 'public.scanner'],

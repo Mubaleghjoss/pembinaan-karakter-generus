@@ -50,6 +50,7 @@ use App\Http\Controllers\RemoteMediaController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RpgGameController;
 use App\Http\Controllers\PublicGameController;
+use App\Http\Controllers\PublicKarakterController;
 use App\Http\Controllers\ScheduleReminderController;
 use App\Http\Controllers\Security\CspReportController;
 use App\Http\Controllers\SettingsController;
@@ -120,6 +121,9 @@ Route::post('/scan-presensi/bacaan-quran/{scan}/konfirmasi', [QuranReadingContro
 Route::get('/scan-presensi/bacaan-quran/{scan}/gambar', [QuranReadingController::class, 'publicScanImage'])
     ->name('public.quran.scan.image');
 Route::get('/materi', [PublicController::class, 'materiIndex'])->name('materi.index');
+// Referensi publik 29 Karakter Luhur (data dari Bank 29 Karakter)
+Route::get('/29-karakter', [PublicKarakterController::class, 'index'])->name('public.karakter.index');
+Route::get('/29-karakter/{slug}', [PublicKarakterController::class, 'show'])->name('public.karakter.show');
 Route::get('/materi-publik/{materi}/pdf/{index}', [PublicController::class, 'materiPdfView'])
     ->whereNumber('index')
     ->name('public.materi.pdf.view');
