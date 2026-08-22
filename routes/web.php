@@ -49,6 +49,7 @@ use App\Http\Controllers\QuranReadingController;
 use App\Http\Controllers\RemoteMediaController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RpgGameController;
+use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\ScheduleReminderController;
 use App\Http\Controllers\Security\CspReportController;
 use App\Http\Controllers\SettingsController;
@@ -203,6 +204,13 @@ Route::get('/lapor-pkg/generus-list', [LaporanPenyaksianController::class, 'getG
 Route::get('/game-29-karakter', [RpgGameController::class, 'publicIndex'])
     ->middleware('throttle:rpg-public')
     ->name('public.rpg.index');
+// Coba game edukatif (Rangkai Kata & Tebak Karakter) tanpa login
+Route::get('/coba-game', [PublicGameController::class, 'index'])
+    ->middleware('throttle:rpg-public')
+    ->name('public.game.index');
+Route::get('/coba-game/{mode}', [PublicGameController::class, 'play'])
+    ->middleware('throttle:rpg-public')
+    ->name('public.game.play');
 Route::get('/game-29-karakter/{rpgMap}/main', [RpgGameController::class, 'publicPlay'])
     ->middleware('throttle:rpg-public')
     ->name('public.rpg.play');
