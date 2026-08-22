@@ -32,8 +32,57 @@
         </div>
     </div>
 
-    <!-- Table -->
-    <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+    {{-- Kartu (mobile) --}}
+    <div class="pkg-cards-mobile">
+        @forelse($siswa as $s)
+            <div class="pkg-data-card">
+                <div class="pkg-data-card-head">
+                    <div class="flex min-w-0 items-start gap-3">
+                        @if($s->foto_path)
+                            <img class="h-11 w-11 flex-none rounded-full object-cover" src="{{ asset('storage/' . $s->foto_path) }}" alt="">
+                        @else
+                            <span class="pkg-data-card-badge">{{ substr($s->nama, 0, 1) }}</span>
+                        @endif
+                        <div class="min-w-0">
+                            <p class="pkg-data-card-title">{{ $s->nama }}</p>
+                            <p class="pkg-data-card-sub">{{ $s->nis }} · {{ $s->school_grade_label }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pkg-data-card-meta">
+                    <div class="pkg-data-card-row"><span class="k">Pamong</span><span class="v">{{ $s->pamongAssignments->pluck('pamong')->filter()->map(fn ($pamong) => $pamong->name ?: $pamong->username)->join(', ') ?: 'Belum ada' }}</span></div>
+                    <div class="pkg-data-card-row"><span class="k">Username Ortu</span><span class="v font-mono">{{ $s->ortu_username ?? '-' }}</span></div>
+                    <div class="pkg-data-card-row" x-data="{ show: false }">
+                        <span class="k">Password</span>
+                        <span class="v flex items-center justify-end gap-2">
+                            <span x-show="!show" class="text-gray-400">••••••</span>
+                            <span x-show="show" class="font-mono">{{ $s->ortu_password_plain ?? 'Sama dgn Siswa' }}</span>
+                            <button type="button" @click="show = !show" class="text-gray-400 hover:text-gray-600" aria-label="Lihat password">
+                                <svg x-show="!show" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <svg x-show="show" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                            </button>
+                        </span>
+                    </div>
+                    <div class="pkg-data-card-row"><span class="k">Aktivitas</span><span class="v">{{ $s->last_activity ? \Carbon\Carbon::parse($s->last_activity)->diffForHumans() : 'Belum ada' }}</span></div>
+                </div>
+                <div class="pkg-data-card-actions">
+                    <form action="{{ route('ortu-management.reset', $s->id) }}" method="POST" data-confirm="Yakin reset password ortu siswa ini?" data-confirm-title="Reset password ortu" data-confirm-button="Reset" data-confirm-tone="warning">
+                        @csrf
+                        <button type="submit" class="btn-secondary">Reset Password Ortu</button>
+                    </form>
+                </div>
+            </div>
+        @empty
+            <div class="pkg-empty-state pkg-card">
+                <p class="pkg-empty-title">Tidak ada data</p>
+                <p class="pkg-empty-copy">Tidak ada siswa yang cocok dengan filter.</p>
+            </div>
+        @endforelse
+        <p class="mt-3 px-1 text-sm text-gray-500 dark:text-gray-400">Menampilkan semua {{ $siswa->count() }} data.</p>
+    </div>
+
+    <!-- Table (desktop) -->
+    <div class="pkg-table-desktop bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
         <div class="overflow-x-auto pkg-mobile-table">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700/50">

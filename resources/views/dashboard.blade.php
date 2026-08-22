@@ -24,10 +24,10 @@
                         <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.75)]"></span>
                         Ringkasan aktivitas PKG hari ini
                     </span>
-                    <h1 class="mt-5 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl lg:text-5xl">
+                    <h1 class="mt-5 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl lg:text-5xl">
                         Dashboard operasional yang lebih rapi, fokus, dan mudah dipantau.
                     </h1>
-                    <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
+                    <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-lg sm:leading-7">
                         Selamat datang, <span class="font-semibold text-slate-900 dark:text-white">{{ auth()->user()->username }}</span>.
                         Semua ringkasan presensi, tugas, dan tindak lanjut penting dirangkum dalam tampilan yang lebih konsisten.
                     </p>

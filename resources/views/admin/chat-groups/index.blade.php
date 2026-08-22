@@ -19,7 +19,44 @@
         </div>
     </div>
 
-    <div class="pkg-panel overflow-hidden">
+    {{-- Kartu (mobile) --}}
+    <div class="pkg-cards-mobile">
+        @forelse($groups as $group)
+            <div class="pkg-data-card">
+                <div class="pkg-data-card-head">
+                    <div class="min-w-0">
+                        <p class="pkg-data-card-title">{{ $group->name }}</p>
+                        @if($group->description)<p class="pkg-data-card-sub">{{ Str::limit($group->description, 60) }}</p>@endif
+                    </div>
+                    <span class="pkg-status-badge shrink-0
+                        @if($group->type === 'custom') pkg-status-info
+                        @elseif($group->type === 'all_pamong') pkg-status-success
+                        @else pkg-status-warning @endif">
+                        {{ ucfirst(str_replace('_', ' ', $group->type)) }}
+                    </span>
+                </div>
+                <div class="pkg-data-card-meta">
+                    <div class="pkg-data-card-row"><span class="k">Anggota</span><span class="v">{{ $group->members->count() }}</span></div>
+                    <div class="pkg-data-card-row"><span class="k">Dibuat</span><span class="v">{{ $group->created_at->format('d M Y') }}</span></div>
+                </div>
+                <div class="pkg-data-card-actions">
+                    <a href="{{ route('chat-groups.show', $group) }}" class="btn-secondary">Detail</a>
+                    <a href="{{ route('chat-groups.edit', $group) }}" class="btn-primary">Edit</a>
+                </div>
+            </div>
+        @empty
+            <div class="pkg-empty-state pkg-card">
+                <h3 class="pkg-empty-title">Belum Ada Grup Chat</h3>
+                <p class="pkg-empty-copy">Buat grup pertama untuk memulai komunikasi massal.</p>
+                <a href="{{ route('chat-groups.create') }}" class="btn-primary mt-4">Buat Grup Baru</a>
+            </div>
+        @endforelse
+        @if($groups->hasPages())
+            <div class="mt-3">{{ $groups->links() }}</div>
+        @endif
+    </div>
+
+    <div class="pkg-table-desktop pkg-panel overflow-hidden">
         <div class="pkg-mobile-table">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">

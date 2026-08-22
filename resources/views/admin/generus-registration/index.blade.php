@@ -63,15 +63,59 @@
         </div>
     </div>
 
-    <form method="GET" action="{{ route('admin.generus-registration.index') }}" class="mb-5 flex flex-wrap gap-3">
-        <input type="search" name="q" value="{{ $search }}" placeholder="Cari nama Generus, Orang Tua, atau NIS..." class="pkg-field w-full max-w-md">
-        <button type="submit" class="btn-primary px-5 py-2.5 font-bold">Cari</button>
-        @if($search !== '')
-            <a href="{{ route('admin.generus-registration.index') }}" class="btn-secondary px-5 py-2.5 font-bold">Reset</a>
-        @endif
+    <form method="GET" action="{{ route('admin.generus-registration.index') }}" class="mb-5 flex flex-wrap gap-2 sm:gap-3">
+        <input type="search" name="q" value="{{ $search }}" placeholder="Cari nama Generus, Orang Tua, atau NIS..." class="pkg-field w-full sm:max-w-md">
+        <div class="flex w-full gap-2 sm:w-auto">
+            <button type="submit" class="btn-primary flex-1 px-5 py-2.5 font-bold sm:flex-none">Cari</button>
+            @if($search !== '')
+                <a href="{{ route('admin.generus-registration.index') }}" class="btn-secondary flex-1 px-5 py-2.5 font-bold sm:flex-none">Reset</a>
+            @endif
+        </div>
     </form>
 
-    <div class="pkg-panel-lg overflow-hidden">
+    {{-- Kartu (mobile) --}}
+    <div class="pkg-cards-mobile">
+        @forelse($rows as $row)
+            @php $s = $row['siswa']; $waTarget = $row['parent_wa'] ?: $row['student_wa']; $waMsg = rawurlencode(str_replace(['{nama}', '{link}'], [$s->nama, $row['direct_url']], $waTemplate)); @endphp
+            <div class="pkg-data-card">
+                <div class="pkg-data-card-head">
+                    <div class="min-w-0">
+                        <p class="pkg-data-card-title">{{ $s->nama }}</p>
+                        <p class="pkg-data-card-sub">NIS {{ $s->nis }}@if($s->kelompok) · {{ \App\Models\Siswa::kelompokOptions()[$s->kelompok] ?? $s->kelompok }}@endif</p>
+                    </div>
+                    @if($row['signed'])
+                        <span class="pkg-status-badge pkg-status-success shrink-0">Sudah TTD</span>
+                    @else
+                        <span class="pkg-status-badge pkg-status-warning shrink-0">Belum</span>
+                    @endif
+                </div>
+                <div class="pkg-data-card-meta">
+                    <div class="pkg-data-card-row"><span class="k">Orang Tua</span><span class="v">{{ $s->nama_wali ?: '—' }}</span></div>
+                    @if($row['signed'])
+                        <div class="pkg-data-card-row"><span class="k">Tgl TTD</span><span class="v">{{ optional($row['registration']->statement_accepted_at)->translatedFormat('d M Y') }}</span></div>
+                    @endif
+                </div>
+                <div class="pkg-data-card-actions flex-wrap">
+                    <button type="button" class="btn-secondary" data-copy-link="{{ $row['direct_url'] }}">Salin Link</button>
+                    @if($waTarget)
+                        <a href="{{ $waTarget }}?text={{ $waMsg }}" target="_blank" rel="noopener" class="btn-success">Kirim WA</a>
+                    @endif
+                    @if($row['preview_url'])
+                        <a href="{{ $row['preview_url'] }}" target="_blank" rel="noopener" class="btn-primary">Lihat Surat</a>
+                        <a href="{{ $row['download_url'] }}" class="btn-secondary">Unduh</a>
+                    @endif
+                </div>
+            </div>
+        @empty
+            <div class="pkg-empty-state pkg-card">
+                <p class="pkg-empty-title">Tidak ada data</p>
+                <p class="pkg-empty-copy">Tidak ada Generus yang cocok.</p>
+            </div>
+        @endforelse
+    </div>
+
+    {{-- Tabel (desktop) --}}
+    <div class="pkg-table-desktop pkg-panel-lg overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800/60">

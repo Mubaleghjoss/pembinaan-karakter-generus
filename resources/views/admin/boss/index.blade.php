@@ -51,8 +51,46 @@
         </form>
     </div>
 
-    {{-- Riwayat boss --}}
-    <div class="pkg-panel-lg overflow-hidden">
+    {{-- Riwayat boss: kartu (mobile) --}}
+    <div class="pkg-cards-mobile">
+        @forelse($battles as $b)
+            <div class="pkg-data-card">
+                <div class="pkg-data-card-head">
+                    <div class="min-w-0">
+                        <p class="pkg-data-card-title">{{ $b->nama }}</p>
+                        <p class="pkg-data-card-sub">{{ $b->mode === 'tebak' ? 'Tebak Karakter' : 'Rangkai Kata' }}</p>
+                    </div>
+                    @if($b->status === 'active')
+                        <span class="pkg-status-badge pkg-status-success shrink-0">Aktif</span>
+                    @elseif($b->status === 'defeated')
+                        <span class="pkg-status-badge pkg-status-info shrink-0">Dikalahkan</span>
+                    @else
+                        <span class="pkg-status-badge pkg-status-neutral shrink-0">Selesai</span>
+                    @endif
+                </div>
+                <div class="pkg-data-card-meta">
+                    <div class="pkg-data-card-row"><span class="k">HP</span><span class="v">{{ max(0,$b->current_hp) }} / {{ $b->max_hp }}</span></div>
+                    <div class="pkg-data-card-row"><span class="k">Peserta</span><span class="v">{{ $b->hits_count }}</span></div>
+                </div>
+                @if($b->status === 'active')
+                    <div class="pkg-data-card-actions">
+                        <form method="POST" action="{{ route('admin.boss.end', $b) }}" onsubmit="return confirm('Hentikan boss ini?');">
+                            @csrf
+                            <button type="submit" class="btn-danger">Hentikan Boss</button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        @empty
+            <div class="pkg-empty-state pkg-card">
+                <p class="pkg-empty-title">Belum ada Boss</p>
+                <p class="pkg-empty-copy">Mulai satu di form atas.</p>
+            </div>
+        @endforelse
+    </div>
+
+    {{-- Riwayat boss: tabel (desktop) --}}
+    <div class="pkg-table-desktop pkg-panel-lg overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800/60">
