@@ -10,6 +10,7 @@
     $hikmah = array_values(array_filter((array) ($karakter->hikmah ?? []), fn ($s) => filled($s)));
     $studiKasus = $karakter->studiKasusList();
     $tips = array_values(array_filter((array) ($karakter->tips_amal ?? []), fn ($s) => filled($s)));
+    $penerapan = $karakter->penerapanList();
 @endphp
 
 @section('content')
@@ -103,10 +104,66 @@
                 </div>
             @endif
 
-            {{-- Contoh penerapan (studi kasus) --}}
+            {{-- Penerapan: contoh benar & salah + dampak (referensi SIGAP 29, usia SMP-SMA) --}}
+            @if($karakter->hasPenerapan())
+                <div class="pkg-panel p-5 sm:p-6" data-reveal="up">
+                    <h2 class="mb-1 text-lg font-bold text-slate-900 dark:text-white">Contoh Penerapan</h2>
+                    <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Contoh perilaku yang benar dan yang salah bagi pelajar SMP/SMA.</p>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        {{-- Benar --}}
+                        <div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+                            <h3 class="mb-3 flex items-center gap-2 font-bold text-emerald-700 dark:text-emerald-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-sm text-white">✓</span>
+                                Penerapan Benar
+                            </h3>
+                            <ul class="space-y-2">
+                                @foreach($penerapan['benar'] as $s)
+                                    <li class="flex gap-2 text-sm leading-6 text-slate-700 dark:text-slate-300"><span class="mt-0.5 text-emerald-500">•</span><span>{{ $s }}</span></li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        {{-- Salah --}}
+                        <div class="rounded-xl border border-rose-200 bg-rose-50/60 p-4 dark:border-rose-900/50 dark:bg-rose-950/30">
+                            <h3 class="mb-3 flex items-center gap-2 font-bold text-rose-700 dark:text-rose-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-sm text-white">✕</span>
+                                Penerapan Salah
+                            </h3>
+                            <ul class="space-y-2">
+                                @foreach($penerapan['salah'] as $s)
+                                    <li class="flex gap-2 text-sm leading-6 text-slate-700 dark:text-slate-300"><span class="mt-0.5 text-rose-500">•</span><span>{{ $s }}</span></li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+
+                    @if(count($penerapan['dampak_positif']) || count($penerapan['dampak_negatif']))
+                        <h3 class="mb-3 mt-5 font-bold text-slate-900 dark:text-white">Dampak</h3>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="rounded-xl bg-emerald-50/60 p-4 dark:bg-emerald-950/20">
+                                <p class="mb-2 text-sm font-bold text-emerald-700 dark:text-emerald-300">Jika diterapkan</p>
+                                <ul class="space-y-1.5">
+                                    @foreach($penerapan['dampak_positif'] as $s)
+                                        <li class="flex gap-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><span class="mt-0.5 text-emerald-500">↑</span><span>{{ $s }}</span></li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            <div class="rounded-xl bg-rose-50/60 p-4 dark:bg-rose-950/20">
+                                <p class="mb-2 text-sm font-bold text-rose-700 dark:text-rose-300">Jika diabaikan</p>
+                                <ul class="space-y-1.5">
+                                    @foreach($penerapan['dampak_negatif'] as $s)
+                                        <li class="flex gap-2 text-sm leading-6 text-slate-600 dark:text-slate-300"><span class="mt-0.5 text-rose-500">↓</span><span>{{ $s }}</span></li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
+            {{-- Studi kasus tambahan (skenario) --}}
             @if(count($studiKasus))
                 <div class="pkg-panel p-5 sm:p-6" data-reveal="up">
-                    <h2 class="mb-4 text-lg font-bold text-amber-700 dark:text-amber-300">Contoh Penerapan</h2>
+                    <h2 class="mb-4 text-lg font-bold text-amber-700 dark:text-amber-300">Studi Kasus</h2>
                     <ul class="space-y-2">
                         @foreach($studiKasus as $s)
                             <li class="flex gap-3 rounded-lg bg-amber-50/60 p-3 text-slate-700 dark:bg-amber-950/20 dark:text-slate-300">

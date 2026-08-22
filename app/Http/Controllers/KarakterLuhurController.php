@@ -111,6 +111,10 @@ class KarakterLuhurController extends Controller
             'hikmah_text' => ['nullable', 'string', 'max:5000'],
             'studi_kasus_text' => ['nullable', 'string', 'max:8000'],
             'tips_amal_text' => ['nullable', 'string', 'max:5000'],
+            'penerapan_benar_text' => ['nullable', 'string', 'max:8000'],
+            'penerapan_salah_text' => ['nullable', 'string', 'max:8000'],
+            'penerapan_dampak_positif_text' => ['nullable', 'string', 'max:5000'],
+            'penerapan_dampak_negatif_text' => ['nullable', 'string', 'max:5000'],
             'is_active' => ['nullable', 'boolean'],
             // dalil dikirim sebagai array paralel
             'dalil_quran_arab' => ['nullable', 'array'],
@@ -133,6 +137,12 @@ class KarakterLuhurController extends Controller
             'hikmah' => $this->linesToArray($validated['hikmah_text'] ?? ''),
             'studi_kasus' => $this->linesToArray($validated['studi_kasus_text'] ?? ''),
             'tips_amal' => $this->linesToArray($validated['tips_amal_text'] ?? ''),
+            'penerapan' => [
+                'benar' => $this->linesToArray($validated['penerapan_benar_text'] ?? ''),
+                'salah' => $this->linesToArray($validated['penerapan_salah_text'] ?? ''),
+                'dampak_positif' => $this->linesToArray($validated['penerapan_dampak_positif_text'] ?? ''),
+                'dampak_negatif' => $this->linesToArray($validated['penerapan_dampak_negatif_text'] ?? ''),
+            ],
             'dalil_quran' => $this->buildDalil(
                 $request->input('dalil_quran_arab', []),
                 $request->input('dalil_quran_terjemahan', []),

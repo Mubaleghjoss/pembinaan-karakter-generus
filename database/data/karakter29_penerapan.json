@@ -1,0 +1,176 @@
+{
+  "berakhlak-mulia": {
+    "benar": ["Menyapa guru dan teman dengan senyum, salam, dan tutur kata sopan setiap hari.", "Menahan diri dari berkata kasar meski sedang kesal atau dipancing teman.", "Menolong teman yang kesulitan tanpa diminta dan tanpa pamrih."],
+    "salah": ["Berkata kasar, mengejek fisik, atau memanggil teman dengan julukan buruk.", "Bersikap sombong dan meremehkan teman yang dianggap lemah.", "Cuek dan tidak peduli saat orang lain butuh bantuan."],
+    "dampak_positif": ["Disukai dan dihormati banyak orang.", "Hidup lebih tenang dan hubungan sosial harmonis.", "Menjadi teladan dan meningkatkan kualitas iman."],
+    "dampak_negatif": ["Dijauhi lingkungan dan sulit dipercaya.", "Hati gelisah dan mudah marah.", "Sering terlibat konflik dan perselisihan."]
+  },
+  "berilmu": {
+    "benar": ["Mengecek sumber sebelum menyebarkan informasi di grup kelas.", "Bertanya kepada guru saat belum paham, bukan asal menebak.", "Mengamalkan ilmu yang dipelajari, bukan sekadar menghafal untuk ujian."],
+    "salah": ["Menyebar kabar/berita tanpa memverifikasi kebenarannya.", "Malas belajar dan mudah percaya hoaks.", "Tahu ilmunya tapi tidak diamalkan."],
+    "dampak_positif": ["Mampu mengambil keputusan dengan bijak.", "Ilmu bermanfaat bagi diri dan orang lain.", "Menjadi pribadi dewasa dan bertanggung jawab."],
+    "dampak_negatif": ["Mudah salah paham dan keliru.", "Mudah terpengaruh informasi salah.", "Amal tidak sesuai tuntunan."]
+  },
+  "mandiri": {
+    "benar": ["Menyiapkan perlengkapan sekolah dan mengerjakan tugas sendiri.", "Berani mengambil keputusan dan bertanggung jawab atasnya.", "Mengatur waktu belajar tanpa harus terus diingatkan."],
+    "salah": ["Selalu menyalin PR teman dan bergantung pada orang lain.", "Menyerah begitu menghadapi kesulitan.", "Menunggu disuruh dulu baru bergerak."],
+    "dampak_positif": ["Percaya diri dan bertanggung jawab.", "Mampu menyelesaikan masalah sendiri.", "Menjadi pribadi tangguh dan siap menghadapi tantangan."],
+    "dampak_negatif": ["Selalu bergantung pada orang lain.", "Mudah menyerah dan kurang inisiatif.", "Sulit berkembang dan kurang percaya diri."]
+  },
+  "rukun": {
+    "benar": ["Menyelesaikan salah paham dengan bicara baik-baik dan saling memaafkan.", "Menghargai perbedaan pendapat di kelas.", "Menjadi penengah saat ada gesekan antar teman."],
+    "salah": ["Membentuk geng dan menjauhi kelompok lain.", "Menyimpan dendam dan enggan menyapa lebih dari tiga hari.", "Ikut menyebar gosip yang memecah pertemanan."],
+    "dampak_positif": ["Lingkungan damai dan nyaman.", "Kerja sama lebih mudah dan persatuan kuat.", "Menumbuhkan empati, dicintai Allah dan manusia."],
+    "dampak_negatif": ["Sering terjadi konflik dan hubungan renggang.", "Kelas mudah terpecah dan saling curiga.", "Hilangnya kepercayaan antar teman."]
+  },
+  "kompak": {
+    "benar": ["Ikut kerja bakti/piket sesuai pembagian meski bukan tugas favorit.", "Menyemangati tim saat kalah, bukan saling menyalahkan.", "Hadir tepat waktu saat kegiatan kelompok."],
+    "salah": ["Lempar tanggung jawab ke teman lain.", "Mendahulukan ego pribadi di atas kepentingan kelompok.", "Absen atau telat saat dibutuhkan tim."],
+    "dampak_positif": ["Pekerjaan cepat selesai dan hasil maksimal.", "Menumbuhkan rasa kebersamaan.", "Menguatkan persatuan kelompok."],
+    "dampak_negatif": ["Tujuan sulit tercapai dan kerja tidak efektif.", "Saling menyalahkan dan mudah konflik.", "Kelompok terpecah belah."]
+  },
+  "kerja-sama": {
+    "benar": ["Membagi tugas kelompok secara adil dan membantu yang kesulitan.", "Mendengarkan ide teman dan menggabungkannya jadi solusi bersama.", "Berkomunikasi terbuka dan sopan saat berdiskusi."],
+    "salah": ["Mengerjakan sendiri tanpa melibatkan anggota, atau sebaliknya menumpang nama.", "Menutup diri dari masukan teman.", "Kurang komunikasi hingga tugas tumpang tindih."],
+    "dampak_positif": ["Tujuan cepat tercapai dan hasil lebih maksimal.", "Menguatkan persaudaraan dan kemampuan sosial.", "Lingkungan kerja harmonis."],
+    "dampak_negatif": ["Pekerjaan terhambat dan potensi tidak berkembang.", "Saling menyalahkan.", "Timbul konflik karena minim komunikasi."]
+  },
+  "jujur": {
+    "benar": ["Menolak menyontek dan menjawab ujian sesuai kemampuan sendiri.", "Mengembalikan barang/dompet temuan kepada pemilik atau guru.", "Mengakui kesalahan daripada berbohong."],
+    "salah": ["Menyontek atau memberi contekan saat ujian.", "Berbohong soal alasan tidak mengerjakan tugas.", "Menutup-nutupi kebenaran untuk menghindari hukuman."],
+    "dampak_positif": ["Dipercaya orang lain dan hati tenang.", "Hubungan baik terjaga.", "Menjadi pribadi berintegritas, dicintai Allah dan manusia."],
+    "dampak_negatif": ["Kehilangan kepercayaan dan hati gelisah.", "Hubungan rusak.", "Mudah terjerumus dosa dan jadi kebiasaan buruk."]
+  },
+  "amanah": {
+    "benar": ["Mencatat rapi dan menjaga uang kas kelas yang dititipkan.", "Menjaga barang pinjaman dan mengembalikannya tepat waktu.", "Menuntaskan tugas/jabatan yang dipercayakan dengan tanggung jawab."],
+    "salah": ["Memakai uang kas untuk keperluan pribadi.", "Menghilangkan atau merusak barang titipan lalu berdalih.", "Menyalahgunakan jabatan/wewenang di organisasi kelas."],
+    "dampak_positif": ["Dipercaya orang lain dan punya integritas tinggi.", "Hati tenang dan hubungan sosial baik.", "Dicintai Allah dan manusia."],
+    "dampak_negatif": ["Kehilangan kepercayaan dan dicurigai.", "Hati gelisah.", "Hubungan rusak dan iman melemah."]
+  },
+  "mujhid-muzhid": {
+    "benar": ["Belajar giat dan menetapkan target pencapaian.", "Hidup hemat: membelanjakan uang saku sesuai kebutuhan.", "Memanfaatkan waktu luang untuk hal produktif."],
+    "salah": ["Malas belajar dan menunda pekerjaan.", "Boros, jajan berlebihan, dan tidak mengatur keuangan.", "Menghabiskan waktu untuk hal sia-sia."],
+    "dampak_positif": ["Prestasi meningkat dan hidup tertata.", "Mandiri dan bertanggung jawab.", "Terhindar dari pemborosan, hidup berkah."],
+    "dampak_negatif": ["Mudah malas dan boros.", "Bergantung pada orang lain.", "Sulit mengelola keuangan, nikmat tidak berkah."]
+  },
+  "bersyukur": {
+    "benar": ["Menghitung dan mensyukuri nikmat yang dimiliki, bukan iri pada orang lain.", "Mengucapkan terima kasih dan alhamdulillah atas pemberian.", "Merawat fasilitas dan berbagi dengan yang membutuhkan."],
+    "salah": ["Selalu merasa kurang dan membandingkan diri dengan orang lain.", "Sombong dan angkuh atas apa yang dimiliki.", "Mengeluh terus-menerus."],
+    "dampak_positif": ["Hati bahagia dan puas.", "Nikmat bertambah dan hidup rendah hati.", "Orang senang berada di dekatnya."],
+    "dampak_negatif": ["Selalu merasa kurang.", "Nikmat terasa berkurang dan menjadi sombong.", "Dijauhi orang lain."]
+  },
+  "mempersungguh": {
+    "benar": ["Beribadah dengan khusyuk dan konsisten, tidak asal-asalan.", "Fokus dan niat karena Allah saat beramal.", "Mengevaluasi dan memperbaiki kualitas ibadah."],
+    "salah": ["Beribadah terburu-buru dan tidak khusyuk.", "Beramal seenaknya tanpa kesungguhan.", "Sering meninggalkan atau menunda ibadah."],
+    "dampak_positif": ["Ibadah diterima dan hati tenang.", "Ada perubahan nyata pada diri.", "Menjadi pribadi yang lebih baik."],
+    "dampak_negatif": ["Ibadah tidak khusyuk dan hati kosong.", "Ibadah tidak mengubah perilaku.", "Berlaku seenaknya."]
+  },
+  "mengagungkan": {
+    "benar": ["Menghentikan aktivitas saat azan dan bersiap ibadah.", "Menghormati perintah dan syariat Allah dengan lapang dada.", "Menjaga adab terhadap Al-Qur'an dan simbol agama."],
+    "salah": ["Meremehkan atau bercanda soal hal-hal agama.", "Menunda ibadah demi bermain/gawai.", "Menolak aturan agama karena dianggap membatasi."],
+    "dampak_positif": ["Hati penuh takwa dan setiap tindakan bermakna.", "Percaya diri dan tenang.", "Mendapat hidayah dan keberkahan."],
+    "dampak_negatif": ["Hati jauh dari Allah dan hidup tanpa arah.", "Ragu dan takut berlebihan.", "Tersesat dari jalan yang benar."]
+  },
+  "berdoa": {
+    "benar": ["Berdoa dan berusaha sebelum ujian, bukan mengandalkan contekan.", "Rutin berdoa pagi dan malam dengan khusyuk.", "Mendoakan teman yang sakit atau kesulitan."],
+    "salah": ["Mengandalkan jimat atau cara instan, bukan doa dan usaha.", "Malas berdoa dan mudah putus asa.", "Hanya ingat Allah saat kesulitan saja."],
+    "dampak_positif": ["Hati tenang dan optimis.", "Masalah terasa lebih ringan.", "Dekat dengan Allah dan doa dikabulkan."],
+    "dampak_negatif": ["Hati khawatir dan pesimis.", "Masalah terasa berat.", "Jauh dari Allah."]
+  },
+  "benar": {
+    "benar": ["Mengerjakan tugas sesuai aturan dan standar mutu.", "Membela kebenaran dengan menyampaikan fakta.", "Memeriksa hasil pekerjaan sebelum menyerahkannya."],
+    "salah": ["Mengambil jalan pintas dan mengorbankan kualitas.", "Ikut menyebar rumor keliru di grup kelas.", "Berbohong saat ditanya kebenaran suatu kejadian."],
+    "dampak_positif": ["Hasil kerja berkualitas dan dipercaya banyak orang.", "Sukses jangka panjang.", "Hati tenang."],
+    "dampak_negatif": ["Hasil kerja buruk dan tidak dipercaya.", "Gagal berulang kali.", "Hati gelisah."]
+  },
+  "kurup": {
+    "benar": ["Membuat jadwal dan memprioritaskan tugas penting.", "Menggunakan waktu dan sumber daya secara optimal.", "Mematikan lampu/kipas yang tidak terpakai untuk menghemat."],
+    "salah": ["Menunda hingga tugas menumpuk di akhir waktu.", "Membuang waktu untuk hal tidak penting.", "Boros memakai sumber daya."],
+    "dampak_positif": ["Banyak pekerjaan selesai tanpa pemborosan.", "Produktif dan berkembang.", "Hasil lebih banyak dengan usaha efisien."],
+    "dampak_negatif": ["Pekerjaan menumpuk dan banyak waktu terbuang.", "Tertinggal dan gagal berkembang.", "Hasil sedikit dengan usaha besar."]
+  },
+  "janji": {
+    "benar": ["Mempertimbangkan matang sebelum berjanji, lalu menepatinya.", "Memberi tahu lebih awal bila ada hambatan menepati janji.", "Menuliskan komitmen dan mematuhinya."],
+    "salah": ["Berjanji sembarangan lalu mengingkarinya.", "Menjanjikan hal yang mustahil ditepati.", "Menghilang tanpa kabar saat gagal menepati janji."],
+    "dampak_positif": ["Orang percaya sepenuhnya dan kredibilitas tinggi.", "Hubungan harmonis.", "Masa depan cerah."],
+    "dampak_negatif": ["Orang meragukan dan reputasi jelek.", "Hubungan renggang.", "Masa depan suram."]
+  },
+  "syukur-nikmat": {
+    "benar": ["Mengakui setiap nikmat dan menggunakannya dengan baik.", "Berbagi rezeki/nikmat kepada teman yang membutuhkan.", "Mengucap alhamdulillah dan tidak mengeluh."],
+    "salah": ["Selalu merasa kurang dan mengingkari nikmat.", "Menyia-nyiakan atau memakai nikmat untuk keburukan.", "Mengeluh terus tanpa syukur."],
+    "dampak_positif": ["Nikmat bertambah dan hati bahagia.", "Dekat dengan Allah.", "Hidup berkah."],
+    "dampak_negatif": ["Nikmat berkurang dan selalu merasa kurang.", "Jauh dari Allah.", "Hidup semrawut."]
+  },
+  "istirja": {
+    "benar": ["Mengucapkan istirja' (inna lillahi) dengan tulus saat tertimpa musibah.", "Mencari hikmah di balik ujian dan berdoa minta kesabaran.", "Menerima ujian dengan lapang dada lalu bangkit."],
+    "salah": ["Panik berlebihan, marah, dan menyalahkan keadaan.", "Menyimpan dendam dan benci saat tertimpa musibah.", "Putus asa dan menyerah."],
+    "dampak_positif": ["Iman semakin kuat.", "Musibah jadi pembelajaran.", "Hati tabah, kuat, dan dosa terhapus."],
+    "dampak_negatif": ["Iman semakin lemah.", "Musibah jadi trauma.", "Hati lemah dan putus asa."]
+  },
+  "sabar": {
+    "benar": ["Tetap tenang dan rasional menghadapi kesulitan.", "Tidak panik, mencari solusi dengan matang.", "Terus berusaha dan percaya masa sulit akan berlalu."],
+    "salah": ["Mengeluh berlebihan dan mudah menyerah.", "Panik dan bertindak terburu-buru.", "Melampiaskan emosi ke orang lain."],
+    "dampak_positif": ["Masalah terselesaikan dengan baik.", "Iman semakin kuat dan matang.", "Mendapat dukungan orang sekitar dan dekat dengan Allah."],
+    "dampak_negatif": ["Masalah semakin besar dan rumit.", "Iman melemah.", "Orang merasa direpotkan dan menjauh."]
+  },
+  "taubat": {
+    "benar": ["Menyadari kesalahan dan menyesal dengan tulus.", "Meminta maaf kepada yang dirugikan lalu memperbaiki diri.", "Berkomitmen kuat tidak mengulangi dan membuktikannya."],
+    "salah": ["Mengabaikan kesalahan dan menganggapnya biasa.", "Menyesal sesaat tapi mengulangi lagi.", "Menyalahkan orang lain atas kesalahan sendiri."],
+    "dampak_positif": ["Dosa terhapus dan memulai lembaran baru.", "Hati bersih, ringan, dan bahagia.", "Allah menerima taubat, hidup lebih baik."],
+    "dampak_negatif": ["Dosa terakumulasi semakin banyak.", "Hati berat, gelisah, dan bersalah.", "Semakin jauh dari Allah, siklus kesalahan berulang."]
+  },
+  "membantu-yang-lemah": {
+    "benar": ["Membantu teman difabel atau yang kesulitan tanpa diminta.", "Menemani adik kelas yang dijahili agar merasa aman.", "Membantu dengan tulus tanpa mengharap balasan."],
+    "salah": ["Menelantarkan orang yang jelas butuh bantuan.", "Meremehkan dan memandang rendah yang lemah.", "Membantu hanya bila ada imbalan."],
+    "dampak_positif": ["Disukai banyak orang dan mendapat pahala.", "Hati senang telah berbuat baik.", "Komunitas menjadi solid."],
+    "dampak_negatif": ["Ditinggalkan dan dipandang rendah.", "Berdosa karena menelantarkan.", "Hati egois dan komunitas renggang."]
+  },
+  "membantu-yang-belum-bisa": {
+    "benar": ["Mengajari teman yang belum paham dengan sabar dan bahasa sederhana.", "Membimbing pelan-pelan dan menanyakan apakah sudah paham.", "Merayakan kemajuan teman yang dibimbing."],
+    "salah": ["Meremehkan teman yang belum bisa.", "Menjelaskan asal-asalan lalu tidak sabar.", "Merasa sombong karena lebih pintar."],
+    "dampak_positif": ["Orang cepat paham dan dihargai sebagai pembimbing.", "Ilmu sendiri semakin dalam.", "Menjadi teladan."],
+    "dampak_negatif": ["Orang semakin bingung.", "Dianggap sombong.", "Ilmu tetap dangkal dan menjadi aib."]
+  },
+  "mengingatkan-yang-lupa": {
+    "benar": ["Mengingatkan teman yang lupa dengan sopan dan lembut.", "Memilih waktu dan tempat yang tepat saat mengingatkan.", "Mengingatkan secara pribadi, bukan mempermalukan di depan umum."],
+    "salah": ["Mengingatkan sambil menggurui dan merendahkan.", "Menegur di depan banyak orang hingga malu.", "Membiarkan teman terus lupa karena enggan menegur."],
+    "dampak_positif": ["Persahabatan terjaga dan orang terbantu.", "Orang menghargai dan sadar.", "Hati tenang."],
+    "dampak_negatif": ["Persahabatan renggang.", "Orang tersinggung dan marah.", "Orang membenci."]
+  },
+  "menasihati-yang-salah": {
+    "benar": ["Menegur teman yang salah dengan nada lembut dan niat kebaikan.", "Menasihati secara pribadi dan menyarankan jalan yang benar.", "Mendukung proses temannya bertaubat."],
+    "salah": ["Menegur kasar hingga mempermalukan.", "Menghakimi tanpa memberi solusi.", "Membiarkan teman terus berbuat salah."],
+    "dampak_positif": ["Orang bertaubat dan berubah.", "Persahabatan semakin kuat.", "Hati tenang dan lapang, orang menghargai ketulusan."],
+    "dampak_negatif": ["Orang semakin membandel.", "Persahabatan rusak.", "Hati tertekan dan orang merasa dihakimi."]
+  },
+  "bicara-baik": {
+    "benar": ["Berpikir sebelum berbicara dan menggunakan nada lembut.", "Menghindari gosip dan fitnah.", "Memberi pujian tulus dan meminta maaf saat salah ucap."],
+    "salah": ["Berkata kasar, mengejek, atau menyebar fitnah.", "Berbicara tanpa berpikir hingga menyakiti.", "Menggunakan panggilan/julukan buruk."],
+    "dampak_positif": ["Orang senang mendengar dan persahabatan harmonis.", "Orang percaya pada kita.", "Hati tenang."],
+    "dampak_negatif": ["Orang takut dan menjauh.", "Persahabatan rusak.", "Orang meragukan dan hati bergejolak."]
+  },
+  "saling-percaya": {
+    "benar": ["Selalu jujur sejak awal dan menepati janji secara konsisten.", "Menjaga rahasia yang dititipkan teman.", "Memberi kepercayaan penuh tanpa curiga berlebihan."],
+    "salah": ["Berbohong hingga hubungan penuh kecurigaan.", "Membocorkan rahasia teman.", "Selalu mencurigai dan mengontrol berlebihan."],
+    "dampak_positif": ["Hubungan kokoh dan langgeng.", "Tidak perlu saling mengontrol.", "Hati tenang dan bisa saling berbagi."],
+    "dampak_negatif": ["Hubungan mudah putus.", "Selalu waspada dan curiga.", "Hati penuh kebimbangan."]
+  },
+  "mengalah": {
+    "benar": ["Menahan ego dan mengalah demi perdamaian.", "Melihat sudut pandang orang lain dan ikhlas memaafkan.", "Menerima perbedaan tanpa harus menang sendiri."],
+    "salah": ["Memaksakan kehendak demi menang sendiri.", "Membalas dendam saat tersinggung.", "Tidak mau mengalah dalam hal sepele hingga bertengkar."],
+    "dampak_positif": ["Suasana damai dan harmonis.", "Orang hormat dan sayang.", "Hati lapang, persahabatan tahan lama."],
+    "dampak_negatif": ["Pertengkaran dan permusuhan.", "Orang benci dan menjauh.", "Hati kecil, kesal, persahabatan berakhir."]
+  },
+  "tidak-merusak": {
+    "benar": ["Mengontrol emosi dan tindakan agar tidak menyakiti orang.", "Tidak melakukan bullying dan menghormati privasi orang.", "Mengganti rugi dan meminta maaf tulus bila merusak."],
+    "salah": ["Membully, mengejek, atau menyakiti teman.", "Merusak/mencoret fasilitas sekolah.", "Melanggar privasi atau merugikan orang lain dengan sengaja."],
+    "dampak_positif": ["Orang aman dan nyaman di dekat kita.", "Dipercaya banyak orang.", "Hati bersih dan komunitas aman."],
+    "dampak_negatif": ["Orang takut dan trauma.", "Orang berhati-hati dan menjauh.", "Hati berdosa dan komunitas penuh kecemasan."]
+  },
+  "empati": {
+    "benar": ["Mendengarkan keluh kesah teman dan menanyakan kabarnya dengan tulus.", "Memahami perasaan dan situasi orang lain.", "Memberi dukungan dan menunjukkan kepedulian lewat tindakan."],
+    "salah": ["Mengabaikan teman yang sedang sedih.", "Bercanda saat teman sedang berduka.", "Bersikap egois, dingin, dan acuh."],
+    "dampak_positif": ["Orang merasa diperhatikan dan dihargai.", "Hubungan lebih dalam dan erat.", "Orang nyaman, hati penuh kasih sayang."],
+    "dampak_negatif": ["Orang merasa diabaikan dan sendirian.", "Hubungan hanya di permukaan.", "Orang menjauh, hati egois dan dingin."]
+  }
+}

@@ -91,6 +91,32 @@
         </div>
 
         <div class="pkg-panel-lg p-4 sm:p-6 space-y-4">
+            <h2 class="font-bold text-gray-900 dark:text-white">Contoh Penerapan &amp; Dampak (referensi publik SMP/SMA)</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">1 baris = 1 poin. Tampil di halaman publik 29 Karakter Luhur.</p>
+            @php
+                $pn = $item->penerapan ?: [];
+            @endphp
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="pkg-label text-emerald-700 dark:text-emerald-300">✓ Penerapan Benar</label>
+                    <textarea name="penerapan_benar_text" rows="4" class="pkg-field w-full" placeholder="Satu contoh per baris...">{{ old('penerapan_benar_text', implode("\n", (array) ($pn['benar'] ?? []))) }}</textarea>
+                </div>
+                <div>
+                    <label class="pkg-label text-rose-700 dark:text-rose-300">✕ Penerapan Salah</label>
+                    <textarea name="penerapan_salah_text" rows="4" class="pkg-field w-full" placeholder="Satu contoh per baris...">{{ old('penerapan_salah_text', implode("\n", (array) ($pn['salah'] ?? []))) }}</textarea>
+                </div>
+                <div>
+                    <label class="pkg-label text-emerald-700 dark:text-emerald-300">↑ Dampak Jika Diterapkan</label>
+                    <textarea name="penerapan_dampak_positif_text" rows="3" class="pkg-field w-full">{{ old('penerapan_dampak_positif_text', implode("\n", (array) ($pn['dampak_positif'] ?? []))) }}</textarea>
+                </div>
+                <div>
+                    <label class="pkg-label text-rose-700 dark:text-rose-300">↓ Dampak Jika Diabaikan</label>
+                    <textarea name="penerapan_dampak_negatif_text" rows="3" class="pkg-field w-full">{{ old('penerapan_dampak_negatif_text', implode("\n", (array) ($pn['dampak_negatif'] ?? []))) }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="pkg-panel-lg p-4 sm:p-6 space-y-4">
             <h2 class="font-bold text-gray-900 dark:text-white">Dalil Al-Qur'an</h2>
             <template x-for="(row, i) in quran" :key="'q'+i">
                 <div class="grid gap-2 sm:grid-cols-12 items-start border-b border-gray-100 dark:border-gray-800 pb-3">
