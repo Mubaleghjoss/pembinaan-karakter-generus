@@ -4,33 +4,33 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="pkg-page-header">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Data Orang Tua</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Kelola akun dan pantau aktivitas orang tua siswa</p>
-        </div>
-        <div class="flex items-center gap-2">
-            <!-- Search & Filter -->
-            <form action="{{ route('ortu-management.index') }}" method="GET" class="flex flex-wrap gap-2">
-                <select name="school_grade" onchange="this.form.submit()" class="pkg-field text-sm">
-                    <option value="">Semua Kelas Sekolah</option>
-                    @foreach($schoolGradeOptions as $value => $label)
-                    <option value="{{ $value }}" {{ request('school_grade') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-                <select name="pamong_id" onchange="this.form.submit()" class="pkg-field text-sm"><option value="">Semua Pamong</option>@foreach($pamongOptions as $pamong)<option value="{{ $pamong->id }}" @selected((string) request('pamong_id') === (string) $pamong->id)>{{ $pamong->name ?: $pamong->username }}</option>@endforeach</select>
-                <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Siswa / NIS..." 
-                        class="w-full sm:w-64 pl-10 pr-4 py-2 pkg-field text-sm">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-                </div>
-            </form>
+            <h1 class="pkg-page-heading">Data Orang Tua</h1>
+            <p class="pkg-page-subheading">Kelola akun dan pantau aktivitas orang tua siswa</p>
         </div>
     </div>
+
+    <!-- Search & Filter -->
+    <form action="{{ route('ortu-management.index') }}" method="GET" class="pkg-filter-bar">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <select name="school_grade" onchange="this.form.submit()" class="pkg-field w-full text-sm">
+                <option value="">Semua Kelas Sekolah</option>
+                @foreach($schoolGradeOptions as $value => $label)
+                <option value="{{ $value }}" {{ request('school_grade') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+            <select name="pamong_id" onchange="this.form.submit()" class="pkg-field w-full text-sm"><option value="">Semua Pamong</option>@foreach($pamongOptions as $pamong)<option value="{{ $pamong->id }}" @selected((string) request('pamong_id') === (string) $pamong->id)>{{ $pamong->name ?: $pamong->username }}</option>@endforeach</select>
+            <div class="relative sm:col-span-2 xl:col-span-2">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Siswa / NIS..." class="w-full pl-10 pr-4 py-2 pkg-field text-sm">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </form>
 
     {{-- Kartu (mobile) --}}
     <div class="pkg-cards-mobile">

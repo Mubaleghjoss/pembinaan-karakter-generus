@@ -86,8 +86,53 @@
         </form>
     </div>
 
-    <!-- Users Table -->
-    <div class="pkg-card overflow-hidden">
+    {{-- Kartu (mobile) --}}
+    <div class="pkg-cards-mobile">
+        @forelse($users as $user)
+            <div class="pkg-data-card">
+                <div class="pkg-data-card-head">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="pkg-data-card-badge">{{ strtoupper(substr($user->username, 0, 1)) }}</span>
+                        <div class="min-w-0">
+                            <p class="pkg-data-card-title">{{ $user->username }}</p>
+                            @if($user->email)<p class="pkg-data-card-sub">{{ $user->email }}</p>@endif
+                        </div>
+                    </div>
+                    <span class="pkg-status-badge shrink-0 {{ $user->status === 'active' ? 'pkg-status-success' : 'pkg-status-danger' }}">
+                        {{ $user->status === 'active' ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                </div>
+                <div class="pkg-data-card-meta">
+                    <div class="pkg-data-card-row"><span class="k">Role</span><span class="v">{{ $user->role->display_name ?? $user->role->name }}</span></div>
+                    <div class="pkg-data-card-row"><span class="k">Biometrik</span><span class="v">@if(($user->valid_biometric_credentials_count ?? 0) > 0)Aktif @elseif(($user->legacy_biometric_credentials_count ?? 0) > 0)Legacy @else Belum @endif</span></div>
+                    <div class="pkg-data-card-row"><span class="k">Login Terakhir</span><span class="v">{{ $user->last_login_at ? $user->last_login_at->diffForHumans() : 'Belum pernah' }}</span></div>
+                </div>
+                <div class="pkg-data-card-actions flex-wrap">
+                    <a href="{{ route('users.edit', $user) }}" class="btn-primary">Edit</a>
+                    @if($user->id !== auth()->id())
+                        <form action="{{ route('users.toggle-status', $user) }}" method="POST">
+                            @csrf @method('PATCH')
+                            <button type="submit" class="btn-secondary">{{ $user->status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                        </form>
+                        <form action="{{ route('users.destroy', $user) }}" method="POST" data-confirm="Yakin ingin menghapus user ini?" data-confirm-title="Hapus user" data-confirm-button="Hapus" data-confirm-tone="danger" class="!flex-none">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="btn-danger !w-auto !px-3" aria-label="Hapus">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @empty
+            <div class="pkg-empty-state pkg-card">
+                <h3 class="pkg-empty-title">Tidak ada user ditemukan</h3>
+                <p class="pkg-empty-copy">Ubah filter atau tambahkan user baru.</p>
+            </div>
+        @endforelse
+    </div>
+
+    <!-- Users Table (desktop) -->
+    <div class="pkg-table-desktop pkg-card overflow-hidden">
         <div class="overflow-x-auto pkg-mobile-table">
         <table class="min-w-[860px] divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">

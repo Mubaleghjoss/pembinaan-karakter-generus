@@ -157,6 +157,8 @@ class OperationalMobileNavigation
         $add('Gamifikasi & Game', 'gamification', 'Gamifikasi', 'game', route('admin.gamification.badges'), $request->routeIs('admin.gamification.*') && ! $request->routeIs('admin.gamification.transactions'), $can('gamification'));
         $add('Gamifikasi & Game', 'point_transactions', 'Riwayat Transaksi', 'report', route('admin.gamification.transactions'), $request->routeIs('admin.gamification.transactions'), $can('gamification'));
         $add('Gamifikasi & Game', 'rpg', 'Game 29 Karakter', 'rpg', route('admin.rpg.index'), $request->routeIs('admin.rpg.*'), $can('game'));
+        $add('Gamifikasi & Game', 'boss_battle', 'Boss Online', 'game', route('admin.boss.index'), $request->routeIs('admin.boss.*'), $isAdmin);
+        $add('Gamifikasi & Game', 'karakter_luhur', 'Bank 29 Karakter', 'book', route('admin.karakter-luhur.index'), $request->routeIs('admin.karakter-luhur.*'), $isAdmin);
 
         $add('Administrasi', 'teacher_planning', 'Pendataan & Jadwal Guru', 'calendar', route('teacher-planning.index'), $request->routeIs('teacher-planning.*'), $can('teacher_scheduling'));
         $add('Administrasi', 'settings', 'Pengaturan', 'settings', route('settings.index'), $request->routeIs('settings.*') || $request->routeIs('users.*'), $isAdmin);
