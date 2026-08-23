@@ -361,6 +361,41 @@ class GenerusRegistrationController extends Controller
         return $this->documentService->response($this->registrationForSiswa($siswa));
     }
 
+    /**
+     * Reset daftar ulang seorang Generus: hapus data registrasi + tanda tangan
+     * sehingga status kembali "Belum TTD" dan alur daftar ulang bisa diulang.
+     * Data biodata siswa TIDAK dihapus.
+     */
+    public function adminReset(Request $request, Siswa $siswa): RedirectResponse
+    {
+        $registration = GenerusRegistration::query()->where('siswa_id', $siswa->id)->first();
+
+        if (! $registration) {
+            return redirect()
+                ->route('admin.generus-registration.index')
+                ->with('info', "{$siswa->nama} memang belum pernah mengisi daftar ulang.");
+        }
+
+        // Bersihkan berkas tanda tangan / dokumen terkait registrasi ini.
+        try {
+            if ($registration->public_id) {
+                \Illuminate\Support\Facades\Storage::disk('local')
+                    ->deleteDirectory('generus-registrations/'.$registration->public_id);
+            }
+            foreach (array_filter([$registration->parent_signature_path, $registration->student_signature_path]) as $path) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($path);
+            }
+        } catch (\Throwable $e) {
+            // Abaikan kegagalan hapus berkas; yang penting record registrasi dihapus.
+        }
+
+        $registration->delete();
+
+        return redirect()
+            ->route('admin.generus-registration.index')
+            ->with('success', "Daftar ulang {$siswa->nama} berhasil direset. Statusnya kembali \"Belum\" dan tautan daftar ulang bisa dipakai lagi.");
+    }
+
     private function registrationForSiswa(Siswa $siswa): GenerusRegistration
     {
         return GenerusRegistration::query()->where('siswa_id', $siswa->id)->firstOrFail();

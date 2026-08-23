@@ -104,6 +104,13 @@
                         <a href="{{ $row['preview_url'] }}" target="_blank" rel="noopener" class="btn-primary">Lihat Surat</a>
                         <a href="{{ $row['download_url'] }}" class="btn-secondary">Unduh</a>
                     @endif
+                    @if($row['signed'])
+                        <form method="POST" action="{{ route('admin.generus-registration.reset', ['siswa' => $s->id]) }}" onsubmit="return confirm('Reset daftar ulang {{ addslashes($s->nama) }}? Data pernyataan &amp; tanda tangan akan dihapus, status kembali Belum. Biodata siswa tetap.');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-danger">Reset</button>
+                        </form>
+                    @endif
                 </div>
             </div>
         @empty
@@ -187,6 +194,13 @@
                                     @if($row['preview_url'])
                                         <a href="{{ $row['preview_url'] }}" target="_blank" rel="noopener" class="btn-primary !px-2.5 !py-1.5 text-xs">Lihat Surat</a>
                                         <a href="{{ $row['download_url'] }}" class="btn-secondary !px-2.5 !py-1.5 text-xs">Unduh</a>
+                                    @endif
+                                    @if($row['signed'])
+                                        <form method="POST" action="{{ route('admin.generus-registration.reset', ['siswa' => $s->id]) }}" onsubmit="return confirm('Reset daftar ulang {{ addslashes($s->nama) }}? Data pernyataan &amp; tanda tangan akan dihapus, status kembali Belum. Biodata siswa tetap.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-danger !px-2.5 !py-1.5 text-xs">Reset</button>
+                                        </form>
                                     @endif
                                 </div>
                             </td>

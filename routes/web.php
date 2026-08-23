@@ -851,6 +851,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/daftar-ulang-generus/template-wa', [GenerusRegistrationController::class, 'saveWaTemplate'])->name('admin.generus-registration.wa-template');
         Route::get('/daftar-ulang-generus/{siswa}/surat', [GenerusRegistrationController::class, 'adminPreview'])->name('admin.generus-registration.preview');
         Route::get('/daftar-ulang-generus/{siswa}/surat/unduh', [GenerusRegistrationController::class, 'adminDownload'])->name('admin.generus-registration.download');
+        Route::delete('/daftar-ulang-generus/{siswa}/reset', [GenerusRegistrationController::class, 'adminReset'])->name('admin.generus-registration.reset');
 
         // Backup & Restore
         Route::get('/settings/backup', [BackupController::class, 'index'])->name('settings.backup');
