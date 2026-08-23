@@ -1285,7 +1285,8 @@ function rpgGame() {
             this.setupLayoutObserver();
             requestAnimationFrame(() => this.refreshMobileGridSize());
 
-            if (this.isMobileViewport && !this.hasSeenGuide()) {
+            // Mode coba (pamong): langsung main tanpa popup panduan.
+            if (this.isMobileViewport && !this.previewMode && !this.hasSeenGuide()) {
                 this.showGuideModal = true;
             }
 
