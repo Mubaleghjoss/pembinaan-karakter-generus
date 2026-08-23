@@ -174,25 +174,29 @@
                         </div>
                         <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
                             @if($map->is_active)
-                            <a href="{{ route('admin.rpg.preview', $map->id) }}" target="_blank" rel="noopener"
-                                    class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 sm:py-1.5" title="Coba main peta ini (mode latihan, poin tidak dihitung)">
-                                ▶ Coba Main
+                            <a href="{{ route('admin.rpg.preview', $map->id) }}?mode=2d" target="_blank" rel="noopener"
+                                    class="col-span-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 sm:py-1.5" title="Coba main peta ini 2D (mode latihan, poin tidak dihitung)">
+                                <span>▶</span> Coba 2D
+                            </a>
+                            <a href="{{ route('admin.rpg.preview', $map->id) }}?mode=3d" target="_blank" rel="noopener"
+                                    class="col-span-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-fuchsia-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-fuchsia-700 sm:py-1.5" title="Coba main 3D (otomatis layar penuh + landscape)">
+                                <span>🎮</span> Coba 3D
                             </a>
                             @endif
                             <button @click="editMap({{ $map->id }}, @js($map))" 
-                                    class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 sm:py-1.5">
+                                    class="col-span-1 inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 sm:py-1.5">
                                 Edit
                             </button>
                             <button @click="manageNpcs({{ $map->id }}, @js($map))" 
-                                    class="inline-flex items-center justify-center rounded-lg bg-purple-50 px-3 py-2 text-sm text-purple-600 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 sm:py-1.5" title="Editor Peta & NPC">
+                                    class="col-span-1 inline-flex items-center justify-center rounded-lg bg-purple-50 px-3 py-2.5 text-sm font-semibold text-purple-600 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 sm:py-1.5" title="Editor Peta & NPC">
                                 Editor Peta
                             </button>
                             <button @click="duplicateMap({{ $map->id }})" 
-                                    class="inline-flex items-center justify-center rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 sm:py-1.5">
+                                    class="col-span-1 inline-flex items-center justify-center rounded-lg bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 sm:py-1.5">
                                 Duplikat
                             </button>
                             <button @click="deleteMap({{ $map->id }})" 
-                                    class="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 sm:py-1.5">
+                                    class="col-span-1 inline-flex items-center justify-center rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 sm:py-1.5">
                                 Hapus
                             </button>
                         </div>
@@ -289,8 +293,8 @@
     @endif
 
     {{-- MAP CREATE/EDIT MODAL --}}
-    <div x-show="showMapModal" x-cloak class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4" x-transition>
-        <div @click.outside="showMapModal = false" class="pkg-modal flex max-h-[calc(100vh-1.5rem)] min-h-0 w-full max-w-lg flex-col overflow-hidden sm:max-h-[92vh]">
+    <div x-show="showMapModal" x-cloak class="fixed inset-0 z-[110] flex items-stretch justify-center bg-black/50 sm:items-center sm:overflow-y-auto sm:p-4" x-transition>
+        <div @click.outside="showMapModal = false" class="pkg-modal flex h-full min-h-0 w-full flex-col overflow-hidden sm:h-auto sm:max-h-[92vh] sm:max-w-lg sm:rounded-2xl">
             <div class="flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700 sm:px-6">
                 <h3 class="text-base font-bold text-gray-900 dark:text-white sm:text-lg" x-text="editingMapId ? 'Edit Peta' : 'Tambah Peta Baru'"></h3>
                 <button type="button" @click="showMapModal = false" class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200" aria-label="Tutup modal">
