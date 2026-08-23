@@ -10,7 +10,7 @@
                 <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/20">
                     <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4L19 7"/></svg>
                 </div>
-                <h1 class="mt-3 text-2xl font-black">{{ $isNewAccount ? 'Pendaftaran Berhasil' : 'Biodata &amp; Surat Berhasil Diperbarui' }}</h1>
+                <h1 class="mt-3 text-2xl font-black">{{ $isNewAccount ? 'Pendaftaran Berhasil' : 'Biodata & Surat Berhasil Diperbarui' }}</h1>
                 <p class="mt-1 text-sm text-emerald-50">Akun Generus dan Orang Tua siap digunakan. Simpan &amp; bagikan informasi di bawah ini.</p>
             </div>
 

@@ -257,29 +257,46 @@ class GenerusRegistrationController extends Controller
         }
 
         $nis = (string) $siswa->nis;
+        $ortuUsername = $siswa->ortu_username ?: $nis;
         $siswaLoginUrl = route('siswa.login');
         $ortuLoginUrl = route('ortu.login');
 
-        $studentMsg = "Assalamu'alaikum {$siswa->nama} 🙏\n"
-            . "Berikut akun PKG untuk belajar & mengerjakan Tugas PKG:\n\n"
+        $studentMsg = "Assalamu'alaikum warahmatullahi wabarakatuh 🙏\n"
+            . "Kepada {$siswa->nama} & Orang Tua/Wali,\n\n"
+            . "Berikut informasi akun PKG (mohon disimpan):\n\n"
+            . "1) AKUN GENERUS (anak)\n"
             . "• Login (NIS): {$nis}\n"
-            . "• Password: {$nis}\n\n"
-            . "Cara masuk:\n"
-            . "1. Buka {$siswaLoginUrl}\n"
-            . "2. Masukkan NIS & password di atas\n"
-            . "3. Setelah masuk, silakan ganti password agar lebih aman.\n\n"
-            . "Selamat belajar, semoga lancar. 🤲";
+            . "• Password: {$nis}\n"
+            . "• Halaman masuk: {$siswaLoginUrl}\n\n"
+            . "2) AKUN ORANG TUA\n"
+            . "• Username: {$ortuUsername}\n"
+            . "• Password: {$nis}\n"
+            . "• Halaman masuk: {$ortuLoginUrl}\n\n"
+            . "Cara masuk (sama untuk keduanya):\n"
+            . "1. Buka halaman masuk sesuai akun di atas\n"
+            . "2. Masukkan login/username dan password\n"
+            . "3. Setelah berhasil masuk, mohon ganti password agar lebih aman\n\n"
+            . "Dengan akun Orang Tua, Bapak/Ibu dapat melihat Tugas PKG ananda sehingga bisa turut mengingatkan dan membantu melancarkan program PKG.\n\n"
+            . "Terima kasih. Wassalamu'alaikum warahmatullahi wabarakatuh 🤲";
 
-        $parentName = $siswa->nama_wali ? "Bapak/Ibu {$siswa->nama_wali}" : "Bapak/Ibu";
-        $parentMsg = "Assalamu'alaikum {$parentName} 🙏\n"
-            . "Berikut akun Orang Tua untuk memantau perkembangan ananda {$siswa->nama} di program PKG:\n\n"
-            . "• Username: " . ($siswa->ortu_username ?: $nis) . "\n"
-            . "• Password: {$nis}\n\n"
-            . "Cara masuk:\n"
-            . "1. Buka {$ortuLoginUrl}\n"
-            . "2. Masukkan username & password di atas\n"
-            . "3. Setelah masuk, silakan ganti password.\n\n"
-            . "Dengan akun ini, Bapak/Ibu dapat melihat Tugas PKG ananda sehingga bisa turut mengingatkan dan membantu melancarkan program PKG. Terima kasih atas dukungannya. 🤲";
+        $parentName = $siswa->nama_wali ? "Bapak/Ibu {$siswa->nama_wali}" : 'Bapak/Ibu';
+        $parentMsg = "Assalamu'alaikum warahmatullahi wabarakatuh 🙏\n"
+            . "Kepada {$parentName}, Orang Tua/Wali dari ananda {$siswa->nama}.\n\n"
+            . "Berikut informasi akun PKG (mohon disimpan):\n\n"
+            . "1) AKUN ORANG TUA\n"
+            . "• Username: {$ortuUsername}\n"
+            . "• Password: {$nis}\n"
+            . "• Halaman masuk: {$ortuLoginUrl}\n\n"
+            . "2) AKUN GENERUS (ananda)\n"
+            . "• Login (NIS): {$nis}\n"
+            . "• Password: {$nis}\n"
+            . "• Halaman masuk: {$siswaLoginUrl}\n\n"
+            . "Cara masuk (sama untuk keduanya):\n"
+            . "1. Buka halaman masuk sesuai akun di atas\n"
+            . "2. Masukkan username/login dan password\n"
+            . "3. Setelah berhasil masuk, mohon ganti password agar lebih aman\n\n"
+            . "Dengan akun Orang Tua ini, Bapak/Ibu dapat memantau Tugas PKG ananda sehingga dapat turut mengingatkan dan membantu melancarkan program PKG. Dukungan Bapak/Ibu sangat berarti.\n\n"
+            . "Terima kasih. Wassalamu'alaikum warahmatullahi wabarakatuh 🤲";
 
         return [
             'nis' => $nis,
@@ -293,7 +310,7 @@ class GenerusRegistrationController extends Controller
             ],
             'parent' => [
                 'nama' => $siswa->nama_wali,
-                'username' => $siswa->ortu_username ?: $nis,
+                'username' => $ortuUsername,
                 'password' => $nis,
                 'login_url' => $ortuLoginUrl,
                 'wa' => $this->waLink($siswa->phone_wali),
