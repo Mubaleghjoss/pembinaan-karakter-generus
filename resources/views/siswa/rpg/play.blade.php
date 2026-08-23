@@ -1,4 +1,4 @@
-@extends('layouts.siswa')
+@extends(($previewMode ?? false) ? 'layouts.app' : 'layouts.siswa')
 
 @section('title', 'Game - ' . $rpgMap->nama)
 
@@ -574,11 +574,11 @@
             <div class="rpg-stage-card rounded-[28px] p-4 sm:p-5">
                 <div class="rpg-mobile-fullscreen-hide flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex items-start gap-3">
-                        <a href="{{ route('siswa.rpg.index') }}" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                        <a href="{{ ($previewMode ?? false) ? route('admin.rpg.index') : route('siswa.rpg.index') }}" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                         </a>
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-500 dark:text-indigo-300">Game</p>
+                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-500 dark:text-indigo-300">{{ ($previewMode ?? false) ? 'Mode Coba' : 'Game' }}</p>
                             <h1 class="mt-1 text-xl font-black text-slate-900 dark:text-white">{{ $rpgMap->nama }}</h1>
                             <p class="mt-1 hidden text-sm text-slate-500 dark:text-slate-400 sm:block">{{ $rpgMap->deskripsi }}</p>
                         </div>
@@ -997,7 +997,7 @@
                     <button @click="dismissGuide()" class="flex-1 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700">
                         Saya paham, mulai main
                     </button>
-                    <a href="{{ route('siswa.rpg.index') }}" class="inline-flex items-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900">
+                    <a href="{{ ($previewMode ?? false) ? route('admin.rpg.index') : route('siswa.rpg.index') }}" class="inline-flex items-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900">
                         Pilih map lain
                     </a>
                 </div>
@@ -1090,7 +1090,7 @@
                 </div>
 
                 <div class="flex flex-col gap-2 sm:flex-row">
-                    <a href="{{ route('siswa.rpg.index') }}" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <a href="{{ ($previewMode ?? false) ? route('admin.rpg.index') : route('siswa.rpg.index') }}" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-100 dark:hover:bg-gray-700">
                         Peta lain
                     </a>
                     <button @click="resetGame()" class="flex-1 px-4 py-2.5 border border-orange-300 bg-orange-50 text-orange-700 rounded-xl font-medium hover:bg-orange-100 dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-200">
@@ -1108,6 +1108,7 @@
 <script>
 function rpgGame() {
     return {
+        previewMode: @json($previewMode ?? false),
         gridSize: {{ $rpgMap->grid_size }},
         session: @json($session),
         character: @json($character),
@@ -1266,17 +1267,20 @@ function rpgGame() {
             this.enemyInitial = JSON.parse(JSON.stringify(this.enemies));
             this.generatePickups();
             this.initBoss();
-            this.pollTimer = setInterval(() => this.pollState(), 5000);
-            // Hemat server: hentikan polling presence saat tab tak terlihat, lanjut saat kembali.
-            this._visHandler = () => {
-                if (document.hidden) {
-                    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
-                } else if (!this.pollTimer) {
-                    this.pollState();
-                    this.pollTimer = setInterval(() => this.pollState(), 5000);
-                }
-            };
-            document.addEventListener('visibilitychange', this._visHandler);
+            // Mode coba (pamong): tanpa polling presence sama sekali.
+            if (!this.previewMode) {
+                this.pollTimer = setInterval(() => this.pollState(), 5000);
+                // Hemat server: hentikan polling presence saat tab tak terlihat, lanjut saat kembali.
+                this._visHandler = () => {
+                    if (document.hidden) {
+                        if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
+                    } else if (!this.pollTimer) {
+                        this.pollState();
+                        this.pollTimer = setInterval(() => this.pollState(), 5000);
+                    }
+                };
+                document.addEventListener('visibilitychange', this._visHandler);
+            }
             this.startEnemyAI();
             this.setupLayoutObserver();
             requestAnimationFrame(() => this.refreshMobileGridSize());
@@ -1521,7 +1525,7 @@ function rpgGame() {
                 submittingAnswer: this.submittingAnswer,
                 completionOpen: this.showCompletion,
                 mapName: @json($rpgMap->nama),
-                mapListUrl: @json(route('siswa.rpg.index')),
+                mapListUrl: @json(($previewMode ?? false) ? route('admin.rpg.index') : route('siswa.rpg.index')),
             };
         },
 
@@ -1738,11 +1742,13 @@ function rpgGame() {
                 
                 this.catchCount++;
 
-                fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
-                    body: JSON.stringify({ pos_x: 0, pos_y: 0 })
-                }).catch(e => console.error(e));
+                if (!this.previewMode) {
+                    fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
+                        body: JSON.stringify({ pos_x: 0, pos_y: 0 })
+                    }).catch(e => console.error(e));
+                }
 
                 this.notifyPlayer('Kamu tertangkap musuh. Kembali ke titik awal.', 'error');
                 
@@ -2167,24 +2173,30 @@ function rpgGame() {
                 this.bossVictoryShown = true;
                 this.notifyPlayer(canRespawn ? 'Bos tumbang! Tapi ia akan bangkit lagi...' : 'BOS DIKALAHKAN! 🎉', 'success');
 
-                fetch("{{ route('siswa.rpg.boss-defeat', $rpgMap) }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                        'Accept': 'application/json'
-                    },
-                }).then(r => r.json()).then(data => {
-                    if (data.success) {
-                        this.bossDefeated = true;
-                        if (typeof data.total_score === 'number') {
-                            this.session.total_score = data.total_score;
+                if (this.previewMode) {
+                    // Mode coba (pamong): tidak kirim award ke server / leaderboard.
+                    this.bossDefeated = true;
+                    this.notifyPlayer('Mode coba: bos dikalahkan (poin tidak dihitung).', 'success');
+                } else {
+                    fetch("{{ route('siswa.rpg.boss-defeat', $rpgMap) }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            'Accept': 'application/json'
+                        },
+                    }).then(r => r.json()).then(data => {
+                        if (data.success) {
+                            this.bossDefeated = true;
+                            if (typeof data.total_score === 'number') {
+                                this.session.total_score = data.total_score;
+                            }
+                            if (!data.already && data.bonus > 0) {
+                                this.notifyPlayer(`Bonus +${data.bonus} poin masuk peringkat!`, 'success');
+                            }
                         }
-                        if (!data.already && data.bonus > 0) {
-                            this.notifyPlayer(`Bonus +${data.bonus} poin masuk peringkat!`, 'success');
-                        }
-                    }
-                }).catch(e => console.error('boss defeat submit failed', e));
+                    }).catch(e => console.error('boss defeat submit failed', e));
+                }
             } else {
                 this.notifyPlayer(canRespawn ? 'Bos tumbang lagi! Bersiap...' : 'Bos akhirnya benar-benar kalah! 🎉', 'success');
             }
@@ -2722,6 +2734,11 @@ function rpgGame() {
                 })
                 : window.confirm(message);
             if (!confirmed) return;
+            if (this.previewMode) {
+                // Mode coba: reset lokal saja (muat ulang halaman).
+                location.reload();
+                return;
+            }
             try {
                 const res = await fetch("{{ route('siswa.rpg.reset', $rpgMap) }}", {
                     method: 'POST',
@@ -2808,21 +2825,24 @@ function rpgGame() {
 
             // Fire-and-forget server sync (position only) — DEBOUNCE agar tidak 1 request tiap langkah.
             // Posisi terbaru dikirim setelah pemain berhenti sejenak (250ms) → hemat beban server.
-            this._pendingMove = { pos_x: newX, pos_y: newY };
-            if (this._moveSyncTimer) clearTimeout(this._moveSyncTimer);
-            this._moveSyncTimer = setTimeout(() => {
-                const payload = this._pendingMove;
-                if (!payload) return;
-                fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                }).catch(e => console.error('Move error:', e));
-            }, 250);
+            // Mode coba (pamong): tidak sync ke server sama sekali.
+            if (!this.previewMode) {
+                this._pendingMove = { pos_x: newX, pos_y: newY };
+                if (this._moveSyncTimer) clearTimeout(this._moveSyncTimer);
+                this._moveSyncTimer = setTimeout(() => {
+                    const payload = this._pendingMove;
+                    if (!payload) return;
+                    fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    }).catch(e => console.error('Move error:', e));
+                }, 250);
+            }
 
             return true;
         },
@@ -2941,7 +2961,11 @@ function rpgGame() {
                 }
             }
 
-            // Sync to server in background (fire-and-forget)
+            // Sync to server in background (fire-and-forget). Mode coba (pamong): dilewati.
+            if (this.previewMode) {
+                this.submittingAnswer = false;
+                return;
+            }
             fetch("{{ route('siswa.rpg.answer', $rpgMap) }}", {
                 method: 'POST',
                 headers: {

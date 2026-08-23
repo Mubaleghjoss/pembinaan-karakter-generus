@@ -173,6 +173,12 @@
                             </div>
                         </div>
                         <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+                            @if($map->is_active)
+                            <a href="{{ route('admin.rpg.preview', $map->id) }}" target="_blank" rel="noopener"
+                                    class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 sm:py-1.5" title="Coba main peta ini (mode latihan, poin tidak dihitung)">
+                                ▶ Coba Main
+                            </a>
+                            @endif
                             <button @click="editMap({{ $map->id }}, @js($map))" 
                                     class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 sm:py-1.5">
                                 Edit

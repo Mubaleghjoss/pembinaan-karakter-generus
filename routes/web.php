@@ -1079,6 +1079,11 @@ Route::middleware('auth')->group(function () {
         ->middleware('pamong.permission:game,view')
         ->name('admin.rpg.index');
 
+    // Admin/Pamong: coba main peta (mode preview, tanpa simpan skor/leaderboard)
+    Route::get('/admin/rpg/{rpgMap}/coba', [RpgGameController::class, 'adminPreviewPlay'])
+        ->middleware('pamong.permission:game,view')
+        ->name('admin.rpg.preview');
+
     // Bank 29 Karakter Luhur (sumber data game)
     Route::prefix('bank-karakter')->name('admin.karakter-luhur.')->group(function () {
         Route::get('/', [KarakterLuhurController::class, 'index'])->name('index');

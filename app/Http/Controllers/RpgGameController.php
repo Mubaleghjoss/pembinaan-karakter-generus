@@ -197,8 +197,53 @@ class RpgGameController extends Controller
             ? RpgCatalog::normalizeBossConfig($rpgMap->boss_config, (int) $rpgMap->grid_size)
             : null;
         $bossDefeated = ! is_null($session->boss_defeated_at ?? null);
+        $previewMode = false;
 
-        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated'));
+        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode'));
+    }
+
+    /**
+     * Admin/Pamong: COBA MAIN peta (mode preview).
+     * Me-render view play yang sama, tapi:
+     * - tidak menyimpan sesi ke DB (sesi palsu, in-memory)
+     * - tidak mengirim skor ke leaderboard siswa
+     * - tanpa polling presence / sync server (semua fetch dinonaktifkan di klien)
+     * Tujuannya agar pamong & pengurus bisa menjajal game 2D/3D + bos & skill.
+     */
+    public function adminPreviewPlay(RpgMap $rpgMap)
+    {
+        if (!$rpgMap->is_active) {
+            return redirect()->route('admin.rpg.index')->with('error', 'Map tidak aktif — aktifkan dulu untuk mencoba.');
+        }
+
+        // Sesi palsu (tidak disimpan). Struktur menyerupai RpgGameSession yang dipakai view.
+        $session = [
+            'id' => 0,
+            'pos_x' => 0,
+            'pos_y' => 0,
+            'answered_npcs' => [],
+            'total_score' => 0,
+        ];
+
+        // Karakter generik untuk preview.
+        $character = [
+            'nama' => 'Mode Coba',
+            'nama_karakter' => 'Mode Coba',
+            'avatar' => RpgCatalog::resolvePlayerAvatar(null),
+            'avatar_display' => RpgCatalog::resolvePlayerAvatar(null),
+            'warna' => '#6366F1',
+        ];
+
+        $npcs = $rpgMap->activeNpcs()->get();
+        $enemies = RpgCatalog::normalizeEnemies($rpgMap->enemies);
+        $obstacles = $rpgMap->obstacles ?? [];
+        $boss = $rpgMap->boss_enabled
+            ? RpgCatalog::normalizeBossConfig($rpgMap->boss_config, (int) $rpgMap->grid_size)
+            : null;
+        $bossDefeated = false;
+        $previewMode = true;
+
+        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode'));
     }
 
     /**
