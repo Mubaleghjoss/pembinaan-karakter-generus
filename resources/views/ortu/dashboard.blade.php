@@ -15,205 +15,169 @@
         'legacy' => 'Perlu daftar ulang',
         default => 'Belum aktif',
     };
+    $taskPercent = $totalTasks > 0 ? round(($verifiedTasks / max($totalTasks, 1)) * 100) : 0;
 @endphp
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <!-- Share Info Banners -->
+<div class="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-6">
+    {{-- Info dari pengurus --}}
     @foreach($shareInfos as $info)
-    <div x-data="{ show: true }" x-show="show" 
+    <div x-data="{ show: true }" x-show="show"
          x-init="setTimeout(() => show = false, {{ $info->auto_dismiss_seconds * 1000 }})"
-         class="mb-4 rounded-xl border px-4 py-3 shadow-sm flex items-start justify-between
+         class="mb-4 flex items-start justify-between rounded-xl border px-4 py-3 shadow-sm
          @if($info->type === 'warning') bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200
          @elseif($info->type === 'success') bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200
          @else bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 @endif"
          x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div>
-            <p class="font-semibold text-sm">Info: {{ $info->title }}</p>
-            <p class="text-sm mt-1">{!! nl2br(e($info->message)) !!}</p>
+            <p class="text-sm font-semibold">Info: {{ $info->title }}</p>
+            <p class="mt-1 text-sm">{!! nl2br(e($info->message)) !!}</p>
         </div>
-        <button @click="show = false" class="ml-4 flex-shrink-0 opacity-60 hover:opacity-100 transition">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button @click="show = false" class="ml-4 flex-shrink-0 opacity-60 transition hover:opacity-100">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
     </div>
     @endforeach
 
-    <!-- Student Info Card -->
-    <div class="pkg-panel p-6 mb-6">
-        <div class="flex items-center space-x-4">
-            <div class="w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                @if($siswa->foto_path)
-                    <img src="{{ asset('storage/' . $siswa->foto_path) }}" class="w-16 h-16 rounded-full object-cover">
-                @else
-                    <span class="text-teal-700 dark:text-teal-300 font-bold text-2xl">{{ substr($siswa->nama, 0, 1) }}</span>
-                @endif
-            </div>
-            <div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $siswa->nama }}</h2>
-                <p class="text-gray-600 dark:text-gray-400">NIS: {{ $siswa->nis }} | {{ $siswa->school_grade_label ?? 'Kelas sekolah belum dikonfirmasi' }}</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Gamification Widget -->
-    @if($gamificationStats)
-    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-white mb-6 shadow-lg">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4 cursor-pointer group" @click="$dispatch('open-tier-modal')" title="Klik untuk lihat info level">
-                <div class="text-4xl group-hover:scale-110 transition-transform">{{ $gamificationStats['current_level']->badge_icon_url ?? 'LVL' }}</div>
-                <div>
-                    <p class="text-indigo-200 text-sm">Level {{ $gamificationStats['current_level']->level ?? 1 }}</p>
-                    <h2 class="text-xl font-bold group-hover:underline decoration-2 underline-offset-2">{{ $gamificationStats['current_level']->nama ?? 'Pemula' }}</h2>
-                    <p class="text-indigo-300 text-xs mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">Ketuk untuk info level</p>
-                </div>
-            </div>
-            <div class="text-right">
-                <p class="text-3xl font-bold">{{ number_format($gamificationStats['points']->total_points ?? 0) }}</p>
-                <p class="text-indigo-200 text-sm">Total Poin</p>
-            </div>
-        </div>
-        
-        @if($gamificationStats['next_level'])
-        <div class="mt-4">
-            <div class="flex justify-between text-sm mb-1">
-                <span>Progress ke {{ $gamificationStats['next_level']->nama }}</span>
-                <span>{{ $gamificationStats['points_to_next'] }} poin lagi</span>
-            </div>
-            <div class="w-full bg-indigo-400/30 rounded-full h-2">
-                <div class="bg-white rounded-full h-2" style="width: {{ $gamificationStats['progress_to_next'] }}%"></div>
-            </div>
-        </div>
-        @endif
-        
-        <div class="mt-4 flex items-center gap-4 text-sm bg-white/10 p-3 rounded-lg">
-            <span>Peringkat #{{ $gamificationStats['rank'] }}</span>
-            <span>{{ $gamificationStats['total_badges'] }} Pin</span>
-            <span>{{ $gamificationStats['attendance_streak'] }} Streak Hadir</span>
-        </div>
-    </div>
-
-    {{-- Level Tier Modal --}}
-    @if(isset($allLevels) && $allLevels->count() > 0)
-        @include('components.level-tier-modal')
-    @endif
-    @endif
-
-    <!-- Grid: Attendance + Tasks -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <!-- Today's Attendance -->
-        <div class="pkg-panel p-6">
-            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase mb-3">Presensi Hari Ini</h3>
-            @php
-                $hasScheduleToday = false;
-                if ($activeSchedule) {
-                    $todayDay = strtolower(now()->format('l'));
-                    $hasScheduleToday = empty($activeSchedule->days) || in_array($todayDay, $activeSchedule->days);
-                }
-            @endphp
-            @if(!$activeSchedule || !$hasScheduleToday)
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <span class="text-sm font-semibold text-gray-600">OFF</span>
-                    </div>
-                    <div>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">Tidak Ada Jadwal</p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Tidak ada jadwal PKG hari ini</p>
-                    </div>
-                </div>
-            @elseif($todayPresensi)
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center
-                        @if($todayPresensi->status === 'hadir') bg-green-100 dark:bg-green-900/30
-                        @elseif($todayPresensi->status === 'izin') bg-yellow-100 dark:bg-yellow-900/30
-                        @elseif($todayPresensi->status === 'sakit') bg-red-100 dark:bg-red-900/30
-                        @else bg-gray-100 dark:bg-gray-700 @endif">
-                        <span class="text-2xl">
-                            @if($todayPresensi->status === 'hadir') HADIR
-                            @elseif($todayPresensi->status === 'izin') IZIN
-                            @elseif($todayPresensi->status === 'sakit') SAKIT
-                            @else ALPA @endif
-                        </span>
-                    </div>
-                    <div>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ ucfirst($todayPresensi->status) }}</p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            @if($todayPresensi->jam_masuk) Masuk: {{ $todayPresensi->jam_masuk }} @endif
-                            @if($todayPresensi->jam_keluar) | Keluar: {{ $todayPresensi->jam_keluar }} @endif
-                        </p>
-                    </div>
-                </div>
+    {{-- Identitas anak (ringkas) --}}
+    <div class="pkg-panel mb-4 flex items-center gap-3 p-4">
+        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-100 dark:bg-teal-900">
+            @if($siswa->foto_path)
+                <img src="{{ asset('storage/' . $siswa->foto_path) }}" class="h-12 w-12 rounded-full object-cover" alt="Foto {{ $siswa->nama }}">
             @else
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <span class="text-sm font-semibold text-gray-600">WAIT</span>
-                    </div>
-                    <div>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">Belum Absen</p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Anak belum melakukan presensi hari ini</p>
-                    </div>
-                </div>
+                <span class="text-xl font-bold text-teal-700 dark:text-teal-300">{{ mb_substr($siswa->nama, 0, 1) }}</span>
             @endif
         </div>
-
-        <!-- PKG Tasks Summary -->
-        <div class="pkg-panel p-6">
-            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase mb-3">Tugas PKG</h3>
-            <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
-                    <span class="text-sm font-semibold text-teal-700 dark:text-teal-300">PKG</span>
-                </div>
-                <div>
-                    <p class="text-lg font-bold text-gray-900 dark:text-white">{{ $verifiedTasks }} / {{ $totalTasks }}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Tugas terverifikasi</p>
-                </div>
-            </div>
-            @if($totalTasks > 0)
-            <div class="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div class="bg-teal-500 h-2 rounded-full transition-all" style="width: {{ ($verifiedTasks / max($totalTasks, 1)) * 100 }}%"></div>
-            </div>
-            @endif
+        <div class="min-w-0">
+            <h1 class="truncate text-lg font-bold text-gray-900 dark:text-white">{{ $siswa->nama }}</h1>
+            <p class="truncate text-sm text-gray-600 dark:text-gray-400">NIS {{ $siswa->nis }} · {{ $siswa->school_grade_label ?? 'Kelas belum dikonfirmasi' }}</p>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <a href="{{ route('ortu.jadwal') }}" class="pkg-panel p-5 hover:shadow-md transition-all group text-center">
-            <div class="w-12 h-12 mx-auto rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <span class="text-sm font-semibold text-blue-700 dark:text-blue-300">JDW</span>
+    {{-- Pesan pengingat untuk orang tua --}}
+    <div class="mb-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-900/60 dark:bg-teal-950/30 sm:p-5">
+        <p class="text-base font-bold text-teal-900 dark:text-teal-100">Bapak/Ibu, mari dampingi ananda 🤲</p>
+        <ul class="mt-2 space-y-1.5 text-sm leading-6 text-teal-900/90 dark:text-teal-100/90">
+            <li>• Ingatkan ananda mengerjakan <span class="font-semibold">Tugas PKG</span> dan meminta verifikasi pamong.</li>
+            <li>• Biasakan <span class="font-semibold">membaca Al-Qur'an setiap hari</span>, lalu lembar bacaannya <span class="font-semibold">discan/disetor</span> agar tercatat.</li>
+        </ul>
+
+        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+            <div class="rounded-xl bg-white/80 p-3 dark:bg-gray-800/60">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tugas PKG</p>
+                <p class="mt-0.5 text-sm font-bold text-gray-900 dark:text-white">{{ $verifiedTasks }} / {{ $totalTasks }} terverifikasi</p>
+                <div class="mt-2 h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                    <div class="h-1.5 rounded-full bg-teal-500" style="width: {{ $taskPercent }}%"></div>
+                </div>
+                <a href="{{ route('ortu.tugas') }}" class="mt-2 inline-flex text-sm font-semibold text-teal-700 hover:underline dark:text-teal-300">Cek Tugas PKG →</a>
             </div>
-            <p class="font-semibold text-gray-900 dark:text-white">Lihat Jadwal</p>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Kalender aktivitas anak</p>
+            <div class="rounded-xl bg-white/80 p-3 dark:bg-gray-800/60">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Bacaan Al-Qur'an</p>
+                <p class="mt-0.5 text-sm font-bold text-gray-900 dark:text-white">
+                    {{ $quranSummary['verified_this_month'] }} setoran bulan ini
+                    @if($quranSummary['pending'] > 0)
+                        <span class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-200">{{ $quranSummary['pending'] }} menunggu</span>
+                    @endif
+                </p>
+                <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                    @if($quranSummary['last_date'])
+                        Terakhir discan: {{ $quranSummary['last_date']->translatedFormat('d M Y') }}
+                    @else
+                        Belum ada bacaan yang discan.
+                    @endif
+                </p>
+                <a href="{{ route('ortu.quran.index') }}" class="mt-2 inline-flex text-sm font-semibold text-teal-700 hover:underline dark:text-teal-300">Pantau Bacaan Qur'an →</a>
+            </div>
+        </div>
+    </div>
+
+    {{-- Rekap presensi PKG per bulan --}}
+    <div class="pkg-panel mb-4 p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-sm font-bold uppercase tracking-wide text-gray-600 dark:text-gray-400">Rekap Presensi PKG</h2>
+            <a href="{{ route('ortu.kehadiran') }}" class="text-sm font-semibold text-teal-700 hover:underline dark:text-teal-300">Riwayat lengkap →</a>
+        </div>
+
+        @if(count($attendanceMonths) === 0)
+            <p class="mt-3 rounded-xl bg-gray-50 p-4 text-sm text-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
+                Belum ada data presensi PKG untuk ananda.
+            </p>
+        @else
+            {{-- Total keseluruhan --}}
+            <div class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                @foreach([
+                    ['Hadir', $attendanceTotals['hadir'], 'text-emerald-700 dark:text-emerald-300', 'bg-emerald-50 dark:bg-emerald-900/20'],
+                    ['Terlambat', $attendanceTotals['terlambat'], 'text-amber-700 dark:text-amber-300', 'bg-amber-50 dark:bg-amber-900/20'],
+                    ['Izin', $attendanceTotals['izin'], 'text-sky-700 dark:text-sky-300', 'bg-sky-50 dark:bg-sky-900/20'],
+                    ['Sakit', $attendanceTotals['sakit'], 'text-rose-700 dark:text-rose-300', 'bg-rose-50 dark:bg-rose-900/20'],
+                    ['Tidak Hadir', $attendanceTotals['alpha'], 'text-gray-700 dark:text-gray-300', 'bg-gray-100 dark:bg-gray-800'],
+                ] as [$label, $value, $tone, $bg])
+                    <div class="rounded-xl {{ $bg }} p-2.5 text-center">
+                        <p class="text-lg font-black {{ $tone }}">{{ $value }}</p>
+                        <p class="text-[11px] font-semibold text-gray-600 dark:text-gray-400">{{ $label }}</p>
+                    </div>
+                @endforeach
+            </div>
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Total sejak program PKG dimulai (November 2024): {{ $attendanceTotals['total'] }} kegiatan tercatat.</p>
+
+            {{-- Per bulan --}}
+            <div class="mt-4 space-y-2">
+                @foreach($attendanceMonths as $month)
+                    <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $month['label'] }}</p>
+                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ $month['total'] }} kegiatan</span>
+                        </div>
+                        <div class="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold">
+                            @if($month['hadir'] > 0)
+                                <span class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">Hadir {{ $month['hadir'] }}</span>
+                            @endif
+                            @if($month['terlambat'] > 0)
+                                <span class="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">Terlambat {{ $month['terlambat'] }}</span>
+                            @endif
+                            @if($month['izin'] > 0)
+                                <span class="rounded-full bg-sky-100 px-2 py-1 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">Izin {{ $month['izin'] }}</span>
+                            @endif
+                            @if($month['sakit'] > 0)
+                                <span class="rounded-full bg-rose-100 px-2 py-1 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">Sakit {{ $month['sakit'] }}</span>
+                            @endif
+                            @if($month['alpha'] > 0)
+                                <span class="rounded-full bg-gray-200 px-2 py-1 text-gray-700 dark:bg-gray-700 dark:text-gray-200">Tidak Hadir {{ $month['alpha'] }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
+    {{-- Aksi cepat --}}
+    <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <a href="{{ route('ortu.jadwal') }}" class="pkg-panel p-3 text-center transition-all hover:shadow-md">
+            <p class="text-sm font-bold text-gray-900 dark:text-white">Kalender</p>
+            <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">Jadwal kegiatan</p>
         </a>
-        <a href="{{ route('ortu.tugas') }}" class="pkg-panel p-5 hover:shadow-md transition-all group text-center">
-            <div class="w-12 h-12 mx-auto rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <span class="text-sm font-semibold text-teal-700 dark:text-teal-300">TGS</span>
-            </div>
-            <p class="font-semibold text-gray-900 dark:text-white">Cek Tugas PKG</p>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Pantau tugas anak</p>
+        <a href="{{ route('ortu.materi.index') }}" class="pkg-panel p-3 text-center transition-all hover:shadow-md">
+            <p class="text-sm font-bold text-gray-900 dark:text-white">Materi</p>
+            <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">Bahan bacaan</p>
         </a>
-        <a href="{{ route('ortu.chat') }}" class="pkg-panel p-5 hover:shadow-md transition-all group text-center">
-            <div class="w-12 h-12 mx-auto rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <span class="text-sm font-semibold text-purple-700 dark:text-purple-300">CHAT</span>
-            </div>
-            <p class="font-semibold text-gray-900 dark:text-white">Chat Pamong</p>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Komunikasi dengan pamong</p>
+        <a href="{{ route('public.karakter.index') }}" target="_blank" rel="noopener" class="pkg-panel p-3 text-center transition-all hover:shadow-md">
+            <p class="text-sm font-bold text-gray-900 dark:text-white">29 Karakter</p>
+            <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">Referensi luhur</p>
         </a>
-        <a href="{{ route('ortu.biometrik') }}" class="pkg-panel p-5 hover:shadow-md transition-all group text-center">
-            <div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">BIO</span>
-            </div>
-            <p class="font-semibold text-gray-900 dark:text-white">Biometrik</p>
-            <p class="text-xs {{ $biometricOrtuTone }} mt-1">{{ $biometricOrtuLabel }}</p>
+        <a href="{{ route('ortu.chat') }}" class="pkg-panel p-3 text-center transition-all hover:shadow-md">
+            <p class="text-sm font-bold text-gray-900 dark:text-white">Chat Pamong</p>
+            <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">Tanya perkembangan</p>
         </a>
     </div>
 
-    <!-- Latest Berita -->
+    {{-- Berita --}}
     @if($berita->count() > 0)
-    <div class="pkg-panel p-6">
-        <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase mb-4">Berita Terbaru</h3>
-        <div class="space-y-3">
+    <div class="pkg-panel p-4 sm:p-5">
+        <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-gray-600 dark:text-gray-400">Berita Terbaru</h2>
+        <div class="space-y-2">
             @foreach($berita as $item)
-            <a href="{{ route('public.berita', $item->slug) }}" target="_blank" class="block p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <p class="font-medium text-gray-900 dark:text-white text-sm">{{ $item->judul }}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ $item->published_at?->diffForHumans() }}</p>
+            <a href="{{ route('public.berita', $item->slug) }}" target="_blank" rel="noopener" class="block rounded-lg p-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $item->judul }}</p>
+                <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ $item->published_at?->diffForHumans() }}</p>
             </a>
             @endforeach
         </div>

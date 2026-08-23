@@ -19,13 +19,21 @@ class OrtuChatController extends Controller
             ->when(! $siswa->isGraduated(), fn ($query) => $query->active())
             ->where('siswa_id', $siswa->id)
             ->pluck('pamong_id');
-        $pamongList = User::whereIn('id', $pamongIds)->get();
+        $pamongList = User::query()
+            ->with('role')
+            ->whereIn('id', $pamongIds)
+            ->get();
 
-        // If no assigned pamong, show all pamong
+        // Bila belum ada pamong ter-assign, tampilkan admin + pamong aktif.
+        // Catatan: model User memakai relasi tunggal role() (kolom roles.name),
+        // bukan roles()/slug — query lama menyebabkan error 500 di halaman ini.
         if ($pamongList->isEmpty() && ! $siswa->isGraduated()) {
-            $pamongList = User::whereHas('roles', function ($q) {
-                $q->whereIn('slug', ['pamong', 'admin']);
-            })->get();
+            $pamongList = User::query()
+                ->with('role')
+                ->where('status', 'active')
+                ->whereHas('role', fn ($roleQuery) => $roleQuery->whereIn('name', ['admin', 'pamong', 'pkg_manager']))
+                ->orderBy('username')
+                ->get();
         }
 
         // Get latest message for each pamong

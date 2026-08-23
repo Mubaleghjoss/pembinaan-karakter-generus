@@ -12,21 +12,20 @@
     </div>
 
     <div class="pkg-panel p-4 mb-6">
-        <div class="flex flex-wrap gap-4 text-sm text-gray-700 dark:text-gray-300">
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500"></span><span>Hadir</span></div>
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-yellow-500"></span><span>Izin</span></div>
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500"></span><span>Sakit</span></div>
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-gray-500"></span><span>Alpha</span></div>
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500"></span><span>Tugas PKG Selesai</span></div>
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-yellow-500"></span><span>Tugas PKG Belum Lengkap</span></div>
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#F97316"></span><span>Jadwal Admin</span></div>
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#14B8A6"></span><span>RPP Materi</span></div>
-            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#0F766E"></span><span>Jadwal Presensi Aktif</span></div>
+        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Keterangan warna</p>
+        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-green-500"></span><span>Hadir / Tugas selesai</span></div>
+            <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-yellow-500"></span><span>Izin / Tugas belum lengkap</span></div>
+            <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-red-500"></span><span>Sakit</span></div>
+            <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-gray-500"></span><span>Tidak hadir</span></div>
+            <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:#F97316"></span><span>Jadwal Admin</span></div>
+            <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:#14B8A6"></span><span>RPP Materi</span></div>
+            <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:#0F766E"></span><span>Jadwal Presensi Aktif</span></div>
         </div>
     </div>
 
-    <div class="pkg-panel p-4">
-        <div id="calendar"></div>
+    <div class="pkg-panel p-3 sm:p-4">
+        <div id="calendar" class="pkg-ortu-calendar"></div>
     </div>
 
     <div id="eventModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
@@ -149,4 +148,166 @@ function closeEventModal() {
     modal.classList.remove('flex');
 }
 </script>
+
+<style>
+/* Bungkus tampilan FullCalendar agar tidak muncul kotak polos tanpa gaya. */
+.pkg-ortu-calendar {
+    --pkg-cal-border: #e5e7eb;
+    font-family: inherit;
+}
+.pkg-ortu-calendar .fc {
+    font-family: inherit;
+}
+.pkg-ortu-calendar .fc-theme-standard .fc-scrollgrid,
+.pkg-ortu-calendar .fc-theme-standard td,
+.pkg-ortu-calendar .fc-theme-standard th {
+    border-color: var(--pkg-cal-border);
+}
+.pkg-ortu-calendar .fc-theme-standard .fc-scrollgrid {
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+.pkg-ortu-calendar .fc .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.pkg-ortu-calendar .fc .fc-toolbar-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #111827;
+}
+.pkg-ortu-calendar .fc .fc-button {
+    background-color: #0d9488;
+    border-color: #0d9488;
+    box-shadow: none;
+    border-radius: 0.6rem;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+.pkg-ortu-calendar .fc .fc-button:hover,
+.pkg-ortu-calendar .fc .fc-button:focus {
+    background-color: #0f766e;
+    border-color: #0f766e;
+    box-shadow: none;
+}
+.pkg-ortu-calendar .fc .fc-button-primary:not(:disabled).fc-button-active,
+.pkg-ortu-calendar .fc .fc-button-primary:not(:disabled):active {
+    background-color: #115e59;
+    border-color: #115e59;
+}
+.pkg-ortu-calendar .fc .fc-button:disabled {
+    background-color: #9ca3af;
+    border-color: #9ca3af;
+    opacity: 1;
+}
+.pkg-ortu-calendar .fc .fc-col-header-cell {
+    background-color: #f9fafb;
+    padding: 0.4rem 0;
+}
+.pkg-ortu-calendar .fc .fc-col-header-cell-cushion {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    text-decoration: none;
+}
+.pkg-ortu-calendar .fc .fc-daygrid-day-number {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+    text-decoration: none;
+    padding: 0.25rem 0.4rem;
+}
+.pkg-ortu-calendar .fc .fc-daygrid-day.fc-day-today {
+    background-color: #ccfbf1;
+}
+.pkg-ortu-calendar .fc .fc-day-other .fc-daygrid-day-top {
+    opacity: 0.4;
+}
+.pkg-ortu-calendar .fc-event,
+.pkg-ortu-calendar .fc .fc-daygrid-event {
+    border: none;
+    border-radius: 0.4rem;
+    padding: 1px 5px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.pkg-ortu-calendar .fc .fc-daygrid-event-dot {
+    display: none;
+}
+.pkg-ortu-calendar .fc .fc-daygrid-more-link {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0f766e;
+}
+.pkg-ortu-calendar .fc .fc-list {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border-color: var(--pkg-cal-border);
+}
+.pkg-ortu-calendar .fc .fc-list-day-cushion {
+    background-color: #f3f4f6;
+}
+.pkg-ortu-calendar .fc .fc-list-event:hover td {
+    background-color: #f0fdfa;
+}
+
+/* Dark mode */
+.dark .pkg-ortu-calendar {
+    --pkg-cal-border: #374151;
+}
+.dark .pkg-ortu-calendar .fc .fc-toolbar-title {
+    color: #f9fafb;
+}
+.dark .pkg-ortu-calendar .fc .fc-col-header-cell {
+    background-color: #1f2937;
+}
+.dark .pkg-ortu-calendar .fc .fc-col-header-cell-cushion {
+    color: #9ca3af;
+}
+.dark .pkg-ortu-calendar .fc .fc-daygrid-day-number {
+    color: #d1d5db;
+}
+.dark .pkg-ortu-calendar .fc .fc-daygrid-day.fc-day-today {
+    background-color: rgba(13, 148, 136, 0.25);
+}
+.dark .pkg-ortu-calendar .fc .fc-list-day-cushion {
+    background-color: #1f2937;
+    color: #e5e7eb;
+}
+.dark .pkg-ortu-calendar .fc .fc-list-event:hover td {
+    background-color: rgba(13, 148, 136, 0.2);
+}
+.dark .pkg-ortu-calendar .fc .fc-list-event-title a,
+.dark .pkg-ortu-calendar .fc .fc-list-event-time {
+    color: #e5e7eb;
+}
+
+/* Mobile: rapatkan agar tidak melebar/terpotong */
+@media (max-width: 640px) {
+    .pkg-ortu-calendar .fc .fc-toolbar {
+        justify-content: center;
+    }
+    .pkg-ortu-calendar .fc .fc-toolbar-title {
+        font-size: 0.95rem;
+    }
+    .pkg-ortu-calendar .fc .fc-button {
+        padding: 0.3rem 0.55rem;
+        font-size: 0.72rem;
+    }
+    .pkg-ortu-calendar .fc-event,
+    .pkg-ortu-calendar .fc .fc-daygrid-event {
+        font-size: 0.62rem;
+        padding: 1px 3px;
+    }
+    .pkg-ortu-calendar .fc .fc-daygrid-day-number {
+        font-size: 0.72rem;
+        padding: 0.15rem 0.25rem;
+    }
+}
+</style>
 @endsection
