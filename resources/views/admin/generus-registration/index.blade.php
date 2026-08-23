@@ -92,7 +92,8 @@
                 <div class="pkg-data-card-meta">
                     <div class="pkg-data-card-row"><span class="k">Orang Tua</span><span class="v">{{ $s->nama_wali ?: '—' }}</span></div>
                     @if($row['signed'])
-                        <div class="pkg-data-card-row"><span class="k">Tgl TTD</span><span class="v">{{ optional($row['registration']->statement_accepted_at)->translatedFormat('d M Y') }}</span></div>
+                        <div class="pkg-data-card-row"><span class="k">Tgl TTD</span><span class="v">{{ optional($row['registration']->statement_accepted_at)->translatedFormat('d M Y H:i') }}</span></div>
+                        <div class="pkg-data-card-row"><span class="k">Update terakhir</span><span class="v">{{ optional($row['registration']->updated_at)->translatedFormat('d M Y H:i') }}</span></div>
                     @endif
                 </div>
                 <div class="pkg-data-card-actions flex-wrap">
@@ -172,7 +173,8 @@
                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m5 13 4 4L19 7"/></svg>
                                         Sudah TTD
                                     </span>
-                                    <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{{ optional($row['registration']->statement_accepted_at)->translatedFormat('d M Y') }}</p>
+                                    <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">TTD: {{ optional($row['registration']->statement_accepted_at)->translatedFormat('d M Y H:i') }}</p>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Update: {{ optional($row['registration']->updated_at)->translatedFormat('d M Y H:i') }}</p>
                                 @else
                                     <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700 dark:bg-amber-900/50 dark:text-amber-200">Belum</span>
                                 @endif

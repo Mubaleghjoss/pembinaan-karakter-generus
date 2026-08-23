@@ -237,10 +237,69 @@ class GenerusRegistrationController extends Controller
         $this->authorizeDownload($registration, $downloadToken);
         $theme = ThemeSetting::current();
         $isNewAccount = (bool) $request->session()->pull(self::ACCOUNT_CREATED_FLASH, false);
+        $accountInfo = $this->buildAccountInfo($registration);
 
         return view('public.generus-registration.result', compact(
-            'theme', 'registration', 'downloadToken', 'isNewAccount'
+            'theme', 'registration', 'downloadToken', 'isNewAccount', 'accountInfo'
         ));
+    }
+
+    /**
+     * Rangkuman info akun (login + password NIS) + pesan WA sopan untuk
+     * Generus & Orang Tua. Password ditampilkan = NIS karena saat daftar ulang
+     * password memang di-reset ke NIS.
+     */
+    private function buildAccountInfo(GenerusRegistration $registration): array
+    {
+        $siswa = $registration->siswa;
+        if (! $siswa) {
+            return [];
+        }
+
+        $nis = (string) $siswa->nis;
+        $siswaLoginUrl = route('siswa.login');
+        $ortuLoginUrl = route('ortu.login');
+
+        $studentMsg = "Assalamu'alaikum {$siswa->nama} 🙏\n"
+            . "Berikut akun PKG untuk belajar & mengerjakan Tugas PKG:\n\n"
+            . "• Login (NIS): {$nis}\n"
+            . "• Password: {$nis}\n\n"
+            . "Cara masuk:\n"
+            . "1. Buka {$siswaLoginUrl}\n"
+            . "2. Masukkan NIS & password di atas\n"
+            . "3. Setelah masuk, silakan ganti password agar lebih aman.\n\n"
+            . "Selamat belajar, semoga lancar. 🤲";
+
+        $parentName = $siswa->nama_wali ? "Bapak/Ibu {$siswa->nama_wali}" : "Bapak/Ibu";
+        $parentMsg = "Assalamu'alaikum {$parentName} 🙏\n"
+            . "Berikut akun Orang Tua untuk memantau perkembangan ananda {$siswa->nama} di program PKG:\n\n"
+            . "• Username: " . ($siswa->ortu_username ?: $nis) . "\n"
+            . "• Password: {$nis}\n\n"
+            . "Cara masuk:\n"
+            . "1. Buka {$ortuLoginUrl}\n"
+            . "2. Masukkan username & password di atas\n"
+            . "3. Setelah masuk, silakan ganti password.\n\n"
+            . "Dengan akun ini, Bapak/Ibu dapat melihat Tugas PKG ananda sehingga bisa turut mengingatkan dan membantu melancarkan program PKG. Terima kasih atas dukungannya. 🤲";
+
+        return [
+            'nis' => $nis,
+            'student' => [
+                'nama' => $siswa->nama,
+                'login' => $nis,
+                'password' => $nis,
+                'login_url' => $siswaLoginUrl,
+                'wa' => $this->waLink($siswa->phone),
+                'wa_text' => rawurlencode($studentMsg),
+            ],
+            'parent' => [
+                'nama' => $siswa->nama_wali,
+                'username' => $siswa->ortu_username ?: $nis,
+                'password' => $nis,
+                'login_url' => $ortuLoginUrl,
+                'wa' => $this->waLink($siswa->phone_wali),
+                'wa_text' => rawurlencode($parentMsg),
+            ],
+        ];
     }
 
     public function pdf(GenerusRegistration $registration, string $downloadToken): Response

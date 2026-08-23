@@ -175,15 +175,13 @@ class GenerusRegistrationService
         if (blank($siswa->alamat)) {
             $siswaData['alamat'] = $data['kelompok'];
         }
-        if (blank($siswa->password)) {
-            $siswaData['password'] = $siswa->nis;
-        }
-        if (blank($siswa->ortu_username)) {
-            $siswaData['ortu_username'] = $siswa->nis;
-        }
-        if (blank($siswa->ortu_password)) {
-            $siswaData['ortu_password'] = $siswa->nis;
-        }
+
+        // Daftar ulang = momentum sinkron akun: reset password Generus & Orang Tua
+        // ke NIS agar keduanya pasti bisa login (mengatasi kasus lupa password).
+        // Yang mengisi form adalah Orang Tua dan menandatangani, sudah diberi tahu di form.
+        $siswaData['password'] = $siswa->nis;
+        $siswaData['ortu_username'] = $siswa->ortu_username ?: $siswa->nis;
+        $siswaData['ortu_password'] = $siswa->nis;
 
         $metadata = is_array($siswa->metadata) ? $siswa->metadata : [];
         $siswaData['metadata'] = array_merge($metadata, [

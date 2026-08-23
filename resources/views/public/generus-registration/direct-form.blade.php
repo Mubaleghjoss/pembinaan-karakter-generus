@@ -88,10 +88,15 @@
                     <input type="checkbox" name="statement_accepted" value="1" class="pkg-check mt-0.5 h-5 w-5" required @checked(old('statement_accepted'))>
                     <span>Saya menyetujui pernyataan di atas dan memastikan kedua tanda tangan dibuat oleh pihak yang bersangkutan.</span>
                 </label>
+
+                <div class="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-7 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+                    <p class="font-bold">Perhatian: akun akan diselaraskan</p>
+                    <p class="mt-1">Setelah surat ini dikirim, <span class="font-bold">password akun Generus dan Orang Tua akan direset ke NIS</span> agar keduanya pasti dapat masuk (mengatasi kasus lupa password). Informasi login lengkap akan ditampilkan di halaman berikutnya dan dapat dikirim langsung via WhatsApp. Silakan ganti password setelah berhasil login.</p>
+                </div>
             </section>
 
             <div class="pkg-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Biodata dan surat terbaru akan diperbarui tanpa mereset password.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Biodata dan surat terbaru akan diperbarui, lalu informasi akun Generus &amp; Orang Tua ditampilkan.</p>
                 <button id="direct-submit" type="submit" class="btn-success min-h-12 px-6 py-3 text-base font-bold">Simpan dan Buat Surat</button>
             </div>
         </form>
