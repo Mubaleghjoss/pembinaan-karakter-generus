@@ -72,13 +72,19 @@ class RpgGameController extends Controller
             ->pluck('rpg_map_id')
             ->toArray();
 
+        // Map yang bos-nya sudah dikalahkan siswa ini.
+        $bossDefeatedMaps = RpgGameSession::where('siswa_id', $siswa->id)
+            ->whereNotNull('boss_defeated_at')
+            ->pluck('rpg_map_id')
+            ->toArray();
+
         // Get or create character
         $character = RpgCharacter::firstOrCreate(
             ['siswa_id' => $siswa->id],
             ['avatar' => RpgCatalog::resolvePlayerAvatar(null), 'nama_karakter' => $siswa->nama, 'warna' => '#3B82F6']
         );
 
-        return view('siswa.rpg.index', compact('maps', 'sessions', 'completedMaps', 'character'));
+        return view('siswa.rpg.index', compact('maps', 'sessions', 'completedMaps', 'bossDefeatedMaps', 'character'));
     }
 
     /**
@@ -186,7 +192,13 @@ class RpgGameController extends Controller
         $enemies = RpgCatalog::normalizeEnemies($rpgMap->enemies);
         $obstacles = $rpgMap->obstacles ?? [];
 
-        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles'));
+        // Boss config (mode Petualangan): null bila map tak mengaktifkan bos.
+        $boss = $rpgMap->boss_enabled
+            ? RpgCatalog::normalizeBossConfig($rpgMap->boss_config, (int) $rpgMap->grid_size)
+            : null;
+        $bossDefeated = ! is_null($session->boss_defeated_at ?? null);
+
+        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated'));
     }
 
     /**
@@ -325,6 +337,63 @@ class RpgGameController extends Controller
     }
 
     /**
+     * AJAX: Bos di mode Petualangan dikalahkan (peluru menghabiskan HP bos).
+     * Beri bonus poin sekali per map per siswa (idempoten).
+     */
+    public function bossDefeat(Request $request, RpgMap $rpgMap)
+    {
+        if (! $rpgMap->boss_enabled) {
+            return response()->json(['success' => false, 'message' => 'Map ini tidak memiliki bos.'], 422);
+        }
+
+        $siswa = Auth::guard('siswa')->user();
+        $session = RpgGameSession::firstOrCreate(
+            ['siswa_id' => $siswa->id, 'rpg_map_id' => $rpgMap->id],
+            ['pos_x' => 0, 'pos_y' => 0, 'answered_npcs' => [], 'total_score' => 0]
+        );
+
+        // Idempoten: hanya beri bonus sekali.
+        if ($session->boss_defeated_at) {
+            return response()->json([
+                'success' => true,
+                'already' => true,
+                'message' => 'Bos sudah pernah dikalahkan.',
+                'total_score' => $session->total_score,
+            ]);
+        }
+
+        $bossConfig = RpgCatalog::normalizeBossConfig($rpgMap->boss_config, (int) $rpgMap->grid_size);
+        $bonus = (int) ($bossConfig['reward_points'] ?? 0);
+
+        $session->boss_defeated_at = now();
+        if ($bonus > 0) {
+            $session->total_score += $bonus;
+        }
+        $session->save();
+
+        if ($bonus > 0) {
+            try {
+                app(GamificationService::class)->awardGamePoints(
+                    $siswa,
+                    $bonus,
+                    "Petualangan: Mengalahkan Bos \"{$bossConfig['nama']}\" di peta {$rpgMap->nama} (+{$bonus} poin)",
+                    $rpgMap
+                );
+            } catch (\Throwable $e) {
+                Log::error('RPG boss point award failed: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'already' => false,
+            'bonus' => $bonus,
+            'total_score' => $session->total_score,
+            'message' => "Bos dikalahkan! +{$bonus} poin",
+        ]);
+    }
+
+    /**
      * AJAX: Get game state (includes online players)
      */
     public function getGameState(RpgMap $rpgMap)
@@ -342,24 +411,30 @@ class RpgGameController extends Controller
         $session->touch();
 
         // Get other online players (updated_at within last 15 seconds)
-        $onlinePlayers = RpgGameSession::where('rpg_map_id', $rpgMap->id)
+        // OPTIMASI: hindari N+1 — ambil semua RpgCharacter pemain online dalam 1 query.
+        $onlineSessions = RpgGameSession::where('rpg_map_id', $rpgMap->id)
             ->where('siswa_id', '!=', $siswa->id)
             ->where('updated_at', '>=', now()->subSeconds(15))
             ->with(['siswa:id,nama'])
-            ->get()
-            ->map(function ($s) {
-                $char = RpgCharacter::where('siswa_id', $s->siswa_id)->first();
-                $avatar = $char->avatar ?? RpgCatalog::resolvePlayerAvatar(null);
-                return [
-                    'siswa_id' => $s->siswa_id,
-                    'nama' => $char->nama_karakter ?? $s->siswa->nama ?? 'Player',
-                    'avatar' => $avatar,
-                    'avatar_display' => RpgCatalog::resolvePlayerAvatar($avatar),
-                    'warna' => $char->warna ?? '#3B82F6',
-                    'pos_x' => $s->pos_x,
-                    'pos_y' => $s->pos_y,
-                ];
-            });
+            ->get(['id', 'siswa_id', 'pos_x', 'pos_y']);
+
+        $characters = RpgCharacter::whereIn('siswa_id', $onlineSessions->pluck('siswa_id'))
+            ->get(['siswa_id', 'avatar', 'nama_karakter', 'warna'])
+            ->keyBy('siswa_id');
+
+        $onlinePlayers = $onlineSessions->map(function ($s) use ($characters) {
+            $char = $characters->get($s->siswa_id);
+            $avatar = $char->avatar ?? RpgCatalog::resolvePlayerAvatar(null);
+            return [
+                'siswa_id' => $s->siswa_id,
+                'nama' => $char->nama_karakter ?? $s->siswa->nama ?? 'Player',
+                'avatar' => $avatar,
+                'avatar_display' => RpgCatalog::resolvePlayerAvatar($avatar),
+                'warna' => $char->warna ?? '#3B82F6',
+                'pos_x' => $s->pos_x,
+                'pos_y' => $s->pos_y,
+            ];
+        });
 
         $presence = $this->getPresenceSummary($rpgMap, $siswa->id);
 
@@ -627,11 +702,13 @@ class RpgGameController extends Controller
             'background_theme' => 'string|max:50',
             'obstacles' => 'nullable|array',
             'enemies' => 'nullable|array',
+            'boss_enabled' => 'nullable|boolean',
+            'boss' => 'nullable|array',
             'difficulty' => 'nullable|string|in:easy,medium,hard',
             'shield_duration_seconds' => 'nullable|integer|min:1|max:60',
-            'ammo_per_pickup' => 'nullable|integer|min:1|max:20',
+            'ammo_per_pickup' => 'nullable|integer|min:1|max:999',
             'shield_pickups_count' => 'nullable|integer|min:0|max:10',
-            'ammo_pickups_count' => 'nullable|integer|min:0|max:20',
+            'ammo_pickups_count' => 'nullable|integer|min:0|max:50',
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -645,6 +722,10 @@ class RpgGameController extends Controller
         $validated['obstacles'] = $this->normalizeObstacles($request->input('obstacles', []));
         $validated['enemies'] = RpgCatalog::normalizeEnemies($request->input('enemies', []));
         $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['boss_enabled'] = $request->boolean('boss_enabled', false);
+        $validated['boss_config'] = $validated['boss_enabled']
+            ? RpgCatalog::normalizeBossConfig($request->input('boss', []), (int) $validated['grid_size'])
+            : null;
 
         $map = RpgMap::create($validated);
         $this->forgetPublicRpgCache($map->id);
@@ -664,11 +745,13 @@ class RpgGameController extends Controller
             'background_theme' => 'string|max:50',
             'obstacles' => 'nullable|array',
             'enemies' => 'nullable|array',
+            'boss_enabled' => 'nullable|boolean',
+            'boss' => 'nullable|array',
             'difficulty' => 'nullable|string|in:easy,medium,hard',
             'shield_duration_seconds' => 'nullable|integer|min:1|max:60',
-            'ammo_per_pickup' => 'nullable|integer|min:1|max:20',
+            'ammo_per_pickup' => 'nullable|integer|min:1|max:999',
             'shield_pickups_count' => 'nullable|integer|min:0|max:10',
-            'ammo_pickups_count' => 'nullable|integer|min:0|max:20',
+            'ammo_pickups_count' => 'nullable|integer|min:0|max:50',
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -682,6 +765,10 @@ class RpgGameController extends Controller
         $validated['obstacles'] = $this->normalizeObstacles($request->input('obstacles', []));
         $validated['enemies'] = RpgCatalog::normalizeEnemies($request->input('enemies', []));
         $validated['is_active'] = $request->boolean('is_active', $rpgMap->is_active);
+        $validated['boss_enabled'] = $request->boolean('boss_enabled', false);
+        $validated['boss_config'] = $validated['boss_enabled']
+            ? RpgCatalog::normalizeBossConfig($request->input('boss', []), (int) $validated['grid_size'])
+            : null;
 
         $rpgMap->update($validated);
         $this->forgetPublicRpgCache($rpgMap->id);
@@ -701,6 +788,10 @@ class RpgGameController extends Controller
             'background_theme' => $rpgMap->background_theme,
             'obstacles' => $this->normalizeObstacles($rpgMap->obstacles),
             'enemies' => RpgCatalog::normalizeEnemies($rpgMap->enemies),
+            'boss_enabled' => (bool) $rpgMap->boss_enabled,
+            'boss_config' => $rpgMap->boss_enabled
+                ? RpgCatalog::normalizeBossConfig($rpgMap->boss_config, (int) $rpgMap->grid_size)
+                : null,
             'difficulty' => $rpgMap->difficulty ?? 'easy',
             'shield_duration_seconds' => $rpgMap->shield_duration_seconds ?? 8,
             'ammo_per_pickup' => $rpgMap->ammo_per_pickup ?? 3,

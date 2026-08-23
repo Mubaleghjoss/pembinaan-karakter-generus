@@ -65,6 +65,15 @@
                     <span class="px-2 py-1 bg-green-500 text-white rounded-full text-xs font-bold">Selesai</span>
                 </div>
                 @endif
+                @if($map->boss_enabled)
+                <div class="absolute bottom-3 left-3">
+                    @if(in_array($map->id, $bossDefeatedMaps ?? []))
+                        <span class="px-2 py-1 bg-emerald-600 text-white rounded-full text-xs font-bold">Bos Terkalahkan ✓</span>
+                    @else
+                        <span class="px-2 py-1 bg-rose-600 text-white rounded-full text-xs font-bold animate-pulse">⚔️ ADA BOS</span>
+                    @endif
+                </div>
+                @endif
             </div>
             
             <div class="p-4">
@@ -78,11 +87,11 @@
                         @endif
                     </div>
                     <div class="flex items-center gap-2">
-                        <a href="{{ route('siswa.rpg.beta-3d', ['map' => $map->id]) }}"
+                        <a href="{{ route('siswa.rpg.play', $map) }}?mode=3d"
                            class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                             Main 3D
                         </a>
-                        <a href="{{ route('siswa.rpg.play', $map) }}"
+                        <a href="{{ route('siswa.rpg.play', $map) }}?mode=2d"
                            class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors dark:bg-gray-700 dark:text-gray-200"
                            title="Versi ringan untuk HP lama">
                             2D

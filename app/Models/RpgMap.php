@@ -17,6 +17,8 @@ class RpgMap extends Model
         'background_theme',
         'obstacles',
         'enemies',
+        'boss_enabled',
+        'boss_config',
         'difficulty',
         'shield_duration_seconds',
         'ammo_per_pickup',
@@ -28,6 +30,8 @@ class RpgMap extends Model
     protected $casts = [
         'obstacles' => 'array',
         'enemies' => 'array',
+        'boss_enabled' => 'boolean',
+        'boss_config' => 'array',
         'is_active' => 'boolean',
         'grid_size' => 'integer',
         'shield_duration_seconds' => 'integer',

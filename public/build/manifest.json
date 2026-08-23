@@ -78,8 +78,8 @@
       "_qr-scanner-B2gaC3aA.js"
     ]
   },
-  "_three-vendor-Bi-aTaoL.js": {
-    "file": "assets/three-vendor-Bi-aTaoL.js",
+  "_three-vendor-DKt2Qprb.js": {
+    "file": "assets/three-vendor-DKt2Qprb.js",
     "name": "three-vendor"
   },
   "node_modules/chart.js/auto/auto.js": {
@@ -108,7 +108,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-CZCWuYbr.js",
+    "file": "assets/app-BIHzYjgP.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -133,7 +133,7 @@
       "_browser-BmwtkHN9.js"
     ],
     "css": [
-      "assets/app-CybGNcsl.css"
+      "assets/app-BuEK-bLo.css"
     ]
   },
   "resources/js/components/AttendanceSuccess.jsx": {
@@ -159,7 +159,7 @@
     ]
   },
   "resources/js/components/QRScanner.jsx": {
-    "file": "assets/QRScanner-1pAg_KXw.js",
+    "file": "assets/QRScanner-gjkIz9Ik.js",
     "name": "QRScanner",
     "src": "resources/js/components/QRScanner.jsx",
     "isDynamicEntry": true,
@@ -264,21 +264,21 @@
     ]
   },
   "resources/js/rpg-3d.js": {
-    "file": "assets/rpg-3d-DMYgfPu4.js",
+    "file": "assets/rpg-3d-BD3i6PMo.js",
     "name": "rpg-3d",
     "src": "resources/js/rpg-3d.js",
     "isDynamicEntry": true,
     "imports": [
-      "_three-vendor-Bi-aTaoL.js"
+      "_three-vendor-DKt2Qprb.js"
     ]
   },
   "resources/js/rpg-beta-3d.js": {
-    "file": "assets/rpg-beta-3d-DVXsmnpM.js",
+    "file": "assets/rpg-beta-3d-DTSt76Vl.js",
     "name": "rpg-beta-3d",
     "src": "resources/js/rpg-beta-3d.js",
     "isEntry": true,
     "imports": [
-      "_three-vendor-Bi-aTaoL.js"
+      "_three-vendor-DKt2Qprb.js"
     ]
   },
   "resources/js/vendor/jscanify-client.js": {

@@ -15,6 +15,7 @@ const STATE_SYNC_INTERVAL_MS = 90;
 const FOOTSTEP_INTERVAL_MS = 360;
 const FPS_SAMPLE_MS = 900;
 const PLAYER_SNAP_DISTANCE = TILE_SIZE * 1.65;
+const SHOT_SPEED = TILE_SIZE * 14; // kecepatan peluru terbang (unit dunia / detik)
 const PLAYER_IDLE_LERP = 14;
 
 const DIRECTIONS = [
@@ -208,6 +209,32 @@ class RpgThreeScene {
                 </div>
                 <div class="pkg-rpg-3d-target" data-rpg-3d-target>Target: cari NPC</div>
             </div>
+            <div class="pkg-rpg-3d-energy" data-rpg-3d-energy-wrap style="display:none;">
+                <span class="pkg-rpg-3d-energy-label">⚡ Energi <em data-rpg-3d-energy-text>0/100</em></span>
+                <div class="pkg-rpg-3d-energy-bar"><div class="pkg-rpg-3d-energy-fill" data-rpg-3d-energy-fill></div></div>
+            </div>
+            <div class="pkg-rpg-3d-skills" data-rpg-3d-skills-wrap style="display:none;" aria-label="Skill pemain">
+                <button type="button" class="pkg-rpg-3d-skill pkg-rpg-3d-skill--dash" data-rpg-3d-action="dash" title="Lari (tombol Z)">
+                    <span class="pkg-rpg-3d-skill-key" aria-hidden="true">Z</span>
+                    <span class="pkg-rpg-3d-skill-icon">💨</span>
+                    <span class="pkg-rpg-3d-skill-name">Lari</span>
+                    <span class="pkg-rpg-3d-skill-cd" data-rpg-3d-skill-cd="dash"></span>
+                </button>
+                <button type="button" class="pkg-rpg-3d-skill pkg-rpg-3d-skill--ulti" data-rpg-3d-action="ulti" title="Ulti / butuh 60 energi (tombol X)">
+                    <span class="pkg-rpg-3d-skill-key" aria-hidden="true">X</span>
+                    <span class="pkg-rpg-3d-skill-icon">💥</span>
+                    <span class="pkg-rpg-3d-skill-name">Ulti</span>
+                    <span class="pkg-rpg-3d-skill-cost" data-rpg-3d-skill-cost="ulti">60</span>
+                    <span class="pkg-rpg-3d-skill-cd" data-rpg-3d-skill-cd="ulti"></span>
+                </button>
+                <button type="button" class="pkg-rpg-3d-skill pkg-rpg-3d-skill--rage" data-rpg-3d-action="rage" title="Rage / butuh 100 energi (tombol C)">
+                    <span class="pkg-rpg-3d-skill-key" aria-hidden="true">C</span>
+                    <span class="pkg-rpg-3d-skill-icon">🔥</span>
+                    <span class="pkg-rpg-3d-skill-name">Rage</span>
+                    <span class="pkg-rpg-3d-skill-cost" data-rpg-3d-skill-cost="rage">100</span>
+                    <span class="pkg-rpg-3d-skill-cd" data-rpg-3d-skill-cd="rage"></span>
+                </button>
+            </div>
             <div class="pkg-rpg-3d-minimap" data-rpg-3d-minimap aria-label="Minimap arena"></div>
             <div class="pkg-rpg-3d-dialog" data-rpg-3d-dialog hidden></div>
             <div class="pkg-rpg-3d-touch-hints">
@@ -244,7 +271,7 @@ class RpgThreeScene {
                 </div>
             </div>
             ` : ''}
-            <div class="pkg-rpg-3d-note">W/S maju, A/D geser, Q/E atau panah kiri/kanan putar, Space tembak.</div>
+            <div class="pkg-rpg-3d-note">W/S maju, A/D geser, Q/E putar, Space tembak. Skill: Z Lari, X Ulti, C Rage.</div>
         `;
 
         this.canvasHost = this.root.querySelector('[data-rpg-3d-canvas]');
@@ -252,6 +279,20 @@ class RpgThreeScene {
         this.hudNpc = this.root.querySelector('[data-rpg-3d-npc]');
         this.hudAmmo = this.root.querySelector('[data-rpg-3d-ammo]');
         this.hudShield = this.root.querySelector('[data-rpg-3d-shield]');
+        this.hudEnergyWrap = this.root.querySelector('[data-rpg-3d-energy-wrap]');
+        this.hudEnergyFill = this.root.querySelector('[data-rpg-3d-energy-fill]');
+        this.hudEnergyText = this.root.querySelector('[data-rpg-3d-energy-text]');
+        this.skillsWrap = this.root.querySelector('[data-rpg-3d-skills-wrap]');
+        this.skillButtons = {
+            dash: this.root.querySelector('.pkg-rpg-3d-skill--dash'),
+            ulti: this.root.querySelector('.pkg-rpg-3d-skill--ulti'),
+            rage: this.root.querySelector('.pkg-rpg-3d-skill--rage'),
+        };
+        this.skillCd = {
+            dash: this.root.querySelector('[data-rpg-3d-skill-cd="dash"]'),
+            ulti: this.root.querySelector('[data-rpg-3d-skill-cd="ulti"]'),
+            rage: this.root.querySelector('[data-rpg-3d-skill-cd="rage"]'),
+        };
         this.headingLabel = this.root.querySelector('[data-rpg-3d-heading]');
         this.targetLabel = this.root.querySelector('[data-rpg-3d-target]');
         this.minimap = this.root.querySelector('[data-rpg-3d-minimap]');
@@ -293,9 +334,10 @@ class RpgThreeScene {
 
         this.npcGroup = new THREE.Group();
         this.enemyGroup = new THREE.Group();
+        this.bossGroup = new THREE.Group();
         this.pickupGroup = new THREE.Group();
         this.playerGroup = new THREE.Group();
-        this.scene.add(this.npcGroup, this.enemyGroup, this.pickupGroup, this.playerGroup);
+        this.scene.add(this.npcGroup, this.enemyGroup, this.bossGroup, this.pickupGroup, this.playerGroup);
 
         this.shieldAura = this.makeShieldAura();
         this.scene.add(this.shieldAura);
@@ -453,6 +495,18 @@ class RpgThreeScene {
                 event.preventDefault();
                 event.stopPropagation();
                 this.performAction('shoot');
+            } else if (key === 'z') {
+                event.preventDefault();
+                event.stopPropagation();
+                this.performAction('dash');
+            } else if (key === 'x') {
+                event.preventDefault();
+                event.stopPropagation();
+                this.performAction('ulti');
+            } else if (key === 'c') {
+                event.preventDefault();
+                event.stopPropagation();
+                this.performAction('rage');
             }
         };
 
@@ -528,6 +582,11 @@ class RpgThreeScene {
             return;
         }
 
+        // Skill pemain saat lawan bos (delegasi ke Alpine controls).
+        if (action === 'dash') { this.invokeControl('dash'); this.lastStateSyncAt = 0; return; }
+        if (action === 'ulti') { this.invokeControl('ulti'); this.lastStateSyncAt = 0; return; }
+        if (action === 'rage') { this.invokeControl('rage'); this.lastStateSyncAt = 0; return; }
+
         if (this.readOnly) {
             return;
         }
@@ -538,9 +597,10 @@ class RpgThreeScene {
 
         const direction = this.cardinalFromYaw();
         if (action === 'shoot') {
-            const hasAmmo = Number(this.state.ammo || 0) > 0;
+            // Saat lawan bos peluru tak terbatas; selain itu perlu amunisi.
+            const canFire = !!this.state.boss || Number(this.state.ammo || 0) > 0;
             this.dispatchShoot(direction.dx, direction.dy);
-            if (hasAmmo) {
+            if (canFire) {
                 this.playSound('shot');
                 this.kickWeapon();
                 this.flashShot(direction.dx, direction.dy);
@@ -1168,8 +1228,237 @@ class RpgThreeScene {
         const playerPos = this.tileToWorld(Number(player.pos_x || 0), Number(player.pos_y || 0));
         this.shieldAura.position.set(playerPos.x, CAMERA_HEIGHT * 0.55, playerPos.z);
         this.shieldAura.visible = !!this.state.shieldActive;
+        this.updateBoss();
+        this.updateBossExtras();
         this.updateDirectionHud();
         this.updateMinimap();
+    }
+
+    updateBossExtras() {
+        if (!this.dynamicObjects.minions) this.dynamicObjects.minions = new Map();
+        if (!this.dynamicObjects.projectiles) this.dynamicObjects.projectiles = new Map();
+        if (!this.dynamicObjects.drops) this.dynamicObjects.drops = new Map();
+
+        const minions = this.state.minions || [];
+        const projectiles = this.state.bossProjectiles || [];
+        const drops = [
+            ...(this.state.healthDrops || []).map((d) => ({ ...d, type: 'health' })),
+            ...(this.state.energyDrops || []).map((d) => ({ ...d, type: 'energy' })),
+        ];
+
+        // Minion (kotak ungu kecil, mengejar).
+        this.syncCollection(this.dynamicObjects.minions, this.bossGroup, minions,
+            (m, i) => `minion-${i}-${m.x}-${m.y}`,
+            () => this.makeMinionMarker(),
+            (object, m) => {
+                const pos = this.tileToWorld(Number(m.x), Number(m.y));
+                this.setDynamicTarget(object, pos, 500);
+                object.visible = true;
+            });
+
+        // Proyektil bos (bola merah menyala).
+        this.syncCollection(this.dynamicObjects.projectiles, this.bossGroup, projectiles,
+            (p, i) => `proj-${i}-${p.x}-${p.y}`,
+            () => this.makeProjectileMarker(),
+            (object, p) => {
+                const pos = this.tileToWorld(Number(p.x), Number(p.y));
+                object.position.set(pos.x, CAMERA_HEIGHT * 0.5, pos.z);
+                object.visible = true;
+            });
+
+        // Drop darah/energi.
+        this.syncCollection(this.dynamicObjects.drops, this.pickupGroup, drops,
+            (d) => `drop-${d.type}-${d.x}-${d.y}`,
+            (d) => this.makeDropMarker(d.type),
+            (object, d) => {
+                const pos = this.tileToWorld(Number(d.x), Number(d.y));
+                object.position.set(pos.x, 0.4, pos.z);
+                object.visible = true;
+            });
+
+        // HUD energi di layar (jika ada bos).
+        if (this.hudEnergyWrap) {
+            const show = !!this.state.boss;
+            this.hudEnergyWrap.style.display = show ? '' : 'none';
+            if (this.skillsWrap) this.skillsWrap.style.display = show ? '' : 'none';
+            if (show && this.hudEnergyFill) {
+                const pct = Number(this.state.energyMax) > 0 ? clamp(Number(this.state.energy) / Number(this.state.energyMax), 0, 1) : 0;
+                this.hudEnergyFill.style.width = Math.round(pct * 100) + '%';
+                if (this.hudEnergyText) this.hudEnergyText.textContent = `${Number(this.state.energy) || 0}/${Number(this.state.energyMax) || 100}`;
+            }
+            if (show) this.updateSkillButtons();
+        }
+    }
+
+    updateSkillButtons() {
+        const sk = this.state.skills || {};
+        // Dash
+        if (this.skillButtons.dash) {
+            const ready = !!sk.dashReady || !!sk.rageActive;
+            this.skillButtons.dash.classList.toggle('is-ready', ready);
+            this.skillButtons.dash.classList.toggle('is-cooldown', !ready);
+            this.skillButtons.dash.disabled = !ready;
+            if (this.skillCd.dash) this.skillCd.dash.textContent = (!ready && sk.dashCd) ? `${sk.dashCd}s` : '';
+        }
+        // Ulti
+        if (this.skillButtons.ulti) {
+            const ready = !!sk.ultiReady;
+            this.skillButtons.ulti.classList.toggle('is-ready', ready);
+            this.skillButtons.ulti.classList.toggle('is-cooldown', !ready);
+            this.skillButtons.ulti.disabled = !ready;
+            if (this.skillCd.ulti) this.skillCd.ulti.textContent = (!ready && sk.ultiCd) ? `${sk.ultiCd}s` : '';
+        }
+        // Rage
+        if (this.skillButtons.rage) {
+            const ready = !!sk.rageReady && !sk.rageActive;
+            this.skillButtons.rage.classList.toggle('is-ready', ready);
+            this.skillButtons.rage.classList.toggle('is-active', !!sk.rageActive);
+            this.skillButtons.rage.classList.toggle('is-cooldown', !ready && !sk.rageActive);
+            this.skillButtons.rage.disabled = !ready && !sk.rageActive;
+            if (this.skillCd.rage) this.skillCd.rage.textContent = sk.rageActive ? `${sk.rageLeft}s` : '';
+        }
+    }
+
+    makeProjectileMarker() {
+        const geo = new THREE.SphereGeometry(0.3, 16, 12);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+        const mesh = new THREE.Mesh(geo, mat);
+        const glow = new THREE.PointLight(0xff5555, 1.4, 6);
+        mesh.add(glow);
+        return mesh;
+    }
+
+    makeDropMarker(type) {
+        const group = new THREE.Group();
+        const color = type === 'health' ? 0xdc2626 : 0xf59e0b;
+        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.4, roughness: 0.4 });
+        const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.32, 0), mat);
+        mesh.position.y = 0.1;
+        group.add(mesh);
+        group.userData.spin = true;
+        return group;
+    }
+
+    updateBoss() {
+        const boss = this.state.boss || null;
+
+        // Bersihkan bila tak ada bos aktif.
+        if (!boss) {
+            if (this.bossObject) {
+                this.bossGroup.remove(this.bossObject);
+                this.bossObject = null;
+                this.bossObjectKey = '';
+            }
+            return;
+        }
+
+        const key = `boss-${boss.avatar || 'boss'}-${boss.size || 3}`;
+        if (!this.bossObject || this.bossObjectKey !== key) {
+            if (this.bossObject) {
+                this.bossGroup.remove(this.bossObject);
+            }
+            if (this.bossHpBar) {
+                this.bossGroup.remove(this.bossHpBar);
+                this.bossHpBar = null;
+            }
+            this.bossObject = this.makeBossMarker(boss);
+            this.bossObjectKey = key;
+            this.bossGroup.add(this.bossObject);
+
+            // Bar HP mengambang di atas label bos (objek terpisah agar tak ikut berputar).
+            this.bossHpBar = this.makeBossHpBar();
+            this.bossGroup.add(this.bossHpBar);
+        }
+
+        // Bos menempati 1 sel (single block); posisikan tepat di sel-nya.
+        const pos = this.tileToWorld(Number(boss.x), Number(boss.y));
+        this.setDynamicTarget(this.bossObject, pos, 400);
+        this.bossObject.visible = true;
+
+        // Update bar HP: ikuti posisi bos & isi sesuai hp.
+        if (this.bossHpBar) {
+            const scale = Math.max(1, Number(boss.size) || 3) * 0.55 + 1;
+            const barY = 2.35 * scale + 0.55;
+            this.bossHpBar.position.set(this.bossObject.position.x, barY, this.bossObject.position.z);
+            const pct = Number(boss.max_hp) > 0 ? clamp(Number(boss.hp) / Number(boss.max_hp), 0, 1) : 0;
+            const fill = this.bossHpBar.userData.fill;
+            const BAR_W = 1.6;
+            if (fill) {
+                fill.scale.x = Math.max(0.001, BAR_W * pct);
+                fill.position.x = -(BAR_W * (1 - pct)) / 2;
+                // Warna: hijau→kuning→merah seiring HP turun.
+                const color = pct > 0.5 ? 0x22c55e : pct > 0.25 ? 0xf59e0b : 0xdc2626;
+                if (fill.material) fill.material.color.setHex(color);
+            }
+            this.bossHpBar.visible = true;
+        }
+    }
+
+    makeBossHpBar() {
+        const group = new THREE.Group();
+        const BAR_W = 1.6;
+        const BAR_H = 0.22;
+
+        const bg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x1f2937, depthTest: false, transparent: true, opacity: 0.85 }));
+        bg.scale.set(BAR_W + 0.12, BAR_H + 0.1, 1);
+        bg.position.set(0, 0, 0);
+
+        const fill = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x22c55e, depthTest: false, transparent: true }));
+        fill.scale.set(BAR_W, BAR_H, 1);
+        fill.position.set(0, 0, 0.001);
+
+        group.add(bg, fill);
+        group.userData.fill = fill;
+        group.renderOrder = 999;
+        return group;
+    }
+
+    makeBossMarker(boss = {}) {
+        const group = this.makeHumanoidMarker({
+            avatar: boss.avatar || '👹',
+            label: boss.nama || 'Bos',
+            primary: 0x7f1d1d,
+            secondary: 0xdc2626,
+            skin: 0x9a3412,
+            labelColor: 0x991b1b,
+            opacity: 1,
+        });
+
+        // Tanduk & mahkota agar bos terlihat garang.
+        const hornMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.5, metalness: 0.2 });
+        const leftHorn = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.42, 12), hornMat);
+        const rightHorn = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.42, 12), hornMat);
+        leftHorn.position.set(-0.2, 2.1, 0); leftHorn.rotation.z = 0.5;
+        rightHorn.position.set(0.2, 2.1, 0); rightHorn.rotation.z = -0.5;
+        // Aura merah menyala di kaki.
+        const aura = new THREE.Mesh(
+            new THREE.RingGeometry(0.5, 0.75, 32),
+            new THREE.MeshBasicMaterial({ color: 0xdc2626, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false }),
+        );
+        aura.rotation.x = -Math.PI / 2;
+        aura.position.y = 0.04;
+        const glow = new THREE.PointLight(0xdc2626, 0.9, 5);
+        glow.position.y = 1.4;
+        group.add(leftHorn, rightHorn, aura, glow);
+        group.userData.bossAura = aura;
+
+        // Skala visual saja (bos tetap 1 sel di logika gerak).
+        const scale = Math.max(1, Number(boss.size) || 3) * 0.55 + 1;
+        group.scale.set(scale, scale, scale);
+        return group;
+    }
+
+    makeMinionMarker() {
+        const group = this.makeHumanoidMarker({
+            avatar: '', label: '', primary: 0x7c3aed, secondary: 0xa855f7, skin: 0x6d28d9, labelColor: 0x6d28d9, opacity: 0.98,
+        });
+        // Antena kecil biar mirip makhluk kecil.
+        const antMat = new THREE.MeshStandardMaterial({ color: 0x4c1d95, roughness: 0.5 });
+        const ant = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.24, 8), antMat);
+        ant.position.set(0, 2.08, 0);
+        group.add(ant);
+        group.scale.set(0.68, 0.68, 0.68);
+        return group;
     }
 
     syncCollection(cache, group, items, keyFn, createFn, updateFn, releaseFn = null) {
@@ -1205,7 +1494,8 @@ class RpgThreeScene {
         const avatar = this.state.character?.avatar_display || this.state.character?.avatar || this.state.playerAvatar || '?';
         this.hudPlayerAvatar.textContent = avatar;
         this.hudNpc.textContent = `${answered}/${total}`;
-        this.hudAmmo.textContent = String(Number(this.state.ammo || 0));
+        const bossActive = !!this.state.boss;
+        this.hudAmmo.textContent = bossActive ? '∞' : String(Number(this.state.ammo || 0));
         this.hudShield.textContent = this.state.shieldActive ? `${Number(this.state.shieldSecondsLeft || 0)}d` : 'OFF';
         this.updatePlayerEquipment();
     }
@@ -1218,7 +1508,8 @@ class RpgThreeScene {
         const weapon = this.playerViewModel.userData.weapon;
         const shield = this.playerViewModel.userData.shield;
         if (weapon) {
-            weapon.visible = Number(this.state.ammo || 0) > 0;
+            // Saat lawan bos, senjata selalu tampil (peluru tak terbatas).
+            weapon.visible = !!this.state.boss || Number(this.state.ammo || 0) > 0;
         }
         if (shield) {
             shield.visible = !!this.state.shieldActive;
@@ -1717,6 +2008,22 @@ class RpgThreeScene {
             const moving = this.advanceDynamicObject(object, moveLerp);
             this.animateHumanoidObject(object, delta, elapsed, moving, index + 10);
         });
+        this.bossGroup.children.forEach((object, index) => {
+            if (object === this.bossHpBar) return; // bar HP tak perlu animasi humanoid
+            if (object.userData && object.userData.humanoidParts) {
+                // Bos & minion (humanoid) → gerak + animasi jalan.
+                const moving = this.advanceDynamicObject(object, moveLerp);
+                this.animateHumanoidObject(object, delta, elapsed, moving, index + 40);
+            } else {
+                // Proyektil dsb → cukup interpolasi posisi bila punya target.
+                this.advanceDynamicObject(object, moveLerp);
+            }
+        });
+        // Bar HP mengikuti posisi bos yang sudah teranimasi (halus).
+        if (this.bossHpBar && this.bossObject && this.bossObject.visible) {
+            this.bossHpBar.position.x = this.bossObject.position.x;
+            this.bossHpBar.position.z = this.bossObject.position.z;
+        }
         this.playerGroup.children.forEach((object, index) => {
             const moving = this.advanceDynamicObject(object, moveLerp);
             this.animateHumanoidObject(object, delta, elapsed, moving, index + 20);
@@ -1762,6 +2069,7 @@ class RpgThreeScene {
             this.updateContinuousControls(delta);
             this.updateCamera(delta);
             this.animateMarkers(delta);
+            this.updatePlayerShots(delta);
             this.renderer.render(this.scene, this.camera);
             this.updateAdaptiveQuality();
         }
@@ -2134,52 +2442,87 @@ class RpgThreeScene {
         const primary = Number(options.primary ?? 0x2563eb);
         const secondary = Number(options.secondary ?? mixHexColor(primary, 0xffffff, 0.42));
         const skin = Number(options.skin ?? 0xf8c9a4);
-        const material = (color, emissive = 0x000000, emissiveIntensity = 0.03) => new THREE.MeshStandardMaterial({
+        const dark = mixHexColor(primary, 0x000000, 0.35);
+        const material = (color, emissive = 0x000000, emissiveIntensity = 0.03, extra = {}) => new THREE.MeshStandardMaterial({
             color,
             emissive,
             emissiveIntensity,
-            roughness: 0.66,
-            metalness: 0.02,
+            roughness: 0.6,
+            metalness: 0.05,
             transparent: opacity < 1,
             opacity,
             depthWrite: opacity >= 0.65,
+            ...extra,
         });
 
         const shadow = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.62, 0.62, 0.025, 36),
-            new THREE.MeshBasicMaterial({ color: 0x020617, transparent: true, opacity: 0.16 * opacity, depthWrite: false }),
+            new THREE.CylinderGeometry(0.6, 0.6, 0.025, 36),
+            new THREE.MeshBasicMaterial({ color: 0x020617, transparent: true, opacity: 0.18 * opacity, depthWrite: false }),
         );
         shadow.scale.z = 0.72;
         shadow.position.y = 0.02;
-        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.9, 0.44), material(primary, primary, 0.05));
-        torso.position.y = 1.02;
-        const chest = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.34, 0.06), material(secondary));
-        chest.position.set(0, 1.16, -0.26);
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 24, 16), material(skin));
-        head.position.y = 1.72;
-        head.scale.set(1, 1.08, 0.96);
-        const armGeometry = new THREE.CapsuleGeometry(0.13, 0.58, 6, 14);
-        const legGeometry = new THREE.CapsuleGeometry(0.15, 0.62, 6, 14);
-        const leftArm = new THREE.Mesh(armGeometry, material(secondary));
-        const rightArm = new THREE.Mesh(armGeometry, material(secondary));
-        const leftLeg = new THREE.Mesh(legGeometry, material(primary));
-        const rightLeg = new THREE.Mesh(legGeometry, material(primary));
-        leftArm.position.set(-0.52, 1.04, 0);
-        rightArm.position.set(0.52, 1.04, 0);
-        leftLeg.position.set(-0.21, 0.42, 0);
-        rightLeg.position.set(0.21, 0.42, 0);
+
+        // Pinggul + torso yang mengecil ke atas (siluet lebih manusiawi).
+        const hips = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.28, 18), material(dark, dark, 0.04));
+        hips.position.y = 0.66;
+        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.27, 0.72, 20), material(primary, primary, 0.06));
+        torso.position.y = 1.12;
+        // Dada / pelindung.
+        const chest = new THREE.Mesh(new THREE.SphereGeometry(0.34, 20, 14), material(secondary, secondary, 0.05));
+        chest.scale.set(1, 0.62, 0.66);
+        chest.position.set(0, 1.28, 0.02);
+        // Bahu bulat.
+        const shoulderGeo = new THREE.SphereGeometry(0.17, 14, 10);
+        const lShoulder = new THREE.Mesh(shoulderGeo, material(secondary));
+        const rShoulder = new THREE.Mesh(shoulderGeo, material(secondary));
+        lShoulder.position.set(-0.36, 1.44, 0);
+        rShoulder.position.set(0.36, 1.44, 0);
+        // Leher + kepala.
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.14, 12), material(skin));
+        neck.position.y = 1.6;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 18), material(skin));
+        head.position.y = 1.82;
+        head.scale.set(1, 1.06, 0.98);
+        // Rambut / helm sebagai penutup atas kepala (beda warna → wujud lebih jelas).
+        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.31, 24, 18, 0, Math.PI * 2, 0, Math.PI * 0.55), material(dark, dark, 0.05));
+        hair.position.y = 1.86;
+        hair.scale.set(1.02, 1.02, 1);
+
+        // Lengan meruncing + telapak.
+        const armGeometry = new THREE.CapsuleGeometry(0.11, 0.5, 6, 14);
+        const handGeo = new THREE.SphereGeometry(0.11, 12, 10);
+        const leftArm = new THREE.Group();
+        const rightArm = new THREE.Group();
+        const lArmMesh = new THREE.Mesh(armGeometry, material(primary));
+        const rArmMesh = new THREE.Mesh(armGeometry, material(primary));
+        lArmMesh.position.y = -0.3; rArmMesh.position.y = -0.3;
+        const lHand = new THREE.Mesh(handGeo, material(skin));
+        const rHand = new THREE.Mesh(handGeo, material(skin));
+        lHand.position.y = -0.6; rHand.position.y = -0.6;
+        leftArm.add(lArmMesh, lHand); rightArm.add(rArmMesh, rHand);
+        leftArm.position.set(-0.42, 1.44, 0);
+        rightArm.position.set(0.42, 1.44, 0);
+
+        // Kaki + sepatu.
+        const legGeometry = new THREE.CapsuleGeometry(0.13, 0.54, 6, 14);
+        const footGeo = new THREE.BoxGeometry(0.2, 0.12, 0.32);
+        const leftLeg = new THREE.Group();
+        const rightLeg = new THREE.Group();
+        const lLegMesh = new THREE.Mesh(legGeometry, material(dark));
+        const rLegMesh = new THREE.Mesh(legGeometry, material(dark));
+        lLegMesh.position.y = -0.3; rLegMesh.position.y = -0.3;
+        const lFoot = new THREE.Mesh(footGeo, material(0x1e293b));
+        const rFoot = new THREE.Mesh(footGeo, material(0x1e293b));
+        lFoot.position.set(0, -0.62, 0.06); rFoot.position.set(0, -0.62, 0.06);
+        leftLeg.add(lLegMesh, lFoot); rightLeg.add(rLegMesh, rFoot);
+        leftLeg.position.set(-0.17, 0.62, 0);
+        rightLeg.position.set(0.17, 0.62, 0);
 
         group.add(
-            shadow,
-            torso,
-            chest,
-            head,
-            leftArm,
-            rightArm,
-            leftLeg,
-            rightLeg,
-            this.makeAvatarBadgeSprite(options.avatar || '?', primary, { opacity, y: 1.74, scale: 0.58 }),
-            this.makeTextSprite(options.label || 'NPC', options.labelColor || primary, { opacity, y: 2.35 }),
+            shadow, hips, torso, chest, lShoulder, rShoulder, neck, head, hair,
+            leftArm, rightArm, leftLeg, rightLeg,
+            this.makeAvatarBadgeSprite(options.avatar || '?', primary, { opacity, y: 1.86, scale: 0.5 }),
+            this.makeTextSprite(options.label || 'NPC', options.labelColor || primary, { opacity, y: 2.4 }),
         );
         group.userData.humanoidParts = { leftArm, rightArm, leftLeg, rightLeg, head };
         group.userData.walkPhase = Math.random() * Math.PI * 2;
@@ -2193,15 +2536,19 @@ class RpgThreeScene {
             return;
         }
 
-        object.userData.walkPhase = Number(object.userData.walkPhase || 0) + delta * (moving ? 8.2 : 1.7);
+        object.userData.walkPhase = Number(object.userData.walkPhase || 0) + delta * (moving ? 8.6 : 1.7);
         const phase = object.userData.walkPhase + index * 0.2;
-        const stride = moving ? Math.sin(phase) : Math.sin(elapsed * 1.7 + index) * 0.08;
-        parts.leftArm.rotation.x = stride * (moving ? 0.46 : 0.12);
-        parts.rightArm.rotation.x = -stride * (moving ? 0.46 : 0.12);
-        parts.leftLeg.rotation.x = -stride * (moving ? 0.42 : 0.08);
-        parts.rightLeg.rotation.x = stride * (moving ? 0.42 : 0.08);
-        parts.head.position.y = 1.72 + Math.sin(phase * 2) * (moving ? 0.025 : 0.012);
-        object.position.y = Math.sin(elapsed * 2.1 + index) * (moving ? 0.03 : 0.018);
+        const stride = moving ? Math.sin(phase) : Math.sin(elapsed * 1.7 + index) * 0.09;
+        // Ayun lengan & kaki dari pivot bahu/pinggul (kini Group, jadi rotasi natural).
+        parts.leftArm.rotation.x = stride * (moving ? 0.6 : 0.14);
+        parts.rightArm.rotation.x = -stride * (moving ? 0.6 : 0.14);
+        parts.leftLeg.rotation.x = -stride * (moving ? 0.55 : 0.1);
+        parts.rightLeg.rotation.x = stride * (moving ? 0.55 : 0.1);
+        // Sedikit gerak lengan ke samping saat diam (bernapas).
+        parts.leftArm.rotation.z = 0.06 + (moving ? 0 : Math.sin(elapsed * 1.6) * 0.02);
+        parts.rightArm.rotation.z = -0.06 - (moving ? 0 : Math.sin(elapsed * 1.6) * 0.02);
+        parts.head.position.y = 1.82 + Math.sin(phase * 2) * (moving ? 0.03 : 0.014);
+        object.position.y = Math.sin(elapsed * 2.1 + index) * (moving ? 0.035 : 0.02);
     }
 
     makeTextSprite(text, color, options = {}) {
@@ -2293,26 +2640,46 @@ class RpgThreeScene {
     prewarmRuntimeAssets() {
         this.prebuilt.pickup.shield = this.createPickupPrototype('shield');
         this.prebuilt.pickup.ammo = this.createPickupPrototype('ammo');
-        this.prebuilt.shotMaterial = new THREE.LineBasicMaterial({
-            color: 0xfbbf24,
-            transparent: true,
-            opacity: 0.92,
-        });
-        this.prebuilt.shotGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0, 0),
-            new THREE.Vector3(0, 0, -TILE_SIZE * 3),
-        ]);
-        this.prebuilt.shotLine = new THREE.Line(this.prebuilt.shotGeometry, this.prebuilt.shotMaterial);
-        this.prebuilt.shotLine.visible = false;
-        this.scene.add(this.prebuilt.shotLine);
+        // Peluru terbang nyata (bola bercahaya + trail). Dipakai berulang lewat pool.
+        this.playerShots = [];
+        this.shotPool = [];
+        this.prebuilt.shotGeometry = new THREE.SphereGeometry(0.12, 12, 10);
+        this.prebuilt.shotMaterial = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+        this.prebuilt.tracerMaterial = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.5 });
+        // Muzzle flash sprite di ujung senjata.
+        this.muzzleFlash = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xfff3c4, transparent: true, opacity: 0, depthWrite: false }));
+        this.muzzleFlash.scale.set(0.6, 0.6, 1);
+        this.muzzleFlash.visible = false;
+        this.scene.add(this.muzzleFlash);
         this.setupAudio();
+    }
+
+    acquireShotMesh() {
+        let mesh = this.shotPool.pop();
+        if (!mesh) {
+            mesh = new THREE.Group();
+            const core = new THREE.Mesh(this.prebuilt.shotGeometry, this.prebuilt.shotMaterial);
+            const tracer = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1, 8), this.prebuilt.tracerMaterial);
+            tracer.rotation.x = Math.PI / 2; // sumbu Z
+            // Tidak memakai PointLight per peluru (penyebab lag). Material sudah terang sendiri.
+            mesh.add(core, tracer);
+            mesh.userData.tracer = tracer;
+        }
+        mesh.visible = true;
+        this.scene.add(mesh);
+        return mesh;
+    }
+
+    releaseShotMesh(mesh) {
+        this.scene.remove(mesh);
+        mesh.visible = false;
+        this.shotPool.push(mesh);
     }
 
     compileRuntimeAssets() {
         const temporaryVisible = [
             this.playerViewModel?.userData?.weapon,
             this.playerViewModel?.userData?.shield,
-            this.prebuilt.shotLine,
         ].filter(Boolean);
         const previousVisibility = temporaryVisible.map((object) => object.visible);
         temporaryVisible.forEach((object) => {
@@ -2501,25 +2868,79 @@ class RpgThreeScene {
     }
 
     flashShot(dx, dy) {
-        const line = this.prebuilt.shotLine;
-        const geometry = this.prebuilt.shotGeometry;
-        if (!line || !geometry) {
-            return;
+        // Tembak manual: arah = pandangan kamera (yaw).
+        const dir = this.directionVectorFromYaw ? this.directionVectorFromYaw() : { dx, dz: -1 };
+        this.spawnShotVisual(Number(dir.dx || 0), Number(dir.dz || 0));
+    }
+
+    // Tembakan visual dari MONCONG SENJATA searah (vx,vz) dunia. Dipakai manual & auto/boss.
+    spawnShotVisual(vxRaw, vzRaw) {
+        if (!this.playerShots) return;
+        let vx = Number(vxRaw || 0);
+        let vz = Number(vzRaw || 0);
+        const len = Math.hypot(vx, vz) || 1;
+        vx /= len; vz /= len;
+
+        // Arah "kanan" relatif untuk menggeser origin ke sisi senjata (kanan-bawah layar).
+        const rx = -vz, rz = vx;
+        const originX = this.camera.position.x + vx * 1.3 + rx * 0.42;
+        const originZ = this.camera.position.z + vz * 1.3 + rz * 0.42;
+        const originY = CAMERA_HEIGHT * 0.72;
+
+        // Batasi jumlah peluru aktif agar tak nge-lag saat beruntun.
+        if (this.playerShots.length >= 14) {
+            const oldest = this.playerShots.shift();
+            if (oldest) this.releaseShotMesh(oldest.mesh);
         }
 
+        const mesh = this.acquireShotMesh();
+        mesh.position.set(originX, originY, originZ);
+        mesh.rotation.set(0, Math.atan2(vx, vz), 0);
+
+        this.playerShots.push({
+            mesh,
+            x: originX, y: originY, z: originZ,
+            vx: vx * SHOT_SPEED, vz: vz * SHOT_SPEED,
+            born: performance.now(),
+            ttl: 650,
+        });
+
+        if (this.muzzleFlash) {
+            this.muzzleFlash.position.set(originX, originY, originZ);
+            this.muzzleFlash.material.opacity = 0.9;
+            this.muzzleFlash.visible = true;
+            window.clearTimeout(this._muzzleTimer);
+            this._muzzleTimer = window.setTimeout(() => {
+                if (this.muzzleFlash) { this.muzzleFlash.material.opacity = 0; this.muzzleFlash.visible = false; }
+            }, 60);
+        }
+    }
+
+    // Tembakan menuju sebuah petak (dipakai auto-shoot / tembak bos dari Alpine).
+    fireVisualShotToTile(tx, ty) {
         const session = this.state.session || { pos_x: 0, pos_y: 0 };
-        const start = this.tileToWorld(Number(session.pos_x || 0), Number(session.pos_y || 0));
-        const end = this.tileToWorld(Number(session.pos_x || 0) + dx * 3, Number(session.pos_y || 0) + dy * 3);
-        const positions = geometry.getAttribute('position');
-        positions.setXYZ(0, start.x, CAMERA_HEIGHT * 0.9, start.z);
-        positions.setXYZ(1, end.x, CAMERA_HEIGHT * 0.9, end.z);
-        positions.needsUpdate = true;
-        geometry.computeBoundingSphere();
-        line.visible = true;
-        window.clearTimeout(line.userData.hideTimer);
-        line.userData.hideTimer = window.setTimeout(() => {
-            line.visible = false;
-        }, 120);
+        const from = this.tileToWorld(Number(session.pos_x || 0), Number(session.pos_y || 0));
+        const to = this.tileToWorld(Number(tx), Number(ty));
+        this.spawnShotVisual(to.x - from.x, to.z - from.z);
+        this.kickWeapon();
+        this.playSound('shot');
+    }
+
+    updatePlayerShots(delta) {
+        if (!this.playerShots || !this.playerShots.length) return;
+        const now = performance.now();
+        const survive = [];
+        for (const shot of this.playerShots) {
+            shot.x += shot.vx * delta;
+            shot.z += shot.vz * delta;
+            shot.mesh.position.set(shot.x, shot.y, shot.z);
+            if (now - shot.born < shot.ttl) {
+                survive.push(shot);
+            } else {
+                this.releaseShotMesh(shot.mesh);
+            }
+        }
+        this.playerShots = survive;
     }
 
     resize() {

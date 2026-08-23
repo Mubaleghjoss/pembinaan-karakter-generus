@@ -33,6 +33,86 @@ class RpgCatalog
         ];
     }
 
+    public static function bossAvatarOptions(): array
+    {
+        return [
+            ['value' => "\u{1F479}", 'icon' => "\u{1F479}", 'label' => 'Raksasa'],
+            ['value' => "\u{1F47F}", 'icon' => "\u{1F47F}", 'label' => 'Iblis'],
+            ['value' => "\u{1F409}", 'icon' => "\u{1F409}", 'label' => 'Naga'],
+            ['value' => "\u{1F480}", 'icon' => "\u{1F480}", 'label' => 'Tengkorak'],
+            ['value' => "\u{1F47A}", 'icon' => "\u{1F47A}", 'label' => 'Goblin'],
+            ['value' => "\u{1F9DF}", 'icon' => "\u{1F9DF}", 'label' => 'Zombie'],
+        ];
+    }
+
+    /**
+     * Normalisasi konfigurasi bos map (dari admin) → struktur aman untuk klien.
+     */
+    public static function normalizeBossConfig(?array $config, int $gridSize = 10): array
+    {
+        $config = $config ?? [];
+        $max = max(1, $gridSize) - 1;
+
+        $clampCoord = fn ($v) => max(0, min($max, (int) $v));
+
+        $avatar = $config['avatar'] ?? self::bossAvatarOptions()[0]['value'];
+        $bossAvatarValues = array_column(self::bossAvatarOptions(), 'value');
+        if (! in_array($avatar, $bossAvatarValues, true)) {
+            $avatar = self::bossAvatarOptions()[0]['value'];
+        }
+
+        $maxHp = (int) ($config['max_hp'] ?? 300);
+        $maxHp = max(50, min(5000, $maxHp));
+
+        $spawn = $config['spawn'] ?? ['x' => $max, 'y' => 0];
+        $safe = $config['safe_zone'] ?? ['x' => 0, 'y' => $max, 'radius' => 1];
+
+        $moveSpeed = $config['move_speed'] ?? 'normal';
+        if (! in_array($moveSpeed, ['slow', 'normal', 'fast'], true)) {
+            $moveSpeed = 'normal';
+        }
+
+        return [
+            'nama' => trim((string) ($config['nama'] ?? 'Bos')) ?: 'Bos',
+            'avatar' => $avatar,
+            'max_hp' => $maxHp,
+            'size' => max(2, min(5, (int) ($config['size'] ?? 3))),
+            'contact_damage' => max(1, min(3, (int) ($config['contact_damage'] ?? 1))),
+            'move_speed' => $moveSpeed,
+            'reward_points' => max(0, min(200, (int) ($config['reward_points'] ?? 25))),
+            'bullet_damage' => max(1, min(50, (int) ($config['bullet_damage'] ?? 10))),
+            'player_lives' => max(1, min(9, (int) ($config['player_lives'] ?? 3))),
+            // 0 = tidak respawn (kalah = selesai). >0 = bos hidup lagi setelah N detik (lebih menantang).
+            'respawn_seconds' => max(0, min(60, (int) ($config['respawn_seconds'] ?? 0))),
+            // Berapa kali bos bisa respawn (kesempatan total = respawn_count+1). 0 = tanpa batas selama sesi.
+            'respawn_count' => max(0, min(20, (int) ($config['respawn_count'] ?? 3))),
+            // Setiap respawn, HP bos naik persen ini (mis. 20 = +20% tiap bangkit). Bikin makin sulit.
+            'respawn_hp_growth' => max(0, min(200, (int) ($config['respawn_hp_growth'] ?? 25))),
+            // === Fitur tantangan lanjutan ===
+            // Bos menembak proyektil ke pemain.
+            'boss_shoots' => (bool) ($config['boss_shoots'] ?? true),
+            // Tiap respawn, kecepatan gerak bos naik persen ini (mempercepat langkah).
+            'respawn_speed_growth' => max(0, min(80, (int) ($config['respawn_speed_growth'] ?? 15))),
+            // Zona aman menyusut (radius -1) tiap kali bos respawn.
+            'shrink_safezone' => (bool) ($config['shrink_safezone'] ?? true),
+            // Minion kecil muncul saat HP bos < 50%.
+            'spawn_minions' => (bool) ($config['spawn_minions'] ?? true),
+            // Jumlah drop darah (pemulih nyawa) di peta saat lawan bos.
+            'health_drops_count' => max(0, min(10, (int) ($config['health_drops_count'] ?? 2))),
+            // Jumlah drop energi (untuk skill) di peta saat lawan bos.
+            'energy_drops_count' => max(0, min(10, (int) ($config['energy_drops_count'] ?? 3))),
+            'spawn' => [
+                'x' => $clampCoord($spawn['x'] ?? $max),
+                'y' => $clampCoord($spawn['y'] ?? 0),
+            ],
+            'safe_zone' => [
+                'x' => $clampCoord($safe['x'] ?? 0),
+                'y' => $clampCoord($safe['y'] ?? $max),
+                'radius' => max(0, min(4, (int) ($safe['radius'] ?? 1))),
+            ],
+        ];
+    }
+
     public static function playerAvatarOptions(): array
     {
         return [

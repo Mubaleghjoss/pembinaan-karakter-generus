@@ -17,6 +17,8 @@ class PamongPermission extends Model
         'calendar',
         'manual_attendance',
         'laporan_penyaksian',
+        'gamification',
+        'game',
     ];
 
     public const FALLBACK_DEFAULT_CRUD_PERMISSIONS = [
@@ -24,6 +26,8 @@ class PamongPermission extends Model
         'calendar' => ['view'],
         'manual_attendance' => ['view', 'create'],
         'laporan_penyaksian' => ['view', 'tindak_lanjut'],
+        'gamification' => ['view'],
+        'game' => ['view'],
     ];
 
     protected $fillable = [

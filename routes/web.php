@@ -406,6 +406,7 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
             Route::get('/{rpgMap}/play', [RpgGameController::class, 'play'])->name('play');
             Route::post('/{rpgMap}/move', [RpgGameController::class, 'move'])->name('move');
             Route::post('/{rpgMap}/answer', [RpgGameController::class, 'answer'])->name('answer');
+            Route::post('/{rpgMap}/boss-defeat', [RpgGameController::class, 'bossDefeat'])->name('boss-defeat');
             Route::get('/{rpgMap}/state', [RpgGameController::class, 'getGameState'])->name('state');
             Route::post('/character', [RpgGameController::class, 'updateCharacter'])->name('character');
             Route::post('/heartbeat', [RpgGameController::class, 'heartbeat'])->name('heartbeat');

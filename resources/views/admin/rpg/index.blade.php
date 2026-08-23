@@ -353,7 +353,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Peluru per Pickup</label>
-                        <input type="number" min="1" max="20" x-model.number="mapForm.ammo_per_pickup" class="pkg-field w-full rounded-lg px-3 py-2">
+                        <input type="number" min="1" max="999" x-model.number="mapForm.ammo_per_pickup" class="pkg-field w-full rounded-lg px-3 py-2">
                     </div>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
@@ -363,7 +363,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jumlah Pickup Peluru</label>
-                        <input type="number" min="0" max="20" x-model.number="mapForm.ammo_pickups_count" class="pkg-field w-full rounded-lg px-3 py-2">
+                        <input type="number" min="0" max="50" x-model.number="mapForm.ammo_pickups_count" class="pkg-field w-full rounded-lg px-3 py-2">
                     </div>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -383,6 +383,144 @@
                     <p class="font-semibold">Perhatian Balancing</p>
                     <p class="mt-1" x-text="balanceWarningMessage()"></p>
                 </div>
+
+                {{-- PANEL BOS (Mode Petualangan) --}}
+                <div class="rounded-xl border border-rose-200 bg-rose-50/70 p-4 dark:border-rose-900/40 dark:bg-rose-900/10">
+                    <label class="flex cursor-pointer items-center gap-2">
+                        <input type="checkbox" x-model="mapForm.boss_enabled" class="pkg-check rounded">
+                        <span class="text-sm font-bold text-rose-800 dark:text-rose-200">Aktifkan Bos di peta ini</span>
+                    </label>
+                    <p class="mt-1 text-xs text-rose-700/80 dark:text-rose-300/80">Bos raksasa muncul di peta. Pemain punya peluru tak terbatas &amp; nyawa terbatas; tembak bos sampai HP habis. Poin utama tetap dari menjawab soal NPC.</p>
+
+                    <div x-show="mapForm.boss_enabled" x-cloak class="mt-3 space-y-3">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nama Bos</label>
+                                <input type="text" maxlength="120" x-model="mapForm.boss.nama" placeholder="mis. Raja Malas" class="pkg-field w-full rounded-lg px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Avatar Bos</label>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <template x-for="opt in bossAvatarOptions" :key="'boss-av-'+opt.value">
+                                        <button type="button" @click="mapForm.boss.avatar = opt.value"
+                                            :class="mapForm.boss.avatar === opt.value ? 'ring-2 ring-rose-500 bg-rose-50 dark:bg-rose-900/30' : 'bg-white dark:bg-gray-700'"
+                                            class="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-lg dark:border-gray-600" :title="opt.label">
+                                            <span x-text="opt.icon"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">HP Bos</label>
+                                <input type="number" min="50" max="5000" x-model.number="mapForm.boss.max_hp" class="pkg-field w-full rounded-lg px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Ukuran Bos</label>
+                                <select x-model.number="mapForm.boss.size" class="pkg-field w-full rounded-lg px-3 py-2 text-sm">
+                                    <option :value="2">Besar (2)</option>
+                                    <option :value="3">Sangat Besar (3)</option>
+                                    <option :value="4">Raksasa (4)</option>
+                                    <option :value="5">Masif (5)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Kecepatan Bos</label>
+                                <select x-model="mapForm.boss.move_speed" class="pkg-field w-full rounded-lg px-3 py-2 text-sm">
+                                    <option value="slow">Lambat</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="fast">Cepat</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nyawa Pemain</label>
+                                <input type="number" min="1" max="9" x-model.number="mapForm.boss.player_lives" class="pkg-field w-full rounded-lg px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Damage Peluru</label>
+                                <input type="number" min="1" max="50" x-model.number="mapForm.boss.bullet_damage" class="pkg-field w-full rounded-lg px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Bonus Poin Menang</label>
+                                <input type="number" min="0" max="200" x-model.number="mapForm.boss.reward_points" class="pkg-field w-full rounded-lg px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-lg border border-gray-200 p-2 dark:border-gray-600">
+                                <p class="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-300">Titik Spawn Bos (x, y)</p>
+                                <div class="flex gap-2">
+                                    <input type="number" min="0" :max="mapForm.grid_size - 1" x-model.number="mapForm.boss.spawn.x" class="pkg-field w-full rounded-lg px-2 py-1 text-sm" placeholder="x">
+                                    <input type="number" min="0" :max="mapForm.grid_size - 1" x-model.number="mapForm.boss.spawn.y" class="pkg-field w-full rounded-lg px-2 py-1 text-sm" placeholder="y">
+                                </div>
+                            </div>
+                            <div class="rounded-lg border border-emerald-200 p-2 dark:border-emerald-800">
+                                <p class="mb-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Base / Zona Aman (x, y, radius)</p>
+                                <div class="flex gap-2">
+                                    <input type="number" min="0" :max="mapForm.grid_size - 1" x-model.number="mapForm.boss.safe_zone.x" class="pkg-field w-full rounded-lg px-2 py-1 text-sm" placeholder="x">
+                                    <input type="number" min="0" :max="mapForm.grid_size - 1" x-model.number="mapForm.boss.safe_zone.y" class="pkg-field w-full rounded-lg px-2 py-1 text-sm" placeholder="y">
+                                    <input type="number" min="0" max="4" x-model.number="mapForm.boss.safe_zone.radius" class="pkg-field w-full rounded-lg px-2 py-1 text-sm" placeholder="r">
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Bos tidak masuk / tidak menyerang di dalam zona aman. Pemain bisa berlindung di sana.</p>
+
+                        <div class="rounded-lg border border-purple-200 bg-purple-50/60 p-2 dark:border-purple-900/40 dark:bg-purple-900/10">
+                            <p class="mb-2 text-xs font-bold text-purple-800 dark:text-purple-200">Respawn Bos (biar makin menantang)</p>
+                            <div class="grid gap-3 sm:grid-cols-3">
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Respawn (detik)</label>
+                                    <input type="number" min="0" max="60" x-model.number="mapForm.boss.respawn_seconds" class="pkg-field w-full rounded-lg px-2 py-1 text-sm" placeholder="0 = mati">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Maks. Respawn</label>
+                                    <input type="number" min="0" max="20" x-model.number="mapForm.boss.respawn_count" class="pkg-field w-full rounded-lg px-2 py-1 text-sm">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">HP Naik / Respawn (%)</label>
+                                    <input type="number" min="0" max="200" x-model.number="mapForm.boss.respawn_hp_growth" class="pkg-field w-full rounded-lg px-2 py-1 text-sm">
+                                </div>
+                            </div>
+                            <p class="mt-1 text-[11px] text-purple-700/80 dark:text-purple-300/80">Respawn detik = 0 berarti bos mati sekali kalah. Tiap bangkit, HP bos bertambah sesuai persen di atas. Bonus poin hanya diberikan sekali (saat pertama tumbang).</p>
+                        </div>
+
+                        <div class="rounded-lg border border-orange-200 bg-orange-50/60 p-2 dark:border-orange-900/40 dark:bg-orange-900/10">
+                            <p class="mb-2 text-xs font-bold text-orange-800 dark:text-orange-200">Tantangan Lanjutan</p>
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
+                                    <input type="checkbox" x-model="mapForm.boss.boss_shoots" class="pkg-check rounded">
+                                    Bos menembak proyektil ke pemain
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
+                                    <input type="checkbox" x-model="mapForm.boss.shrink_safezone" class="pkg-check rounded">
+                                    Zona aman menyusut tiap respawn
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
+                                    <input type="checkbox" x-model="mapForm.boss.spawn_minions" class="pkg-check rounded">
+                                    Minion muncul saat HP bos &lt; 50%
+                                </label>
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Kecepatan +/Respawn (%)</label>
+                                    <input type="number" min="0" max="80" x-model.number="mapForm.boss.respawn_speed_growth" class="pkg-field w-full rounded-lg px-2 py-1 text-sm">
+                                </div>
+                            </div>
+                            <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Drop Darah (pemulih nyawa)</label>
+                                    <input type="number" min="0" max="10" x-model.number="mapForm.boss.health_drops_count" class="pkg-field w-full rounded-lg px-2 py-1 text-sm">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Drop Energi (untuk skill)</label>
+                                    <input type="number" min="0" max="10" x-model.number="mapForm.boss.energy_drops_count" class="pkg-field w-full rounded-lg px-2 py-1 text-sm">
+                                </div>
+                            </div>
+                            <p class="mt-1 text-[11px] text-orange-700/80 dark:text-orange-300/80">Saat lawan bos, pemain punya skill: Lari (dash), Ulti (serangan besar), dan Mode Rage (tanpa cooldown sementara). Energi didapat dari menjawab NPC benar &amp; mengambil drop energi.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div x-show="editingMapId">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" x-model="mapForm.is_active" class="pkg-check rounded">
@@ -657,8 +795,19 @@ function rpgAdmin() {
             ammo_pickups_count: 2,
             obstacles: [],
             enemies: [],
+            boss_enabled: false,
+            boss: {
+                nama: 'Bos', avatar: @js(\App\Support\RpgCatalog::bossAvatarOptions()[0]['value']),
+                max_hp: 300, size: 3, move_speed: 'normal',
+                player_lives: 3, bullet_damage: 10, reward_points: 25,
+                respawn_seconds: 0, respawn_count: 3, respawn_hp_growth: 25,
+                boss_shoots: true, respawn_speed_growth: 15, shrink_safezone: true,
+                spawn_minions: true, health_drops_count: 2, energy_drops_count: 3,
+                spawn: { x: 9, y: 0 }, safe_zone: { x: 0, y: 9, radius: 1 },
+            },
             is_active: true
         },
+        bossAvatarOptions: @json(\App\Support\RpgCatalog::bossAvatarOptions()),
         saving: false,
 
         // NPC modal
@@ -759,7 +908,21 @@ function rpgAdmin() {
                 shield_pickups_count: 1,
                 ammo_pickups_count: 2,
                 obstacles: [],
-                enemies: []
+                enemies: [],
+                boss_enabled: false,
+                boss: this.defaultBoss()
+            };
+        },
+
+        defaultBoss() {
+            return {
+                nama: 'Bos', avatar: this.bossAvatarOptions[0]?.value || '👹',
+                max_hp: 300, size: 3, move_speed: 'normal',
+                player_lives: 3, bullet_damage: 10, reward_points: 25,
+                respawn_seconds: 0, respawn_count: 3, respawn_hp_growth: 25,
+                boss_shoots: true, respawn_speed_growth: 15, shrink_safezone: true,
+                spawn_minions: true, health_drops_count: 2, energy_drops_count: 3,
+                spawn: { x: 9, y: 0 }, safe_zone: { x: 0, y: 9, radius: 1 },
             };
         },
 
@@ -908,9 +1071,49 @@ function rpgAdmin() {
                 shield_pickups_count: parseInt(map.shield_pickups_count ?? 1),
                 ammo_pickups_count: parseInt(map.ammo_pickups_count ?? 2),
                 obstacles: safeParse(map.obstacles),
-                enemies: safeParse(map.enemies).map(enemy => this.normalizeEnemy(enemy))
+                enemies: safeParse(map.enemies).map(enemy => this.normalizeEnemy(enemy)),
+                boss_enabled: !!(map.boss_enabled),
+                boss: this.parseBossConfig(map.boss_config)
             };
             this.showMapModal = true;
+        },
+
+        parseBossConfig(data) {
+            const fallback = this.defaultBoss();
+            if (!data) return fallback;
+            let cfg = data;
+            if (typeof data === 'string') {
+                try { cfg = JSON.parse(data); } catch (e) { return fallback; }
+            }
+            if (!cfg || typeof cfg !== 'object') return fallback;
+            return {
+                nama: cfg.nama || fallback.nama,
+                avatar: cfg.avatar || fallback.avatar,
+                max_hp: parseInt(cfg.max_hp ?? fallback.max_hp),
+                size: parseInt(cfg.size ?? fallback.size),
+                move_speed: cfg.move_speed || fallback.move_speed,
+                player_lives: parseInt(cfg.player_lives ?? fallback.player_lives),
+                bullet_damage: parseInt(cfg.bullet_damage ?? fallback.bullet_damage),
+                reward_points: parseInt(cfg.reward_points ?? fallback.reward_points),
+                respawn_seconds: parseInt(cfg.respawn_seconds ?? fallback.respawn_seconds),
+                respawn_count: parseInt(cfg.respawn_count ?? fallback.respawn_count),
+                respawn_hp_growth: parseInt(cfg.respawn_hp_growth ?? fallback.respawn_hp_growth),
+                boss_shoots: cfg.boss_shoots ?? fallback.boss_shoots,
+                respawn_speed_growth: parseInt(cfg.respawn_speed_growth ?? fallback.respawn_speed_growth),
+                shrink_safezone: cfg.shrink_safezone ?? fallback.shrink_safezone,
+                spawn_minions: cfg.spawn_minions ?? fallback.spawn_minions,
+                health_drops_count: parseInt(cfg.health_drops_count ?? fallback.health_drops_count),
+                energy_drops_count: parseInt(cfg.energy_drops_count ?? fallback.energy_drops_count),
+                spawn: {
+                    x: parseInt(cfg.spawn?.x ?? fallback.spawn.x),
+                    y: parseInt(cfg.spawn?.y ?? fallback.spawn.y),
+                },
+                safe_zone: {
+                    x: parseInt(cfg.safe_zone?.x ?? fallback.safe_zone.x),
+                    y: parseInt(cfg.safe_zone?.y ?? fallback.safe_zone.y),
+                    radius: parseInt(cfg.safe_zone?.radius ?? fallback.safe_zone.radius),
+                },
+            };
         },
 
         async saveMap() {

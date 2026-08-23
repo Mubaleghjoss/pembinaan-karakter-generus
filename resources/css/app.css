@@ -2778,6 +2778,128 @@ html.dark [class~="dark:border-purple-700"] {
     backdrop-filter: blur(14px);
 }
 
+.pkg-rpg-3d-energy {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 12.5rem;
+    z-index: 3;
+    width: min(16rem, calc(100% - 8rem));
+    padding: 0.3rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid rgba(129, 140, 248, 0.4);
+    background: rgba(30, 27, 75, 0.72);
+    color: #e0e7ff;
+    backdrop-filter: blur(14px);
+    text-align: center;
+}
+.pkg-rpg-3d-energy-label { font-size: 0.68rem; font-weight: 700; }
+.pkg-rpg-3d-energy-label em { font-style: normal; opacity: 0.85; }
+.pkg-rpg-3d-energy-bar {
+    margin-top: 0.25rem;
+    height: 0.4rem;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.25);
+    overflow: hidden;
+}
+.pkg-rpg-3d-energy-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #38bdf8, #6366f1);
+    transition: width 0.2s ease;
+}
+
+/* Tombol skill gaya MOBA: bulat, di pojok kanan bawah (dekat jempol kanan) */
+.pkg-rpg-3d-skills {
+    position: absolute;
+    right: 1rem;
+    bottom: 6.5rem;
+    z-index: 6;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.6rem;
+}
+.pkg-rpg-3d-skill {
+    position: relative;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.22), rgba(15,23,42,0.82));
+    color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.05rem;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s ease, filter 0.15s ease, opacity 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+/* Ulti lebih besar seperti tombol utama MOBA */
+.pkg-rpg-3d-skill--ulti { width: 5rem; height: 5rem; }
+.pkg-rpg-3d-skill-icon { font-size: 1.5rem; line-height: 1; }
+.pkg-rpg-3d-skill--ulti .pkg-rpg-3d-skill-icon { font-size: 1.9rem; }
+.pkg-rpg-3d-skill-name { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.03em; }
+.pkg-rpg-3d-skill-cost {
+    position: absolute;
+    top: -0.15rem;
+    right: -0.15rem;
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 0.05rem 0.3rem;
+    border-radius: 999px;
+    background: #f59e0b;
+    color: #1f2937;
+}
+.pkg-rpg-3d-skill-cd {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #fff;
+    background: rgba(2, 6, 23, 0.6);
+    border-radius: 50%;
+}
+/* Badge huruf hotkey (desktop saja) */
+.pkg-rpg-3d-skill-key {
+    display: none;
+    position: absolute;
+    top: -0.3rem;
+    left: -0.3rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    padding: 0 0.2rem;
+    border-radius: 0.35rem;
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.5);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 900;
+    line-height: 1.15rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+@media (hover: hover) and (pointer: fine) {
+    .pkg-rpg-3d-skill-key { display: block; }
+}
+.pkg-rpg-3d-skill.is-ready { border-color: rgba(56, 189, 248, 0.9); filter: drop-shadow(0 0 8px rgba(56,189,248,0.55)); }
+.pkg-rpg-3d-skill--ulti.is-ready { border-color: rgba(244, 63, 94, 0.95); filter: drop-shadow(0 0 10px rgba(244,63,94,0.6)); }
+.pkg-rpg-3d-skill--rage.is-ready { border-color: rgba(251, 146, 60, 0.95); filter: drop-shadow(0 0 10px rgba(251,146,60,0.6)); }
+.pkg-rpg-3d-skill.is-cooldown { opacity: 0.55; filter: grayscale(0.6); }
+.pkg-rpg-3d-skill.is-active { animation: rpg3d-rage-pulse 0.7s ease-in-out infinite; border-color: #fb923c; }
+.pkg-rpg-3d-skill:active { transform: scale(0.9); }
+@keyframes rpg3d-rage-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.7); }
+    50% { box-shadow: 0 0 0 8px rgba(251, 146, 60, 0); }
+}
+
 .pkg-rpg-3d-compass-ring {
     display: inline-flex;
     align-items: center;
@@ -3124,6 +3246,19 @@ html.dark [class~="dark:border-purple-700"] {
         min-height: max(320px, calc(100svh - 1rem));
         border-radius: 0.9rem;
     }
+
+    /* Skill MOBA: rapatkan & naikkan sedikit agar tak menabrak pad kamera di landscape */
+    .pkg-rpg-3d-skills {
+        right: 0.6rem;
+        bottom: 5.2rem;
+        gap: 0.45rem;
+    }
+    .pkg-rpg-3d-skill { width: 3.2rem; height: 3.2rem; }
+    .pkg-rpg-3d-skill--ulti { width: 4rem; height: 4rem; }
+    .pkg-rpg-3d-skill-icon { font-size: 1.25rem; }
+    .pkg-rpg-3d-skill--ulti .pkg-rpg-3d-skill-icon { font-size: 1.55rem; }
+    .pkg-rpg-3d-skill-name { font-size: 0.52rem; }
+    .pkg-rpg-3d-energy { bottom: 9.5rem; }
 
     .pkg-rpg-3d-ui-actions {
         top: calc(0.45rem + env(safe-area-inset-top));

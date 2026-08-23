@@ -102,6 +102,12 @@
     }
     .rpg-cell .other-player { opacity: 0.5; z-index: 5; font-size: 0.85em; }
     .rpg-cell .enemy-marker { z-index: 8; animation: enemy-float 0.8s ease-in-out infinite; filter: drop-shadow(0 2px 6px rgba(239,68,68,0.5)); }
+    .rpg-cell .boss-marker { z-index: 9; font-size: 1.6em; line-height: 1; animation: enemy-float 0.9s ease-in-out infinite; filter: drop-shadow(0 3px 10px rgba(220,38,38,0.7)); }
+    .rpg-cell .boss-marker.boss-hit-flash { animation: boss-hit 0.15s ease; }
+    .rpg-cell .minion-marker { z-index: 8; font-size: 0.95em; animation: enemy-float 0.7s ease-in-out infinite; filter: drop-shadow(0 2px 5px rgba(147,51,234,0.6)); }
+    .rpg-cell .projectile-marker { z-index: 11; font-size: 0.7em; animation: enemy-float 0.4s linear infinite; filter: drop-shadow(0 0 6px rgba(239,68,68,0.9)); }
+    .rpg-cell .drop-marker { z-index: 6; font-size: 0.9em; animation: npc-bob 1.2s ease-in-out infinite; }
+    .rpg-cell .safe-zone-marker { z-index: 2; opacity: 0.35; font-size: 0.9em; }
     .rpg-cell .shot-flash {
         z-index: 12;
         color: #f97316;
@@ -118,6 +124,7 @@
     @keyframes shield-pulse { 0%, 100% { transform: scale(0.96); opacity: 0.95; } 50% { transform: scale(1.06); opacity: 0.6; } }
     @keyframes shot-burst { 0% { transform: scale(0.4); opacity: 0; } 35% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
     @keyframes caught-flash { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+    @keyframes boss-hit { 0% { transform: scale(1); filter: brightness(3); } 100% { transform: scale(1.1); filter: brightness(1); } }
     .caught-effect { animation: caught-flash 0.15s ease 4; }
 
     .rpg-control-tabs {
@@ -616,6 +623,77 @@
                 </div>
 
                 <div x-ref="stageFrame" class="rpg-stage-frame mt-5 rounded-[28px] border border-slate-200/80 bg-white/70 p-3 dark:border-slate-700/80 dark:bg-slate-950/40">
+                    <template x-if="boss && bossActive">
+                        <div class="mb-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-3 dark:border-rose-900/50 dark:bg-rose-900/20">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="text-2xl" x-text="boss.avatar"></span>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-black text-rose-800 dark:text-rose-200" x-text="boss.nama"></p>
+                                        <p class="text-[11px] text-rose-600 dark:text-rose-300">Tembak terus sampai HP habis!</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 text-lg" aria-label="Nyawa">
+                                    <template x-for="i in bossLivesMax" :key="'life-'+i">
+                                        <span x-text="i <= bossLives ? '❤️' : '🤍'"></span>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="mt-2 h-3 overflow-hidden rounded-full bg-rose-200 dark:bg-rose-950">
+                                <div class="h-full bg-gradient-to-r from-rose-500 to-red-600 transition-all duration-200" :style="'width:' + bossHpPercent() + '%'"></div>
+                            </div>
+                            <p class="mt-1 text-right text-[11px] font-semibold text-rose-700 dark:text-rose-300">
+                                <span x-text="bossHp"></span> / <span x-text="bossMaxHp"></span> HP
+                            </p>
+                        </div>
+                    </template>
+                    <template x-if="boss && !bossActive && bossDefeated">
+                        <div class="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 text-center text-sm font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200">
+                            ✓ Bos "<span x-text="boss.nama"></span>" sudah dikalahkan!
+                        </div>
+                    </template>
+
+                    {{-- Panel skill pemain (hanya saat lawan bos) --}}
+                    <template x-if="boss && bossActive">
+                        <div class="mb-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3 dark:border-indigo-900/50 dark:bg-indigo-900/20">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-xs font-bold text-indigo-800 dark:text-indigo-200">Energi Skill</span>
+                                <span class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-300"><span x-text="energy"></span>/<span x-text="energyMax"></span></span>
+                            </div>
+                            <div class="mt-1 h-2.5 overflow-hidden rounded-full bg-indigo-200 dark:bg-indigo-950">
+                                <div class="h-full bg-gradient-to-r from-sky-400 to-indigo-600 transition-all duration-200" :style="'width:' + Math.round((energy/energyMax)*100) + '%'"></div>
+                            </div>
+                            <p x-show="rageActive()" x-cloak class="mt-1 text-center text-[11px] font-black text-orange-600 dark:text-orange-300">🔥 RAGE AKTIF (<span x-text="rageSecondsLeft()"></span>s) — kebal &amp; tanpa cooldown</p>
+                            <div class="mt-2 grid grid-cols-3 gap-2">
+                                <button type="button" @click="useDash()"
+                                    :disabled="!rageActive() && !dashReady()"
+                                    class="rounded-xl border-2 px-2 py-2 text-center transition disabled:opacity-40"
+                                    :class="(rageActive() || dashReady()) ? 'border-sky-400 bg-white dark:bg-slate-800' : 'border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900'">
+                                    <span class="block text-lg">💨</span>
+                                    <span class="block text-[10px] font-bold text-slate-700 dark:text-slate-200">Lari</span>
+                                    <span class="block text-[9px] text-slate-400" x-text="rageActive() ? 'siap' : (dashReady() ? 'siap' : dashCooldownLeft()+'s')"></span>
+                                </button>
+                                <button type="button" @click="useUlti()"
+                                    :disabled="!ultiReady()"
+                                    class="rounded-xl border-2 px-2 py-2 text-center transition disabled:opacity-40"
+                                    :class="ultiReady() ? 'border-rose-400 bg-white dark:bg-slate-800' : 'border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900'">
+                                    <span class="block text-lg">💥</span>
+                                    <span class="block text-[10px] font-bold text-slate-700 dark:text-slate-200">Ulti</span>
+                                    <span class="block text-[9px] text-slate-400">60⚡</span>
+                                </button>
+                                <button type="button" @click="useRage()"
+                                    :disabled="energy < 100"
+                                    class="rounded-xl border-2 px-2 py-2 text-center transition disabled:opacity-40"
+                                    :class="energy >= 100 ? 'border-orange-400 bg-white dark:bg-slate-800' : 'border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900'">
+                                    <span class="block text-lg">🔥</span>
+                                    <span class="block text-[10px] font-bold text-slate-700 dark:text-slate-200">Rage</span>
+                                    <span class="block text-[9px] text-slate-400">100⚡</span>
+                                </button>
+                            </div>
+                            <p class="mt-1 text-[10px] text-indigo-600/70 dark:text-indigo-300/70">Jawab NPC benar (+20⚡) atau ambil ⚡ untuk isi energi. Lari = dash ke arah hadap, Ulti = -25% HP bos, Rage = kebal &amp; tanpa cooldown.</p>
+                        </div>
+                    </template>
+
                     <div class="rpg-mobile-fullscreen-hide flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p class="text-sm font-semibold text-slate-900 dark:text-white">Arena permainan</p>
@@ -677,6 +755,42 @@
                                             </div>
                                         </template>
 
+                                        <template x-if="isBossAt(x-1, displayY)">
+                                            <div class="cell-content">
+                                                <span class="boss-marker" :class="{ 'boss-hit-flash': bossHitFlash }" x-text="boss?.avatar || '👹'"></span>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="isMinionAt(x-1, displayY)">
+                                            <div class="cell-content">
+                                                <span class="minion-marker">👾</span>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="projectileAt(x-1, displayY)">
+                                            <div class="cell-content pointer-events-none">
+                                                <span class="projectile-marker">🔴</span>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="healthDropAt(x-1, displayY)">
+                                            <div class="cell-content pointer-events-none">
+                                                <span class="drop-marker">❤️</span>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="energyDropAt(x-1, displayY)">
+                                            <div class="cell-content pointer-events-none">
+                                                <span class="drop-marker">⚡</span>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="isSafeZone(x-1, displayY)">
+                                            <div class="cell-content pointer-events-none">
+                                                <span class="safe-zone-marker">🛡️</span>
+                                            </div>
+                                        </template>
+
                                         <template x-if="shotFlash && shotFlash.x === (x-1) && shotFlash.y === displayY">
                                             <div class="cell-content">
                                                 <span class="shot-flash">*</span>
@@ -735,8 +849,8 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-950/50">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Peluru</p>
-                        <p class="mt-2 text-xl font-black text-amber-500" x-text="ammo"></p>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Auto tembak saat musuh lurus 3 blok.</p>
+                        <p class="mt-2 text-xl font-black text-amber-500" x-text="bossActive ? '∞' : ammo"></p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" x-text="bossActive ? 'Peluru tak terbatas saat lawan bos.' : 'Auto tembak saat musuh lurus 3 blok.'"></p>
                     </div>
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-950/50">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Tameng</p>
@@ -795,7 +909,7 @@
                 <div class="rpg-quick-stats rpg-desktop-only">
                     <div class="rpg-quick-stat">
                         <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Peluru</p>
-                        <p class="mt-1 text-sm font-black text-amber-500" x-text="ammo"></p>
+                        <p class="mt-1 text-sm font-black text-amber-500" x-text="bossActive ? '∞' : ammo"></p>
                     </div>
                     <div class="rpg-quick-stat">
                         <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Tameng</p>
@@ -1022,6 +1136,43 @@ function rpgGame() {
         enemyTimer: null,
         caughtFlash: false,
         catchCount: 0,
+
+        // Boss (mode Petualangan)
+        boss: @json($boss),
+        bossDefeated: @json($bossDefeated ?? false),
+        bossHp: 0,
+        bossMaxHp: 0,
+        bossX: 0,
+        bossY: 0,
+        bossLives: 3,
+        bossLivesMax: 3,
+        bossInvulnUntil: 0,
+        bossStaggerUntil: 0,
+        bossTimer: null,
+        bossActive: false,
+        bossHitFlash: false,
+        bossVictoryShown: false,
+        bossRespawnCountLeft: 0,
+        bossRespawnTimer: null,
+        bossRespawning: false,
+        safeZoneRadius: null,
+        lastFacing: { dx: 1, dy: 0 },
+        bossProjectiles: [],
+        bossProjectileTimer: null,
+        bossShootIntervalMs: 2000,
+        minions: [],
+        minionsSpawned: false,
+        bossMoveMs: 1300,
+        // Skill pemain (aktif saat lawan bos)
+        energy: 0,
+        energyMax: 100,
+        dashCooldownUntil: 0,
+        ultiCooldownUntil: 0,
+        rageUntil: 0,
+        skillNow: Date.now(),
+        skillClockTimer: null,
+        healthDrops: [],
+        energyDrops: [],
         shields: 0,
         shieldActive: false,
         shieldSecondsLeft: 0,
@@ -1092,9 +1243,15 @@ function rpgGame() {
                 closeNpc: () => this.closeDialog(),
                 view2d: () => this.setViewMode('2d'),
                 reset: () => this.resetGame(),
+                dash: () => this.useDash(),
+                ulti: () => this.useUlti(),
+                rage: () => this.useRage(),
             };
             this.bindThreeControls();
             if (this.viewMode === '3d') {
+                // Bila dibuka langsung dengan mode 3D (dari tombol "Main 3D"),
+                // arm auto-immersive pada interaksi pertama (syarat gesture browser).
+                this.armImmersiveOnFirstGesture();
                 this.$nextTick(() => this.prepareThreeScene());
             }
             this.syncViewportMode();
@@ -1108,7 +1265,18 @@ function rpgGame() {
             this.enemies = (this.enemies || []).map(enemy => this.normalizeEnemy(enemy));
             this.enemyInitial = JSON.parse(JSON.stringify(this.enemies));
             this.generatePickups();
-            this.pollTimer = setInterval(() => this.pollState(), 3000);
+            this.initBoss();
+            this.pollTimer = setInterval(() => this.pollState(), 5000);
+            // Hemat server: hentikan polling presence saat tab tak terlihat, lanjut saat kembali.
+            this._visHandler = () => {
+                if (document.hidden) {
+                    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
+                } else if (!this.pollTimer) {
+                    this.pollState();
+                    this.pollTimer = setInterval(() => this.pollState(), 5000);
+                }
+            };
+            document.addEventListener('visibilitychange', this._visHandler);
             this.startEnemyAI();
             this.setupLayoutObserver();
             requestAnimationFrame(() => this.refreshMobileGridSize());
@@ -1127,6 +1295,12 @@ function rpgGame() {
             if (this.joystickTimer) clearInterval(this.joystickTimer);
             if (this.enemyTimer) clearInterval(this.enemyTimer);
             if (this.shieldTimer) clearInterval(this.shieldTimer);
+            if (this.bossTimer) clearInterval(this.bossTimer);
+            if (this.bossRespawnTimer) clearTimeout(this.bossRespawnTimer);
+            if (this.bossProjectileTimer) clearInterval(this.bossProjectileTimer);
+            if (this.skillClockTimer) clearInterval(this.skillClockTimer);
+            if (this._moveSyncTimer) clearTimeout(this._moveSyncTimer);
+            if (this._visHandler) document.removeEventListener('visibilitychange', this._visHandler);
             this.pickupRespawnTimers.forEach(timer => clearTimeout(timer));
             this.pickupRespawnTimers = [];
             if (this.resizeHandler) {
@@ -1145,7 +1319,30 @@ function rpgGame() {
             }
         },
 
+        // Munculkan peluru visual di scene 3D (dipanggil dari auto-shoot & tembak bos).
+        emit3dShotToTile(tx, ty) {
+            if (this.viewMode !== '3d') return;
+            try {
+                const scene = document.getElementById('siswa-rpg-3d-scene');
+                const inst = scene && scene.__pkgRpgThreeScene;
+                if (inst && typeof inst.fireVisualShotToTile === 'function') {
+                    inst.fireVisualShotToTile(tx, ty);
+                }
+            } catch (e) { /* abaikan */ }
+        },
+
         resolveStoredViewMode() {
+            // Prioritas: query param ?mode= dari daftar peta (tombol Main 3D / 2D).
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const q = params.get('mode');
+                if (q === '3d' || q === '2d') {
+                    try { localStorage.setItem('pkg-rpg-view-mode', q); } catch (e) {}
+                    return q;
+                }
+            } catch (e) {
+                // abaikan
+            }
             try {
                 return localStorage.getItem('pkg-rpg-view-mode') === '3d' ? '3d' : '2d';
             } catch (error) {
@@ -1163,10 +1360,57 @@ function rpgGame() {
             }
 
             if (this.viewMode === '3d') {
+                // Minta fullscreen SINKRON di dalam gesture klik ini (sebelum await),
+                // agar tidak ditolak browser. Lock orientation menyusul di enterImmersiveMode.
+                this.requestImmersiveNow();
                 this.$nextTick(() => this.prepareThreeScene({ immersive: true }));
+            } else {
+                this.exitImmersive();
             }
 
             requestAnimationFrame(() => this.refreshMobileGridSize());
+        },
+
+        requestImmersiveNow() {
+            try {
+                const scene = document.getElementById('siswa-rpg-3d-scene');
+                if (scene && !document.fullscreenElement && scene.requestFullscreen) {
+                    scene.requestFullscreen({ navigationUI: 'hide' }).catch(() => null);
+                }
+                if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                    // iOS Safari tak mendukung -> ditangani diam-diam (fallback hint di UI 3D).
+                    screen.orientation.lock('landscape').catch(() => null);
+                }
+            } catch (error) {
+                // abaikan; enterImmersiveMode akan mencoba lagi
+            }
+        },
+
+        exitImmersive() {
+            try {
+                if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+                    screen.orientation.unlock();
+                }
+                if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => null);
+                }
+            } catch (error) {
+                // abaikan
+            }
+        },
+
+        armImmersiveOnFirstGesture() {
+            // Fullscreen/orientation.lock hanya boleh dipanggil dalam gesture user.
+            // Saat halaman dibuka langsung mode 3D, tunggu sentuhan/klik pertama.
+            const handler = () => {
+                if (this.viewMode === '3d') {
+                    this.requestImmersiveNow();
+                }
+                window.removeEventListener('pointerdown', handler);
+                window.removeEventListener('keydown', handler);
+            };
+            window.addEventListener('pointerdown', handler, { once: false });
+            window.addEventListener('keydown', handler, { once: false });
         },
 
         async prepareThreeScene({ immersive = false } = {}) {
@@ -1240,6 +1484,34 @@ function rpgGame() {
                 shieldActive: this.shieldActive,
                 shieldSecondsLeft: this.shieldSecondsLeft,
                 ammo: this.ammo,
+                boss: this.bossActive && this.boss ? {
+                    avatar: this.boss.avatar,
+                    nama: this.boss.nama,
+                    x: this.bossX,
+                    y: this.bossY,
+                    size: this.bossVisualScale(),
+                    hp: this.bossHp,
+                    max_hp: this.bossMaxHp,
+                    lives: this.bossLives,
+                    lives_max: this.bossLivesMax,
+                } : null,
+                bossSafeZone: this.boss?.safe_zone || null,
+                minions: (this.minions || []).map(m => ({ x: m.x, y: m.y })),
+                bossProjectiles: (this.bossProjectiles || []).map(p => ({ x: p.x, y: p.y })),
+                healthDrops: (this.healthDrops || []).map(d => ({ x: d.x, y: d.y })),
+                energyDrops: (this.energyDrops || []).map(d => ({ x: d.x, y: d.y })),
+                energy: this.energy,
+                energyMax: this.energyMax,
+                rageActive: this.rageActive(),
+                skills: {
+                    dashReady: this.dashReady(),
+                    dashCd: this.dashCooldownLeft(),
+                    ultiReady: this.ultiReady(),
+                    ultiCd: this.ultiCooldownLeft(),
+                    rageReady: this.energy >= 100,
+                    rageActive: this.rageActive(),
+                    rageLeft: this.rageSecondsLeft(),
+                },
                 answeredCount: this.answeredCount,
                 totalNpcs: this.totalNpcs,
                 actionMode: this.actionMode,
@@ -1483,6 +1755,498 @@ function rpgGame() {
             return (this.enemies || []).filter(e => e.x === x && e.y === y);
         },
 
+        // ===================== BOSS (Mode Petualangan) =====================
+        initBoss() {
+            if (!this.boss) return;
+
+            this.bossMaxHp = Number(this.boss.max_hp) || 300;
+            this.bossHp = this.bossMaxHp;
+            this.bossLivesMax = Number(this.boss.player_lives) || 3;
+            this.bossLives = this.bossLivesMax;
+            this.bossX = Number(this.boss.spawn?.x ?? (this.gridSize - 1));
+            this.bossY = Number(this.boss.spawn?.y ?? 0);
+            this.bossActive = true;
+            this.bossVictoryShown = false;
+            this.bossRespawnCountLeft = Number(this.boss.respawn_count ?? 0);
+            this.bossRespawning = false;
+            this.minionsSpawned = false;
+            this.minions = [];
+            this.bossProjectiles = [];
+
+            // Skill pemain: energi awal, siapkan clock untuk cooldown reaktif.
+            this.energy = 40;
+            this.dashCooldownUntil = 0;
+            this.ultiCooldownUntil = 0;
+            this.rageUntil = 0;
+            if (this.skillClockTimer) clearInterval(this.skillClockTimer);
+            this.skillClockTimer = setInterval(() => { this.skillNow = Date.now(); }, 200);
+
+            // Bos melangkah lambat agar pemain sempat bergerak & menembak.
+            this.bossMoveMs = this.boss.move_speed === 'fast' ? 900
+                : this.boss.move_speed === 'slow' ? 1800 : 1300;
+
+            this.bossTimer = setInterval(() => this.bossStep(), this.bossMoveMs);
+
+            // Drop darah & energi di peta (khusus fase bos).
+            this.spawnBossDrops();
+
+            // Bos menembak proyektil.
+            if (this.boss.boss_shoots) {
+                this.startBossShooting();
+            }
+        },
+
+        startBossShooting() {
+            if (this.bossProjectileTimer) clearInterval(this.bossProjectileTimer);
+            this.bossProjectileTimer = setInterval(() => {
+                if (!this.bossActive || this.showNpcDialog || this.showGuideModal) return;
+                this.bossFireProjectile();
+                this.stepBossProjectiles();
+            }, 700);
+        },
+
+        bossFireProjectile() {
+            // Bos menembak searah pemain (4 arah dominan). Interval per-bos.
+            if (Date.now() < (this._nextBossShotAt || 0)) {
+                this.stepBossProjectiles();
+                return;
+            }
+            this._nextBossShotAt = Date.now() + this.bossShootIntervalMs;
+
+            const px = this.session.pos_x, py = this.session.pos_y;
+            let dx = 0, dy = 0;
+            if (Math.abs(px - this.bossX) >= Math.abs(py - this.bossY)) {
+                dx = Math.sign(px - this.bossX) || 1;
+            } else {
+                dy = Math.sign(py - this.bossY) || 1;
+            }
+            this.bossProjectiles.push({ x: this.bossX, y: this.bossY, dx, dy });
+        },
+
+        stepBossProjectiles() {
+            if (!this.bossProjectiles.length) return;
+            const next = [];
+            for (const p of this.bossProjectiles) {
+                const nx = p.x + p.dx;
+                const ny = p.y + p.dy;
+                // Buang bila keluar grid / kena rintangan.
+                if (nx < 0 || nx >= this.gridSize || ny < 0 || ny >= this.gridSize || this.isObstacle(nx, ny)) {
+                    continue;
+                }
+                p.x = nx; p.y = ny;
+
+                // Kena pemain?
+                if (nx === this.session.pos_x && ny === this.session.pos_y) {
+                    this.hitPlayerByProjectile();
+                    continue; // proyektil habis setelah kena
+                }
+                next.push(p);
+            }
+            this.bossProjectiles = next;
+        },
+
+        hitPlayerByProjectile() {
+            if (this.isSafeZone(this.session.pos_x, this.session.pos_y)) return;
+            if (Date.now() < this.bossInvulnUntil) return;
+            if (this.rageActive()) return; // Rage: kebal sementara
+
+            this.bossLives -= 1;
+            this.bossInvulnUntil = Date.now() + 1200;
+            this.caughtFlash = true;
+            setTimeout(() => { this.caughtFlash = false; }, 400);
+            this.playTone('hit');
+            if (this.bossLives <= 0) {
+                this.notifyPlayer('Nyawa habis! Kembali ke base.', 'error');
+                this.bossLives = this.bossLivesMax;
+                this.session.pos_x = 0; this.session.pos_y = 0;
+            } else {
+                this.notifyPlayer(`Kena tembakan bos! Sisa nyawa: ${this.bossLives}`, 'warning');
+            }
+        },
+
+        spawnBossDrops() {
+            const walkable = [];
+            for (let y = 0; y < this.gridSize; y++) {
+                for (let x = 0; x < this.gridSize; x++) {
+                    if (this.isObstacle(x, y) || this.isNpcTile(x, y) || this.isSafeZone(x, y) || (x === 0 && y === 0)) continue;
+                    walkable.push({ x, y });
+                }
+            }
+            const shuffled = this.shuffleDirections(walkable);
+            this.healthDrops = shuffled.splice(0, Math.max(0, Number(this.boss.health_drops_count ?? 0)));
+            this.energyDrops = shuffled.splice(0, Math.max(0, Number(this.boss.energy_drops_count ?? 0)));
+        },
+
+        collectBossDropsAt(x, y) {
+            const hi = this.healthDrops.findIndex(d => d.x === x && d.y === y);
+            if (hi !== -1) {
+                this.healthDrops.splice(hi, 1);
+                if (this.bossLives < this.bossLivesMax) {
+                    this.bossLives += 1;
+                    this.notifyPlayer(`Nyawa pulih! ❤️ (${this.bossLives}/${this.bossLivesMax})`, 'success');
+                } else {
+                    this.notifyPlayer('Nyawa sudah penuh.', 'info');
+                }
+                this.playTone('shield');
+            }
+            const ei = this.energyDrops.findIndex(d => d.x === x && d.y === y);
+            if (ei !== -1) {
+                this.energyDrops.splice(ei, 1);
+                this.addEnergy(35);
+                this.notifyPlayer('Energi +35 ⚡', 'success');
+                this.playTone('pickup');
+            }
+        },
+
+        healthDropAt(x, y) { return (this.healthDrops || []).some(d => d.x === x && d.y === y); },
+        energyDropAt(x, y) { return (this.energyDrops || []).some(d => d.x === x && d.y === y); },
+        projectileAt(x, y) { return (this.bossProjectiles || []).some(p => p.x === x && p.y === y); },
+
+        // ---- Skill pemain ----
+        addEnergy(n) { this.energy = Math.min(this.energyMax, this.energy + n); },
+        rageActive() { return this.skillNow < this.rageUntil; },
+        dashReady() { return this.skillNow >= this.dashCooldownUntil; },
+        ultiReady() { return this.energy >= 60 && this.skillNow >= this.ultiCooldownUntil; },
+        dashCooldownLeft() { return Math.max(0, Math.ceil((this.dashCooldownUntil - this.skillNow) / 1000)); },
+        ultiCooldownLeft() { return Math.max(0, Math.ceil((this.ultiCooldownUntil - this.skillNow) / 1000)); },
+        rageSecondsLeft() { return Math.max(0, Math.ceil((this.rageUntil - this.skillNow) / 1000)); },
+
+        // LARI (dash): lompat 3 sel ke arah hadap, hindari bahaya. Cooldown 4 dtk (0 saat rage).
+        useDash() {
+            if (!this.bossActive) return;
+            if (!this.rageActive() && !this.dashReady()) {
+                this.notifyPlayer(`Lari belum siap (${this.dashCooldownLeft()}s)`, 'warning');
+                return;
+            }
+            const dir = this.lastFacing || { dx: 1, dy: 0 };
+            let moved = false;
+            for (let step = 3; step >= 1; step--) {
+                const nx = this.session.pos_x + dir.dx * step;
+                const ny = this.session.pos_y + dir.dy * step;
+                if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize && !this.isObstacle(nx, ny) && !this.isBossAt(nx, ny)) {
+                    this.session.pos_x = nx; this.session.pos_y = ny;
+                    moved = true;
+                    break;
+                }
+            }
+            // Dash memberi kebal singkat (i-frame) supaya benar-benar terasa menyelamatkan.
+            this.bossInvulnUntil = Date.now() + 700;
+            if (!this.rageActive()) this.dashCooldownUntil = Date.now() + 4000;
+            this.playTone('shoot');
+            this.notifyPlayer(moved ? 'Lari! 💨 (kebal singkat)' : 'Tak ada ruang untuk lari.', moved ? 'success' : 'warning');
+            this.collectBossDropsAt(this.session.pos_x, this.session.pos_y);
+        },
+
+        // ULTI: serangan besar, langsung -35% HP bos + sapu minion + bos tersentak lama. Butuh energi 60.
+        useUlti() {
+            if (!this.bossActive) return;
+            if (!this.ultiReady()) {
+                this.notifyPlayer(this.energy < 60 ? 'Energi ulti kurang (butuh 60)' : `Ulti cooldown (${this.ultiCooldownLeft()}s)`, 'warning');
+                return;
+            }
+            this.energy -= 60;
+            this.ultiCooldownUntil = Date.now() + 6000;
+            const dmg = Math.max(1, Math.round(this.bossMaxHp * 0.35));
+            this.bossHp = Math.max(0, this.bossHp - dmg);
+            this.bossHitFlash = true;
+            this.bossStaggerUntil = Date.now() + 1400;
+            setTimeout(() => { this.bossHitFlash = false; }, 350);
+            // Ledakan ulti di sekitar bos (efek visual di 2D grid).
+            this.flashShotAt(this.bossX, this.bossY);
+            // Ulti juga menyapu minion.
+            const wiped = this.minions.length;
+            this.minions = [];
+            this.playTone('shield');
+            this.notifyPlayer(`ULTI! Bos -${dmg} HP 💥${wiped ? ` (${wiped} minion musnah)` : ''}`, 'success');
+            if (this.bossHp <= 0) this.defeatBoss();
+        },
+
+        // RAGE: kebal + tanpa cooldown + damage tembak x2 selama 6 detik. Butuh energi penuh (100).
+        useRage() {
+            if (!this.bossActive) return;
+            if (this.energy < 100) {
+                this.notifyPlayer('Rage butuh energi penuh (100)', 'warning');
+                return;
+            }
+            this.energy = 0;
+            this.rageUntil = Date.now() + 6000;
+            this.dashCooldownUntil = 0;
+            this.playTone('shield');
+            this.notifyPlayer('MODE RAGE! Kebal, tanpa cooldown & tembakan x2 selama 6 detik 🔥', 'success');
+        },
+
+        bossSize() {
+            // Footprint bos = 1 sel (single block) agar andal di 2D & 3D.
+            // Nilai boss.size sekarang dipakai sebagai SKALA VISUAL saja (di 3D & ukuran emoji 2D).
+            return 1;
+        },
+
+        bossVisualScale() {
+            return Math.max(1, Number(this.boss?.size) || 3);
+        },
+
+        // Sel yang ditempati bos (single block).
+        bossCells() {
+            if (!this.bossActive) return [];
+            return [{ x: this.bossX, y: this.bossY }];
+        },
+
+        isBossAt(x, y) {
+            if (!this.bossActive) return false;
+            return x === this.bossX && y === this.bossY;
+        },
+
+        isMinionAt(x, y) {
+            return (this.minions || []).some(m => m.x === x && m.y === y);
+        },
+
+        isSafeZone(x, y) {
+            const sz = this.boss?.safe_zone;
+            if (!sz) return false;
+            const r = Number(this.safeZoneRadius ?? sz.radius) || 0;
+            return Math.abs(x - Number(sz.x)) <= r && Math.abs(y - Number(sz.y)) <= r;
+        },
+
+        bossHpPercent() {
+            if (!this.bossMaxHp) return 0;
+            return Math.max(0, Math.round((this.bossHp / this.bossMaxHp) * 100));
+        },
+
+        bossStep() {
+            if (!this.bossActive || this.showNpcDialog || this.showGuideModal) return;
+
+            // Saat baru kena tembak, bos "tersentak" berhenti sejenak.
+            if (Date.now() < this.bossStaggerUntil) return;
+
+            const px = this.session.pos_x, py = this.session.pos_y;
+
+            // Bos (single block) mengejar pemain: melangkah 1 sel ke arah dominan.
+            let bestDx = 0, bestDy = 0;
+            if (Math.abs(px - this.bossX) >= Math.abs(py - this.bossY)) {
+                bestDx = Math.sign(px - this.bossX);
+            } else {
+                bestDy = Math.sign(py - this.bossY);
+            }
+
+            const nx = this.bossX + bestDx;
+            const ny = this.bossY + bestDy;
+            // Jaga agar bos tetap di dalam grid & tak menembus rintangan.
+            if (nx >= 0 && nx < this.gridSize && !this.isObstacle(nx, this.bossY)) this.bossX = nx;
+            if (ny >= 0 && ny < this.gridSize && !this.isObstacle(this.bossX, ny)) this.bossY = ny;
+
+            // Minion muncul saat HP bos < 50%.
+            if (this.boss.spawn_minions && !this.minionsSpawned && this.bossHp <= this.bossMaxHp * 0.5) {
+                this.spawnMinions();
+            }
+            this.moveMinions();
+
+            this.checkBossContact();
+        },
+
+        spawnMinions() {
+            this.minionsSpawned = true;
+            const count = 2;
+            for (let i = 0; i < count; i++) {
+                const mx = Math.max(0, Math.min(this.gridSize - 1, this.bossX + (i === 0 ? 1 : -1)));
+                const my = Math.max(0, Math.min(this.gridSize - 1, this.bossY));
+                this.minions.push({ x: mx, y: my });
+            }
+            this.notifyPlayer('Minion muncul membantu bos! 👾', 'warning');
+        },
+
+        moveMinions() {
+            if (!this.minions.length) return;
+            const px = this.session.pos_x, py = this.session.pos_y;
+            this.minions.forEach(m => {
+                let dx = 0, dy = 0;
+                if (Math.abs(px - m.x) >= Math.abs(py - m.y)) dx = Math.sign(px - m.x);
+                else dy = Math.sign(py - m.y);
+                const nx = m.x + dx, ny = m.y + dy;
+                if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize && !this.isObstacle(nx, ny)) {
+                    m.x = nx; m.y = ny;
+                }
+                // Minion menyentuh pemain → efek seperti tembakan kecil.
+                if (m.x === px && m.y === py) this.hitPlayerByProjectile();
+            });
+        },
+
+        checkBossContact() {
+            if (!this.bossActive) return;
+            const px = this.session.pos_x, py = this.session.pos_y;
+
+            // Aman di zona base atau saat i-frame / rage.
+            if (this.isSafeZone(px, py)) return;
+            if (Date.now() < this.bossInvulnUntil) return;
+            if (this.rageActive()) return;
+
+            if (this.isBossAt(px, py)) {
+                this.bossLives -= (Number(this.boss.contact_damage) || 1);
+                this.bossInvulnUntil = Date.now() + 1500;
+                this.caughtFlash = true;
+                setTimeout(() => { this.caughtFlash = false; }, 500);
+                this.playTone('hit');
+
+                // Knockback ke titik awal.
+                this.session.pos_x = 0;
+                this.session.pos_y = 0;
+
+                if (this.bossLives <= 0) {
+                    this.notifyPlayer('Nyawa habis! Bos pulih, mulai lagi dari base.', 'error');
+                    // Reset HP bos & nyawa; progres soal NPC TIDAK hilang.
+                    this.bossHp = this.bossMaxHp;
+                    this.bossLives = this.bossLivesMax;
+                    this.bossX = Number(this.boss.spawn?.x ?? (this.gridSize - 1));
+                    this.bossY = Number(this.boss.spawn?.y ?? 0);
+                } else {
+                    this.notifyPlayer(`Terkena bos! Sisa nyawa: ${this.bossLives}`, 'warning');
+                }
+            }
+        },
+
+        shootAtBoss(dx, dy) {
+            // Peluru tak terbatas melawan bos. Aim toleran: bos kena bila berada di
+            // arah tembak (dx/dy) dengan sedikit toleransi tegak lurus (±1 sel).
+            let hit = false;
+            let hitX = null, hitY = null;
+
+            if (this.bossActive) {
+                const relX = this.bossX - this.session.pos_x;
+                const relY = this.bossY - this.session.pos_y;
+
+                if (dx !== 0) {
+                    // Menembak horizontal: bos harus di sisi arah dx & baris berdekatan.
+                    if (Math.sign(relX) === Math.sign(dx) && Math.abs(relY) <= 1) {
+                        hit = true;
+                    }
+                } else if (dy !== 0) {
+                    if (Math.sign(relY) === Math.sign(dy) && Math.abs(relX) <= 1) {
+                        hit = true;
+                    }
+                }
+
+                if (hit) { hitX = this.bossX; hitY = this.bossY; }
+            }
+
+            this.playTone('shoot');
+            if (hitX !== null) this.flashShotAt(hitX, hitY);
+            // Catatan: di 3D, peluru visual dari moncong sudah dibuat oleh scene (flashShot)
+            // saat tombol tembak ditekan, jadi tidak perlu emit lagi di sini (hindari dobel).
+
+            if (hit) {
+                const baseDmg = (Number(this.boss.bullet_damage) || 10);
+                const dmg = this.rageActive() ? baseDmg * 2 : baseDmg; // Rage: tembakan x2
+                this.bossHp = Math.max(0, this.bossHp - dmg);
+                this.bossHitFlash = true;
+                // Bos tersentak berhenti sejenak seakan-akan kena tembak.
+                this.bossStaggerUntil = Date.now() + 450;
+                setTimeout(() => { this.bossHitFlash = false; }, 180);
+                this.notifyPlayer(`Bos terkena!${this.rageActive() ? ' (RAGE x2)' : ''} HP ${this.bossHp}/${this.bossMaxHp}`, 'success');
+
+                if (this.bossHp <= 0) {
+                    this.defeatBoss();
+                }
+            } else {
+                this.notifyPlayer('Tembakan meleset — hadapkan ke arah bos.', 'warning');
+            }
+        },
+
+        defeatBoss() {
+            // Nonaktifkan sementara & hentikan gerak.
+            this.bossActive = false;
+            if (this.bossTimer) { clearInterval(this.bossTimer); this.bossTimer = null; }
+            if (this.bossProjectileTimer) { clearInterval(this.bossProjectileTimer); this.bossProjectileTimer = null; }
+            this.bossProjectiles = [];
+            this.minions = [];
+            this.playTone('shield');
+
+            const respawnSeconds = Number(this.boss?.respawn_seconds ?? 0);
+            const canRespawn = respawnSeconds > 0 && this.bossRespawnCountLeft > 0;
+
+            // Kirim award kemenangan HANYA sekali (saat pertama bos tumbang).
+            if (!this.bossVictoryShown) {
+                this.bossVictoryShown = true;
+                this.notifyPlayer(canRespawn ? 'Bos tumbang! Tapi ia akan bangkit lagi...' : 'BOS DIKALAHKAN! 🎉', 'success');
+
+                fetch("{{ route('siswa.rpg.boss-defeat', $rpgMap) }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json'
+                    },
+                }).then(r => r.json()).then(data => {
+                    if (data.success) {
+                        this.bossDefeated = true;
+                        if (typeof data.total_score === 'number') {
+                            this.session.total_score = data.total_score;
+                        }
+                        if (!data.already && data.bonus > 0) {
+                            this.notifyPlayer(`Bonus +${data.bonus} poin masuk peringkat!`, 'success');
+                        }
+                    }
+                }).catch(e => console.error('boss defeat submit failed', e));
+            } else {
+                this.notifyPlayer(canRespawn ? 'Bos tumbang lagi! Bersiap...' : 'Bos akhirnya benar-benar kalah! 🎉', 'success');
+            }
+
+            if (canRespawn) {
+                this.scheduleBossRespawn(respawnSeconds);
+            }
+        },
+
+        scheduleBossRespawn(seconds) {
+            this.bossRespawning = true;
+            this.bossRespawnCountLeft = Math.max(0, this.bossRespawnCountLeft - 1);
+            this.notifyPlayer(`Bos akan bangkit dalam ${seconds} detik!`, 'warning');
+
+            if (this.bossRespawnTimer) clearTimeout(this.bossRespawnTimer);
+            this.bossRespawnTimer = setTimeout(() => {
+                this.respawnBoss();
+            }, seconds * 1000);
+        },
+
+        respawnBoss() {
+            this.bossRespawning = false;
+
+            // HP naik tiap bangkit → makin sulit.
+            const growth = Number(this.boss?.respawn_hp_growth ?? 0) / 100;
+            this.bossMaxHp = Math.round(this.bossMaxHp * (1 + growth));
+            this.bossHp = this.bossMaxHp;
+
+            // Kembali ke titik spawn, nyawa pemain dipulihkan penuh.
+            this.bossX = Number(this.boss.spawn?.x ?? (this.gridSize - 1));
+            this.bossY = Number(this.boss.spawn?.y ?? 0);
+            this.bossLives = this.bossLivesMax;
+            this.bossActive = true;
+            this.bossStaggerUntil = 0;
+            this.minionsSpawned = false;
+            this.minions = [];
+            this.bossProjectiles = [];
+
+            // Zona aman menyusut tiap respawn (bila diaktifkan).
+            if (this.boss.shrink_safezone) {
+                const baseR = Number(this.boss.safe_zone?.radius ?? 1);
+                const cur = Number(this.safeZoneRadius ?? baseR);
+                this.safeZoneRadius = Math.max(0, cur - 1);
+            }
+
+            // Bos makin cepat tiap respawn.
+            const speedGrowth = Number(this.boss?.respawn_speed_growth ?? 0) / 100;
+            this.bossMoveMs = Math.max(350, Math.round(this.bossMoveMs * (1 - speedGrowth)));
+            if (this.bossTimer) clearInterval(this.bossTimer);
+            this.bossTimer = setInterval(() => this.bossStep(), this.bossMoveMs);
+
+            // Segarkan drop di peta.
+            this.spawnBossDrops();
+
+            // Nyalakan kembali tembakan bos bila diaktifkan.
+            if (this.boss.boss_shoots) this.startBossShooting();
+
+            this.playTone('hit');
+            this.notifyPlayer(`Bos bangkit dengan HP ${this.bossMaxHp}! 🔥`, 'error');
+        },
+
+
         getPickupsAt(x, y) {
             const pickups = [];
 
@@ -1698,6 +2462,12 @@ function rpgGame() {
         shootDirection(dx, dy) {
             if (this.showGuideModal) return;
 
+            // Prioritas: kalau ada bos aktif, peluru tak terbatas untuk melawan bos.
+            if (this.bossActive && this.boss) {
+                this.shootAtBoss(dx, dy);
+                return;
+            }
+
             if (this.ammo <= 0) {
                 this.notifyPlayer('Amunisi habis.', 'warning');
                 this.actionMode = 'move';
@@ -1743,6 +2513,7 @@ function rpgGame() {
             this.ammo--;
             const defeatedEnemy = { ...this.enemies[target.index] };
             this.flashShotAt(defeatedEnemy.x, defeatedEnemy.y);
+            this.emit3dShotToTile(target.x, target.y); // peluru nyata di 3D
             this.enemies.splice(target.index, 1);
             this.playTone('shoot');
             this.scheduleEnemyRespawn(defeatedEnemy);
@@ -1999,10 +2770,15 @@ function rpgGame() {
             // Obstacle check
             if (this.isObstacle(newX, newY)) return false;
 
+            // Simpan arah hadap terakhir (dipakai skill Lari/dash).
+            if (dx !== 0 || dy !== 0) this.lastFacing = { dx: Math.sign(dx), dy: Math.sign(dy) };
+
             this.session.pos_x = newX;
             this.session.pos_y = newY;
             this.playTone('walk');
             this.collectPickupAt(newX, newY);
+            // Ambil drop darah/energi bila sedang fase bos.
+            if (this.bossActive || this.boss) this.collectBossDropsAt(newX, newY);
             
             // If caught during this move, checkEnemyCatch already resets position and sends fetch.
             if (this.checkEnemyCatch()) return true;
@@ -2030,17 +2806,23 @@ function rpgGame() {
                 this.showNpcDialog = true;
             }
 
-            // Fire-and-forget server sync (position only, non-blocking)
-            fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ pos_x: newX, pos_y: newY })
-            })
-            .catch(e => console.error('Move error:', e));
+            // Fire-and-forget server sync (position only) — DEBOUNCE agar tidak 1 request tiap langkah.
+            // Posisi terbaru dikirim setelah pemain berhenti sejenak (250ms) → hemat beban server.
+            this._pendingMove = { pos_x: newX, pos_y: newY };
+            if (this._moveSyncTimer) clearTimeout(this._moveSyncTimer);
+            this._moveSyncTimer = setTimeout(() => {
+                const payload = this._pendingMove;
+                if (!payload) return;
+                fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                }).catch(e => console.error('Move error:', e));
+            }, 250);
 
             return true;
         },
@@ -2145,6 +2927,9 @@ function rpgGame() {
                 if (!this.session.answered_npcs.includes(this.currentNpc.id)) {
                     this.session.answered_npcs.push(this.currentNpc.id);
                 }
+
+                // Jawaban benar menambah energi skill (untuk fase bos).
+                this.addEnergy(20);
 
                 // Check completion locally
                 const totalActive = this.totalNpcs;
