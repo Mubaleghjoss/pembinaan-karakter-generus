@@ -21,88 +21,119 @@
     <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
         <!-- Contact List -->
         <div class="pkg-card min-w-0 overflow-hidden lg:col-span-1" :class="selectedId ? 'hidden lg:block' : 'block'">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="font-semibold text-gray-900 dark:text-white">Kontak</h2>
+            <div class="border-b border-gray-200 p-4 dark:border-gray-700">
+                <h2 class="font-semibold text-gray-900 dark:text-white">Pilih Tujuan Chat</h2>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Pamong = pembimbingmu. Pengurus PKG/Admin = pengelola program.</p>
             </div>
-            
-            <!-- Pamong Section -->
-            @if($pamongList->isNotEmpty())
-            <div class="p-3 bg-gray-50 dark:bg-gray-700">
-                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Pamong & Admin</p>
-            </div>
-            @foreach($pamongList as $pamong)
-            <button @click="selectContact('pamong', {{ $pamong->id }}, '{{ $pamong->username }}', '{{ $pamong->contact_role_label }}')"
-                    :class="selectedType === 'pamong' && selectedId === {{ $pamong->id }} ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
-                    class="w-full p-4 flex items-center gap-3 text-left transition-colors">
-                <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold relative">
-                    {{ strtoupper(substr($pamong->username, 0, 1)) }}
-                    <template x-if="getUnreadCount('pamong', {{ $pamong->id }}) > 0">
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
-                              x-text="getUnreadCount('pamong', {{ $pamong->id }}) > 99 ? '99+' : getUnreadCount('pamong', {{ $pamong->id }})"></span>
-                    </template>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="font-medium text-gray-900 dark:text-white truncate">{{ $pamong->username }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $pamong->contact_role_label }}</p>
-                </div>
-            </button>
-            @endforeach
-            @endif
 
-            <!-- Siswa Section -->
-            @if($relatedSiswa->isNotEmpty())
-            <div class="p-3 bg-gray-50 dark:bg-gray-700">
-                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Teman</p>
+            {{-- Tab: Pamong / Pengurus PKG / Teman & Grup --}}
+            <div class="flex border-b border-gray-200 text-xs dark:border-gray-700">
+                <button type="button" @click="tab = 'pamong'"
+                    :class="tab === 'pamong' ? 'border-indigo-600 text-indigo-700 dark:text-indigo-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'"
+                    class="flex-1 border-b-2 px-2 py-2.5 font-semibold transition-colors">
+                    Pamong
+                    <span class="ml-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{ $pamongList->count() }}</span>
+                </button>
+                <button type="button" @click="tab = 'pengurus'"
+                    :class="tab === 'pengurus' ? 'border-indigo-600 text-indigo-700 dark:text-indigo-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'"
+                    class="flex-1 border-b-2 px-2 py-2.5 font-semibold transition-colors">
+                    Pengurus
+                    <span class="ml-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{ $pengurusList->count() }}</span>
+                </button>
+                <button type="button" @click="tab = 'teman'"
+                    :class="tab === 'teman' ? 'border-indigo-600 text-indigo-700 dark:text-indigo-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'"
+                    class="flex-1 border-b-2 px-2 py-2.5 font-semibold transition-colors">
+                    Teman
+                    <span class="ml-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{ $relatedSiswa->count() }}</span>
+                </button>
             </div>
-            @foreach($relatedSiswa as $teman)
-            <button @click="selectContact('siswa', {{ $teman->id }}, '{{ $teman->nama }}', 'Teman')"
-                    :class="selectedType === 'siswa' && selectedId === {{ $teman->id }} ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
-                    class="w-full p-4 flex items-center gap-3 text-left transition-colors">
-                <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold relative">
-                    {{ strtoupper(substr($teman->nama, 0, 1)) }}
-                    <template x-if="getUnreadCount('siswa', {{ $teman->id }}) > 0">
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
-                              x-text="getUnreadCount('siswa', {{ $teman->id }}) > 99 ? '99+' : getUnreadCount('siswa', {{ $teman->id }})"></span>
-                    </template>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="font-medium text-gray-900 dark:text-white truncate">{{ $teman->nama }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $teman->school_grade_label ?? 'Kelas belum dikonfirmasi' }}</p>
-                </div>
-            </button>
-            @endforeach
-            @endif
 
-            @if($pamongList->isEmpty() && $relatedSiswa->isEmpty())
-            <div class="pkg-empty-state">
-                <svg class="pkg-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 8h2a2 2 0 012 2v8l-4-3H9a2 2 0 01-2-2v-1m10-4V6a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h2l4 3v-3h4a2 2 0 002-2V8z"/>
-                </svg>
-                <h3 class="pkg-empty-title">Belum Ada Kontak</h3>
-                <p class="pkg-empty-copy">Kontak chat belum tersedia.</p>
-            </div>
-            @endif
+            <div class="overflow-y-auto" style="max-height: 560px;">
+                {{-- Tab Pamong & Pengurus PKG --}}
+                @foreach([['pamong', $pamongList], ['pengurus', $pengurusList]] as [$tabKey, $list])
+                    <div x-show="tab === '{{ $tabKey }}'">
+                        @forelse($list as $contact)
+                            <button @click="selectContact('pamong', {{ $contact->id }}, @js($contact->username ?? $contact->name), @js($contact->contact_role_label))"
+                                    :class="selectedType === 'pamong' && selectedId === {{ $contact->id }} ? 'bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-indigo-500' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                    class="flex w-full items-center gap-3 border-b border-gray-100 p-4 text-left transition-colors last:border-0 dark:border-gray-700">
+                                <div class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-semibold text-white {{ $contact->isAdmin ? 'bg-indigo-600' : ($tabKey === 'pamong' ? 'bg-emerald-600' : 'bg-slate-500') }}">
+                                    {{ strtoupper(mb_substr($contact->username ?? $contact->name ?? 'P', 0, 1)) }}
+                                    <template x-if="getUnreadCount('pamong', {{ $contact->id }}) > 0">
+                                        <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
+                                              x-text="getUnreadCount('pamong', {{ $contact->id }}) > 99 ? '99+' : getUnreadCount('pamong', {{ $contact->id }})"></span>
+                                    </template>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-white">
+                                        <span class="truncate">{{ $contact->username ?? $contact->name }}</span>
+                                        @if($contact->isAdmin)
+                                            <span class="shrink-0 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">Admin</span>
+                                        @endif
+                                    </p>
+                                    <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $contact->contact_role_label }}</p>
+                                </div>
+                            </button>
+                        @empty
+                            <div class="pkg-empty-state">
+                                <h3 class="pkg-empty-title">{{ $tabKey === 'pamong' ? 'Belum Ada Pamong' : 'Belum Ada Pengurus' }}</h3>
+                                <p class="pkg-empty-copy">
+                                    {{ $tabKey === 'pamong'
+                                        ? 'Pamong pembimbingmu belum ditugaskan. Sementara ini kamu bisa bertanya ke Pengurus PKG pada tab sebelah.'
+                                        : 'Belum ada pengurus yang bisa dihubungi.' }}
+                                </p>
+                            </div>
+                        @endforelse
+                    </div>
+                @endforeach
 
-            <!-- Group Chat Section -->
-            @if(isset($groups) && $groups->isNotEmpty())
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Grup Chat</p>
+                {{-- Tab Teman + Grup --}}
+                <div x-show="tab === 'teman'">
+                    @forelse($relatedSiswa as $teman)
+                        <button @click="selectContact('siswa', {{ $teman->id }}, @js($teman->nama), 'Teman')"
+                                :class="selectedType === 'siswa' && selectedId === {{ $teman->id }} ? 'bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-indigo-500' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                class="flex w-full items-center gap-3 border-b border-gray-100 p-4 text-left transition-colors dark:border-gray-700">
+                            <div class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-500 font-semibold text-white">
+                                {{ strtoupper(mb_substr($teman->nama, 0, 1)) }}
+                                <template x-if="getUnreadCount('siswa', {{ $teman->id }}) > 0">
+                                    <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
+                                          x-text="getUnreadCount('siswa', {{ $teman->id }}) > 99 ? '99+' : getUnreadCount('siswa', {{ $teman->id }})"></span>
+                                </template>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate font-medium text-gray-900 dark:text-white">{{ $teman->nama }}</p>
+                                <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $teman->school_grade_label ?? 'Kelas belum dikonfirmasi' }}</p>
+                            </div>
+                        </button>
+                    @empty
+                        @if(!isset($groups) || $groups->isEmpty())
+                            <div class="pkg-empty-state">
+                                <h3 class="pkg-empty-title">Belum Ada Teman</h3>
+                                <p class="pkg-empty-copy">Belum ada teman satu bimbingan yang bisa dihubungi.</p>
+                            </div>
+                        @endif
+                    @endforelse
+
+                    @if(isset($groups) && $groups->isNotEmpty())
+                        <div class="border-t border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-700">
+                            <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Grup Chat</p>
+                        </div>
+                        @foreach($groups as $group)
+                            <a href="{{ route('siswa.group-chat.index') }}?group={{ $group->id }}"
+                               class="flex w-full items-center gap-3 border-b border-gray-100 p-4 text-left transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700">
+                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500 font-semibold text-white">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate font-medium text-gray-900 dark:text-white">{{ $group->name }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $group->members_count }} anggota</p>
+                                </div>
+                            </a>
+                        @endforeach
+                    @endif
+                </div>
             </div>
-            @foreach($groups as $group)
-            <a href="{{ route('siswa.group-chat.index') }}?group={{ $group->id }}"
-               class="w-full p-4 flex items-center gap-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 block">
-                <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                    </svg>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="font-medium text-gray-900 dark:text-white truncate">{{ $group->name }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $group->members_count }} anggota</p>
-                </div>
-            </a>
-            @endforeach
-            @endif
         </div>
 
         <!-- Chat Area -->
@@ -115,11 +146,16 @@
                 <template x-if="selectedName">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
-                             :class="selectedType === 'pamong' ? 'bg-green-500' : 'bg-purple-500'">
+                             :class="selectedLabel === 'Admin' ? 'bg-indigo-600' : (selectedType === 'pamong' ? 'bg-emerald-600' : 'bg-purple-500')">
                             <span x-text="selectedName.charAt(0).toUpperCase()"></span>
                         </div>
                         <div>
-                            <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedName"></p>
+                            <p class="flex items-center gap-1.5 font-semibold text-gray-900 dark:text-white">
+                                <span x-text="selectedName"></span>
+                                <template x-if="selectedLabel === 'Admin'">
+                                    <span class="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">Admin</span>
+                                </template>
+                            </p>
                             <p class="text-xs text-gray-500 dark:text-gray-400" x-text="selectedLabel"></p>
                         </div>
                     </div>
@@ -211,6 +247,7 @@
 <script>
 function chatApp() {
     return {
+        tab: @js($pamongList->isNotEmpty() ? 'pamong' : ($pengurusList->isNotEmpty() ? 'pengurus' : 'teman')),
         selectedType: null,
         selectedId: null,
         selectedName: null,

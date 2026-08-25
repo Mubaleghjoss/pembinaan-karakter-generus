@@ -38,8 +38,8 @@ class SiswaDashboardController extends Controller
     public function index()
     {
         $siswa = Auth::guard('siswa')->user();
-        
-        // Get today's daily karakter progress only.
+
+        // Progres Tugas PKG harian.
         $today = now()->toDateString();
         $totalKarakter = Karakter::active()
             ->where('kategori', 'harian')
@@ -55,18 +55,22 @@ class SiswaDashboardController extends Controller
         $karakterPercentage = $totalKarakter > 0
             ? min(100, round(($checkedKarakter / $totalKarakter) * 100, 1))
             : 0;
-        
-        // Get recent karakter checks
-        $recentKarakter = SiswaKarakterChecklist::where('siswa_id', $siswa->id)
-            ->with(['karakter', 'verifier'])
-            ->orderBy('checked_at', 'desc')
-            ->limit(5)
-            ->get();
-        
+
+        // Tugas PKG terverifikasi (semua kategori) untuk ringkasan.
+        $verifiedTasks = SiswaKarakterChecklist::where('siswa_id', $siswa->id)
+            ->whereNotNull('verified_at')
+            ->count();
+        $pendingTasks = SiswaKarakterChecklist::where('siswa_id', $siswa->id)
+            ->whereNull('verified_at')
+            ->count();
+
+        // Ringkasan bacaan Al-Qur'an.
+        $quranSummary = $this->quranSummary($siswa->id);
+
         // Get assigned pamong
         $pamongList = $siswa->pamong ?? collect();
-        
-        // Get gamification stats
+
+        // Ringkasan gamifikasi (dipakai versi mini saja di dashboard).
         $gamificationStats = null;
         try {
             $gamificationService = app(\App\Services\GamificationService::class);
@@ -74,15 +78,12 @@ class SiswaDashboardController extends Controller
         } catch (\Exception $e) {
             \Log::warning('Failed to get gamification stats: ' . $e->getMessage());
         }
-        
+
         // Share info for siswa
         $shareInfos = ShareInfo::active()
             ->forTarget('siswa')
             ->orderByDesc('created_at')
             ->get();
-
-        // All levels for tier info modal
-        $allLevels = \App\Models\Level::active()->orderBy('level')->get();
 
         $biometricStatus = BiometricStatus::resolve($siswa->id, 'siswa');
         $journalTasks = $siswa->isGraduated()
@@ -97,15 +98,43 @@ class SiswaDashboardController extends Controller
             'totalKarakter',
             'checkedKarakter',
             'karakterPercentage',
-            'recentKarakter',
+            'verifiedTasks',
+            'pendingTasks',
+            'quranSummary',
             'pamongList',
             'gamificationStats',
             'shareInfos',
-            'allLevels',
             'biometricStatus',
             'journalTasks',
             'dashboardQrData'
         ));
+    }
+
+    /**
+     * Ringkasan singkat bacaan Al-Qur'an untuk dashboard siswa.
+     */
+    private function quranSummary(int $siswaId): array
+    {
+        $verified = \App\Models\QuranReadingEntry::query()
+            ->where('siswa_id', $siswaId)
+            ->where('status', \App\Models\QuranReadingEntry::STATUS_VERIFIED);
+
+        $lastDate = (clone $verified)->max('reading_date');
+
+        return [
+            'verified_total' => (clone $verified)->count(),
+            'verified_this_month' => (clone $verified)
+                ->whereBetween('reading_date', [
+                    now()->startOfMonth()->toDateString(),
+                    now()->endOfMonth()->toDateString(),
+                ])
+                ->count(),
+            'pending' => \App\Models\QuranReadingEntry::query()
+                ->where('siswa_id', $siswaId)
+                ->where('status', \App\Models\QuranReadingEntry::STATUS_PENDING)
+                ->count(),
+            'last_date' => $lastDate ? \Illuminate\Support\Carbon::parse($lastDate) : null,
+        ];
     }
 
     /**

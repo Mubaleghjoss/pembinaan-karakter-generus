@@ -16,30 +16,42 @@ class SiswaChatController extends Controller
     public function index()
     {
         $siswa = Auth::guard('siswa')->user();
+
+        // 1) PAMONG: hanya pamong yang ditugaskan untuk siswa ini.
         $pamongIds = PamongSiswa::query()
             ->when(! $siswa->isGraduated(), fn ($query) => $query->active())
             ->where('siswa_id', $siswa->id)
             ->pluck('pamong_id');
+
         $pamongList = User::query()
             ->with('role')
-            ->where('status', 'active')
-            ->where(function ($query) use ($pamongIds) {
-                $query->whereIn('id', $pamongIds)
-                    ->orWhereHas('role', fn ($roleQuery) => $roleQuery->where('name', 'admin'));
-            })
-            ->orderByRaw("CASE WHEN role_id = (SELECT id FROM roles WHERE name = 'admin' LIMIT 1) THEN 0 ELSE 1 END")
+            ->whereIn('id', $pamongIds)
             ->orderBy('username')
-            ->get()
-            ->each(function ($contact) {
-                $contact->contact_role_label = $contact->hasRole('admin') ? 'Admin' : 'Pamong';
-            });
-        
+            ->get();
+
+        // 2) PENGURUS PKG + ADMIN: kontak umum pengelola program.
+        $pengurusList = $siswa->isGraduated()
+            ? User::query()->whereRaw('1 = 0')->get()
+            : User::query()
+                ->with('role')
+                ->where('status', 'active')
+                ->whereNotIn('id', $pamongIds)
+                ->whereHas('role', fn ($roleQuery) => $roleQuery->whereIn('name', ['admin', 'pkg_manager']))
+                ->orderBy('username')
+                ->get();
+
+        $this->labelContacts($pamongList, 'pamong');
+        $this->labelContacts($pengurusList, 'pengurus');
+
+        // Gabungan dipakai untuk kompatibilitas kode/JS lama.
+        $pamongList->concat($pengurusList);
+
         $relatedSiswa = Siswa::active()
             ->where('id', '!=', $siswa->id)
             ->whereHas('pamongAssignments', fn ($query) => $query->whereIn('pamong_id', $pamongIds))
             ->orderBy('nama')
             ->get();
-        
+
         // Get groups where siswa is a member
         $groups = ChatGroup::whereHas('members', function ($query) use ($siswa) {
             $query->where('siswa_id', $siswa->id);
@@ -48,8 +60,26 @@ class SiswaChatController extends Controller
         ->withCount('members')
         ->orderBy('updated_at', 'desc')
         ->get();
-        
-        return view('siswa.chat.index', compact('siswa', 'pamongList', 'relatedSiswa', 'groups'));
+
+        return view('siswa.chat.index', compact('siswa', 'pamongList', 'pengurusList', 'relatedSiswa', 'groups'));
+    }
+
+    /**
+     * Beri label peran (Pamong / Pengurus PKG / Admin) + penanda admin.
+     */
+    private function labelContacts($contacts, string $group): void
+    {
+        foreach ($contacts as $contact) {
+            $roleName = $contact->role->name ?? '';
+            $contact->isAdmin = $roleName === 'admin';
+            $contact->contactGroup = $group;
+            $contact->contact_role_label = match (true) {
+                $roleName === 'admin' => 'Admin',
+                $roleName === 'pkg_manager' => 'Pengurus PKG',
+                $group === 'pamong' => 'Pamong Pembimbing',
+                default => 'Pengurus PKG',
+            };
+        }
     }
 
     public function getMessages(Request $request): JsonResponse
