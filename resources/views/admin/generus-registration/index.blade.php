@@ -91,28 +91,73 @@
         </div>
     </section>
 
-    <div class="mb-6 grid gap-4 sm:grid-cols-3">
+    {{-- Statistik: fokus Generus AKTIF (bukan alumni) --}}
+    <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div class="pkg-card-soft rounded-2xl p-4">
-            <p class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Generus</p>
-            <p class="mt-1 text-2xl font-black text-gray-900 dark:text-white">{{ $totalCount }}</p>
+            <p class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Generus Aktif</p>
+            <p class="mt-1 text-2xl font-black text-gray-900 dark:text-white">{{ $stats['active_total'] }}</p>
+            <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">tidak termasuk alumni</p>
         </div>
         <div class="pkg-card-soft rounded-2xl p-4">
-            <p class="text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Sudah Tanda Tangan</p>
-            <p class="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">{{ $signedCount }}</p>
+            <p class="text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Sudah Isi Surat</p>
+            <p class="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">{{ $stats['active_signed'] }}</p>
+            <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                {{ $stats['active_total'] > 0 ? round($stats['active_signed'] / $stats['active_total'] * 100) : 0 }}% dari Generus aktif
+            </p>
         </div>
+        <a href="{{ route('admin.generus-registration.index', ['status' => 'aktif', 'surat' => 'belum']) }}"
+           class="pkg-card-soft rounded-2xl p-4 ring-amber-300 transition hover:ring-2 dark:ring-amber-700">
+            <p class="text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-300">Belum Isi Surat</p>
+            <p class="mt-1 text-2xl font-black text-amber-700 dark:text-amber-300">{{ $stats['active_unsigned'] }}</p>
+            <p class="mt-0.5 text-[11px] font-semibold text-amber-700/80 dark:text-amber-300/80">Klik untuk lihat daftarnya →</p>
+        </a>
         <div class="pkg-card-soft rounded-2xl p-4">
-            <p class="text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-300">Belum</p>
-            <p class="mt-1 text-2xl font-black text-amber-700 dark:text-amber-300">{{ $totalCount - $signedCount }}</p>
+            <p class="text-xs font-bold uppercase tracking-wide text-sky-600 dark:text-sky-300">Alumni</p>
+            <p class="mt-1 text-2xl font-black text-sky-700 dark:text-sky-300">{{ $stats['alumni_total'] }}</p>
+            <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">tidak dihitung di angka atas</p>
         </div>
     </div>
 
-    <form method="GET" action="{{ route('admin.generus-registration.index') }}" class="mb-5 flex flex-wrap gap-2 sm:gap-3">
-        <input type="search" name="q" value="{{ $search }}" placeholder="Cari nama Generus, Orang Tua, atau NIS..." class="pkg-field w-full sm:max-w-md">
-        <div class="flex w-full gap-2 sm:w-auto">
-            <button type="submit" class="btn-primary flex-1 px-5 py-2.5 font-bold sm:flex-none">Cari</button>
-            @if($search !== '')
-                <a href="{{ route('admin.generus-registration.index') }}" class="btn-secondary flex-1 px-5 py-2.5 font-bold sm:flex-none">Reset</a>
-            @endif
+    {{-- Filter --}}
+    <form method="GET" action="{{ route('admin.generus-registration.index') }}" class="mb-5 pkg-panel p-3 sm:p-4">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="lg:col-span-2">
+                <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Cari</label>
+                <input type="search" name="q" value="{{ $search }}" placeholder="Nama Generus, Orang Tua, atau NIS..." class="pkg-field w-full">
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Status Generus</label>
+                <select name="status" class="pkg-field w-full">
+                    <option value="aktif" @selected($statusFilter === 'aktif')>Aktif (bukan alumni)</option>
+                    <option value="alumni" @selected($statusFilter === 'alumni')>Alumni saja</option>
+                    <option value="semua" @selected($statusFilter === 'semua')>Semua</option>
+                </select>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Surat Pernyataan</label>
+                <select name="surat" class="pkg-field w-full">
+                    <option value="semua" @selected($suratFilter === 'semua')>Semua</option>
+                    <option value="belum" @selected($suratFilter === 'belum')>Belum isi / update</option>
+                    <option value="sudah" @selected($suratFilter === 'sudah')>Sudah isi</option>
+                </select>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Kelompok</label>
+                <select name="kelompok" class="pkg-field w-full">
+                    <option value="">Semua kelompok</option>
+                    @foreach($kelompokOptions as $value => $label)
+                        <option value="{{ $value }}" @selected($kelompokFilter === (string) $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-3">
+                <button type="submit" class="btn-primary px-5 py-2.5 font-bold">Terapkan Filter</button>
+                <a href="{{ route('admin.generus-registration.index') }}" class="btn-secondary px-5 py-2.5 font-bold">Reset</a>
+                <span class="ml-auto self-center text-sm text-gray-600 dark:text-gray-400">
+                    Menampilkan <span class="font-bold text-gray-900 dark:text-white">{{ $totalCount }}</span> data
+                    @if($totalCount > 0) · sudah TTD {{ $signedCount }} · belum {{ $totalCount - $signedCount }} @endif
+                </span>
+            </div>
         </div>
     </form>
 
@@ -126,11 +171,16 @@
                         <p class="pkg-data-card-title">{{ $s->nama }}</p>
                         <p class="pkg-data-card-sub">NIS {{ $s->nis }}@if($s->kelompok) · {{ \App\Models\Siswa::kelompokOptions()[$s->kelompok] ?? $s->kelompok }}@endif</p>
                     </div>
-                    @if($row['signed'])
-                        <span class="pkg-status-badge pkg-status-success shrink-0">Sudah TTD</span>
-                    @else
-                        <span class="pkg-status-badge pkg-status-warning shrink-0">Belum</span>
-                    @endif
+                    <div class="flex shrink-0 flex-col items-end gap-1">
+                        @if($row['signed'])
+                            <span class="pkg-status-badge pkg-status-success">Sudah TTD</span>
+                        @else
+                            <span class="pkg-status-badge pkg-status-warning">Belum</span>
+                        @endif
+                        @if($s->status === 'graduated')
+                            <span class="inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-900/50 dark:text-sky-200">Alumni</span>
+                        @endif
+                    </div>
                 </div>
                 <div class="pkg-data-card-meta">
                     <div class="pkg-data-card-row"><span class="k">Orang Tua</span><span class="v">{{ $s->nama_wali ?: '—' }}</span></div>
@@ -184,7 +234,12 @@
                         @php $s = $row['siswa']; @endphp
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40">
                             <td class="px-4 py-3">
-                                <p class="font-bold text-gray-900 dark:text-white">{{ $s->nama }}</p>
+                                <p class="font-bold text-gray-900 dark:text-white">
+                                    {{ $s->nama }}
+                                    @if($s->status === 'graduated')
+                                        <span class="ml-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-900/50 dark:text-sky-200">Alumni</span>
+                                    @endif
+                                </p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">NIS {{ $s->nis }}@if($s->kelompok) · {{ \App\Models\Siswa::kelompokOptions()[$s->kelompok] ?? $s->kelompok }}@endif</p>
                             </td>
                             <td class="px-4 py-3">

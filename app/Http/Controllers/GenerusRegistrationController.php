@@ -342,10 +342,38 @@ class GenerusRegistrationController extends Controller
     public function adminIndex(Request $request)
     {
         $search = trim((string) $request->query('q', ''));
+        // Filter status akun: aktif (bukan alumni) / alumni / semua.
+        $statusFilter = in_array($request->query('status'), ['aktif', 'alumni', 'semua'], true)
+            ? $request->query('status')
+            : 'aktif';
+        // Filter surat pernyataan: belum / sudah / semua.
+        $suratFilter = in_array($request->query('surat'), ['belum', 'sudah', 'semua'], true)
+            ? $request->query('surat')
+            : 'semua';
+        $kelompokFilter = trim((string) $request->query('kelompok', ''));
 
-        $students = Siswa::query()
+        $baseQuery = fn () => Siswa::query()
             ->where('is_active', true)
-            ->whereIn('status', ['active', 'graduated'])
+            ->whereIn('status', ['active', 'graduated']);
+
+        // Hitungan global (tanpa filter) untuk kartu statistik.
+        $activeStudents = (clone $baseQuery())->where('status', 'active')->get(['id']);
+        $activeIds = $activeStudents->pluck('id');
+        $activeSignedCount = GenerusRegistration::query()
+            ->whereIn('siswa_id', $activeIds)
+            ->whereNotNull('statement_accepted_at')
+            ->count();
+        $stats = [
+            'active_total' => $activeIds->count(),
+            'active_signed' => $activeSignedCount,
+            'active_unsigned' => max(0, $activeIds->count() - $activeSignedCount),
+            'alumni_total' => (clone $baseQuery())->where('status', 'graduated')->count(),
+        ];
+
+        $students = $baseQuery()
+            ->when($statusFilter === 'aktif', fn ($q) => $q->where('status', 'active'))
+            ->when($statusFilter === 'alumni', fn ($q) => $q->where('status', 'graduated'))
+            ->when($kelompokFilter !== '' && Siswa::hasKelompokColumn(), fn ($q) => $q->where('kelompok', $kelompokFilter))
             ->when($search !== '', fn ($q) => $q->where(function ($sub) use ($search) {
                 $sub->where('nama', 'like', "%{$search}%")
                     ->orWhere('nama_wali', 'like', "%{$search}%")
@@ -380,6 +408,13 @@ class GenerusRegistrationController extends Controller
             ];
         });
 
+        // Filter surat pernyataan diterapkan setelah status TTD diketahui.
+        if ($suratFilter === 'belum') {
+            $rows = $rows->where('signed', false)->values();
+        } elseif ($suratFilter === 'sudah') {
+            $rows = $rows->where('signed', true)->values();
+        }
+
         $theme = ThemeSetting::current();
         $signedCount = $rows->where('signed', true)->count();
         $waTemplate = \App\Models\Setting::get(self::WA_TEMPLATE_KEY, self::WA_TEMPLATE_DEFAULT);
@@ -389,6 +424,11 @@ class GenerusRegistrationController extends Controller
         return view('admin.generus-registration.index', [
             'rows' => $rows,
             'search' => $search,
+            'statusFilter' => $statusFilter,
+            'suratFilter' => $suratFilter,
+            'kelompokFilter' => $kelompokFilter,
+            'kelompokOptions' => Siswa::kelompokOptions(),
+            'stats' => $stats,
             'theme' => $theme,
             'totalCount' => $rows->count(),
             'signedCount' => $signedCount,
