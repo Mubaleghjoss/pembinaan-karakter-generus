@@ -849,6 +849,8 @@ Route::middleware('auth')->group(function () {
         // Daftar Generus + tautan daftar-ulang + status surat pernyataan
         Route::get('/daftar-ulang-generus', [GenerusRegistrationController::class, 'adminIndex'])->name('admin.generus-registration.index');
         Route::put('/daftar-ulang-generus/template-wa', [GenerusRegistrationController::class, 'saveWaTemplate'])->name('admin.generus-registration.wa-template');
+        Route::put('/daftar-ulang-generus/template-akun', [GenerusRegistrationController::class, 'saveAccountWaTemplate'])->name('admin.generus-registration.account-template');
+        Route::post('/daftar-ulang-generus/template-akun/reset', [GenerusRegistrationController::class, 'resetAccountWaTemplate'])->name('admin.generus-registration.account-template.reset');
         Route::get('/daftar-ulang-generus/{siswa}/surat', [GenerusRegistrationController::class, 'adminPreview'])->name('admin.generus-registration.preview');
         Route::get('/daftar-ulang-generus/{siswa}/surat/unduh', [GenerusRegistrationController::class, 'adminDownload'])->name('admin.generus-registration.download');
         Route::delete('/daftar-ulang-generus/{siswa}/reset', [GenerusRegistrationController::class, 'adminReset'])->name('admin.generus-registration.reset');

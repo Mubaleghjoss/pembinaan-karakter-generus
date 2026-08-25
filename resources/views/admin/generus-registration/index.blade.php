@@ -48,6 +48,49 @@
         </div>
     </section>
 
+    <!-- Pengaturan Template Pesan Informasi Akun -->
+    <section x-data="{ open: false }" class="mb-6 pkg-panel-lg p-4 sm:p-5">
+        <button type="button" @click="open = !open" class="flex w-full items-center justify-between text-left">
+            <span>
+                <span class="block font-bold text-gray-900 dark:text-white">Template Pesan Informasi Akun</span>
+                <span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">Teks yang terisi otomatis saat menekan "Kirim Akun ke WA Anak" / "Kirim Akun ke WA Orang Tua" di halaman hasil daftar ulang.</span>
+            </span>
+            <svg class="h-5 w-5 shrink-0 text-gray-400 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div x-show="open" x-cloak class="mt-4 space-y-4">
+            <div class="rounded-xl border border-indigo-100 bg-indigo-50/80 p-3 text-xs leading-6 text-indigo-900 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-100">
+                <p class="font-bold">Kata kunci yang bisa dipakai (otomatis diganti):</p>
+                <p class="mt-1 flex flex-wrap gap-1.5">
+                    @foreach(['{nama}' => 'nama Generus', '{nama_ortu}' => 'nama Orang Tua', '{nis}' => 'NIS / login anak', '{password}' => 'password (NIS)', '{username_ortu}' => 'username Orang Tua', '{link_siswa}' => 'link login siswa', '{link_ortu}' => 'link login ortu'] as $ph => $desc)
+                        <span class="rounded bg-white px-1.5 py-0.5 font-mono dark:bg-gray-800">{{ $ph }}</span><span class="mr-2 text-indigo-700/80 dark:text-indigo-200/80">{{ $desc }}</span>
+                    @endforeach
+                </p>
+                <p class="mt-2">Teks di luar kata kunci bebas Anda tulis/tambah sendiri. Baris baru akan ikut terkirim.</p>
+            </div>
+
+            <form method="POST" action="{{ route('admin.generus-registration.account-template') }}" class="space-y-4">
+                @csrf
+                @method('PUT')
+                <div>
+                    <label class="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">Pesan untuk WA Anak (Generus)</label>
+                    <textarea name="account_wa_student" rows="10" class="pkg-field w-full font-mono text-xs sm:text-sm" maxlength="4000" required>{{ old('account_wa_student', $accountWaStudentTemplate) }}</textarea>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">Pesan untuk WA Orang Tua</label>
+                    <textarea name="account_wa_parent" rows="10" class="pkg-field w-full font-mono text-xs sm:text-sm" maxlength="4000" required>{{ old('account_wa_parent', $accountWaParentTemplate) }}</textarea>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="submit" class="btn-primary px-4 py-2 text-sm font-bold">Simpan Template Akun</button>
+                </div>
+            </form>
+
+            <form method="POST" action="{{ route('admin.generus-registration.account-template.reset') }}" onsubmit="return confirm('Kembalikan kedua template pesan akun ke teks bawaan?');">
+                @csrf
+                <button type="submit" class="btn-secondary px-4 py-2 text-sm font-semibold">Kembalikan ke Teks Bawaan</button>
+            </form>
+        </div>
+    </section>
+
     <div class="mb-6 grid gap-4 sm:grid-cols-3">
         <div class="pkg-card-soft rounded-2xl p-4">
             <p class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Generus</p>

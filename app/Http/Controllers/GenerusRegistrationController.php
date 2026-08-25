@@ -37,6 +37,15 @@ class GenerusRegistrationController extends Controller
     private const WA_TEMPLATE_KEY = 'daftar_ulang_wa_template';
     private const WA_TEMPLATE_DEFAULT = "Assalamu'alaikum. Mohon daftar ulang / lengkapi biodata dan tanda tangan surat pernyataan untuk ananda {nama} melalui tautan berikut:\n{link}\nTerima kasih.";
 
+    // Template pesan WhatsApp INFORMASI AKUN (dikirim setelah surat pernyataan disubmit).
+    // Placeholder: {nama}, {nama_ortu}, {nis}, {password}, {username_ortu}, {link_siswa}, {link_ortu}.
+    private const ACCOUNT_WA_STUDENT_KEY = 'akun_wa_template_siswa';
+    private const ACCOUNT_WA_PARENT_KEY = 'akun_wa_template_ortu';
+
+    private const ACCOUNT_WA_STUDENT_DEFAULT = "Assalamu'alaikum warahmatullahi wabarakatuh 🙏\nKepada {nama} & Orang Tua/Wali,\n\nBerikut informasi akun PKG (mohon disimpan):\n\n1) AKUN GENERUS (anak)\n• Login (NIS): {nis}\n• Password: {password}\n• Halaman masuk: {link_siswa}\n\n2) AKUN ORANG TUA\n• Username: {username_ortu}\n• Password: {password}\n• Halaman masuk: {link_ortu}\n\nCara masuk (sama untuk keduanya):\n1. Buka halaman masuk sesuai akun di atas\n2. Masukkan login/username dan password\n3. Setelah berhasil masuk, mohon ganti password agar lebih aman\n\nDengan akun Orang Tua, Bapak/Ibu dapat melihat Tugas PKG ananda sehingga bisa turut mengingatkan dan membantu melancarkan program PKG.\n\nTerima kasih. Wassalamu'alaikum warahmatullahi wabarakatuh 🤲";
+
+    private const ACCOUNT_WA_PARENT_DEFAULT = "Assalamu'alaikum warahmatullahi wabarakatuh 🙏\nKepada {nama_ortu}, Orang Tua/Wali dari ananda {nama}.\n\nBerikut informasi akun PKG (mohon disimpan):\n\n1) AKUN ORANG TUA\n• Username: {username_ortu}\n• Password: {password}\n• Halaman masuk: {link_ortu}\n\n2) AKUN GENERUS (ananda)\n• Login (NIS): {nis}\n• Password: {password}\n• Halaman masuk: {link_siswa}\n\nCara masuk (sama untuk keduanya):\n1. Buka halaman masuk sesuai akun di atas\n2. Masukkan username/login dan password\n3. Setelah berhasil masuk, mohon ganti password agar lebih aman\n\nDengan akun Orang Tua ini, Bapak/Ibu dapat memantau Tugas PKG ananda sehingga dapat turut mengingatkan dan membantu melancarkan program PKG. Dukungan Bapak/Ibu sangat berarti.\n\nTerima kasih. Wassalamu'alaikum warahmatullahi wabarakatuh 🤲";
+
     public function __construct(
         private readonly GenerusRegistrationService $registrationService,
         private readonly GenerusRegistrationDocumentService $documentService
@@ -245,9 +254,8 @@ class GenerusRegistrationController extends Controller
     }
 
     /**
-     * Rangkuman info akun (login + password NIS) + pesan WA sopan untuk
-     * Generus & Orang Tua. Password ditampilkan = NIS karena saat daftar ulang
-     * password memang di-reset ke NIS.
+     * Rangkuman info akun (login + password NIS) + pesan WA untuk Generus & Orang Tua.
+     * Isi pesan memakai template yang bisa diubah admin di halaman Daftar Ulang.
      */
     private function buildAccountInfo(GenerusRegistration $registration): array
     {
@@ -261,42 +269,21 @@ class GenerusRegistrationController extends Controller
         $siswaLoginUrl = route('siswa.login');
         $ortuLoginUrl = route('ortu.login');
 
-        $studentMsg = "Assalamu'alaikum warahmatullahi wabarakatuh 🙏\n"
-            . "Kepada {$siswa->nama} & Orang Tua/Wali,\n\n"
-            . "Berikut informasi akun PKG (mohon disimpan):\n\n"
-            . "1) AKUN GENERUS (anak)\n"
-            . "• Login (NIS): {$nis}\n"
-            . "• Password: {$nis}\n"
-            . "• Halaman masuk: {$siswaLoginUrl}\n\n"
-            . "2) AKUN ORANG TUA\n"
-            . "• Username: {$ortuUsername}\n"
-            . "• Password: {$nis}\n"
-            . "• Halaman masuk: {$ortuLoginUrl}\n\n"
-            . "Cara masuk (sama untuk keduanya):\n"
-            . "1. Buka halaman masuk sesuai akun di atas\n"
-            . "2. Masukkan login/username dan password\n"
-            . "3. Setelah berhasil masuk, mohon ganti password agar lebih aman\n\n"
-            . "Dengan akun Orang Tua, Bapak/Ibu dapat melihat Tugas PKG ananda sehingga bisa turut mengingatkan dan membantu melancarkan program PKG.\n\n"
-            . "Terima kasih. Wassalamu'alaikum warahmatullahi wabarakatuh 🤲";
+        $replacements = [
+            '{nama}' => $siswa->nama,
+            '{nama_ortu}' => $siswa->nama_wali ? 'Bapak/Ibu ' . $siswa->nama_wali : 'Bapak/Ibu',
+            '{nis}' => $nis,
+            '{password}' => $nis,
+            '{username_ortu}' => $ortuUsername,
+            '{link_siswa}' => $siswaLoginUrl,
+            '{link_ortu}' => $ortuLoginUrl,
+        ];
 
-        $parentName = $siswa->nama_wali ? "Bapak/Ibu {$siswa->nama_wali}" : 'Bapak/Ibu';
-        $parentMsg = "Assalamu'alaikum warahmatullahi wabarakatuh 🙏\n"
-            . "Kepada {$parentName}, Orang Tua/Wali dari ananda {$siswa->nama}.\n\n"
-            . "Berikut informasi akun PKG (mohon disimpan):\n\n"
-            . "1) AKUN ORANG TUA\n"
-            . "• Username: {$ortuUsername}\n"
-            . "• Password: {$nis}\n"
-            . "• Halaman masuk: {$ortuLoginUrl}\n\n"
-            . "2) AKUN GENERUS (ananda)\n"
-            . "• Login (NIS): {$nis}\n"
-            . "• Password: {$nis}\n"
-            . "• Halaman masuk: {$siswaLoginUrl}\n\n"
-            . "Cara masuk (sama untuk keduanya):\n"
-            . "1. Buka halaman masuk sesuai akun di atas\n"
-            . "2. Masukkan username/login dan password\n"
-            . "3. Setelah berhasil masuk, mohon ganti password agar lebih aman\n\n"
-            . "Dengan akun Orang Tua ini, Bapak/Ibu dapat memantau Tugas PKG ananda sehingga dapat turut mengingatkan dan membantu melancarkan program PKG. Dukungan Bapak/Ibu sangat berarti.\n\n"
-            . "Terima kasih. Wassalamu'alaikum warahmatullahi wabarakatuh 🤲";
+        $studentTemplate = \App\Models\Setting::get(self::ACCOUNT_WA_STUDENT_KEY, self::ACCOUNT_WA_STUDENT_DEFAULT);
+        $parentTemplate = \App\Models\Setting::get(self::ACCOUNT_WA_PARENT_KEY, self::ACCOUNT_WA_PARENT_DEFAULT);
+
+        $studentMsg = str_replace(array_keys($replacements), array_values($replacements), $studentTemplate);
+        $parentMsg = str_replace(array_keys($replacements), array_values($replacements), $parentTemplate);
 
         return [
             'nis' => $nis,
@@ -396,6 +383,8 @@ class GenerusRegistrationController extends Controller
         $theme = ThemeSetting::current();
         $signedCount = $rows->where('signed', true)->count();
         $waTemplate = \App\Models\Setting::get(self::WA_TEMPLATE_KEY, self::WA_TEMPLATE_DEFAULT);
+        $accountWaStudentTemplate = \App\Models\Setting::get(self::ACCOUNT_WA_STUDENT_KEY, self::ACCOUNT_WA_STUDENT_DEFAULT);
+        $accountWaParentTemplate = \App\Models\Setting::get(self::ACCOUNT_WA_PARENT_KEY, self::ACCOUNT_WA_PARENT_DEFAULT);
 
         return view('admin.generus-registration.index', [
             'rows' => $rows,
@@ -404,6 +393,8 @@ class GenerusRegistrationController extends Controller
             'totalCount' => $rows->count(),
             'signedCount' => $signedCount,
             'waTemplate' => $waTemplate,
+            'accountWaStudentTemplate' => $accountWaStudentTemplate,
+            'accountWaParentTemplate' => $accountWaParentTemplate,
         ]);
     }
 
@@ -425,6 +416,43 @@ class GenerusRegistrationController extends Controller
         return redirect()
             ->route('admin.generus-registration.index')
             ->with('success', 'Template pesan WhatsApp berhasil disimpan.');
+    }
+
+    /**
+     * Simpan template pesan WhatsApp INFORMASI AKUN (untuk anak & orang tua).
+     * Placeholder: {nama}, {nama_ortu}, {nis}, {password}, {username_ortu}, {link_siswa}, {link_ortu}.
+     */
+    public function saveAccountWaTemplate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'account_wa_student' => ['required', 'string', 'max:4000'],
+            'account_wa_parent' => ['required', 'string', 'max:4000'],
+        ], [
+            'account_wa_student.required' => 'Teks pesan akun untuk anak tidak boleh kosong.',
+            'account_wa_parent.required' => 'Teks pesan akun untuk orang tua tidak boleh kosong.',
+            'account_wa_student.max' => 'Teks pesan akun anak terlalu panjang (maks 4000 karakter).',
+            'account_wa_parent.max' => 'Teks pesan akun orang tua terlalu panjang (maks 4000 karakter).',
+        ]);
+
+        \App\Models\Setting::set(self::ACCOUNT_WA_STUDENT_KEY, $validated['account_wa_student'], 'daftar_ulang');
+        \App\Models\Setting::set(self::ACCOUNT_WA_PARENT_KEY, $validated['account_wa_parent'], 'daftar_ulang');
+
+        return redirect()
+            ->route('admin.generus-registration.index')
+            ->with('success', 'Template pesan informasi akun berhasil disimpan.');
+    }
+
+    /**
+     * Kembalikan template pesan informasi akun ke teks bawaan.
+     */
+    public function resetAccountWaTemplate(): RedirectResponse
+    {
+        \App\Models\Setting::set(self::ACCOUNT_WA_STUDENT_KEY, self::ACCOUNT_WA_STUDENT_DEFAULT, 'daftar_ulang');
+        \App\Models\Setting::set(self::ACCOUNT_WA_PARENT_KEY, self::ACCOUNT_WA_PARENT_DEFAULT, 'daftar_ulang');
+
+        return redirect()
+            ->route('admin.generus-registration.index')
+            ->with('success', 'Template pesan informasi akun dikembalikan ke teks bawaan.');
     }
 
     public function adminPreview(Siswa $siswa): Response

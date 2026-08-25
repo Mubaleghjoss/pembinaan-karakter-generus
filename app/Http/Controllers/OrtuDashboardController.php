@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttendanceSchedule;
 use App\Models\Berita;
 use App\Models\Karakter;
 use App\Models\Presensi;
@@ -59,12 +60,44 @@ class OrtuDashboardController extends Controller
     }
 
     /**
-     * Rekap presensi PKG per bulan (hanya bulan yang punya data), terbaru di atas.
-     * Sumber: tabel presensi milik anak sejak bulan awal program PKG.
+     * Rekap presensi PKG per bulan kegiatan.
+     *
+     * Sumber bulan = jadwal presensi (attendance_schedules) yang menyasar siswa,
+     * sejak bulan awal program PKG. Jadi bulan yang ada kegiatan tetap muncul
+     * walaupun anak belum tercatat presensinya. Data status diambil dari tabel
+     * presensi anak dan digabungkan per bulan.
      */
     private function monthlyAttendance(int $siswaId): array
     {
-        $rows = Presensi::query()
+        // 1) Bulan-bulan yang punya kegiatan PKG (jadwal presensi untuk siswa).
+        $scheduleMonths = [];
+        $schedules = AttendanceSchedule::query()
+            ->whereIn('target_audience', [AttendanceSchedule::TARGET_ALL, AttendanceSchedule::TARGET_SISWA])
+            ->get(['name', 'start_date', 'end_date']);
+
+        foreach ($schedules as $schedule) {
+            $start = $schedule->start_date ?: $schedule->end_date;
+            $end = $schedule->end_date ?: $schedule->start_date;
+
+            if (! $start || ! $end) {
+                continue; // jadwal tanpa tanggal (berulang) tidak dipakai sebagai penanda bulan
+            }
+
+            $cursor = $start->copy()->startOfMonth();
+            $limit = $end->copy()->startOfMonth();
+            $floor = Carbon::parse(self::PKG_START)->startOfMonth();
+
+            while ($cursor->lte($limit)) {
+                if ($cursor->gte($floor)) {
+                    $key = $cursor->format('Y-m');
+                    $scheduleMonths[$key] = ($scheduleMonths[$key] ?? 0) + 1;
+                }
+                $cursor->addMonth();
+            }
+        }
+
+        // 2) Data presensi anak per bulan.
+        $presensiRows = Presensi::query()
             ->where('siswa_id', $siswaId)
             ->whereDate('tanggal', '>=', self::PKG_START)
             ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as periode")
@@ -75,21 +108,29 @@ class OrtuDashboardController extends Controller
             ->selectRaw("SUM(CASE WHEN status = 'alpha' THEN 1 ELSE 0 END) as alpha")
             ->selectRaw('COUNT(*) as total')
             ->groupBy('periode')
-            ->orderByDesc('periode')
-            ->get();
+            ->get()
+            ->keyBy('periode');
 
-        return $rows->map(function ($row) {
-            $label = Carbon::createFromFormat('Y-m', $row->periode)->translatedFormat('F Y');
+        // 3) Gabungkan: semua bulan berkegiatan + bulan yang punya data presensi.
+        $periods = collect(array_keys($scheduleMonths))
+            ->merge($presensiRows->keys())
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        return $periods->map(function (string $periode) use ($presensiRows, $scheduleMonths) {
+            $row = $presensiRows->get($periode);
 
             return [
-                'periode' => $row->periode,
-                'label' => $label,
-                'hadir' => (int) $row->hadir,
-                'terlambat' => (int) $row->terlambat,
-                'izin' => (int) $row->izin,
-                'sakit' => (int) $row->sakit,
-                'alpha' => (int) $row->alpha,
-                'total' => (int) $row->total,
+                'periode' => $periode,
+                'label' => Carbon::createFromFormat('Y-m', $periode)->translatedFormat('F Y'),
+                'kegiatan' => (int) ($scheduleMonths[$periode] ?? 0),
+                'hadir' => (int) ($row->hadir ?? 0),
+                'terlambat' => (int) ($row->terlambat ?? 0),
+                'izin' => (int) ($row->izin ?? 0),
+                'sakit' => (int) ($row->sakit ?? 0),
+                'alpha' => (int) ($row->alpha ?? 0),
+                'total' => (int) ($row->total ?? 0),
             ];
         })->all();
     }

@@ -121,28 +121,40 @@
             {{-- Per bulan --}}
             <div class="mt-4 space-y-2">
                 @foreach($attendanceMonths as $month)
+                    @php $sudahAdaData = $month['total'] > 0; @endphp
                     <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $month['label'] }}</p>
-                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ $month['total'] }} kegiatan</span>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                @if($month['kegiatan'] > 0)
+                                    <span class="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700 dark:bg-teal-900/40 dark:text-teal-200">{{ $month['kegiatan'] }} kegiatan PKG</span>
+                                @endif
+                                @if($sudahAdaData)
+                                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ $month['total'] }} tercatat</span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold">
-                            @if($month['hadir'] > 0)
-                                <span class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">Hadir {{ $month['hadir'] }}</span>
-                            @endif
-                            @if($month['terlambat'] > 0)
-                                <span class="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">Terlambat {{ $month['terlambat'] }}</span>
-                            @endif
-                            @if($month['izin'] > 0)
-                                <span class="rounded-full bg-sky-100 px-2 py-1 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">Izin {{ $month['izin'] }}</span>
-                            @endif
-                            @if($month['sakit'] > 0)
-                                <span class="rounded-full bg-rose-100 px-2 py-1 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">Sakit {{ $month['sakit'] }}</span>
-                            @endif
-                            @if($month['alpha'] > 0)
-                                <span class="rounded-full bg-gray-200 px-2 py-1 text-gray-700 dark:bg-gray-700 dark:text-gray-200">Tidak Hadir {{ $month['alpha'] }}</span>
-                            @endif
-                        </div>
+                        @if($sudahAdaData)
+                            <div class="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold">
+                                @if($month['hadir'] > 0)
+                                    <span class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">Hadir {{ $month['hadir'] }}</span>
+                                @endif
+                                @if($month['terlambat'] > 0)
+                                    <span class="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">Terlambat {{ $month['terlambat'] }}</span>
+                                @endif
+                                @if($month['izin'] > 0)
+                                    <span class="rounded-full bg-sky-100 px-2 py-1 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">Izin {{ $month['izin'] }}</span>
+                                @endif
+                                @if($month['sakit'] > 0)
+                                    <span class="rounded-full bg-rose-100 px-2 py-1 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">Sakit {{ $month['sakit'] }}</span>
+                                @endif
+                                @if($month['alpha'] > 0)
+                                    <span class="rounded-full bg-gray-200 px-2 py-1 text-gray-700 dark:bg-gray-700 dark:text-gray-200">Tidak Hadir {{ $month['alpha'] }}</span>
+                                @endif
+                            </div>
+                        @else
+                            <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Belum ada catatan presensi ananda di bulan ini.</p>
+                        @endif
                     </div>
                 @endforeach
             </div>
