@@ -40,11 +40,17 @@
 document.addEventListener('DOMContentLoaded', async function() {
     const calendarEl = document.getElementById('calendar');
     const { Calendar, dayGridPlugin, listPlugin, localeId } = await window.loadFullCalendar();
+    const isSmallScreen = () => window.innerWidth < 640;
     const calendar = new Calendar(calendarEl, {
         plugins: [dayGridPlugin, listPlugin],
-        initialView: 'dayGridMonth',
+        initialView: isSmallScreen() ? 'listWeek' : 'dayGridMonth',
         locale: localeId,
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
+        // Di HP toolbar dibuat 2 baris (judul di tengah atas) agar tombol
+        // prev/next tidak terdorong keluar batas kartu.
+        headerToolbar: isSmallScreen()
+            ? { left: 'prev,next', center: 'title', right: 'dayGridMonth,listWeek' }
+            : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
+        buttonText: { today: 'Hari ini', month: 'Bulan', list: 'Agenda' },
         events: function(info, successCallback, failureCallback) {
             fetch('{{ route("ortu.jadwal.events") }}?start=' + info.startStr + '&end=' + info.endStr)
                 .then(r => r.json())
@@ -55,8 +61,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             showEventDetail(info.event);
         },
         height: 'auto',
-        dayMaxEvents: 3,
-        moreLinkText: 'lainnya'
+        dayMaxEvents: isSmallScreen() ? 2 : 3,
+        moreLinkText: 'lainnya',
+        windowResize: function() {
+            const target = isSmallScreen() ? 'listWeek' : 'dayGridMonth';
+            if (calendar.view.type !== target && calendar.view.type !== 'listWeek') {
+                calendar.changeView(target);
+            }
+        }
     });
     calendar.render();
 });
@@ -154,9 +166,17 @@ function closeEventModal() {
 .pkg-ortu-calendar {
     --pkg-cal-border: #e5e7eb;
     font-family: inherit;
+    /* Cegah isi kalender (toolbar/badge) melewati batas kartu. */
+    max-width: 100%;
+    overflow-x: hidden;
 }
 .pkg-ortu-calendar .fc {
     font-family: inherit;
+    max-width: 100%;
+}
+.pkg-ortu-calendar .fc-view-harness,
+.pkg-ortu-calendar .fc-scroller {
+    max-width: 100%;
 }
 .pkg-ortu-calendar .fc-theme-standard .fc-scrollgrid,
 .pkg-ortu-calendar .fc-theme-standard td,
@@ -170,11 +190,25 @@ function closeEventModal() {
 .pkg-ortu-calendar .fc .fc-toolbar {
     flex-wrap: wrap;
     gap: 0.5rem;
+    /* Toolbar boleh turun baris, jangan memaksa lebar melebihi kartu. */
+    align-items: center;
+    justify-content: center;
+}
+.pkg-ortu-calendar .fc .fc-toolbar-chunk {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+.pkg-ortu-calendar .fc .fc-button-group {
+    flex-wrap: wrap;
 }
 .pkg-ortu-calendar .fc .fc-toolbar-title {
     font-size: 1.05rem;
     font-weight: 700;
     color: #111827;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .pkg-ortu-calendar .fc .fc-button {
     background-color: #0d9488;
@@ -235,6 +269,26 @@ function closeEventModal() {
     font-size: 0.7rem;
     font-weight: 600;
     cursor: pointer;
+    /* Badge agenda tidak boleh melebar keluar sel/kartu. */
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.pkg-ortu-calendar .fc .fc-daygrid-event-harness {
+    max-width: 100%;
+    overflow: hidden;
+}
+.pkg-ortu-calendar .fc .fc-daygrid-day-events {
+    max-width: 100%;
+    overflow: hidden;
+}
+.pkg-ortu-calendar .fc .fc-event-title,
+.pkg-ortu-calendar .fc .fc-event-time {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 .pkg-ortu-calendar .fc .fc-daygrid-event-dot {
     display: none;
@@ -291,22 +345,52 @@ function closeEventModal() {
 @media (max-width: 640px) {
     .pkg-ortu-calendar .fc .fc-toolbar {
         justify-content: center;
+        gap: 0.4rem;
     }
+    /* Judul bulan dipindah ke baris sendiri (paling atas) supaya tombol
+       prev/next dan pilihan tampilan tidak terdorong keluar kartu. */
+    .pkg-ortu-calendar .fc .fc-toolbar.fc-header-toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+        row-gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(2) {
+        order: -1;
+        justify-content: center;
+    }
+    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(1) {
+        justify-content: flex-start;
+    }
+    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(3) {
+        justify-content: flex-end;
+    }
+    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(1),
+    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(3) {
+        grid-row: 2;
+    }
+    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(1) { grid-column: 1; justify-self: start; }
+    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(3) { grid-column: 1; justify-self: end; }
     .pkg-ortu-calendar .fc .fc-toolbar-title {
         font-size: 0.95rem;
+        text-align: center;
     }
     .pkg-ortu-calendar .fc .fc-button {
-        padding: 0.3rem 0.55rem;
-        font-size: 0.72rem;
+        padding: 0.3rem 0.5rem;
+        font-size: 0.7rem;
     }
     .pkg-ortu-calendar .fc-event,
     .pkg-ortu-calendar .fc .fc-daygrid-event {
-        font-size: 0.62rem;
+        font-size: 0.6rem;
         padding: 1px 3px;
     }
     .pkg-ortu-calendar .fc .fc-daygrid-day-number {
         font-size: 0.72rem;
         padding: 0.15rem 0.25rem;
+    }
+    .pkg-ortu-calendar .fc .fc-list-event-title,
+    .pkg-ortu-calendar .fc .fc-list-event-time {
+        font-size: 0.78rem;
     }
 }
 </style>
