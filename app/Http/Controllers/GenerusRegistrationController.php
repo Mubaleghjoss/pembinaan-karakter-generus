@@ -405,6 +405,12 @@ class GenerusRegistrationController extends Controller
                 'download_url' => $registration
                     ? route('admin.generus-registration.download', ['siswa' => $siswa->id])
                     : null,
+                'mark_shared_url' => route('admin.generus-registration.mark-shared', ['siswa' => $siswa->id]),
+                'shared_at' => ($sharedAt = data_get($siswa->metadata, 'daftar_ulang_shared_at'))
+                    ? \Illuminate\Support\Carbon::parse($sharedAt)
+                    : null,
+                'shared_channel' => data_get($siswa->metadata, 'daftar_ulang_shared_channel'),
+                'shared_by' => data_get($siswa->metadata, 'daftar_ulang_shared_by'),
             ];
         });
 
@@ -538,6 +544,31 @@ class GenerusRegistrationController extends Controller
         return redirect()
             ->route('admin.generus-registration.index')
             ->with('success', "Daftar ulang {$siswa->nama} berhasil direset. Statusnya kembali \"Belum\" dan tautan daftar ulang bisa dipakai lagi.");
+    }
+
+    /**
+     * Catat bahwa admin sudah membagikan tautan daftar ulang (via WA atau salin link).
+     * Disimpan di metadata siswa agar tak perlu tabel/migrasi baru.
+     */
+    public function adminMarkShared(Request $request, Siswa $siswa): JsonResponse
+    {
+        $channel = in_array($request->input('channel'), ['wa', 'link'], true)
+            ? $request->input('channel')
+            : 'link';
+
+        $metadata = is_array($siswa->metadata) ? $siswa->metadata : [];
+        $metadata['daftar_ulang_shared_at'] = now()->toISOString();
+        $metadata['daftar_ulang_shared_channel'] = $channel;
+        $metadata['daftar_ulang_shared_by'] = Auth::user()?->username ?? Auth::user()?->name;
+
+        $siswa->metadata = $metadata;
+        $siswa->save();
+
+        return response()->json([
+            'success' => true,
+            'shared_at_label' => now()->translatedFormat('d M Y H:i'),
+            'channel' => $channel === 'wa' ? 'WA' : 'Salin link',
+        ]);
     }
 
     private function registrationForSiswa(Siswa $siswa): GenerusRegistration

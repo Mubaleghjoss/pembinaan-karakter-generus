@@ -854,6 +854,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/daftar-ulang-generus/{siswa}/surat', [GenerusRegistrationController::class, 'adminPreview'])->name('admin.generus-registration.preview');
         Route::get('/daftar-ulang-generus/{siswa}/surat/unduh', [GenerusRegistrationController::class, 'adminDownload'])->name('admin.generus-registration.download');
         Route::delete('/daftar-ulang-generus/{siswa}/reset', [GenerusRegistrationController::class, 'adminReset'])->name('admin.generus-registration.reset');
+        Route::post('/daftar-ulang-generus/{siswa}/tandai-terkirim', [GenerusRegistrationController::class, 'adminMarkShared'])->name('admin.generus-registration.mark-shared');
 
         // Backup & Restore
         Route::get('/settings/backup', [BackupController::class, 'index'])->name('settings.backup');

@@ -190,9 +190,9 @@
                     @endif
                 </div>
                 <div class="pkg-data-card-actions flex-wrap">
-                    <button type="button" class="btn-secondary" data-copy-link="{{ $row['direct_url'] }}">Salin Link</button>
+                    <button type="button" class="btn-secondary" data-copy-link="{{ $row['direct_url'] }}" data-mark-shared="{{ $row['mark_shared_url'] }}" data-channel="link" data-share-target="share-{{ $s->id }}">Salin Link</button>
                     @if($waTarget)
-                        <a href="{{ $waTarget }}?text={{ $waMsg }}" target="_blank" rel="noopener" class="btn-success">Kirim WA</a>
+                        <a href="{{ $waTarget }}?text={{ $waMsg }}" target="_blank" rel="noopener" class="btn-success" data-mark-shared="{{ $row['mark_shared_url'] }}" data-channel="wa" data-share-target="share-{{ $s->id }}">Kirim WA</a>
                     @endif
                     @if($row['preview_url'])
                         <a href="{{ $row['preview_url'] }}" target="_blank" rel="noopener" class="btn-primary">Lihat Surat</a>
@@ -206,6 +206,14 @@
                         </form>
                     @endif
                 </div>
+                <p id="share-{{ $s->id }}" class="mt-2 text-[11px] {{ $row['shared_at'] ? 'text-gray-500 dark:text-gray-400' : 'text-amber-600 dark:text-amber-400' }}">
+                    @if($row['shared_at'])
+                        Terakhir dibagikan: {{ $row['shared_at']->translatedFormat('d M Y H:i') }}
+                        ({{ $row['shared_channel'] === 'wa' ? 'WA' : 'Salin link' }}@if($row['shared_by']) · {{ $row['shared_by'] }}@endif)
+                    @else
+                        Belum pernah dibagikan
+                    @endif
+                </p>
             </div>
         @empty
             <div class="pkg-empty-state pkg-card">
@@ -279,7 +287,7 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex flex-wrap gap-2">
-                                    <button type="button" class="btn-secondary !px-2.5 !py-1.5 text-xs" data-copy-link="{{ $row['direct_url'] }}">Salin Link</button>
+                                    <button type="button" class="btn-secondary !px-2.5 !py-1.5 text-xs" data-copy-link="{{ $row['direct_url'] }}" data-mark-shared="{{ $row['mark_shared_url'] }}" data-channel="link" data-share-target="share-row-{{ $s->id }}">Salin Link</button>
                                     @php
                                         $waTarget = $row['parent_wa'] ?: $row['student_wa'];
                                         $waMsg = rawurlencode(str_replace(
@@ -289,7 +297,7 @@
                                         ));
                                     @endphp
                                     @if($waTarget)
-                                        <a href="{{ $waTarget }}?text={{ $waMsg }}" target="_blank" rel="noopener" class="btn-success !px-2.5 !py-1.5 text-xs">Kirim WA</a>
+                                        <a href="{{ $waTarget }}?text={{ $waMsg }}" target="_blank" rel="noopener" class="btn-success !px-2.5 !py-1.5 text-xs" data-mark-shared="{{ $row['mark_shared_url'] }}" data-channel="wa" data-share-target="share-row-{{ $s->id }}">Kirim WA</a>
                                     @endif
                                     @if($row['preview_url'])
                                         <a href="{{ $row['preview_url'] }}" target="_blank" rel="noopener" class="btn-primary !px-2.5 !py-1.5 text-xs">Lihat Surat</a>
@@ -303,6 +311,14 @@
                                         </form>
                                     @endif
                                 </div>
+                                <p id="share-row-{{ $s->id }}" class="mt-1.5 text-[11px] {{ $row['shared_at'] ? 'text-gray-500 dark:text-gray-400' : 'text-amber-600 dark:text-amber-400' }}">
+                                    @if($row['shared_at'])
+                                        Terakhir dibagikan: {{ $row['shared_at']->translatedFormat('d M Y H:i') }}
+                                        ({{ $row['shared_channel'] === 'wa' ? 'WA' : 'Salin link' }}@if($row['shared_by']) · {{ $row['shared_by'] }}@endif)
+                                    @else
+                                        Belum pernah dibagikan
+                                    @endif
+                                </p>
                             </td>
                         </tr>
                     @empty
@@ -316,7 +332,42 @@
 
 @push('scripts')
 <script>
+    // Catat waktu terakhir tautan daftar ulang dibagikan (WA / salin link).
+    async function pkgMarkShared(el) {
+        const url = el.dataset.markShared;
+        const channel = el.dataset.channel || 'link';
+        const targetId = el.dataset.shareTarget;
+        if (!url) return;
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ channel }),
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const note = targetId ? document.getElementById(targetId) : null;
+            if (note && data.shared_at_label) {
+                note.textContent = `Terakhir dibagikan: ${data.shared_at_label} (${data.channel})`;
+                note.classList.remove('text-amber-600', 'dark:text-amber-400');
+                note.classList.add('text-gray-500', 'dark:text-gray-400');
+            }
+        } catch (e) {
+            // diamkan; pencatatan bersifat pelengkap
+        }
+    }
+
     document.addEventListener('click', async (event) => {
+        const shareLink = event.target.closest('a[data-mark-shared]');
+        if (shareLink) {
+            pkgMarkShared(shareLink);
+        }
+
         const button = event.target.closest('[data-copy-link]');
         if (!button) return;
         try {
@@ -327,6 +378,7 @@
         } catch (e) {
             window.prompt('Salin tautan:', button.dataset.copyLink);
         }
+        pkgMarkShared(button);
     });
 </script>
 @endpush
