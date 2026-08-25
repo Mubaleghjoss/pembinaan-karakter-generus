@@ -25,6 +25,34 @@
     </div>
 
     <div class="pkg-panel p-3 sm:p-4">
+        {{-- Toolbar sendiri (bukan toolbar bawaan FullCalendar) supaya tombol
+             navigasi tidak pernah keluar batas kartu di layar kecil. --}}
+        <div class="mb-3 space-y-2">
+            <p id="calTitle" class="text-center text-base font-bold text-gray-900 dark:text-white">Memuat…</p>
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5">
+                    <button type="button" id="calPrev" aria-label="Bulan sebelumnya"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button type="button" id="calNext" aria-label="Bulan berikutnya"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                    <button type="button" id="calToday"
+                        class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                        Hari ini
+                    </button>
+                </div>
+                <div class="inline-flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
+                    <button type="button" id="calViewMonth"
+                        class="cal-view-btn px-3 py-2 text-xs font-semibold transition">Bulan</button>
+                    <button type="button" id="calViewList"
+                        class="cal-view-btn border-l border-gray-200 px-3 py-2 text-xs font-semibold transition dark:border-gray-600">Agenda</button>
+                </div>
+            </div>
+        </div>
+
         <div id="calendar" class="pkg-ortu-calendar"></div>
     </div>
 
@@ -41,16 +69,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     const calendarEl = document.getElementById('calendar');
     const { Calendar, dayGridPlugin, listPlugin, localeId } = await window.loadFullCalendar();
     const isSmallScreen = () => window.innerWidth < 640;
+
+    const titleEl = document.getElementById('calTitle');
+    const btnMonth = document.getElementById('calViewMonth');
+    const btnList = document.getElementById('calViewList');
+
+    const activeCls = ['bg-teal-600', 'text-white'];
+    const idleCls = ['bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-200'];
+
+    function syncToolbar() {
+        if (titleEl) titleEl.textContent = calendar.view.title;
+        const isList = calendar.view.type === 'listWeek';
+        [[btnMonth, !isList], [btnList, isList]].forEach(([btn, on]) => {
+            if (!btn) return;
+            btn.classList.remove(...activeCls, ...idleCls);
+            btn.classList.add(...(on ? activeCls : idleCls));
+        });
+    }
+
     const calendar = new Calendar(calendarEl, {
         plugins: [dayGridPlugin, listPlugin],
         initialView: isSmallScreen() ? 'listWeek' : 'dayGridMonth',
         locale: localeId,
-        // Di HP toolbar dibuat 2 baris (judul di tengah atas) agar tombol
-        // prev/next tidak terdorong keluar batas kartu.
-        headerToolbar: isSmallScreen()
-            ? { left: 'prev,next', center: 'title', right: 'dayGridMonth,listWeek' }
-            : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
-        buttonText: { today: 'Hari ini', month: 'Bulan', list: 'Agenda' },
+        // Toolbar bawaan dimatikan; navigasi memakai tombol custom di atas
+        // agar tidak pernah melebihi batas kartu.
+        headerToolbar: false,
         events: function(info, successCallback, failureCallback) {
             fetch('{{ route("ortu.jadwal.events") }}?start=' + info.startStr + '&end=' + info.endStr)
                 .then(r => r.json())
@@ -60,17 +103,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         eventClick: function(info) {
             showEventDetail(info.event);
         },
+        datesSet: syncToolbar,
         height: 'auto',
         dayMaxEvents: isSmallScreen() ? 2 : 3,
         moreLinkText: 'lainnya',
-        windowResize: function() {
-            const target = isSmallScreen() ? 'listWeek' : 'dayGridMonth';
-            if (calendar.view.type !== target && calendar.view.type !== 'listWeek') {
-                calendar.changeView(target);
-            }
-        }
+        noEventsText: 'Tidak ada agenda pada periode ini'
     });
+
     calendar.render();
+    syncToolbar();
+
+    document.getElementById('calPrev')?.addEventListener('click', () => calendar.prev());
+    document.getElementById('calNext')?.addEventListener('click', () => calendar.next());
+    document.getElementById('calToday')?.addEventListener('click', () => calendar.today());
+    btnMonth?.addEventListener('click', () => calendar.changeView('dayGridMonth'));
+    btnList?.addEventListener('click', () => calendar.changeView('listWeek'));
 });
 
 function showEventDetail(event) {
@@ -187,29 +234,6 @@ function closeEventModal() {
     border-radius: 0.75rem;
     overflow: hidden;
 }
-.pkg-ortu-calendar .fc .fc-toolbar {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    /* Toolbar boleh turun baris, jangan memaksa lebar melebihi kartu. */
-    align-items: center;
-    justify-content: center;
-}
-.pkg-ortu-calendar .fc .fc-toolbar-chunk {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    min-width: 0;
-}
-.pkg-ortu-calendar .fc .fc-button-group {
-    flex-wrap: wrap;
-}
-.pkg-ortu-calendar .fc .fc-toolbar-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #111827;
-    white-space: normal;
-    overflow-wrap: anywhere;
-}
 .pkg-ortu-calendar .fc .fc-button {
     background-color: #0d9488;
     border-color: #0d9488;
@@ -303,19 +327,62 @@ function closeEventModal() {
     overflow: hidden;
     border-color: var(--pkg-cal-border);
 }
+.pkg-ortu-calendar .fc .fc-list-table {
+    width: 100%;
+    table-layout: fixed;
+}
 .pkg-ortu-calendar .fc .fc-list-day-cushion {
     background-color: #f3f4f6;
+    padding: 0.5rem 0.75rem;
+}
+.pkg-ortu-calendar .fc .fc-list-day-text,
+.pkg-ortu-calendar .fc .fc-list-day-side-text {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #374151;
+    text-decoration: none;
+}
+.pkg-ortu-calendar .fc .fc-list-event td {
+    padding: 0.55rem 0.75rem;
+    vertical-align: top;
+}
+/* Kolom waktu dibatasi & teks dibungkus supaya baris agenda tidak melebar
+   keluar kartu di layar kecil. */
+.pkg-ortu-calendar .fc .fc-list-event-time {
+    width: 33%;
+    max-width: 8.5rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 0.78rem;
+    color: #4b5563;
+}
+.pkg-ortu-calendar .fc .fc-list-event-graphic {
+    width: 1.25rem;
+    padding-right: 0 !important;
+}
+.pkg-ortu-calendar .fc .fc-list-event-title {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.pkg-ortu-calendar .fc .fc-list-event-title a {
+    color: #111827;
+    text-decoration: none;
 }
 .pkg-ortu-calendar .fc .fc-list-event:hover td {
     background-color: #f0fdfa;
+}
+.pkg-ortu-calendar .fc .fc-list-empty {
+    padding: 1.5rem 1rem;
+    background-color: transparent;
+    font-size: 0.85rem;
+    color: #6b7280;
 }
 
 /* Dark mode */
 .dark .pkg-ortu-calendar {
     --pkg-cal-border: #374151;
-}
-.dark .pkg-ortu-calendar .fc .fc-toolbar-title {
-    color: #f9fafb;
 }
 .dark .pkg-ortu-calendar .fc .fc-col-header-cell {
     background-color: #1f2937;
@@ -333,6 +400,10 @@ function closeEventModal() {
     background-color: #1f2937;
     color: #e5e7eb;
 }
+.dark .pkg-ortu-calendar .fc .fc-list-day-text,
+.dark .pkg-ortu-calendar .fc .fc-list-day-side-text {
+    color: #e5e7eb;
+}
 .dark .pkg-ortu-calendar .fc .fc-list-event:hover td {
     background-color: rgba(13, 148, 136, 0.2);
 }
@@ -340,45 +411,14 @@ function closeEventModal() {
 .dark .pkg-ortu-calendar .fc .fc-list-event-time {
     color: #e5e7eb;
 }
+.dark .pkg-ortu-calendar .fc .fc-list-empty {
+    color: #9ca3af;
+}
 
-/* Mobile: rapatkan agar tidak melebar/terpotong */
+/* Mobile: rapatkan agar tidak melebar/terpotong.
+   Catatan: toolbar bawaan FullCalendar sudah dimatikan (headerToolbar: false)
+   dan diganti tombol custom di Blade, jadi tak ada lagi aturan .fc-toolbar. */
 @media (max-width: 640px) {
-    .pkg-ortu-calendar .fc .fc-toolbar {
-        justify-content: center;
-        gap: 0.4rem;
-    }
-    /* Judul bulan dipindah ke baris sendiri (paling atas) supaya tombol
-       prev/next dan pilihan tampilan tidak terdorong keluar kartu. */
-    .pkg-ortu-calendar .fc .fc-toolbar.fc-header-toolbar {
-        display: grid;
-        grid-template-columns: 1fr;
-        row-gap: 0.5rem;
-        margin-bottom: 0.75rem;
-    }
-    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(2) {
-        order: -1;
-        justify-content: center;
-    }
-    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(1) {
-        justify-content: flex-start;
-    }
-    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(3) {
-        justify-content: flex-end;
-    }
-    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(1),
-    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(3) {
-        grid-row: 2;
-    }
-    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(1) { grid-column: 1; justify-self: start; }
-    .pkg-ortu-calendar .fc .fc-toolbar-chunk:nth-child(3) { grid-column: 1; justify-self: end; }
-    .pkg-ortu-calendar .fc .fc-toolbar-title {
-        font-size: 0.95rem;
-        text-align: center;
-    }
-    .pkg-ortu-calendar .fc .fc-button {
-        padding: 0.3rem 0.5rem;
-        font-size: 0.7rem;
-    }
     .pkg-ortu-calendar .fc-event,
     .pkg-ortu-calendar .fc .fc-daygrid-event {
         font-size: 0.6rem;
@@ -388,9 +428,23 @@ function closeEventModal() {
         font-size: 0.72rem;
         padding: 0.15rem 0.25rem;
     }
-    .pkg-ortu-calendar .fc .fc-list-event-title,
+    .pkg-ortu-calendar .fc .fc-col-header-cell-cushion {
+        font-size: 0.65rem;
+    }
+    .pkg-ortu-calendar .fc .fc-list-event td {
+        padding: 0.5rem 0.6rem;
+    }
     .pkg-ortu-calendar .fc .fc-list-event-time {
-        font-size: 0.78rem;
+        width: 38%;
+        max-width: 6.5rem;
+        font-size: 0.72rem;
+    }
+    .pkg-ortu-calendar .fc .fc-list-event-title {
+        font-size: 0.8rem;
+    }
+    .pkg-ortu-calendar .fc .fc-list-day-text,
+    .pkg-ortu-calendar .fc .fc-list-day-side-text {
+        font-size: 0.74rem;
     }
 }
 </style>
