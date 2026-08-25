@@ -53,9 +53,9 @@
     </div>
 
     {{-- Pesan pengingat untuk orang tua --}}
-    <div class="mb-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-900/60 dark:bg-teal-950/30 sm:p-5">
+    <div class="mb-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-800 dark:bg-teal-900/30 sm:p-5">
         <p class="text-base font-bold text-teal-900 dark:text-teal-100">Bapak/Ibu, mari dampingi ananda 🤲</p>
-        <ul class="mt-2 space-y-1.5 text-sm leading-6 text-teal-900/90 dark:text-teal-100/90">
+        <ul class="mt-2 space-y-1.5 text-sm leading-6 text-teal-800 dark:text-teal-100">
             <li>• Ingatkan ananda mengerjakan <span class="font-semibold">Tugas PKG</span> dan meminta verifikasi pamong.</li>
             <li>• Biasakan <span class="font-semibold">membaca Al-Qur'an setiap hari</span>, lalu lembar bacaannya <span class="font-semibold">discan/disetor</span> agar tercatat.</li>
         </ul>
@@ -90,15 +90,15 @@
     </div>
 
     {{-- Lapor PKG --}}
-    <div class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/60 dark:bg-rose-950/25 sm:p-5">
+    <div class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-900/30 sm:p-5">
         <p class="text-base font-bold text-rose-900 dark:text-rose-100">Lapor PKG</p>
-        <p class="mt-1 text-sm leading-6 text-rose-900/90 dark:text-rose-100/90">
+        <p class="mt-1 text-sm leading-6 text-rose-800 dark:text-rose-100">
             Jika Bapak/Ibu menjumpai hal yang kurang pas — baik pada <span class="font-semibold">Generus PKG</span>,
             <span class="font-semibold">Pamong</span>, maupun <span class="font-semibold">Pengurus PKG</span> —
             mohon sampaikan melalui Lapor PKG. Laporan ditujukan untuk perbaikan dan pembinaan bersama.
         </p>
         <a href="{{ route('laporan-penyaksian.create') }}" target="_blank" rel="noopener"
-           class="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700">
+           class="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-400">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z"/></svg>
             Buka Lapor PKG
         </a>

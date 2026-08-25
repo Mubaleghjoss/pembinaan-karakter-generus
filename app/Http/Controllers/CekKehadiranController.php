@@ -215,34 +215,72 @@ class CekKehadiranController extends Controller
     }
 
     /**
-     * Ortu: view child's attendance point history.
+     * Ortu: rincian kehadiran PKG ananda.
+     *
+     * Menampilkan tiap kegiatan presensi: tanggal, status, jam scan, waktu
+     * pencatatan, dan poin yang masuk ke leaderboard (dari point_transactions
+     * yang mereferensikan baris presensi tersebut).
      */
     public function ortuIndex(Request $request)
     {
         $siswa = Auth::guard('ortu')->user();
-        
-        $transactions = PointTransaction::where('siswa_id', $siswa->id)
-            ->where('source', 'attendance')
-            ->latest()
+
+        $presensi = Presensi::query()
+            ->where('siswa_id', $siswa->id)
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
             ->paginate(20);
+
+        // Poin per baris presensi (leaderboard) — satu query, hindari N+1.
+        $pointsByPresensi = PointTransaction::query()
+            ->where('siswa_id', $siswa->id)
+            ->where('source', 'attendance')
+            ->where('reference_type', Presensi::class)
+            ->whereIn('reference_id', $presensi->pluck('id'))
+            ->get()
+            ->groupBy('reference_id');
+
+        // Rekap status keseluruhan.
+        $statusCounts = Presensi::query()
+            ->where('siswa_id', $siswa->id)
+            ->selectRaw('status, COUNT(*) as jumlah')
+            ->groupBy('status')
+            ->pluck('jumlah', 'status');
 
         ['totalPoints' => $totalPoints, 'totalHadir' => $totalHadir] = $this->getAttendanceSummary($siswa->id, 'ortu');
 
-        return view('ortu.kehadiran.index', compact('transactions', 'totalPoints', 'totalHadir'));
+        return view('ortu.kehadiran.index', [
+            'siswa' => $siswa,
+            'presensi' => $presensi,
+            'pointsByPresensi' => $pointsByPresensi,
+            'statusCounts' => $statusCounts,
+            'statusLabels' => $this->attendanceStatusLabels(),
+            'totalPoints' => $totalPoints,
+            'totalHadir' => $totalHadir,
+            'totalKegiatan' => (int) $statusCounts->sum(),
+        ]);
     }
 
     protected function getAttendanceSummary(int $siswaId, string $context): array
     {
         $summary = Cache::remember(
-            "cek-kehadiran:summary:{$context}:{$siswaId}",
+            "cek-kehadiran:summary:v2:{$context}:{$siswaId}",
             now()->addSeconds(90),
             function () use ($siswaId) {
-                return (array) PointTransaction::query()
+                // Catatan: JANGAN pakai (array) pada model Eloquent — hasilnya
+                // berisi properti internal (attributes ter-protect), sehingga
+                // key 'total_points' tidak terbaca dan total selalu 0.
+                $row = PointTransaction::query()
                     ->where('siswa_id', $siswaId)
                     ->where('source', 'attendance')
                     ->selectRaw('COALESCE(SUM(points), 0) as total_points')
-                    ->selectRaw('SUM(CASE WHEN points > 0 THEN 1 ELSE 0 END) as total_hadir')
+                    ->selectRaw('COALESCE(SUM(CASE WHEN points > 0 THEN 1 ELSE 0 END), 0) as total_hadir')
                     ->first();
+
+                return [
+                    'total_points' => (int) ($row->total_points ?? 0),
+                    'total_hadir' => (int) ($row->total_hadir ?? 0),
+                ];
             }
         );
 
