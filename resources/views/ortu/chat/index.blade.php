@@ -1,12 +1,12 @@
 @extends('layouts.ortu')
 
-@section('title', 'Chat Pamong')
+@section('title', 'Chat Pamong & Pengurus')
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8" x-data="ortuChat()" @keydown.escape.window="closeConversation()">
     <div class="pkg-page-header" :class="selectedPamong ? 'hidden lg:flex' : ''">
         <div>
-            <h1 class="pkg-page-heading">Chat Pamong</h1>
+            <h1 class="pkg-page-heading">Chat Pamong & Pengurus</h1>
             <p class="pkg-page-subheading">Komunikasikan perkembangan atau kendala {{ $siswa->nama }}.</p>
         </div>
     </div>
@@ -20,40 +20,81 @@
 
     <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
         <div class="pkg-card min-w-0 overflow-hidden lg:col-span-1" :class="selectedPamong ? 'hidden lg:block' : 'block'">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="font-semibold text-gray-900 dark:text-white">Daftar Pamong</h2>
+            @php
+                $pamongUnread = $pamongList->sum('unreadCount');
+                $pengurusUnread = $pengurusList->sum('unreadCount');
+            @endphp
+            <div class="border-b border-gray-200 p-4 dark:border-gray-700">
+                <h2 class="font-semibold text-gray-900 dark:text-white">Pilih Tujuan Chat</h2>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Pamong = pembimbing ananda. Pengurus PKG/Admin = pengelola program.</p>
             </div>
 
-            <div class="overflow-y-auto" style="max-height: 600px;">
-                @if($pamongList->isNotEmpty())
-                    @foreach($pamongList as $pamong)
-                    <button
-                        @click="selectPamong({{ $pamong->id }}, '{{ addslashes($pamong->username ?? $pamong->name) }}')"
-                        :class="selectedPamong === {{ $pamong->id }} ? 'bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
-                        class="w-full p-4 flex items-center gap-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0">
-                        <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-semibold relative">
-                            {{ strtoupper(substr($pamong->username ?? $pamong->name ?? 'P', 0, 1)) }}
-                            @if($pamong->unreadCount > 0)
-                                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                                    {{ $pamong->unreadCount > 99 ? '99+' : $pamong->unreadCount }}
-                                </span>
-                            @endif
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="font-medium text-gray-900 dark:text-white truncate">{{ $pamong->username ?? $pamong->name }}</p>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 truncate">{{ $pamong->lastMessage->message ?? 'Belum ada pesan' }}</p>
-                        </div>
-                    </button>
-                    @endforeach
-                @else
-                    <div class="pkg-empty-state">
-                        <svg class="pkg-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 8h2a2 2 0 012 2v8l-4-3H9a2 2 0 01-2-2v-1m10-4V6a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h2l4 3v-3h4a2 2 0 002-2V8z"/>
-                        </svg>
-                        <h3 class="pkg-empty-title">Belum Ada Pamong</h3>
-                        <p class="pkg-empty-copy">Belum ada pamong yang ditugaskan.</p>
+            {{-- Tab pemisah: Pamong vs Pengurus PKG (termasuk Admin) --}}
+            <div class="flex border-b border-gray-200 dark:border-gray-700">
+                <button type="button" @click="tab = 'pamong'"
+                    :class="tab === 'pamong' ? 'border-teal-600 text-teal-700 dark:text-teal-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'"
+                    class="flex-1 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors">
+                    Pamong
+                    <span class="ml-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{ $pamongList->count() }}</span>
+                    @if($pamongUnread > 0)
+                        <span class="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $pamongUnread > 99 ? '99+' : $pamongUnread }}</span>
+                    @endif
+                </button>
+                <button type="button" @click="tab = 'pengurus'"
+                    :class="tab === 'pengurus' ? 'border-teal-600 text-teal-700 dark:text-teal-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'"
+                    class="flex-1 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors">
+                    Pengurus PKG
+                    <span class="ml-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{ $pengurusList->count() }}</span>
+                    @if($pengurusUnread > 0)
+                        <span class="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $pengurusUnread > 99 ? '99+' : $pengurusUnread }}</span>
+                    @endif
+                </button>
+            </div>
+
+            <div class="overflow-y-auto" style="max-height: 560px;">
+                {{-- Daftar per tab --}}
+                @foreach([['pamong', $pamongList], ['pengurus', $pengurusList]] as [$tabKey, $list])
+                    <div x-show="tab === '{{ $tabKey }}'">
+                        @forelse($list as $contact)
+                            @php $contactName = $contact->username ?? $contact->name; @endphp
+                            <button
+                                @click="selectPamong({{ $contact->id }}, @js($contactName), @js($contact->roleLabel), {{ $contact->isAdmin ? 'true' : 'false' }})"
+                                :class="selectedPamong === {{ $contact->id }} ? 'bg-teal-50 dark:bg-teal-900/30 border-l-4 border-teal-500' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
+                                class="flex w-full items-center gap-3 border-b border-gray-100 p-4 text-left transition-colors last:border-0 dark:border-gray-700">
+                                <div class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-semibold text-white {{ $contact->isAdmin ? 'bg-indigo-600' : ($tabKey === 'pamong' ? 'bg-teal-600' : 'bg-slate-500') }}">
+                                    {{ strtoupper(mb_substr($contactName ?? 'P', 0, 1)) }}
+                                    @if($contact->unreadCount > 0)
+                                        <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                                            {{ $contact->unreadCount > 99 ? '99+' : $contact->unreadCount }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-white">
+                                        <span class="truncate">{{ $contactName }}</span>
+                                        @if($contact->isAdmin)
+                                            <span class="shrink-0 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">Admin</span>
+                                        @endif
+                                    </p>
+                                    <p class="truncate text-[11px] font-semibold text-gray-500 dark:text-gray-400">{{ $contact->roleLabel }}</p>
+                                    <p class="truncate text-xs text-gray-600 dark:text-gray-400">{{ $contact->lastMessage->message ?? 'Belum ada pesan' }}</p>
+                                </div>
+                            </button>
+                        @empty
+                            <div class="pkg-empty-state">
+                                <svg class="pkg-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 8h2a2 2 0 012 2v8l-4-3H9a2 2 0 01-2-2v-1m10-4V6a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h2l4 3v-3h4a2 2 0 002-2V8z"/>
+                                </svg>
+                                <h3 class="pkg-empty-title">{{ $tabKey === 'pamong' ? 'Belum Ada Pamong' : 'Belum Ada Pengurus' }}</h3>
+                                <p class="pkg-empty-copy">
+                                    {{ $tabKey === 'pamong'
+                                        ? 'Pamong pembimbing ananda belum ditugaskan. Sementara ini Bapak/Ibu dapat menghubungi Pengurus PKG pada tab sebelah.'
+                                        : 'Belum ada pengurus yang dapat dihubungi.' }}
+                                </p>
+                            </div>
+                        @endforelse
                     </div>
-                @endif
+                @endforeach
             </div>
         </div>
 
@@ -64,12 +105,17 @@
                 </button>
                 <template x-if="selectedPamong">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-semibold">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full font-semibold text-white" :class="pamongIsAdmin ? 'bg-indigo-600' : 'bg-teal-600'">
                             <span x-text="pamongName ? pamongName.charAt(0).toUpperCase() : '?'"></span>
                         </div>
                         <div>
-                            <p class="font-semibold text-gray-900 dark:text-white" x-text="pamongName"></p>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">Pamong Pembimbing</p>
+                            <p class="flex items-center gap-1.5 font-semibold text-gray-900 dark:text-white">
+                                <span x-text="pamongName"></span>
+                                <template x-if="pamongIsAdmin">
+                                    <span class="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">Admin</span>
+                                </template>
+                            </p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400" x-text="pamongRole || 'Pamong Pembimbing'"></p>
                         </div>
                     </div>
                 </template>
@@ -142,8 +188,11 @@
 <script>
 function ortuChat() {
     return {
+        tab: @js($pamongList->isNotEmpty() ? 'pamong' : 'pengurus'),
         selectedPamong: null,
         pamongName: '',
+        pamongRole: '',
+        pamongIsAdmin: false,
         messages: [],
         newMessage: '',
         loading: false,
@@ -154,9 +203,11 @@ function ortuChat() {
             window.addEventListener('pagehide', () => this.stopPolling());
         },
 
-        selectPamong(id, name) {
+        selectPamong(id, name, role = '', isAdmin = false) {
             this.selectedPamong = id;
             this.pamongName = name;
+            this.pamongRole = role;
+            this.pamongIsAdmin = isAdmin;
             this.loadMessages();
 
             this.startPolling();
@@ -165,6 +216,8 @@ function ortuChat() {
         closeConversation() {
             this.selectedPamong = null;
             this.pamongName = '';
+            this.pamongRole = '';
+            this.pamongIsAdmin = false;
             this.messages = [];
             this.stopPolling();
         },

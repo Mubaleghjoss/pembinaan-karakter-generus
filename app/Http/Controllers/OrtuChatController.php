@@ -14,43 +14,69 @@ class OrtuChatController extends Controller
     {
         $siswa = Auth::guard('ortu')->user();
 
-        // Get pamong assigned to this siswa
+        // 1) PAMONG ananda: hanya user yang benar-benar ditugaskan untuk anak ini.
         $pamongIds = PamongSiswa::query()
             ->when(! $siswa->isGraduated(), fn ($query) => $query->active())
             ->where('siswa_id', $siswa->id)
             ->pluck('pamong_id');
+
         $pamongList = User::query()
             ->with('role')
             ->whereIn('id', $pamongIds)
+            ->orderBy('username')
             ->get();
 
-        // Bila belum ada pamong ter-assign, tampilkan admin + pamong aktif.
-        // Catatan: model User memakai relasi tunggal role() (kolom roles.name),
-        // bukan roles()/slug — query lama menyebabkan error 500 di halaman ini.
-        if ($pamongList->isEmpty() && ! $siswa->isGraduated()) {
-            $pamongList = User::query()
+        // 2) PENGURUS PKG + ADMIN: kontak umum, selalu tersedia agar ortu tetap
+        //    bisa bertanya walau pamong belum ditugaskan.
+        //    Catatan: model User memakai relasi tunggal role() (kolom roles.name),
+        //    bukan roles()/slug — query lama memakai roles() dan menyebabkan 500.
+        $pengurusList = $siswa->isGraduated()
+            ? User::query()->whereRaw('1 = 0')->get()
+            : User::query()
                 ->with('role')
                 ->where('status', 'active')
-                ->whereHas('role', fn ($roleQuery) => $roleQuery->whereIn('name', ['admin', 'pamong', 'pkg_manager']))
+                ->whereNotIn('id', $pamongIds)
+                ->whereHas('role', fn ($roleQuery) => $roleQuery->whereIn('name', ['admin', 'pkg_manager']))
                 ->orderBy('username')
                 ->get();
-        }
 
-        // Get latest message for each pamong
-        foreach ($pamongList as $pamong) {
-            $pamong->lastMessage = Chat::where(function ($q) use ($siswa, $pamong) {
-                $q->where('sender_siswa_id', $siswa->id)->where('receiver_user_id', $pamong->id);
-            })->orWhere(function ($q) use ($siswa, $pamong) {
-                $q->where('sender_user_id', $pamong->id)->where('receiver_siswa_id', $siswa->id);
+        // Lengkapi tiap kontak dengan pesan terakhir, jumlah belum dibaca, dan label peran.
+        $this->decorateContacts($pamongList, $siswa, 'pamong');
+        $this->decorateContacts($pengurusList, $siswa, 'pengurus');
+
+        $contacts = $pamongList->concat($pengurusList);
+
+        return view('ortu.chat.index', compact('siswa', 'pamongList', 'pengurusList', 'contacts'));
+    }
+
+    /**
+     * Tempelkan pesan terakhir, jumlah pesan belum dibaca, dan label peran
+     * (Pamong / Pengurus PKG / Admin) pada setiap kontak.
+     */
+    private function decorateContacts($contacts, $siswa, string $group): void
+    {
+        foreach ($contacts as $contact) {
+            $contact->lastMessage = Chat::where(function ($q) use ($siswa, $contact) {
+                $q->where('sender_siswa_id', $siswa->id)->where('receiver_user_id', $contact->id);
+            })->orWhere(function ($q) use ($siswa, $contact) {
+                $q->where('sender_user_id', $contact->id)->where('receiver_siswa_id', $siswa->id);
             })->orderByDesc('created_at')->first();
 
-            $pamong->unreadCount = Chat::where('sender_user_id', $pamong->id)
+            $contact->unreadCount = Chat::where('sender_user_id', $contact->id)
                 ->where('receiver_siswa_id', $siswa->id)
                 ->where('is_read', false)
                 ->count();
-        }
 
-        return view('ortu.chat.index', compact('siswa', 'pamongList'));
+            $roleName = $contact->role->name ?? '';
+            $contact->isAdmin = $roleName === 'admin';
+            $contact->contactGroup = $group;
+            $contact->roleLabel = match (true) {
+                $roleName === 'admin' => 'Admin',
+                $roleName === 'pkg_manager' => 'Pengurus PKG',
+                $group === 'pamong' => 'Pamong Pembimbing',
+                default => 'Pengurus PKG',
+            };
+        }
     }
 
     public function getMessages(Request $request)
