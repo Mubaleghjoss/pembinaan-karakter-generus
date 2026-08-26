@@ -630,8 +630,61 @@ class PamongController extends Controller
         $availableCrud = PamongPermission::getAvailableCrudOperations();
         $crudOperationLabels = PamongPermission::getCrudOperationLabels();
         $permissionPresets = OperationalPermissionPreset::all();
+        $dutyRoleCatalog = \App\Support\DutyRole::all();
         
-        return view('pamong.permissions-index', compact('pamongList', 'availableMenus', 'availableCrud', 'crudOperationLabels', 'permissionPresets'));
+        return view('pamong.permissions-index', compact(
+            'pamongList',
+            'availableMenus',
+            'availableCrud',
+            'crudOperationLabels',
+            'permissionPresets',
+            'dutyRoleCatalog'
+        ));
+    }
+
+    /**
+     * Simpan peran tugas (badge) untuk satu akun operasional. Boleh beberapa.
+     */
+    public function updateDutyRoles(Request $request, User $pamong)
+    {
+        $validated = $request->validate([
+            'duty_roles' => ['nullable', 'array'],
+            'duty_roles.*' => ['string', 'max:60'],
+        ]);
+
+        $pamong->duty_roles = \App\Support\DutyRole::sanitize($validated['duty_roles'] ?? []);
+        $pamong->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Peran tugas diperbarui.',
+                'duty_roles' => $pamong->dutyRoleBadges(),
+            ]);
+        }
+
+        return back()->with('success', 'Peran tugas ' . ($pamong->name ?: $pamong->username) . ' diperbarui.');
+    }
+
+    /**
+     * Tambah jenis peran tugas baru (dipakai admin dari halaman Peran & Izin).
+     */
+    public function storeDutyRole(Request $request)
+    {
+        $validated = $request->validate([
+            'label' => ['required', 'string', 'max:60'],
+            'tone' => ['nullable', 'string', 'max:20'],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $slug = \App\Support\DutyRole::save(
+            null,
+            $validated['label'],
+            $validated['tone'] ?? 'slate',
+            $validated['description'] ?? ''
+        );
+
+        return back()->with('success', 'Jenis peran tugas "' . $validated['label'] . '" ditambahkan (' . $slug . ').');
     }
 
     public function storeTeam(Request $request)

@@ -46,6 +46,7 @@ class User extends Authenticatable
         'organizational_team_id',
         'organizational_title',
         'organizational_sort_order',
+        'duty_roles',
         'status',
         'avatar_path',
         'qr_token',
@@ -94,7 +95,46 @@ class User extends Authenticatable
         'must_change_password' => 'boolean',
         'password_changed_at' => 'datetime',
         'mobile_menu_favorites' => 'array',
+        'duty_roles' => 'array',
     ];
+
+    /**
+     * Peran tugas (badge) yang dipegang akun ini, sudah dilengkapi label+warna.
+     *
+     * @return array<int, array{slug: string, label: string, classes: string}>
+     */
+    public function dutyRoleBadges(): array
+    {
+        $slugs = \App\Support\DutyRole::sanitize((array) ($this->duty_roles ?? []));
+
+        return array_map(function (string $slug) {
+            $role = \App\Support\DutyRole::find($slug);
+
+            return [
+                'slug' => $slug,
+                'label' => $role['label'] ?? $slug,
+                'classes' => \App\Support\DutyRole::badgeClasses($role['tone'] ?? 'slate'),
+            ];
+        }, $slugs);
+    }
+
+    public function hasDutyRole(string $slug): bool
+    {
+        return in_array($slug, (array) ($this->duty_roles ?? []), true);
+    }
+
+    /**
+     * Warna badge untuk peran akun (Admin / Pengurus PKG / Pamong).
+     */
+    public function roleBadgeClasses(): string
+    {
+        return match ($this->role?->name) {
+            self::ROLE_ADMIN => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200',
+            self::ROLE_PKG_MANAGER => 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+            self::ROLE_TEACHER => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200',
+            default => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
+        };
+    }
 
     /**
      * Get the role that owns the user.

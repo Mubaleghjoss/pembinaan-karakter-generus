@@ -22,6 +22,54 @@ class OperationalPermissionPreset
     public static function builtin(): array
     {
         return [
+            'pamong_pembimbing' => [
+                'label' => 'Pamong Pembimbing',
+                'description' => 'Paket standar pamong: verifikasi Tugas PKG & bacaan Qur\'an, presensi + bantu isi presensi manual semua generus, materi, kalender, chat.',
+                'menu_permissions' => [
+                    'dashboard', 'siswa', 'presensi', 'manual_attendance', 'cek_kehadiran',
+                    'tracer_karakter', 'tracer_bacaan_quran', 'pr', 'materi', 'calendar',
+                    'chat', 'group_chat', 'laporan_penyaksian', 'gamification', 'game',
+                ],
+                'crud_permissions' => [
+                    'siswa' => ['view'],
+                    'presensi' => ['view', 'create', 'edit', 'verify'],
+                    'manual_attendance' => ['view', 'create', 'all_students'],
+                    'cek_kehadiran' => ['view'],
+                    'tracer_karakter' => ['view', 'create', 'edit'],
+                    'tracer_bacaan_quran' => ['view', 'create', 'edit', 'verify'],
+                    'pr' => ['view', 'create', 'edit', 'verify'],
+                    'materi' => ['view'],
+                    'calendar' => ['view'],
+                    'chat' => ['view', 'send'],
+                    'group_chat' => ['view', 'send'],
+                    'laporan_penyaksian' => ['view', 'tindak_lanjut'],
+                    'gamification' => ['view'],
+                    'game' => ['view'],
+                ],
+            ],
+            'pengurus_verifikator' => [
+                'label' => 'Pengurus Verifikator',
+                'description' => 'Pengurus PKG yang fokus memverifikasi: Tugas PKG, bacaan Qur\'an, presensi, dan laporan penyaksian. Tanpa input presensi manual.',
+                'menu_permissions' => [
+                    'dashboard', 'siswa', 'presensi', 'cek_kehadiran', 'tracer_karakter',
+                    'tracer_bacaan_quran', 'pr', 'materi', 'calendar', 'chat',
+                    'laporan_penyaksian', 'berita', 'gamification',
+                ],
+                'crud_permissions' => [
+                    'siswa' => ['view', 'export'],
+                    'presensi' => ['view', 'verify', 'export'],
+                    'cek_kehadiran' => ['view'],
+                    'tracer_karakter' => ['view', 'create', 'edit', 'export'],
+                    'tracer_bacaan_quran' => ['view', 'create', 'edit', 'verify', 'export'],
+                    'pr' => ['view', 'create', 'edit', 'verify'],
+                    'materi' => ['view'],
+                    'calendar' => ['view'],
+                    'chat' => ['view', 'send'],
+                    'laporan_penyaksian' => ['view', 'tindak_lanjut'],
+                    'berita' => ['view'],
+                    'gamification' => ['view'],
+                ],
+            ],
             'tim_presensi' => [
                 'label' => 'Tim Presensi',
                 'description' => 'Khusus kehadiran siswa: presensi, input manual, dan poin kehadiran. Menu lain disembunyikan.',

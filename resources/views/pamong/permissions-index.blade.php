@@ -99,9 +99,9 @@
                             <div class="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
                                 <span class="text-white font-medium">{{ strtoupper(substr($p->username, 0, 1)) }}</span>
                             </div>
-                            <div class="ml-3">
+                            <div class="ml-3 min-w-0">
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $p->username }}</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $p->email }} | {{ $p->operationalRoleLabel() }}</div>
+                                <div class="mt-1"><x-role-badges :user="$p" size="xs" :max-duty="2" /></div>
                             </div>
                         </div>
                     </td>
@@ -119,6 +119,15 @@
                                 Default (Semua)
                             </span>
                         @endif
+                        @php
+                            $bisaManual = $p->hasPamongMenuAccess('manual_attendance')
+                                && $p->hasPamongCrudPermission('manual_attendance', 'create');
+                            $semuaGenerus = $p->hasPamongCrudPermission('manual_attendance', 'all_students');
+                        @endphp
+                        <p class="mt-1.5 text-[11px] font-semibold {{ $bisaManual ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500' }}">
+                            Presensi manual:
+                            {{ $bisaManual ? ($semuaGenerus ? 'semua generus' : 'hanya binaan') : 'tidak berizin' }}
+                        </p>
                     </td>
                     <td class="px-4 py-4" data-label="Menu diizinkan">
                         @if($p->pamongPermission?->is_excluded)
@@ -141,9 +150,15 @@
                         @endif
                     </td>
                     <td class="pkg-mobile-actions px-4 py-4 text-right" data-label="Aksi">
-                        <a href="{{ route('pamong.permissions', $p) }}" class="text-orange-600 hover:text-orange-900 dark:text-orange-400">
-                            Edit Hak Akses
-                        </a>
+                        <div class="flex flex-col items-end gap-1.5">
+                            <a href="{{ route('pamong.permissions', $p) }}" class="text-sm font-semibold text-orange-600 hover:text-orange-900 dark:text-orange-400">
+                                Edit Hak Akses
+                            </a>
+                            <button type="button" @click="openDutyRoles({{ $p->id }}, @js($p->username), @js(array_values((array) ($p->duty_roles ?? []))))"
+                                    class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400">
+                                Atur Peran Tugas
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 @empty
@@ -175,6 +190,89 @@
                 <span class="text-gray-600 dark:text-gray-400">Belum ada pengaturan khusus</span>
             </div>
         </div>
+        <p class="mt-3 rounded-lg bg-orange-50 p-3 text-xs text-orange-800 dark:bg-orange-900/30 dark:text-orange-200">
+            <strong>Perhatian:</strong> status "Full Access (Dikecualikan)" membuat akun dapat membuka SEMUA menu dan
+            mengabaikan daftar izin yang dicentang. Matikan pengecualian bila ingin izin per-menu benar-benar berlaku.
+        </p>
+    </div>
+
+    {{-- Panel: Tambah jenis peran tugas --}}
+    <div class="pkg-card mt-6 p-4" x-data="{ open: false }">
+        <button type="button" @click="open = !open" class="flex w-full items-center justify-between text-left">
+            <div>
+                <h4 class="text-sm font-bold text-gray-800 dark:text-gray-100">Jenis Peran Tugas</h4>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ count($dutyRoleCatalog) }} jenis tersedia · dipakai sebagai badge pada akun
+                </p>
+            </div>
+            <svg class="h-5 w-5 text-gray-400 transition" :class="open && 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </button>
+
+        <div x-show="open" x-cloak class="mt-3">
+            <div class="flex flex-wrap gap-1.5">
+                @foreach($dutyRoleCatalog as $slug => $role)
+                    <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold {{ \App\Support\DutyRole::badgeClasses($role['tone']) }}">
+                        {{ $role['label'] }}
+                    </span>
+                @endforeach
+            </div>
+
+            <form action="{{ route('pamong.duty-roles.store') }}" method="POST" class="mt-4 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                @csrf
+                <input type="text" name="label" required maxlength="60" placeholder="Nama peran baru, mis. Bendahara"
+                       class="pkg-field text-sm">
+                <select name="tone" class="pkg-field text-sm">
+                    @foreach(\App\Support\DutyRole::availableTones() as $tone)
+                        <option value="{{ $tone }}">{{ ucfirst($tone) }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="btn-primary text-sm">Tambah Peran</button>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal: atur peran tugas per akun (boleh beberapa) --}}
+    <div x-show="dutyModalOpen" x-cloak @click.self="dutyModalOpen = false"
+         class="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/50 p-4">
+        <div class="pkg-modal w-full max-w-lg overflow-hidden" @click.stop>
+            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Peran Tugas</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="dutyUsername"></p>
+                </div>
+                <button @click="dutyModalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="max-h-80 overflow-y-auto px-5 py-4">
+                <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">Boleh dipilih lebih dari satu.</p>
+                <div class="space-y-2">
+                    @foreach($dutyRoleCatalog as $slug => $role)
+                        <label class="flex items-start gap-2.5 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                            <input type="checkbox" value="{{ $slug }}" x-model="dutySelected" class="form-checkbox mt-0.5">
+                            <span class="min-w-0">
+                                <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold {{ \App\Support\DutyRole::badgeClasses($role['tone']) }}">
+                                    {{ $role['label'] }}
+                                </span>
+                                @if($role['description'])
+                                    <span class="mt-1 block text-[11px] text-gray-500 dark:text-gray-400">{{ $role['description'] }}</span>
+                                @endif
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 border-t border-gray-200 bg-gray-50 px-5 py-3 dark:border-gray-700 dark:bg-gray-900">
+                <button type="button" @click="dutyModalOpen = false" class="btn-secondary text-sm">Batal</button>
+                <button type="button" @click="saveDutyRoles()" :disabled="dutySaving" class="btn-primary text-sm disabled:opacity-50">
+                    <span x-text="dutySaving ? 'Menyimpan…' : 'Simpan Peran'"></span>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -185,6 +283,49 @@ function permissionsManager() {
         pamongList: @json($pamongList->pluck('id')),
         selectedPamong: [],
         selectedPreset: '',
+
+        // Peran tugas (badge) — boleh beberapa per akun.
+        dutyModalOpen: false,
+        dutyUserId: null,
+        dutyUsername: '',
+        dutySelected: [],
+        dutySaving: false,
+
+        openDutyRoles(id, username, current) {
+            this.dutyUserId = id;
+            this.dutyUsername = username;
+            this.dutySelected = Array.isArray(current) ? [...current] : [];
+            this.dutyModalOpen = true;
+        },
+
+        async saveDutyRoles() {
+            if (!this.dutyUserId) return;
+            this.dutySaving = true;
+            try {
+                const response = await fetch(`/pamong/${this.dutyUserId}/duty-roles`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ duty_roles: this.dutySelected })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    window.showNotification(data.message || 'Peran tugas diperbarui', 'success');
+                    this.dutyModalOpen = false;
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    window.showNotification(data.message || 'Gagal menyimpan peran tugas', 'error');
+                }
+            } catch (error) {
+                window.showNotification('Terjadi kesalahan: ' + error.message, 'error');
+            } finally {
+                this.dutySaving = false;
+            }
+        },
+
         toggleSelectAll(event) {
             if (event.target.checked) {
                 this.selectedPamong = [...this.pamongList];

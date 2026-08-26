@@ -287,6 +287,11 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                                 <span class="nav-text">Input Manual</span>
                             </a>
                             @endif
+                            @if($canAccessManualAttendanceMenu)
+                            <a href="{{ route('manual-attendance.helper') }}" class="nav-item @if(request()->routeIs('manual-attendance.helper')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                                <span class="nav-text">Bantu Isi Presensi</span>
+                            </a>
+                            @endif
                             @if(auth()->user()->hasPamongMenuAccess('cek_kehadiran'))
                             <a href="{{ route('cek-kehadiran.index') }}" class="nav-item @if(request()->routeIs('cek-kehadiran.*')) bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @else text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 @endif flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors">
                                 <span class="nav-text">Poin Kehadiran</span>
@@ -577,7 +582,9 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
                         <div x-show="open" x-cloak @click.outside="open = false" x-transition class="absolute right-0 top-full z-[100] mt-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-2xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900 dark:ring-white/10" role="menu">
                             <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                                 <p class="text-sm font-medium text-gray-900 dark:text-white">{{ auth()->user()->username }}</p>
-                                <p class="text-xs text-gray-500">{{ auth()->user()->role->display_name ?? 'User' }}</p>
+                                <div class="mt-1">
+                                    <x-role-badges :user="auth()->user()" size="xs" :max-duty="2" />
+                                </div>
                             </div>
                             <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" role="menuitem">Profil</a>
                             @if($teacherPortalAvailable ?? false)

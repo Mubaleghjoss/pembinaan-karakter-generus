@@ -225,6 +225,59 @@ class DashboardController extends Controller
                 ->count();
             $journalTasks = $this->journalWorkflow->staffTasks($user);
 
+            // ANTREAN VERIFIKASI — isi utama dashboard staff. Tiap item hanya
+            // dipakai bila user punya izinnya (dicek di view lewat 'can').
+            $quranPending = \App\Models\QuranReadingEntry::query()
+                ->whereIn('siswa_id', $siswaIds)
+                ->where('status', \App\Models\QuranReadingEntry::STATUS_PENDING)
+                ->count();
+            $presensiUnverified = Presensi::whereIn('siswa_id', $siswaIds)
+                ->where('is_verified', false)
+                ->count();
+
+            $verificationQueue = [
+                [
+                    'key' => 'tugas_pkg',
+                    'label' => 'Tugas PKG menunggu verifikasi',
+                    'count' => $pendingVerifications,
+                    'url' => route('tugas-pkg.verification'),
+                    'menu' => 'pr',
+                    'tone' => 'emerald',
+                ],
+                [
+                    'key' => 'quran',
+                    'label' => "Bacaan Al-Qur'an menunggu",
+                    'count' => $quranPending,
+                    'url' => route('quran.index'),
+                    'menu' => 'tracer_bacaan_quran',
+                    'tone' => 'teal',
+                ],
+                [
+                    'key' => 'presensi',
+                    'label' => 'Presensi belum diverifikasi',
+                    'count' => $presensiUnverified,
+                    'url' => route('presensi.index'),
+                    'menu' => 'presensi',
+                    'tone' => 'sky',
+                ],
+                [
+                    'key' => 'laporan',
+                    'label' => 'Laporan penyaksian pending',
+                    'count' => $laporanPending,
+                    'url' => route('laporan-penyaksian.index'),
+                    'menu' => 'laporan_penyaksian',
+                    'tone' => 'rose',
+                ],
+                [
+                    'key' => 'jurnal',
+                    'label' => 'Jurnal pertemuan perlu diisi',
+                    'count' => $journalTasks->count(),
+                    'url' => route('materi-rpp-journals.index'),
+                    'menu' => 'materi',
+                    'tone' => 'amber',
+                ],
+            ];
+
             return [
                 'totalSiswa' => $totalSiswa,
                 'attendanceStats' => $attendanceStats,
@@ -243,6 +296,7 @@ class DashboardController extends Controller
                 'totalTugasSubmitted' => $totalTugasSubmitted,
                 'laporanPending' => $laporanPending,
                 'journalTasks' => $journalTasks,
+                'verificationQueue' => $verificationQueue,
             ];
         });
     }

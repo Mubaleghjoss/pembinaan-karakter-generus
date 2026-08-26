@@ -21,7 +21,100 @@ class ManualAttendanceController extends Controller
         protected PamongPresensiServiceInterface $pamongPresensiService
     ) {
         $this->middleware('pamong.permission:manual_attendance,view')->only(['index', 'students']);
-        $this->middleware('pamong.permission:manual_attendance,create')->only(['storeSiswa', 'storePamong']);
+        $this->middleware('pamong.permission:manual_attendance,create')->only(['storeSiswa', 'storePamong', 'helper']);
+    }
+
+    /**
+     * Halaman "Bantu Isi Presensi".
+     *
+     * Menampilkan seluruh generus aktif dikelompokkan per pamong pembimbing
+     * beserta status presensi hari ini, agar semua pamong dapat saling
+     * membantu mengisi presensi manual saat jadwal sedang berjalan.
+     */
+    public function helper(Request $request): View
+    {
+        $user = $request->user();
+        $today = now()->toDateString();
+
+        $schedule = \App\Models\AttendanceSchedule::getActiveSchedule();
+        $scheduleOpen = $schedule?->isOpen() ?? false;
+
+        // Semua generus aktif + pamong pembimbing aktifnya (1 query relasi).
+        $students = Siswa::query()
+            ->active()
+            ->with(['pamongAssignments' => fn ($query) => $query->whereNull('ended_at')->with('pamong:id,name,username')])
+            ->orderBy('nama')
+            ->get(['id', 'nis', 'nama', 'kelompok', 'school_grade']);
+
+        // Presensi hari ini untuk semua generus tsb — satu query, tanpa N+1.
+        $todayRecords = \App\Models\Presensi::query()
+            ->whereIn('siswa_id', $students->pluck('id'))
+            ->whereDate('tanggal', $today)
+            ->get(['id', 'siswa_id', 'status', 'jam_masuk'])
+            ->keyBy('siswa_id');
+
+        $myAssignedIds = $user->isTeacher()
+            ? collect($user->getAssignedSiswaIds())->all()
+            : [];
+
+        // Susun per pamong pembimbing.
+        $groups = [];
+        foreach ($students as $siswa) {
+            $assignment = $siswa->pamongAssignments->first();
+            $pamong = $assignment?->pamong;
+            $key = $pamong?->id ?? 0;
+
+            if (! isset($groups[$key])) {
+                $groups[$key] = [
+                    'pamong_id' => $pamong?->id,
+                    'pamong_nama' => $pamong ? ($pamong->name ?: $pamong->username) : 'Belum ada pamong',
+                    'is_mine' => $pamong && $pamong->id === $user->id,
+                    'students' => [],
+                    'sudah' => 0,
+                    'belum' => 0,
+                ];
+            }
+
+            $record = $todayRecords->get($siswa->id);
+            $sudah = (bool) $record;
+
+            $groups[$key]['students'][] = [
+                'id' => $siswa->id,
+                'nis' => $siswa->nis,
+                'nama' => $siswa->nama,
+                'kelompok' => in_array($siswa->kelompok, [null, '', '-'], true) ? null : ($siswa->kelompok_label ?: $siswa->kelompok),
+                'kelas' => $siswa->school_grade_label,
+                'sudah' => $sudah,
+                'status' => $record->status ?? null,
+                'jam_masuk' => $record?->jam_masuk?->format('H:i'),
+                'is_mine' => in_array($siswa->id, $myAssignedIds, true),
+            ];
+
+            $groups[$key][$sudah ? 'sudah' : 'belum']++;
+        }
+
+        // Pamong sendiri di atas, lalu abjad; "Belum ada pamong" paling bawah.
+        $groups = collect($groups)
+            ->sortBy([
+                fn ($group) => $group['pamong_id'] === null ? 1 : 0,
+                fn ($group) => $group['is_mine'] ? 0 : 1,
+                fn ($group) => $group['pamong_nama'],
+            ])
+            ->values()
+            ->all();
+
+        $totalSudah = collect($groups)->sum('sudah');
+        $totalBelum = collect($groups)->sum('belum');
+
+        return view('manual-attendance.helper', [
+            'today' => $today,
+            'schedule' => $schedule,
+            'scheduleOpen' => $scheduleOpen,
+            'groups' => $groups,
+            'totalSudah' => $totalSudah,
+            'totalBelum' => $totalBelum,
+            'kelompokOptions' => Siswa::kelompokOptions(),
+        ]);
     }
 
     public function index(Request $request): View

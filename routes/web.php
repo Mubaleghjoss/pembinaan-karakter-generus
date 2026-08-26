@@ -665,6 +665,7 @@ Route::middleware('auth')->group(function () {
 
     // Attendance management
     Route::redirect('/absen-manual', '/presensi?tab=input#input')->name('manual-attendance.index');
+    Route::get('/bantu-presensi', [ManualAttendanceController::class, 'helper'])->name('manual-attendance.helper');
     Route::get('/absen-manual/siswa', [ManualAttendanceController::class, 'students'])->name('manual-attendance.students');
     Route::post('/absen-manual/siswa', [ManualAttendanceController::class, 'storeSiswa'])->name('manual-attendance.siswa.store');
     Route::post('/absen-manual/pamong', [ManualAttendanceController::class, 'storePamong'])->name('manual-attendance.pamong.store');
@@ -888,6 +889,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/pamong/qr-generate', [PamongController::class, 'qrGeneratePost'])->name('pamong.qr.generate.post');
     Route::get('/pamong/permissions', [PamongController::class, 'permissionsIndex'])->name('pamong.permissions.index');
     Route::post('/pamong/permissions/bulk', [PamongController::class, 'bulkUpdatePermissions'])->name('pamong.permissions.bulk');
+    Route::post('/pamong/duty-roles', [PamongController::class, 'storeDutyRole'])->name('pamong.duty-roles.store');
+    Route::post('/pamong/{pamong}/duty-roles', [PamongController::class, 'updateDutyRoles'])->name('pamong.duty-roles.update');
     Route::put('/pamong/assignments/board', [PamongController::class, 'updateAssignmentBoard'])
         ->middleware('admin.only')
         ->name('pamong.assignments.board');
