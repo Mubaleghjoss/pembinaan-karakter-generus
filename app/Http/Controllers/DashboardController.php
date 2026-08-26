@@ -80,31 +80,49 @@ class DashboardController extends Controller
                 $siswaColumns[] = 'kelompok';
             }
 
-            $todayPresensi = Presensi::whereIn('siswa_id', $siswaIds)
-                ->whereDate('tanggal', $today)
-                ->with(['siswa' => fn ($query) => $query->select($siswaColumns)])
-                ->get();
+            // Statistik kehadiran BULAN INI hanya memakai tanggal yang memang
+            // berjadwal PKG sampai hari ini. Hari tanpa jadwal tidak pernah
+            // menjadi 0%. Daftar tanggal dibaca ulang dari konfigurasi saat
+            // cache dashboard kedaluwarsa (maks. 60 detik), sehingga perubahan
+            // jadwal 4x menjadi 1x otomatis mengubah denominator.
+            $scheduledDates = AttendanceSchedule::scheduledDatesBetween(
+                $today->copy()->startOfMonth(),
+                $today,
+                AttendanceSchedule::TARGET_SISWA
+            );
+            $scheduledDays = count($scheduledDates);
+            $attendanceOpportunityCount = $totalSiswa * $scheduledDays;
 
-            $hadirSiswaIds = $todayPresensi->pluck('siswa_id')->toArray();
-            $alphaSiswa = Siswa::whereIn('id', $siswaIds)
-                ->whereNotIn('id', $hadirSiswaIds)
-                ->where('is_active', true)
-                ->select($siswaColumns)
-                ->get();
+            $monthPresensi = $scheduledDays > 0
+                ? Presensi::whereIn('siswa_id', $siswaIds)
+                    ->whereIn('tanggal', $scheduledDates)
+                    ->with(['siswa' => fn ($query) => $query->select($siswaColumns)])
+                    ->get()
+                : collect();
+
+            $hadirCount = $monthPresensi->where('status', 'hadir')->count();
+            $terlambatCount = $monthPresensi->where('status', 'terlambat')->count();
+            $participatedCount = $hadirCount + $terlambatCount;
 
             $attendanceStats = [
-                'hadir' => $todayPresensi->where('status', 'hadir')->count(),
-                'terlambat' => $todayPresensi->where('status', 'terlambat')->count(),
-                'izin' => $todayPresensi->where('status', 'izin')->count(),
-                'sakit' => $todayPresensi->where('status', 'sakit')->count(),
-                'alpha' => $totalSiswa - $todayPresensi->count(),
-                'total' => $totalSiswa,
-                'percentage' => $totalSiswa > 0 ? round(($todayPresensi->count() / $totalSiswa) * 100, 1) : 0,
-                'siswa_hadir' => $todayPresensi->where('status', 'hadir')->pluck('siswa')->values(),
-                'siswa_terlambat' => $todayPresensi->where('status', 'terlambat')->pluck('siswa')->values(),
-                'siswa_izin' => $todayPresensi->where('status', 'izin')->pluck('siswa')->values(),
-                'siswa_sakit' => $todayPresensi->where('status', 'sakit')->pluck('siswa')->values(),
-                'siswa_alpha' => $alphaSiswa,
+                'hadir' => $hadirCount,
+                'terlambat' => $terlambatCount,
+                'izin' => $monthPresensi->where('status', 'izin')->count(),
+                'sakit' => $monthPresensi->where('status', 'sakit')->count(),
+                'alpha' => max(0, $attendanceOpportunityCount - $participatedCount),
+                'total' => $attendanceOpportunityCount,
+                'percentage' => $attendanceOpportunityCount > 0
+                    ? round(($participatedCount / $attendanceOpportunityCount) * 100, 1)
+                    : null,
+                'scheduled_days' => $scheduledDays,
+                'scheduled_dates' => $scheduledDates,
+                'scope_label' => $today->translatedFormat('F Y'),
+                'has_schedule' => $scheduledDays > 0,
+                'siswa_hadir' => $monthPresensi->where('status', 'hadir')->pluck('siswa')->values(),
+                'siswa_terlambat' => $monthPresensi->where('status', 'terlambat')->pluck('siswa')->values(),
+                'siswa_izin' => $monthPresensi->where('status', 'izin')->pluck('siswa')->values(),
+                'siswa_sakit' => $monthPresensi->where('status', 'sakit')->pluck('siswa')->values(),
+                'siswa_alpha' => collect(),
             ];
 
             $periodStart = $today->copy()->subDays(6);
@@ -256,7 +274,14 @@ class DashboardController extends Controller
                     'key' => 'presensi',
                     'label' => 'Presensi belum diverifikasi',
                     'count' => $presensiUnverified,
-                    'url' => route('presensi.index'),
+                    // Antrean ini menghitung SEMUA tanggal. Kirim mode all_dates
+                    // agar halaman tujuan menampilkan data yang sama, bukan
+                    // otomatis kembali ke tanggal hari ini.
+                    'url' => route('presensi.index', [
+                        'tab' => 'rekap',
+                        'verified' => '0',
+                        'all_dates' => '1',
+                    ]),
                     'menu' => 'presensi',
                     'tone' => 'sky',
                 ],

@@ -803,9 +803,19 @@ class PresensiController extends Controller
     public function getData(Request $request): JsonResponse
     {
         $tanggal = $this->resolveAttendanceDate($request);
-        $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
+        $allDates = $request->boolean('all_dates');
 
-        $presensiQuery = $this->buildListingQuery($request, $tanggal);
+        // Mode antrean dari dashboard harus menampilkan lintas tanggal karena
+        // angka dashboard juga menghitung seluruh tanggal. Jangan membuat
+        // alpha otomatis lintas periode di sini; backfill hanya untuk harian.
+        if (! $allDates) {
+            $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
+        }
+
+        $dateScope = $allDates
+            ? [Presensi::query()->min('tanggal') ?: $tanggal, $tanggal]
+            : $tanggal;
+        $presensiQuery = $this->buildListingQuery($request, $dateScope);
         $this->applyStatusFilter($presensiQuery, $request->input('status'));
 
         $presensi = $presensiQuery
@@ -824,7 +834,9 @@ class PresensiController extends Controller
                 'to' => $presensi->lastItem(),
                 'total' => $presensi->total(),
             ],
-            'group_summary' => $this->buildKelompokSummary($request, $tanggal),
+            // Ringkasan kelompok bersifat harian; sembunyikan pada mode
+            // antrean lintas tanggal agar tidak disalahartikan.
+            'group_summary' => $allDates ? [] : $this->buildKelompokSummary($request, $tanggal),
         ]);
     }
 
@@ -860,12 +872,20 @@ class PresensiController extends Controller
             'kelompok' => ['nullable', 'string', 'max:80'],
             'status' => ['nullable', 'string', 'in:hadir,terlambat,izin,sakit,alpha,tidak_hadir'],
             'verified' => ['nullable', 'in:0,1'],
+            'all_dates' => ['nullable', 'boolean'],
         ]);
 
         $tanggal = $validated['tanggal'] ?? now()->toDateString();
-        $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
+        $allDates = (bool) ($validated['all_dates'] ?? false);
 
-        $query = $this->buildListingQuery($request, $tanggal);
+        if (! $allDates) {
+            $this->backfillClosedSiswaAlpha($tanggal, $tanggal);
+        }
+
+        $dateScope = $allDates
+            ? [Presensi::query()->min('tanggal') ?: $tanggal, $tanggal]
+            : $tanggal;
+        $query = $this->buildListingQuery($request, $dateScope);
 
         $this->applyStatusFilter($query, $validated['status'] ?? null);
 

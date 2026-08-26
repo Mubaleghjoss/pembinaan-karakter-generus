@@ -1,5 +1,12 @@
 {{-- Rekap Presensi Tab Content --}}
 <div class="space-y-3 sm:space-y-4">
+    <div x-show="allDates" class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-100">
+        <strong>Mode antrean lintas tanggal.</strong>
+        Daftar ini menampilkan seluruh presensi belum terverifikasi dari semua tanggal. Tombol
+        "Verifikasi Semua Antrean" akan memverifikasi semua data yang sesuai filter.
+        <button type="button" @click="allDates = false; loadPresensi()" class="ml-1 font-bold underline">Kembali ke rekap harian</button>
+    </div>
+
     @if(false)
     <x-collapsible-section title="Ringkasan Kehadiran" description="Jumlah kehadiran berdasarkan filter aktif." compact>
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
@@ -82,7 +89,9 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tanggal</label>
                 <input type="date" x-model="filters.tanggal" @change="loadPresensi()"
-                       class="w-full pkg-field text-sm">
+                       :disabled="allDates"
+                       :title="allDates ? 'Tanggal diabaikan dalam mode antrean lintas tanggal' : ''"
+                       class="w-full pkg-field text-sm disabled:cursor-not-allowed disabled:opacity-50">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kelas Sekolah</label>
@@ -136,6 +145,7 @@
     </div>
     </x-collapsible-section>
 
+    <div x-show="!allDates">
     <x-collapsible-section title="Ringkasan Kelompok" description="Pusat pemantauan Hadir, Sakit, Izin, Alpa, dan Belum Presensi." :open="true" compact>
     <div class="space-y-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -284,6 +294,8 @@
     </div>
     </x-collapsible-section>
 
+    </div>
+
     <x-collapsible-section title="Data Presensi Harian" description="Daftar rinci, bukti, verifikasi, dan koreksi status." compact>
         <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -295,7 +307,7 @@
                         @click="bulkVerifyAttendance()"
                         :disabled="bulkVerifying || presensi.length === 0"
                         class="btn-success px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50">
-                    <span x-show="!bulkVerifying">Verifikasi Semua</span>
+                    <span x-show="!bulkVerifying" x-text="allDates ? 'Verifikasi Semua Antrean' : 'Verifikasi Semua'"></span>
                     <span x-show="bulkVerifying">Memproses...</span>
                 </button>
                 <a :href="exportUrl()" class="btn-secondary px-3 py-2 text-sm">

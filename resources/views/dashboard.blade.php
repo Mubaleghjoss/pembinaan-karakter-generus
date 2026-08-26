@@ -160,19 +160,32 @@
 
     {{-- Ringkasan tipis --}}
     <div class="pkg-panel mb-4 p-4 sm:p-5">
-        <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-gray-600 dark:text-gray-400">Ringkasan Hari Ini</h2>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-sm font-bold uppercase tracking-wide text-gray-600 dark:text-gray-400">Ringkasan {{ $attendanceStats['scope_label'] }}</h2>
+            @if($attendanceStats['has_schedule'])
+                <span class="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-bold text-sky-700 dark:bg-sky-900/50 dark:text-sky-200">
+                    {{ $attendanceStats['scheduled_days'] }} pertemuan terjadwal
+                </span>
+            @else
+                <span class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">Belum ada jadwal PKG bulan ini</span>
+            @endif
+        </div>
         <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-800/60">
                 <p class="text-lg font-black text-gray-900 dark:text-white">{{ $totalSiswa }}</p>
                 <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Generus {{ $user->isTeacher() ? 'Binaan' : 'Aktif' }}</p>
             </div>
             <div class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-800/60">
-                <p class="text-lg font-black text-emerald-600 dark:text-emerald-300">{{ $attendanceStats['hadir'] + $attendanceStats['terlambat'] }}</p>
-                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Hadir ({{ $attendanceStats['percentage'] }}%)</p>
+                <p class="text-lg font-black text-emerald-600 dark:text-emerald-300">
+                    {{ $attendanceStats['has_schedule'] ? $attendanceStats['hadir'] + $attendanceStats['terlambat'] : '—' }}
+                </p>
+                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                    Kehadiran {{ $attendanceStats['percentage'] !== null ? '(' . $attendanceStats['percentage'] . '%)' : '(belum dihitung)' }}
+                </p>
             </div>
             <div class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-800/60">
-                <p class="text-lg font-black text-rose-600 dark:text-rose-300">{{ $attendanceStats['alpha'] }}</p>
-                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Belum Absen</p>
+                <p class="text-lg font-black text-rose-600 dark:text-rose-300">{{ $attendanceStats['has_schedule'] ? $attendanceStats['alpha'] : '—' }}</p>
+                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Kesempatan Absen Belum Hadir</p>
             </div>
             <div class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-800/60">
                 <p class="text-lg font-black text-indigo-600 dark:text-indigo-300">{{ $avgKarakterProgress }}%</p>

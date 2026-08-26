@@ -223,4 +223,72 @@ class AttendanceSchedule extends Model
 
         return $date ? Carbon::parse($date) : Carbon::now();
     }
+
+    /**
+     * Tanggal-tanggal yang benar-benar berjadwal presensi dalam rentang.
+     *
+     * Dipakai sebagai SATU SUMBER KEBENARAN untuk statistik kehadiran agar
+     * persentase tidak dihitung dari semua hari kalender (yang membuat hari
+     * tanpa kegiatan selalu tampil 0%). Ketika jadwal diubah (mis. dari 4x
+     * jadi 1x sebulan), fungsi ini otomatis mengikuti karena membaca ulang
+     * konfigurasi jadwal aktif.
+     *
+     * @return array<int, string> daftar tanggal Y-m-d, urut menaik & unik
+     */
+    public static function scheduledDatesBetween($start, $end, ?string $targetAudience = null): array
+    {
+        $start = self::normalizeDate($start)->startOfDay();
+        $end = self::normalizeDate($end)->startOfDay();
+
+        if ($start->gt($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        $schedules = self::query()
+            ->where('is_active', true)
+            ->overlappingDateRange($start, $end)
+            ->when($targetAudience, function ($query) use ($targetAudience) {
+                $query->whereIn('target_audience', [self::TARGET_ALL, $targetAudience]);
+            })
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            return [];
+        }
+
+        $dates = [];
+        $cursor = $start->copy();
+
+        while ($cursor->lte($end)) {
+            $dayKey = strtolower($cursor->format('l'));
+
+            foreach ($schedules as $schedule) {
+                $days = $schedule->days ?? [];
+                $matchesDay = empty($days) || in_array($dayKey, $days, true);
+
+                if ($matchesDay && $schedule->isDateActive($cursor)) {
+                    $dates[$cursor->toDateString()] = true;
+                    break;
+                }
+            }
+
+            $cursor->addDay();
+        }
+
+        return array_keys($dates);
+    }
+
+    /**
+     * Jumlah hari berjadwal presensi pada satu bulan (untuk denominator %).
+     */
+    public static function scheduledDaysInMonth($month, ?string $targetAudience = null): int
+    {
+        $ref = self::normalizeDate($month);
+
+        return count(self::scheduledDatesBetween(
+            $ref->copy()->startOfMonth(),
+            $ref->copy()->endOfMonth(),
+            $targetAudience
+        ));
+    }
 }

@@ -1,23 +1,35 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use App\Services\QuranReadingScanService;
+use App\Services\TaskPwaNotificationService;
+use App\Services\TeacherSchedulePwaNotificationService;
 use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote')->hourly();
+/**
+ * Catatan hosting: proc_open (dan exec/shell_exec) DIMATIKAN di hosting ini.
+ * Karena itu Schedule::command() — yang menjalankan artisan lewat sub-proses —
+ * selalu gagal ("Process class relies on proc_open") dan membanjiri log.
+ *
+ * Solusi: pakai Schedule::call() yang menjalankan logika langsung dalam proses
+ * PHP yang sama (tanpa sub-proses), sehingga scheduler tetap berjalan.
+ */
 
-Schedule::command('pwa:notify-pending-tasks')
+Schedule::call(function () {
+    app(TaskPwaNotificationService::class)->notifyStudentsWithPendingTasks();
+})->name('pwa-notify-pending-tasks')
     ->everyFiveMinutes()
     ->between('05:00', '21:00')
     ->withoutOverlapping();
 
-Schedule::command('pwa:notify-teacher-schedules')
+Schedule::call(function () {
+    app(TeacherSchedulePwaNotificationService::class)->notifyDue();
+})->name('pwa-notify-teacher-schedules')
     ->everyFiveMinutes()
     ->between('05:00', '21:00')
     ->withoutOverlapping();
 
-Schedule::command('quran-scans:cleanup')
+Schedule::call(function () {
+    app(QuranReadingScanService::class)->cleanup();
+})->name('quran-scans-cleanup')
     ->hourly()
     ->withoutOverlapping();

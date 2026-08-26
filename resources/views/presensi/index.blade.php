@@ -186,6 +186,7 @@ function presensiManager() {
         presensi: [],
         groupSummary: [],
         stats: { total: 0, hadir: 0, terlambat: 0, tidak_hadir: 0, verified: 0 },
+        allDates: @json(request()->boolean('all_dates')),
         filters: {
             tanggal: initialDate,
             school_grade: @json(request('school_grade', '')),
@@ -264,7 +265,8 @@ function presensiManager() {
                     pamong_id: this.filters.pamong_id,
                     kelompok: this.filters.kelompok,
                     status: this.filters.status,
-                    verified: this.filters.verified
+                    verified: this.filters.verified,
+                    all_dates: this.allDates ? '1' : '0'
                 });
                 
                 const response = await fetch(`${endpoints.presensiData}?${params}`, {
@@ -292,6 +294,7 @@ function presensiManager() {
             if (this.filters.kelompok) params.set('kelompok', this.filters.kelompok);
             if (this.filters.status) params.set('status', this.filters.status);
             if (this.filters.verified !== '') params.set('verified', this.filters.verified);
+            if (this.allDates) params.set('all_dates', '1');
 
             return params;
         },
@@ -396,7 +399,8 @@ function presensiManager() {
                         pamong_id: this.filters.pamong_id || null,
                         kelompok: this.filters.kelompok || null,
                         status: this.filters.status || null,
-                        verified: this.filters.verified === '' ? null : this.filters.verified
+                        verified: this.filters.verified === '' ? null : this.filters.verified,
+                        all_dates: this.allDates
                     })
                 });
 
