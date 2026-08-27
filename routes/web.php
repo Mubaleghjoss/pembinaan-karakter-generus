@@ -887,8 +887,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/pamong/cards/print', [PamongController::class, 'printCards'])->name('pamong.cards.print');
     Route::get('/pamong/qr-generate', [PamongController::class, 'qrGenerate'])->name('pamong.qr.generate');
     Route::post('/pamong/qr-generate', [PamongController::class, 'qrGeneratePost'])->name('pamong.qr.generate.post');
-    Route::get('/pamong/permissions', [PamongController::class, 'permissionsIndex'])->name('pamong.permissions.index');
-    Route::post('/pamong/permissions/bulk', [PamongController::class, 'bulkUpdatePermissions'])->name('pamong.permissions.bulk');
+    // Hak akses adalah konfigurasi global; hanya admin yang boleh membaca atau mengubahnya.
+    Route::get('/pamong/permissions', [PamongController::class, 'permissionsIndex'])
+        ->middleware('admin.only')
+        ->name('pamong.permissions.index');
+    Route::post('/pamong/permissions/bulk', [PamongController::class, 'bulkUpdatePermissions'])
+        ->middleware('admin.only')
+        ->name('pamong.permissions.bulk');
     Route::post('/pamong/duty-roles', [PamongController::class, 'storeDutyRole'])->name('pamong.duty-roles.store');
     Route::post('/pamong/{pamong}/duty-roles', [PamongController::class, 'updateDutyRoles'])->name('pamong.duty-roles.update');
     Route::put('/pamong/assignments/board', [PamongController::class, 'updateAssignmentBoard'])
@@ -897,9 +902,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/pamong/{pamong}', [PamongController::class, 'show'])->name('pamong.show');
     Route::get('/pamong/{pamong}/assign', [PamongController::class, 'assignForm'])->middleware('admin.only')->name('pamong.assign.form');
     Route::post('/pamong/{pamong}/assign', [PamongController::class, 'assignStudents'])->middleware('admin.only')->name('pamong.assign');
-    Route::get('/pamong/{pamong}/permissions', [PamongController::class, 'permissionForm'])->name('pamong.permissions');
-    Route::post('/pamong/{pamong}/permissions', [PamongController::class, 'updatePermissions'])->name('pamong.permissions.update');
-    Route::post('/pamong/{pamong}/copy-permissions', [PamongController::class, 'copyPermissions'])->name('pamong.permissions.copy');
+    Route::get('/pamong/{pamong}/permissions', [PamongController::class, 'permissionForm'])
+        ->middleware('admin.only')
+        ->name('pamong.permissions');
+    Route::post('/pamong/{pamong}/permissions', [PamongController::class, 'updatePermissions'])
+        ->middleware('admin.only')
+        ->name('pamong.permissions.update');
+    Route::post('/pamong/{pamong}/copy-permissions', [PamongController::class, 'copyPermissions'])
+        ->middleware('admin.only')
+        ->name('pamong.permissions.copy');
     Route::get('/pamong/{pamong}/activity-log', [PamongController::class, 'activityLog'])->name('pamong.activity-log');
     Route::delete('/pamong/{pamong}/siswa/{siswa}', [PamongController::class, 'removeAssignment'])->middleware('admin.only')->name('pamong.remove-assignment');
     Route::get('/pamong/students-by-kelas', [PamongController::class, 'getStudentsByKelas'])->name('pamong.students-by-kelas');

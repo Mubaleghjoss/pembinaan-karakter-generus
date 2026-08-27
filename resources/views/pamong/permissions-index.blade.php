@@ -42,10 +42,10 @@
                     Batasi Semua
                 </button>
                 <button @click="bulkAction('set_excluded')" class="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition">
-                    Set Pengecualian
+                    Bypass Pembatasan
                 </button>
                 <button @click="bulkAction('remove_excluded')" class="px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition">
-                    Hapus Pengecualian
+                    Aktifkan Pembatasan
                 </button>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -108,7 +108,7 @@
                     <td class="px-4 py-4" data-label="Status akses">
                         @if($p->pamongPermission?->is_excluded)
                             <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-                                Full Access (Dikecualikan)
+                                Bypass pembatasan
                             </span>
                         @elseif($p->pamongPermission)
                             <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -116,7 +116,7 @@
                             </span>
                         @else
                             <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                                Default (Semua)
+                                Paket default
                             </span>
                         @endif
                         @php
@@ -178,21 +178,21 @@
         <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Keterangan Status:</h4>
         <div class="flex flex-wrap gap-4 text-sm">
             <div class="flex items-center gap-2">
-                <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">Full Access</span>
-                <span class="text-gray-600 dark:text-gray-400">Akun dikecualikan dari pembatasan</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">Bypass pembatasan</span>
+                <span class="text-gray-600 dark:text-gray-400">Akun mengabaikan seluruh checklist izin</span>
             </div>
             <div class="flex items-center gap-2">
                 <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Terbatas</span>
                 <span class="text-gray-600 dark:text-gray-400">Akses dibatasi sesuai pengaturan</span>
             </div>
             <div class="flex items-center gap-2">
-                <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Default</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Paket default</span>
                 <span class="text-gray-600 dark:text-gray-400">Belum ada pengaturan khusus</span>
             </div>
         </div>
         <p class="mt-3 rounded-lg bg-orange-50 p-3 text-xs text-orange-800 dark:bg-orange-900/30 dark:text-orange-200">
-            <strong>Perhatian:</strong> status "Full Access (Dikecualikan)" membuat akun dapat membuka SEMUA menu dan
-            mengabaikan daftar izin yang dicentang. Matikan pengecualian bila ingin izin per-menu benar-benar berlaku.
+            <strong>Perhatian:</strong> bypass pembatasan membuat akun dapat membuka SEMUA menu dan tindakan operasional,
+            serta mengabaikan daftar izin yang dicentang. Gunakan hanya untuk penanggung jawab utama.
         </p>
     </div>
 
