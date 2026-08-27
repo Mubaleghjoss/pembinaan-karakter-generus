@@ -36,12 +36,18 @@ class MateriRppJournalWorkflowService
 
     public function canManageAll(User $user): bool
     {
-        return $user->isAdmin() || $user->isPengurusPkg();
+        return $user->isAdmin()
+            || ($user->isPengurusPkg()
+                && $user->hasPamongMenuAccess('rpp_journals')
+                && $user->hasPamongCrudPermission('rpp_journals', 'manage'));
     }
 
     public function canUseStaffJournal(User $user): bool
     {
-        return $this->canManageAll($user) || $user->isTeacher();
+        return $user->isAdmin()
+            || ($user->usesPamongPermissionSystem()
+                && $user->hasPamongMenuAccess('rpp_journals')
+                && $user->hasPamongCrudPermission('rpp_journals', 'view'));
     }
 
     public function canViewStaffSchedule(User $user, ScheduleReminder $schedule): bool

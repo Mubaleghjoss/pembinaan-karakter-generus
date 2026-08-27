@@ -27,6 +27,35 @@ class MateriRppFeatureTest extends TestCase
         Cache::flush();
     }
 
+    public function test_staff_journal_access_follows_explicit_menu_and_role_permissions(): void
+    {
+        $pamongRole = Role::query()->create([
+            'name' => User::ROLE_TEACHER,
+            'display_name' => 'Pamong',
+            'permissions' => [],
+            'is_active' => true,
+        ]);
+        $pamong = User::factory()->create(['role_id' => $pamongRole->id]);
+        $service = app(\App\Services\MateriRppJournalWorkflowService::class);
+
+        PamongPermission::query()->create([
+            'user_id' => $pamong->id,
+            'menu_permissions' => ['dashboard'],
+            'crud_permissions' => [],
+        ]);
+
+        $this->assertFalse($service->canUseStaffJournal($pamong->fresh(['role', 'pamongPermission'])));
+
+        $pamong->pamongPermission()->update([
+            'menu_permissions' => ['dashboard', 'rpp_journals'],
+            'crud_permissions' => ['rpp_journals' => ['view']],
+        ]);
+
+        $pamong = $pamong->fresh(['role', 'pamongPermission']);
+        $this->assertTrue($service->canUseStaffJournal($pamong));
+        $this->assertFalse($service->canManageAll($pamong));
+    }
+
     public function test_admin_can_publish_rpp_and_calendar_events_are_readable(): void
     {
         $admin = $this->adminUser();

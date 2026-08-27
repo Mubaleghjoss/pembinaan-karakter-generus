@@ -359,7 +359,15 @@ class PresensiPropertyTest extends TestCase
 
     public function test_bulk_verify_updates_filtered_unverified_presensi(): void
     {
-        $admin = User::factory()->create(['role_id' => 1]);
+        $adminRole = Role::query()->firstOrCreate(
+            ['name' => User::ROLE_ADMIN],
+            [
+                'display_name' => 'Administrator',
+                'permissions' => ['*'],
+                'is_active' => true,
+            ]
+        );
+        $admin = User::factory()->create(['role_id' => $adminRole->id]);
         $kelas = Kelas::factory()->create();
         $siswa = Siswa::factory()->create(['kelas_id' => $kelas->id]);
         $otherSiswa = Siswa::factory()->create();
@@ -380,15 +388,109 @@ class PresensiPropertyTest extends TestCase
             'is_verified' => false,
         ]);
 
-        $response = $this->actingAs($admin)->postJson(route('presensi.bulk-verify'), [
+        $preview = $this->actingAs($admin)->postJson(route('presensi.bulk-verify'), [
+            'scope' => 'selected',
+            'ids' => [$target->id],
             'tanggal' => '2026-05-12',
             'kelas_id' => $kelas->id,
             'status' => 'hadir',
+            'preview' => true,
+        ]);
+
+        $preview->assertOk()->assertJsonPath('affected', 1);
+        $previewToken = $preview->json('preview_token');
+        $this->assertNotEmpty($previewToken);
+        $this->assertFalse($target->fresh()->is_verified);
+
+        $response = $this->actingAs($admin)->postJson(route('presensi.bulk-verify'), [
+            'scope' => 'selected',
+            'ids' => [$target->id],
+            'tanggal' => '2026-05-12',
+            'kelas_id' => $kelas->id,
+            'status' => 'hadir',
+            'preview_token' => $previewToken,
         ]);
 
         $response->assertOk()->assertJsonPath('updated', 1);
         $this->assertTrue($target->fresh()->is_verified);
         $this->assertFalse($other->fresh()->is_verified);
+    }
+
+    public function test_bulk_verify_requires_explicit_scope_and_non_empty_selected_ids(): void
+    {
+        $adminRole = Role::query()->firstOrCreate(
+            ['name' => User::ROLE_ADMIN],
+            ['display_name' => 'Administrator', 'permissions' => ['*'], 'is_active' => true]
+        );
+        $admin = User::factory()->create(['role_id' => $adminRole->id]);
+
+        $this->actingAs($admin)->postJson(route('presensi.bulk-verify'), [
+            'scope' => 'selected',
+            'ids' => [],
+            'preview' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors('ids');
+
+        $this->actingAs($admin)->postJson(route('presensi.bulk-verify'), [
+            'scope' => 'filtered',
+            'ids' => [1],
+            'preview' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors('ids');
+    }
+
+    public function test_bulk_verify_is_fail_closed_for_role_outside_pamong_permissions(): void
+    {
+        $siswaRole = Role::query()->firstOrCreate(
+            ['name' => 'siswa'],
+            ['display_name' => 'Siswa', 'permissions' => [], 'is_active' => true]
+        );
+        $siswa = User::factory()->create(['role_id' => $siswaRole->id]);
+
+        $this->actingAs($siswa)->postJson(route('presensi.bulk-verify'), [
+            'scope' => 'filtered',
+            'preview' => true,
+        ])->assertForbidden();
+    }
+
+    public function test_filtered_bulk_verify_executes_the_previewed_snapshot_only(): void
+    {
+        $adminRole = Role::query()->firstOrCreate(
+            ['name' => User::ROLE_ADMIN],
+            ['display_name' => 'Administrator', 'permissions' => ['*'], 'is_active' => true]
+        );
+        $admin = User::factory()->create(['role_id' => $adminRole->id]);
+
+        $previewed = Presensi::create([
+            'siswa_id' => Siswa::factory()->create()->id,
+            'tanggal' => '2026-05-12',
+            'jam_masuk' => '07:15:00',
+            'status' => 'hadir',
+            'is_verified' => false,
+        ]);
+
+        $preview = $this->actingAs($admin)->postJson(route('presensi.bulk-verify'), [
+            'scope' => 'filtered',
+            'tanggal' => '2026-05-12',
+            'status' => 'hadir',
+            'preview' => true,
+        ])->assertOk()->assertJsonPath('affected', 1);
+
+        $addedAfterPreview = Presensi::create([
+            'siswa_id' => Siswa::factory()->create()->id,
+            'tanggal' => '2026-05-12',
+            'jam_masuk' => '07:30:00',
+            'status' => 'hadir',
+            'is_verified' => false,
+        ]);
+
+        $this->actingAs($admin)->postJson(route('presensi.bulk-verify'), [
+            'scope' => 'filtered',
+            'tanggal' => '2026-05-12',
+            'status' => 'hadir',
+            'preview_token' => $preview->json('preview_token'),
+        ])->assertOk()->assertJsonPath('updated', 1);
+
+        $this->assertTrue($previewed->fresh()->is_verified);
+        $this->assertFalse($addedAfterPreview->fresh()->is_verified);
     }
 
     /**

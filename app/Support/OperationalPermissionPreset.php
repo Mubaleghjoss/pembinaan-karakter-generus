@@ -24,10 +24,10 @@ class OperationalPermissionPreset
         return [
             'pamong_pembimbing' => [
                 'label' => 'Pamong Pembimbing',
-                'description' => 'Paket standar pamong: verifikasi Tugas PKG & bacaan Qur\'an, presensi + bantu isi presensi manual semua generus, materi, kalender, chat.',
+                'description' => 'Paket standar pamong: verifikasi Tugas PKG & bacaan Qur\'an, presensi + bantu isi presensi manual semua generus, materi, Jurnal RPP, kalender, chat.',
                 'menu_permissions' => [
                     'dashboard', 'siswa', 'presensi', 'manual_attendance', 'cek_kehadiran',
-                    'tracer_karakter', 'tracer_bacaan_quran', 'pr', 'materi', 'calendar',
+                    'tracer_karakter', 'tracer_bacaan_quran', 'pr', 'materi', 'rpp_journals', 'calendar',
                     'chat', 'group_chat', 'laporan_penyaksian', 'gamification', 'game',
                 ],
                 'crud_permissions' => [
@@ -39,6 +39,7 @@ class OperationalPermissionPreset
                     'tracer_bacaan_quran' => ['view', 'create', 'edit', 'verify'],
                     'pr' => ['view', 'create', 'edit', 'verify'],
                     'materi' => ['view'],
+                    'rpp_journals' => ['view'],
                     'calendar' => ['view'],
                     'chat' => ['view', 'send'],
                     'group_chat' => ['view', 'send'],
@@ -52,7 +53,7 @@ class OperationalPermissionPreset
                 'description' => 'Pengurus PKG yang fokus memverifikasi: Tugas PKG, bacaan Qur\'an, presensi, dan laporan penyaksian. Tanpa input presensi manual.',
                 'menu_permissions' => [
                     'dashboard', 'siswa', 'presensi', 'cek_kehadiran', 'tracer_karakter',
-                    'tracer_bacaan_quran', 'pr', 'materi', 'calendar', 'chat',
+                    'tracer_bacaan_quran', 'pr', 'materi', 'rpp_journals', 'calendar', 'chat',
                     'laporan_penyaksian', 'berita', 'gamification',
                 ],
                 'crud_permissions' => [
@@ -63,6 +64,7 @@ class OperationalPermissionPreset
                     'tracer_bacaan_quran' => ['view', 'create', 'edit', 'verify', 'export'],
                     'pr' => ['view', 'create', 'edit', 'verify'],
                     'materi' => ['view'],
+                    'rpp_journals' => ['view', 'manage'],
                     'calendar' => ['view'],
                     'chat' => ['view', 'send'],
                     'laporan_penyaksian' => ['view', 'tindak_lanjut'],

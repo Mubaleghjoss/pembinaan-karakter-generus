@@ -34,9 +34,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Controller untuk mengelola Presensi (Web)
@@ -57,6 +60,7 @@ class PresensiController extends Controller
         $this->middleware('pamong.permission:manual_attendance,view')->only(['students']);
         $this->middleware('pamong.permission:manual_attendance,create')->only(['store', 'bulkStore', 'quickStatus', 'import', 'downloadTemplate']);
         $this->middleware('pamong.permission:presensi,edit')->only(['update']);
+        $this->middleware('pamong.permission:presensi,verify')->only(['verify', 'bulkVerify']);
     }
 
     /**
@@ -77,6 +81,7 @@ class PresensiController extends Controller
         $canCreateManualAttendance = $request->user()->canCreateManualAttendance();
         $canAccessAllManualAttendanceStudents = $request->user()->canAccessAllManualAttendanceStudents();
         $canEditPresensi = $request->user()->hasPamongCrudPermission('presensi', 'edit');
+        $canVerifyPresensi = $this->canVerifyPresensi($request->user());
         $schoolGradeOptions = TargetGrade::schoolClassOptions();
         $kelompokOptions = $this->attendanceOverview->groupOptions();
         $pamongOptions = User::query()->where('status', 'active')->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))->orderByRaw('COALESCE(name, username)')->get(['id', 'name', 'username']);
@@ -90,6 +95,7 @@ class PresensiController extends Controller
             'canCreateManualAttendance',
             'canAccessAllManualAttendanceStudents',
             'canEditPresensi',
+            'canVerifyPresensi',
             'schoolGradeOptions',
             'kelompokOptions',
             'pamongOptions'
@@ -375,6 +381,8 @@ class PresensiController extends Controller
      */
     public function verify(Presensi $presensi)
     {
+        $this->ensureCanVerifyPresensi(request()->user());
+
         $this->presensiService->verifyAttendance($presensi->id, auth()->id());
 
         if (request()->wantsJson() || request()->ajax()) {
@@ -864,7 +872,14 @@ class PresensiController extends Controller
 
     public function bulkVerify(Request $request): JsonResponse
     {
+        $this->ensureCanVerifyPresensi($request->user());
+
         $validated = $request->validate([
+            'scope' => ['required', Rule::in(['selected', 'filtered'])],
+            'ids' => ['prohibited_unless:scope,selected', 'required_if:scope,selected', 'array', 'min:1', 'max:1000'],
+            'ids.*' => ['integer', 'distinct', 'exists:presensi,id'],
+            'preview' => ['nullable', 'boolean'],
+            'preview_token' => ['required_unless:preview,true', 'nullable', 'string', 'size:40'],
             'tanggal' => ['nullable', 'date', 'date_format:Y-m-d'],
             'school_grade' => ['nullable', 'string', Rule::in(TargetGrade::values())],
             'pamong_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -887,13 +902,47 @@ class PresensiController extends Controller
             : $tanggal;
         $query = $this->buildListingQuery($request, $dateScope);
 
+        if ($validated['scope'] === 'selected') {
+            $query->whereIn('id', $validated['ids']);
+        }
+
         $this->applyStatusFilter($query, $validated['status'] ?? null);
 
         if (array_key_exists('verified', $validated) && $validated['verified'] !== null && $validated['verified'] !== '') {
             $query->where('is_verified', (bool) $validated['verified']);
         }
 
-        $updated = $query
+        $query->where('is_verified', false);
+
+        if ((bool) ($validated['preview'] ?? false)) {
+            $ids = (clone $query)->orderBy('id')->pluck('id')->all();
+            $previewToken = Str::random(40);
+            Cache::put("presensi-verification-preview:{$previewToken}", [
+                'user_id' => $request->user()->id,
+                'ids' => $ids,
+            ], now()->addMinutes(10));
+
+            return response()->json([
+                'success' => true,
+                'affected' => count($ids),
+                'preview_token' => $previewToken,
+                'message' => count($ids) > 0
+                    ? count($ids).' data presensi siap diverifikasi.'
+                    : 'Tidak ada data presensi yang perlu diverifikasi.',
+            ]);
+        }
+
+        $snapshot = Cache::pull('presensi-verification-preview:'.$validated['preview_token']);
+        if (! is_array($snapshot) || ($snapshot['user_id'] ?? null) !== $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pratinjau sudah kedaluwarsa atau tidak valid. Periksa ulang cakupan verifikasi.',
+            ], 409);
+        }
+
+        $snapshotIds = array_values(array_filter($snapshot['ids'] ?? [], 'is_int'));
+        $updated = Presensi::query()
+            ->whereIn('id', $snapshotIds)
             ->where('is_verified', false)
             ->update([
                 'is_verified' => true,
@@ -1405,6 +1454,22 @@ class PresensiController extends Controller
             'alpha', 'tidak_hadir' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
             default => 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
         };
+    }
+
+    protected function canVerifyPresensi(?User $user): bool
+    {
+        return $user !== null && (
+            $user->isAdmin()
+            || ($user->usesPamongPermissionSystem()
+                && $user->hasPamongCrudPermission('presensi', 'verify'))
+        );
+    }
+
+    protected function ensureCanVerifyPresensi(?User $user): void
+    {
+        if (! $this->canVerifyPresensi($user)) {
+            throw new AccessDeniedHttpException('Anda tidak memiliki izin verifikasi presensi.');
+        }
     }
 
     protected function backfillClosedSiswaAlpha(Carbon|string $startDate, Carbon|string $endDate, ?int $kelasId = null): int

@@ -303,13 +303,21 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400">Aksi mengikuti filter tanggal, kelas, status, dan verifikasi yang aktif.</p>
             </div>
             <div class="flex flex-wrap gap-2">
+                @if($canVerifyPresensi ?? false)
                 <button type="button"
-                        @click="bulkVerifyAttendance()"
+                        @click="bulkVerifyAttendance(true)"
+                        :disabled="bulkVerifying || selectedPresensiIds.length === 0"
+                        class="btn-secondary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50">
+                    Verifikasi Pilihan (<span x-text="selectedPresensiIds.length"></span>)
+                </button>
+                <button type="button"
+                        @click="bulkVerifyAttendance(false)"
                         :disabled="bulkVerifying || presensi.length === 0"
                         class="btn-success px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50">
-                    <span x-show="!bulkVerifying" x-text="allDates ? 'Verifikasi Semua Antrean' : 'Verifikasi Semua'"></span>
+                    <span x-show="!bulkVerifying" x-text="allDates ? 'Verifikasi Hasil Filter Antrean' : 'Verifikasi Hasil Filter'"></span>
                     <span x-show="bulkVerifying">Memproses...</span>
                 </button>
+                @endif
                 <a :href="exportUrl()" class="btn-secondary px-3 py-2 text-sm">
                     Unduh Excel
                 </a>
@@ -338,6 +346,9 @@
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
+                        @if($canVerifyPresensi ?? false)
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Pilih</th>
+                        @endif
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Siswa</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tanggal</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Jam Masuk</th>
@@ -350,6 +361,11 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="item in presensi" :key="item.id">
                         <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
+                            @if($canVerifyPresensi ?? false)
+                            <td data-label="Pilih" class="px-4 py-4">
+                                <input type="checkbox" class="pkg-check" :value="item.id" x-model.number="selectedPresensiIds" :disabled="item.is_verified" :aria-label="`Pilih presensi ${item.siswa?.nama || ''}`">
+                            </td>
+                            @endif
                             <td data-label="Siswa" class="px-4 py-4 pkg-mobile-main">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
@@ -402,12 +418,14 @@
                             </td>
                             <td data-label="Aksi" class="px-4 py-4 text-right pkg-mobile-actions">
                                 <div class="flex items-center justify-end space-x-2">
+                                    @if($canVerifyPresensi ?? false)
                                     <button x-show="!item.is_verified" @click="verifyAttendance(item)" 
                                             class="rounded-lg p-1.5 text-blue-600 transition hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20" title="Verifikasi">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </button>
+                                    @endif
                                     @if($canEditPresensi ?? false)
                                     <button type="button" @click="editPresensi(item)" class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700" title="Koreksi presensi" aria-label="Koreksi presensi">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

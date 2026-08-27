@@ -81,7 +81,36 @@ class OperationalMobileNavigationFeatureTest extends TestCase
             $this->routeRequest('dashboard')
         );
 
-        $this->assertSame(['Beranda', 'Materi', 'Jurnal RPP'], array_column($navigation['bottom_items'], 'label'));
+        $this->assertSame(['Beranda', 'Materi'], array_column($navigation['bottom_items'], 'label'));
+    }
+
+    public function test_jurnal_rpp_only_appears_when_its_menu_permission_is_selected(): void
+    {
+        $pamong = $this->userWithRole(User::ROLE_TEACHER, 'Pamong');
+        $permission = PamongPermission::query()->create([
+            'user_id' => $pamong->id,
+            'menu_permissions' => ['dashboard'],
+            'crud_permissions' => [],
+        ]);
+
+        $navigation = app(OperationalMobileNavigation::class)->build(
+            $pamong->fresh('role'),
+            $this->routeRequest('dashboard')
+        );
+        $labels = collect($navigation['sheet_sections'])->pluck('items')->flatten(1)->pluck('label');
+        $this->assertFalse($labels->contains('Jurnal RPP'));
+
+        $permission->update([
+            'menu_permissions' => ['dashboard', 'rpp_journals'],
+            'crud_permissions' => ['rpp_journals' => ['view']],
+        ]);
+
+        $navigation = app(OperationalMobileNavigation::class)->build(
+            $pamong->fresh(['role', 'pamongPermission']),
+            $this->routeRequest('dashboard')
+        );
+        $labels = collect($navigation['sheet_sections'])->pluck('items')->flatten(1)->pluck('label');
+        $this->assertTrue($labels->contains('Jurnal RPP'));
     }
 
     public function test_guru_does_not_receive_operational_navigation(): void

@@ -340,6 +340,26 @@
                         </div>
                     </div>
 
+                    <!-- Jurnal RPP CRUD -->
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
+                        <div class="flex items-center justify-between mb-3">
+                            <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Jurnal RPP</h5>
+                            <button type="button" @click="toggleModuleCrud('rpp_journals')"
+                                    class="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium">
+                                <span x-text="isModuleFullySelected('rpp_journals') ? 'Hapus' : 'Pilih Semua'"></span>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <template x-for="op in availableCrud.rpp_journals || ['view', 'manage']" :key="'rpp_journals-'+op">
+                                <label class="flex items-center p-2 bg-white dark:bg-gray-700 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    <input type="checkbox" :name="'crud_permissions[rpp_journals][]'" :value="op" :checked="isCrudSelected('rpp_journals', op)" @change="toggleCrud('rpp_journals', op)" class="pkg-check">
+                                    <span class="ml-1 text-xs text-gray-700 dark:text-gray-300" x-text="getCrudLabel(op)"></span>
+                                </label>
+                            </template>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Lihat: jurnal yang ditugaskan. Kelola Semua: seluruh jurnal dan proses review.</p>
+                    </div>
+
                     <!-- Tugas PKG CRUD -->
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
                         <div class="flex items-center justify-between mb-3">
@@ -801,7 +821,8 @@ function permissionsForm() {
                 'presensi': 'Presensi',
                 'siswa': 'Data Siswa',
                 'leaderboard': 'Peringkat',
-                'all_students': 'Semua Siswa'
+                'all_students': 'Semua Siswa',
+                'manage': 'Kelola Semua'
             };
             return labels[operation] || operation;
         },

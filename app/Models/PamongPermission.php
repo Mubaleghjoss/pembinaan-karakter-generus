@@ -58,6 +58,7 @@ class PamongPermission extends Model
             'tugas_pkg' => 'Tugas PKG',
             'cek_kehadiran' => 'Poin Kehadiran',
             'materi' => 'Materi',
+            'rpp_journals' => 'Jurnal RPP',
             'pr' => 'Tugas PKG',
             'chat' => 'Chat Siswa',
             'group_chat' => 'Grup Chat',
@@ -101,6 +102,7 @@ class PamongPermission extends Model
             'tracer_bacaan_quran' => ['view', 'create', 'edit', 'verify', 'export'],
             'cek_kehadiran' => ['view', 'delete'],
             'materi' => ['view', 'create', 'edit', 'delete'],
+            'rpp_journals' => ['view', 'manage'],
             'pr' => ['view', 'create', 'edit', 'delete', 'verify'],
             'berita' => ['view', 'create', 'edit', 'delete'],
             'chat' => ['view', 'send', 'broadcast'],
@@ -137,6 +139,7 @@ class PamongPermission extends Model
             'siswa' => 'Siswa',
             'leaderboard' => 'Peringkat',
             'all_students' => 'Semua Siswa',
+            'manage' => 'Kelola Semua',
         ];
     }
 

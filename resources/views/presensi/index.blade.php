@@ -170,6 +170,7 @@ function presensiManager() {
         ],
         loading: false,
         bulkVerifying: false,
+        selectedPresensiIds: [],
         editModal: {
             open: false,
             saving: false,
@@ -277,6 +278,7 @@ function presensiManager() {
                 });
                 const data = await response.json();
                 this.presensi = data.data || [];
+                this.selectedPresensiIds = [];
                 this.groupSummary = data.group_summary || [];
             } catch (error) {
                 console.error('Error loading presensi:', error);
@@ -375,15 +377,63 @@ function presensiManager() {
             }
         },
 
-        async bulkVerifyAttendance() {
-            const confirmed = await window.showConfirmation('Verifikasi semua data presensi sesuai filter saat ini?', {
-                title: 'Verifikasi semua',
-                confirmText: 'Verifikasi semua',
-                tone: 'primary'
-            });
-            if (!confirmed) return;
+        async bulkVerifyAttendance(selectedOnly = false) {
+            const ids = selectedOnly ? this.selectedPresensiIds : [];
+            if (selectedOnly && ids.length === 0) {
+                window.showNotification('Pilih minimal satu data presensi.', 'warning');
+                return;
+            }
+
+            const payload = {
+                scope: selectedOnly ? 'selected' : 'filtered',
+                tanggal: this.filters.tanggal,
+                school_grade: this.filters.school_grade || null,
+                pamong_id: this.filters.pamong_id || null,
+                kelompok: this.filters.kelompok || null,
+                status: this.filters.status || null,
+                verified: this.filters.verified === '' ? null : this.filters.verified,
+                all_dates: this.allDates
+            };
+            if (selectedOnly) payload.ids = ids;
 
             this.bulkVerifying = true;
+            let affected = 0;
+            let previewToken = null;
+            try {
+                const previewResponse = await fetch(endpoints.presensiBulkVerify, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify({ ...payload, preview: true })
+                });
+                const preview = await previewResponse.json();
+                if (!previewResponse.ok || !preview.success) throw new Error(preview.message || 'Cakupan verifikasi tidak dapat diperiksa.');
+                affected = preview.affected || 0;
+                previewToken = preview.preview_token;
+            } catch (error) {
+                window.showNotification(error.message || 'Cakupan verifikasi tidak dapat diperiksa.', 'error');
+                this.bulkVerifying = false;
+                return;
+            }
+
+            if (affected === 0) {
+                window.showNotification('Tidak ada data presensi yang perlu diverifikasi.', 'warning');
+                this.bulkVerifying = false;
+                return;
+            }
+
+            const confirmed = await window.showConfirmation(`Verifikasi ${affected} data presensi ${selectedOnly ? 'terpilih' : 'sesuai filter saat ini'}?`, {
+                title: selectedOnly ? 'Verifikasi pilihan' : 'Verifikasi hasil filter',
+                confirmText: `Verifikasi ${affected} data`,
+                tone: 'primary'
+            });
+            if (!confirmed) {
+                this.bulkVerifying = false;
+                return;
+            }
 
             try {
                 const response = await fetch(endpoints.presensiBulkVerify, {
@@ -393,15 +443,7 @@ function presensiManager() {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
                     },
-                    body: JSON.stringify({
-                        tanggal: this.filters.tanggal,
-                        school_grade: this.filters.school_grade || null,
-                        pamong_id: this.filters.pamong_id || null,
-                        kelompok: this.filters.kelompok || null,
-                        status: this.filters.status || null,
-                        verified: this.filters.verified === '' ? null : this.filters.verified,
-                        all_dates: this.allDates
-                    })
+                    body: JSON.stringify({ ...payload, preview_token: previewToken })
                 });
 
                 const data = await response.json();

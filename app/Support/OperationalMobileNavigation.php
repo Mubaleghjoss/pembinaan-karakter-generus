@@ -68,11 +68,11 @@ class OperationalMobileNavigation
 
         $isAdmin = $user->isAdmin();
         $can = static fn (string $permission): bool => $user->hasPamongMenuAccess($permission);
-        $canGeneralAttendance = $isAdmin || $user->isPengurusPkg() || $can('presensi');
+        $canGeneralAttendance = $isAdmin || $can('presensi');
         $canCalendar = $isAdmin || $can('calendar');
         $canManualAttendance = $isAdmin || $can('manual_attendance');
         $canSchedule = $isAdmin || $can('jadwal');
-        $canJournal = $isAdmin || $user->isPengurusPkg() || $user->isTeacher();
+        $canJournal = $isAdmin || $can('rpp_journals');
 
         $add('Data Utama', 'dashboard', 'Dashboard', 'home', route('dashboard'), $request->routeIs('dashboard'), $can('dashboard'));
         $add('Data Utama', 'students', 'Siswa', 'users', route('siswa.index'), $request->routeIs('siswa.*'), $can('siswa'));
