@@ -276,6 +276,28 @@ class User extends Authenticatable
     }
 
     /**
+     * Daftar seluruh permission efektif milik user (dari role-nya).
+     *
+     * Dipakai oleh API (AuthController login/me) sebagai payload untuk klien
+     * mobile/SPA. Mengembalikan array kosong bila user belum punya role.
+     *
+     * @return array<int, string>
+     */
+    public function getAllPermissions(): array
+    {
+        $permissions = $this->role?->permissions;
+
+        if (! is_array($permissions)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(
+            $permissions,
+            static fn ($permission) => is_string($permission) && $permission !== ''
+        )));
+    }
+
+    /**
      * Check if user has role
      */
     public function hasRole(string $roleName): bool
