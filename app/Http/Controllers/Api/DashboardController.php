@@ -2,15 +2,27 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\ResolvesSiswaToken;
 use App\Http\Controllers\Controller;
 use App\Models\Presensi;
 use App\Models\Siswa;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function stats()
+    use ResolvesSiswaToken;
+
+    public function stats(Request $request)
     {
+        // Dasbor ini bersifat seluruh sekolah (total siswa, nama siswa lain).
+        // Token milik model Siswa (akun siswa & orang tua) tidak boleh
+        // melihatnya: rutenya berada di luar middleware `role.permission`,
+        // jadi penjagaannya harus di controller.
+        if ($this->siswaFromToken($request) !== null) {
+            return $this->forbiddenStaffOnly();
+        }
+
         try {
             $today = Carbon::today();
 
@@ -44,8 +56,12 @@ class DashboardController extends Controller
         }
     }
 
-    public function recentActivities()
+    public function recentActivities(Request $request)
     {
+        if ($this->siswaFromToken($request) !== null) {
+            return $this->forbiddenStaffOnly();
+        }
+
         try {
             $activities = Presensi::with(['siswa'])
                 ->latest()
@@ -71,6 +87,19 @@ class DashboardController extends Controller
                 'data' => [],
             ], 200); // Return 200 with empty data instead of 500
         }
+    }
+
+    /**
+     * Respons 403 standar untuk endpoint yang hanya boleh diakses staf.
+     */
+    private function forbiddenStaffOnly()
+    {
+        return response()->json([
+            'success' => false,
+            'error' => 'Forbidden',
+            'message' => 'Dasbor sekolah hanya untuk akun staf/pamong',
+            'code' => 'STAFF_ONLY',
+        ], 403);
     }
 
     private function getActionText($status)

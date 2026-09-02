@@ -100,7 +100,9 @@ class OrtuDashboardController extends Controller
         $presensiRows = Presensi::query()
             ->where('siswa_id', $siswaId)
             ->whereDate('tanggal', '>=', self::PKG_START)
-            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as periode")
+            // SUBSTR dipilih karena portabel (MySQL/MariaDB dan SQLite);
+            // DATE_FORMAT hanya ada di MySQL sehingga memecah environment lain.
+            ->selectRaw("SUBSTR(tanggal, 1, 7) as periode")
             ->selectRaw("SUM(CASE WHEN status = 'hadir' THEN 1 ELSE 0 END) as hadir")
             ->selectRaw("SUM(CASE WHEN status = 'terlambat' THEN 1 ELSE 0 END) as terlambat")
             ->selectRaw("SUM(CASE WHEN status = 'izin' THEN 1 ELSE 0 END) as izin")

@@ -48,6 +48,7 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\QuranReadingController;
 use App\Http\Controllers\RemoteMediaController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Api\MobileWebBridgeController;
 use App\Http\Controllers\RpgGameController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\PublicKarakterController;
@@ -94,6 +95,15 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes (no auth required)
 Route::get('/', [PublicController::class, 'index'])->name('public.index');
+
+// Jembatan sesi web sekali pakai untuk aplikasi mobile. Token dibuat oleh
+// POST /api/v1/mobile/web-bridge (butuh token Sanctum) lalu ditukar di sini
+// menjadi sesi web + redirect ke halaman tujuan. Rute ini sengaja tidak
+// ber-auth: keabsahannya berasal dari token sekali pakai berumur 120 detik.
+Route::get('/mobile-bridge/{token}', [MobileWebBridgeController::class, 'consume'])
+    ->where('token', '[A-Za-z0-9]{32,128}')
+    ->middleware(['throttle:auth'])
+    ->name('mobile.web-bridge.consume');
 Route::get('/berita-publik/{slug}', [PublicController::class, 'legacyBerita'])
     ->name('public.berita.legacy');
 Route::get('/berita/{slug}', [PublicController::class, 'berita'])

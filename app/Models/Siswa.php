@@ -15,11 +15,15 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class Siswa extends Authenticatable
 {
-    use HasFactory, HasPushSubscriptions, Notifiable;
+    // HasApiTokens ditambahkan agar aplikasi mobile bisa login sebagai
+    // siswa/orang tua lewat Sanctum bearer token (web tetap memakai
+    // guard sesi 'siswa'/'ortu' — tidak ada perubahan pada alur web).
+    use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable;
 
     public const KELOMPOK_SAWAH_DALAM_1 = ParticipantProfileOptions::SAWAH_DALAM_1;
     public const KELOMPOK_SAWAH_DALAM_2 = ParticipantProfileOptions::SAWAH_DALAM_2;
