@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminBroadcastController;
+use App\Http\Controllers\AppDownloadController;
 use App\Http\Controllers\AttendanceScheduleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\OrtuAuthController;
@@ -145,6 +146,13 @@ Route::get('/presentasi-publik/{presentation:slug}', [PresentationController::cl
     ->name('public.presentations.show');
 Route::get('/kalender', [CalendarController::class, 'publicIndex'])->name('public.calendar.index');
 Route::get('/kalender/events', [CalendarController::class, 'publicEvents'])->name('public.calendar.events');
+// Distribusi APK: halaman informasi + berkas. Berkas dilayani controller (bukan
+// file statis di public/) agar header Content-Type/Content-Length benar sehingga
+// Android menawarkan dialog install setelah unduhan selesai.
+Route::get('/download_app', [AppDownloadController::class, 'page'])->name('public.download-app');
+Route::get('/download_app/apk', [AppDownloadController::class, 'apk'])
+    ->middleware('throttle:30,1')
+    ->name('public.download-app.apk');
 // Pendataan guru privat. Sengaja tidak ditampilkan pada navigasi publik.
 Route::get('/pendataanguru', [TeacherAvailabilityController::class, 'index'])
     ->name('public.teacher-availability.index');

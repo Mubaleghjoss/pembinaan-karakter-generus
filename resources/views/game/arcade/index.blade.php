@@ -12,9 +12,9 @@
             </div>
             <div class="pkg-page-actions">
                 @if($player)
-                    <a href="{{ route('arcade.play') }}" class="btn-primary px-5 py-2.5 font-bold">Main Solo</a>
+                    <a href="{{ route('arcade.play') }}" class="btn-primary min-h-[48px] inline-flex items-center justify-center px-5 py-3 font-bold">Main Solo</a>
                 @else
-                    <a href="{{ route('arcade.play') }}" class="btn-primary px-5 py-2.5 font-bold">Coba Sekarang</a>
+                    <a href="{{ route('arcade.play') }}" class="btn-primary min-h-[48px] inline-flex items-center justify-center px-5 py-3 font-bold">Coba Sekarang</a>
                 @endif
             </div>
         </div>
@@ -52,7 +52,7 @@
                 <div id="createResult" class="mt-3 hidden rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/30">
                     <p class="text-xs text-emerald-700 dark:text-emerald-300">Kode tanding kamu:</p>
                     <p id="createCode" class="text-2xl font-black tracking-widest text-emerald-800 dark:text-emerald-200"></p>
-                    <a id="createStart" href="#" class="btn-success mt-2 inline-flex px-4 py-2 text-sm font-bold">Mulai &amp; Tunggu Lawan</a>
+                    <a id="createStart" href="#" class="btn-success mt-2 min-h-[48px] inline-flex items-center justify-center px-4 py-3 text-sm font-bold">Mulai &amp; Tunggu Lawan</a>
                 </div>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">

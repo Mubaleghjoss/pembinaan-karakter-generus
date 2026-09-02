@@ -454,7 +454,10 @@ class TracerKarakterController extends Controller
                 $siswaQuery->whereIn('id', $pamongSiswaIds);
             }
 
-            $siswaList = $siswaQuery->with('pamongAssignments:id,name,username')->get();
+            // pamongAssignments adalah baris pivot pamong_siswa (tanpa kolom name/username);
+            // nama pamong ada di relasi bersarang ->pamong. Memilih kolom langsung di
+            // pivot memicu SQLSTATE[42S22] Unknown column 'name'.
+            $siswaList = $siswaQuery->with('pamongAssignments.pamong:id,name,username')->get();
             $totalKarakter = Karakter::active()->count();
 
             $statsQuery = TracerKarakter::query();

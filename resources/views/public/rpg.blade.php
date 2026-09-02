@@ -47,15 +47,15 @@
             </div>
             <div class="pkg-page-actions">
                 @if(Auth::guard('siswa')->check())
-                    <a href="{{ route('siswa.game.index') }}" class="btn-primary">
+                    <a href="{{ route('siswa.game.index') }}" class="btn-primary min-h-[48px] inline-flex items-center justify-center">
                         Masuk Game Siswa
                     </a>
                 @else
-                    <a href="{{ route('siswa.login') }}" class="btn-primary">
+                    <a href="{{ route('siswa.login') }}" class="btn-primary min-h-[48px] inline-flex items-center justify-center">
                         Login untuk simpan poin
                     </a>
                 @endif
-                <a href="{{ route('public.index') }}" class="btn-secondary">
+                <a href="{{ route('public.index') }}" class="btn-secondary min-h-[48px] inline-flex items-center justify-center">
                     Beranda
                 </a>
             </div>
@@ -84,7 +84,7 @@
                             <p class="text-xs text-gray-500 dark:text-gray-400">Susun huruf jadi nama karakter dari petunjuk.</p>
                         </div>
                     </div>
-                    <a href="{{ route('public.game.play', 'rangkai') }}" class="inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Coba Sekarang</a>
+                    <a href="{{ route('public.game.play', 'rangkai') }}" class="min-h-[48px] inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700">Coba Sekarang</a>
                 </div>
 
                 <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -97,7 +97,7 @@
                             <p class="text-xs text-gray-500 dark:text-gray-400">Pilih karakter tepat dari studi kasus.</p>
                         </div>
                     </div>
-                    <a href="{{ route('public.game.play', 'tebak') }}" class="inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Coba Sekarang</a>
+                    <a href="{{ route('public.game.play', 'tebak') }}" class="min-h-[48px] inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700">Coba Sekarang</a>
                 </div>
 
                 <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:col-span-2">
@@ -110,7 +110,7 @@
                             <p class="text-xs text-gray-500 dark:text-gray-400">Game arcade: pantulkan bola & pecahkan balok 29 karakter. Bisa tanding lewat kode.</p>
                         </div>
                     </div>
-                    <a href="{{ route('arcade.index') }}" class="inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600">Main Sekarang</a>
+                    <a href="{{ route('arcade.index') }}" class="min-h-[48px] inline-flex items-center justify-center rounded-lg bg-amber-500 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600">Main Sekarang</a>
                 </div>
             </div>
             @if(!Auth::guard('siswa')->check())
@@ -126,7 +126,7 @@
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Jelajahi peta 3D, temui NPC, jawab tantangan.</p>
             </div>
             @if(!Auth::guard('siswa')->check())
-                <a href="{{ route('siswa.login') }}" class="btn-secondary">
+                <a href="{{ route('siswa.login') }}" class="btn-secondary min-h-[48px] inline-flex items-center justify-center">
                     Login untuk simpan poin
                 </a>
             @endif
@@ -189,14 +189,14 @@
 
                         <div class="mt-5 flex flex-wrap gap-2">
                             @if(Auth::guard('siswa')->check())
-                                <a href="{{ route('siswa.rpg.play', $map) }}" class="btn-primary">
+                                <a href="{{ route('siswa.rpg.play', $map) }}" class="btn-primary min-h-[48px] inline-flex items-center justify-center">
                                     Main Versi Siswa
                                 </a>
                             @else
-                                <a href="{{ route('public.rpg.play', $map) }}?view=3d" class="btn-primary">
+                                <a href="{{ route('public.rpg.play', $map) }}?view=3d" class="btn-primary min-h-[48px] inline-flex items-center justify-center">
                                     Main 3D Tanpa Akun
                                 </a>
-                                <a href="{{ route('siswa.login') }}" class="btn-secondary">
+                                <a href="{{ route('siswa.login') }}" class="btn-secondary min-h-[48px] inline-flex items-center justify-center">
                                     Simpan Poin
                                 </a>
                             @endif
