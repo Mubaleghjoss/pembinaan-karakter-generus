@@ -265,6 +265,35 @@ class User extends Authenticatable
     }
 
     /**
+     * Catat percobaan login yang gagal.
+     *
+     * Dipanggil oleh Api\AuthController::login() sebelum membalas 401. Tanpa
+     * metode ini setiap kredensial salah menghasilkan HTTP 500
+     * (BadMethodCallException), bukan 401.
+     *
+     * Akun dikunci sementara setelah mencapai batas percobaan agar konsisten
+     * dengan isLocked()/lockAccount() yang sudah ada.
+     */
+    public function recordFailedLogin(?string $ipAddress = null, int $maxAttempts = 5, int $lockMinutes = 30): void
+    {
+        $attempts = (int) $this->failed_login_attempts + 1;
+
+        $payload = [
+            'failed_login_attempts' => $attempts,
+        ];
+
+        if ($ipAddress !== null) {
+            $payload['last_login_ip'] = $ipAddress;
+        }
+
+        if ($attempts >= $maxAttempts) {
+            $payload['locked_until'] = Carbon::now()->addMinutes($lockMinutes);
+        }
+
+        $this->update($payload);
+    }
+
+    /**
      * Check if user has permission
      */
     public function hasPermission(string $permission): bool
