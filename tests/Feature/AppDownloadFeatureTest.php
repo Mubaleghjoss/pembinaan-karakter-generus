@@ -79,6 +79,21 @@ class AppDownloadFeatureTest extends TestCase
         $this->assertSame(hash('sha256', $body), $res->headers->get('X-Apk-Sha256'));
     }
 
+    public function test_nama_unduhan_dari_konfigurasi_dibatasi_ke_nama_apk_yang_aman(): void
+    {
+        $this->putApk('pkgenerus-1.4.0-14.apk');
+        config()->set('app_download.filename', "../rilis\r\nX-Evil: yes-{version}");
+
+        $disposition = (string) $this->get('/download_app/apk')
+            ->assertOk()
+            ->headers->get('Content-Disposition');
+
+        $this->assertStringNotContainsString("\r", $disposition);
+        $this->assertStringNotContainsString("\n", $disposition);
+        $this->assertStringNotContainsString('../', $disposition);
+        $this->assertStringContainsString('.apk', $disposition);
+    }
+
     public function test_rilis_dengan_version_code_tertinggi_yang_dipilih(): void
     {
         $this->putApk('pkgenerus-1.3.0-9.apk');
@@ -118,6 +133,11 @@ class AppDownloadFeatureTest extends TestCase
         $desktop = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36';
         $this->withHeader('User-Agent', $desktop)
             ->get('/download_app')
+            ->assertOk()
+            ->assertDontSee('Unduhan dimulai otomatis');
+
+        $this->withHeader('User-Agent', $android)
+            ->get('/download_app?no_auto=1')
             ->assertOk()
             ->assertDontSee('Unduhan dimulai otomatis');
     }

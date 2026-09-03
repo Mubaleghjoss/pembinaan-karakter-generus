@@ -64,8 +64,14 @@ class AppDownloadController extends Controller
         $downloadName = str_replace(
             '{version}',
             $release['version_name'].'-'.$release['version_code'],
-            (string) config('app_download.filename', 'pkgenerus-{version}.apk')
+            basename((string) config('app_download.filename', 'pkgenerus-{version}.apk'))
         );
+        // Nama dari konfigurasi masuk ke Content-Disposition. Batasi ke nama
+        // ASCII aman agar separator path/control character tidak ikut ke header.
+        $downloadName = preg_replace('/[^A-Za-z0-9._-]+/', '-', $downloadName) ?: 'pkgenerus.apk';
+        if (! str_ends_with(strtolower($downloadName), '.apk')) {
+            $downloadName .= '.apk';
+        }
 
         return response()->download($release['path'], $downloadName, [
             // WAJIB: tanpa MIME ini Android menyimpan berkas sebagai file biasa
@@ -92,7 +98,24 @@ class AppDownloadController extends Controller
             return null;
         }
 
-        $files = glob(rtrim($dir, '/\\').DIRECTORY_SEPARATOR.'*.apk') ?: [];
+        $realDir = realpath($dir);
+        if ($realDir === false) {
+            return null;
+        }
+
+        $files = array_values(array_filter(
+            glob($realDir.DIRECTORY_SEPARATOR.'*.apk') ?: [],
+            static function (string $file) use ($realDir): bool {
+                $realFile = realpath($file);
+
+                // Jangan layani direktori, file tak terbaca, atau symlink yang
+                // lolos dari direktori rilis yang dikonfigurasi.
+                return $realFile !== false
+                    && is_file($realFile)
+                    && is_readable($realFile)
+                    && str_starts_with($realFile, $realDir.DIRECTORY_SEPARATOR);
+            }
+        ));
 
         if ($files === []) {
             return null;
