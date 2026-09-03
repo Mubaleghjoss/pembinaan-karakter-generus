@@ -4,8 +4,8 @@ RewriteEngine On
 # Apache + mod_php tidak mengisi $_SERVER['HTTP_AUTHORIZATION'], sehingga
 # Laravel/Sanctum tidak melihat "Bearer <token>" dan membalas 401.
 # (Baris standar dari public/.htaccess Laravel; wajib untuk API token.)
-RewriteCond %{HTTP:Authorization} .
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteCond %{HTTP:Authorization} ^(.+)$
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%1]
 
 RewriteRule ^storage/materi/pdf(?:/|$) - [F,L,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
