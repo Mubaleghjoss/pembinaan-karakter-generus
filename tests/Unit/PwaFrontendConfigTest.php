@@ -37,6 +37,14 @@ class PwaFrontendConfigTest extends TestCase
         }
     }
 
+    public function test_auth_layout_does_not_block_login_on_a_remote_font_stylesheet(): void
+    {
+        $layout = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/auth.blade.php');
+
+        $this->assertStringNotContainsString('fonts.googleapis.com', $layout);
+        $this->assertStringNotContainsString('fonts.gstatic.com', $layout);
+    }
+
     public function test_all_login_pages_expose_direct_role_switching_without_the_large_public_navigation(): void
     {
         $layout = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/auth.blade.php');
