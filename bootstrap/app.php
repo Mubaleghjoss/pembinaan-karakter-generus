@@ -33,6 +33,8 @@ return Application::configure(basePath: dirname(__DIR__))
         __DIR__.'/../app/Console/Commands',
     ])
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: ['127.0.0.1']);
+
         $middleware->alias([
             'role.permission' => \App\Http\Middleware\RolePermission::class,
             'sanitize' => \App\Http\Middleware\SanitizeInput::class,
