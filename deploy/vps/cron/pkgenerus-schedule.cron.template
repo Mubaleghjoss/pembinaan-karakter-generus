@@ -1,0 +1,3 @@
+# Disabled template. Install exactly one copy after confirming no existing PKGenerus scheduler.
+# Run as hermesadmin, which owns /var/www/pkgenerus.my.id and its shared storage.
+* * * * * cd /var/www/pkgenerus.my.id/current && /usr/bin/php artisan schedule:run --no-interaction >> /var/www/pkgenerus.my.id/shared/storage/logs/scheduler.log 2>&1

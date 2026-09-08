@@ -1,0 +1,95 @@
+name: Production Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pkgenerus-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test release candidate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom, fileinfo, gd, pdo_sqlite, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer validate --strict --no-interaction
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: php artisan test
+
+  deploy:
+    name: Deploy approved production release
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://pkgenerus.my.id
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Create isolated release directory
+        id: release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          RELEASE_NAME: ${{ github.sha }}
+        run: |
+          port="${DEPLOY_PORT:-22}"
+          ssh -p "$port" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "set -eu; test -f /var/www/pkgenerus.my.id/shared/.env; mkdir -p /var/www/pkgenerus.my.id/releases; test ! -e /var/www/pkgenerus.my.id/releases/$RELEASE_NAME; mkdir /var/www/pkgenerus.my.id/releases/$RELEASE_NAME"
+          echo "name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+      - name: Upload release source
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          RELEASE_NAME: ${{ steps.release.outputs.name }}
+        run: |
+          port="${DEPLOY_PORT:-22}"
+          rsync -az --delete \
+            --exclude='/.env' \
+            --exclude='/.git/' \
+            --exclude='/vendor/' \
+            --exclude='/node_modules/' \
+            --exclude='/storage/' \
+            --exclude='/public/storage' \
+            -e "ssh -p $port" ./ "$DEPLOY_USER@$DEPLOY_HOST:/var/www/pkgenerus.my.id/releases/$RELEASE_NAME/"
+      - name: Build and activate release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          RELEASE_NAME: ${{ steps.release.outputs.name }}
+        run: |
+          port="${DEPLOY_PORT:-22}"
+          ssh -p "$port" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash /var/www/pkgenerus.my.id/releases/$RELEASE_NAME/scripts/vps/deploy-release.sh $RELEASE_NAME"

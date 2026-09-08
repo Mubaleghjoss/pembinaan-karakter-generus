@@ -1,0 +1,27 @@
+# Disabled template: do not place this file in /etc/nginx/sites-enabled yet.
+# Complete DNS and certificate provisioning first, then replace placeholders.
+server {
+    # Choose an unused local upstream port confirmed by the VPS operator.
+    listen 127.0.0.1:PORT_PLACEHOLDER;
+    server_name pkgenerus.my.id;
+
+    root /var/www/pkgenerus.my.id/current/public;
+    index index.php;
+    client_max_body_size 20m;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:PHP_FPM_SOCKET_PLACEHOLDER;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+
+# Add TLS directives only after the certificate path and proxy/TLS topology are verified.
+# Do not copy staging certificate directives into this production vhost.
