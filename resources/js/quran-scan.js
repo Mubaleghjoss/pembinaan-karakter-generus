@@ -32,6 +32,9 @@ export function payloadFromPublicCode(code) {
 export function normalizeQrPayload(value) {
     const candidate = String(value || '').trim();
     if (QR_PATTERN.test(candidate)) return candidate;
+    // PDF QR codes use the compact public code directly; legacy payloads and URLs remain valid.
+    const publicPayload = payloadFromPublicCode(candidate);
+    if (publicPayload) return publicPayload;
     try {
         const url = new URL(candidate, window.location.origin);
         const match = url.pathname.match(/^\/sq\/([A-Za-z0-9_-]{44})\/?$/);

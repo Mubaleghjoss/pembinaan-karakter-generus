@@ -105,8 +105,10 @@ class QuranReadingDocumentService
             'sheet' => $sheet,
             'siswa' => $sheet->siswa,
             'pamongNames' => $this->pamongNames($sheet->siswa),
-            // Use the compact alphanumeric payload: it needs fewer QR modules than a URL.
-            'qrDataUri' => $this->qrDataUri($this->scanner->payload($sheet, $plainToken)),
+            // The 44-character public code needs substantially fewer modules than the legacy payload.
+            // It still carries the UUID and random token, which resolve through the same verification path.
+            'qrDataUri' => $this->qrDataUri($this->scanner->publicCode($sheet, $plainToken)),
+            'qrPayload' => $this->scanner->payload($sheet, $plainToken),
         ];
     }
 
@@ -254,9 +256,9 @@ class QuranReadingDocumentService
             ->writer(new PngWriter)
             ->data($payload)
             ->encoding(new Encoding('UTF-8'))
-            ->errorCorrectionLevel(ErrorCorrectionLevel::Quartile)
-            ->size(420)
-            ->margin(24)
+            ->errorCorrectionLevel(ErrorCorrectionLevel::High)
+            ->size(600)
+            ->margin(32)
             ->roundBlockSizeMode(RoundBlockSizeMode::Margin)
             ->build()
             ->getDataUri();

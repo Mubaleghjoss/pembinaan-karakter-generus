@@ -47,11 +47,12 @@ test('quick file scan falls back to the crop pipeline after a full-image failure
     assert.equal(result, 'PKGQMB:0123456789ABCDEF0123456789ABCDEF:ABCDEF0123456789ABCDEF0123456789');
 });
 
-test('QR payload normalization accepts only supported PKG payloads and public scan URLs', () => {
+test('QR payload normalization accepts supported PKG payloads, compact PDF codes, and public scan URLs', () => {
     const uuid = '00112233445566778899aabbccddeeff';
     const token = 'ffeeddccbbaa99887766554433221100';
     const publicCode = Buffer.from([2, ...Buffer.from(uuid + token, 'hex')]).toString('base64url');
 
+    assert.equal(scanner.normalizeQrPayload(publicCode), `PKGQ:${uuid.toUpperCase()}:${token.toUpperCase()}`);
     assert.equal(scanner.normalizeQrPayload(`https://pkgenerus.test/sq/${publicCode}`), `PKGQ:${uuid.toUpperCase()}:${token.toUpperCase()}`);
     assert.equal(scanner.normalizeQrPayload('https://pkgenerus.test/sq/not-a-pkg-code'), null);
     assert.equal(scanner.normalizeQrPayload('untrusted-payload'), null);

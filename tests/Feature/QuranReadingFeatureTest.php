@@ -105,7 +105,7 @@ class QuranReadingFeatureTest extends TestCase
         $this->get(route('public.quran.scan.open', ['code' => $invalidCode]))->assertNotFound();
     }
 
-    public function test_monthly_pdf_qr_uses_compact_payload_and_identifies_its_sheet(): void
+    public function test_monthly_pdf_qr_uses_compact_public_code_and_identifies_its_sheet(): void
     {
         config()->set('quran-reading.scan_enabled', true);
         $siswa = Siswa::factory()->create();
@@ -123,12 +123,11 @@ class QuranReadingFeatureTest extends TestCase
         $payload = $scanner->payload($sheet, $token);
         $page = app(\App\Services\QuranReadingDocumentService::class)->monthlyPage($sheet, $token);
 
-        // A compact alphanumeric payload stays readable after PDF rasterization/screenshots.
-        $this->assertSame($this->quranQrDataUri($payload), $page['qrDataUri']);
-        $this->assertNotSame(
-            $this->quranQrDataUri(route('public.quran.scan.open', ['code' => $scanner->publicCode($sheet, $token)])),
-            $page['qrDataUri'],
-        );
+        // The 44-character public code stays readable after PDF rasterization/screenshots.
+        $publicCode = $scanner->publicCode($sheet, $token);
+        $this->assertSame($payload, $page['qrPayload']);
+        $this->assertSame($this->quranQrDataUri($publicCode), $page['qrDataUri']);
+        $this->assertNotSame($this->quranQrDataUri($payload), $page['qrDataUri']);
 
         $identify = $this->postJson(route('public.quran.barcode.identify'), ['sheet_payload' => $payload])
             ->assertOk()
