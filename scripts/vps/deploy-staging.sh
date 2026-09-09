@@ -10,6 +10,7 @@ readonly SHARED_DIR="$APP_ROOT/shared"
 readonly RELEASES_DIR="$APP_ROOT/releases"
 readonly CURRENT_LINK="$APP_ROOT/current"
 readonly STAGING_URL="https://staging.pkgenerus.my.id"
+readonly LOCK_FILE="$APP_ROOT/.deploy-staging.lock"
 
 release_sha="${1:-}"
 previous=""
@@ -33,6 +34,43 @@ rollback() {
 }
 trap rollback ERR
 
+validate_release_source() {
+    local entry metadata path expected actual
+
+    # A SHA-named directory may be left behind by an interrupted deploy. Reuse it
+    # only when every tracked source file still exactly matches that commit.
+    while IFS= read -r -d '' entry; do
+        metadata="${entry%%$'\t'*}"
+        path="${entry#*$'\t'}"
+        set -- $metadata
+        expected="$3"
+        [ -f "$release_dir/$path" ] || fail "Incomplete release source: $path"
+        actual="$(git hash-object "$release_dir/$path")"
+        [ "$actual" = "$expected" ] || fail "Release source does not match commit: $path"
+    done < <(git ls-tree -r -z "$release_sha")
+}
+
+ensure_www_data_runtime_access() {
+    local runtime_dir
+
+    for runtime_dir in "$release_dir/bootstrap/cache" "$SHARED_DIR/storage"; do
+        mkdir -p "$runtime_dir"
+        chgrp -R www-data "$runtime_dir"
+        find -P "$runtime_dir" -type d -exec chmod 2775 {} +
+        find -P "$runtime_dir" -type f -exec chmod 0664 {} +
+    done
+}
+
+smoke_url() {
+    local url="$1" allowed_statuses="$2" status
+
+    status="$(curl --silent --show-error --max-time 20 --output /dev/null --write-out '%{http_code}' "$url")"
+    case " $allowed_statuses " in
+        *" $status "*) ;;
+        *) fail "Unexpected HTTP $status for $url (expected: $allowed_statuses)" ;;
+    esac
+}
+
 [ "$(pwd -P)" = "$EXPECTED_REPO" ] || fail "Run only from $EXPECTED_REPO."
 [ "$(git rev-parse --show-toplevel)" = "$EXPECTED_REPO" ] || fail "Unexpected Git repository."
 [ "$(git branch --show-current)" = "develop" ] || fail "Only the develop branch may be deployed to staging."
@@ -46,6 +84,14 @@ fi
 [ -f package-lock.json ] || fail "package-lock.json is required."
 [ -f "$SHARED_DIR/.env" ] || fail "Missing staging shared environment."
 [ -d "$SHARED_DIR/storage" ] || fail "Missing staging shared storage."
+
+# Serialize staging deploys when flock is installed, without making it a hard host dependency.
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"$LOCK_FILE"
+    flock -n 9 || fail "Another staging deployment is already running."
+else
+    echo "WARN=flock unavailable; staging deployment is not serialized." >&2
+fi
 
 release_sha="${release_sha:-$(git rev-parse HEAD)}"
 git rev-parse --verify "$release_sha^{commit}" >/dev/null 2>&1 || fail "Invalid commit SHA."
@@ -62,14 +108,19 @@ previous="$(readlink -f "$CURRENT_LINK" 2>/dev/null || true)"
 echo "RELEASE=$release_sha"
 echo "PREVIOUS=${previous:-none}"
 
-if [ ! -d "$release_dir" ]; then
+if [ -d "$release_dir" ]; then
+    validate_release_source
+else
     umask 022
     mkdir -p "$release_dir"
     # Archive only committed source: local .env, vendor, and node_modules never enter a release.
     git archive "$release_sha" | tar -x -C "$release_dir"
+    validate_release_source
 fi
 
 [ -f "$release_dir/artisan" ] || fail "Release is not a Laravel application."
+[ -f "$release_dir/composer.lock" ] || fail "Release composer.lock is missing."
+[ -f "$release_dir/package-lock.json" ] || fail "Release package-lock.json is missing."
 [ ! -e "$release_dir/.env" ] || [ -L "$release_dir/.env" ] || fail "Release .env is unsafe."
 [ ! -e "$release_dir/storage" ] || [ -L "$release_dir/storage" ] || fail "Release storage is unsafe."
 [ ! -e "$release_dir/vendor" ] || fail "Release must not include vendor."
@@ -82,6 +133,10 @@ done
 ln -sfn "$SHARED_DIR/.env" "$release_dir/.env"
 ln -sfn "$SHARED_DIR/storage" "$release_dir/storage"
 ln -sfn "$SHARED_DIR/storage/app/public" "$release_dir/public/storage"
+test "$(readlink -f "$release_dir/.env")" = "$SHARED_DIR/.env"
+test "$(readlink -f "$release_dir/storage")" = "$SHARED_DIR/storage"
+test "$(readlink -f "$release_dir/public/storage")" = "$SHARED_DIR/storage/app/public"
+ensure_www_data_runtime_access
 
 cd "$release_dir"
 composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
@@ -93,20 +148,47 @@ php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+ensure_www_data_runtime_access
 
 ln -sfn "$release_dir" "$APP_ROOT/current.next"
 mv -Tf "$APP_ROOT/current.next" "$CURRENT_LINK"
 activated=1
 
-# Validate the active release before considering the swap successful.
+# Validate the active release before considering the atomic swap successful.
 test "$(readlink -f "$CURRENT_LINK")" = "$release_dir"
-curl --fail --silent --show-error --max-time 20 -o /dev/null "$STAGING_URL/login"
+smoke_url "$STAGING_URL/up" "200"
+smoke_url "$STAGING_URL/login" "200 302"
+smoke_url "$STAGING_URL/tracer-bacaan-quran" "200 302"
 
-# Keep the active release plus the four newest inactive releases.
-mapfile -t stale < <(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | awk 'NR > 5 {print $2}')
-for candidate in "${stale[@]:-}"; do
-    [ "$(readlink -f "$candidate")" = "$(readlink -f "$CURRENT_LINK")" ] || rm -rf -- "$candidate"
+css_asset="$(find "$release_dir/public/build" -type f -name '*.css' -print -quit)"
+js_asset="$(find "$release_dir/public/build" -type f -name '*.js' -print -quit)"
+[ -n "$css_asset" ] || fail "No built CSS asset found."
+[ -n "$js_asset" ] || fail "No built JavaScript asset found."
+smoke_url "$STAGING_URL${css_asset#"$release_dir/public"}" "200"
+smoke_url "$STAGING_URL${js_asset#"$release_dir/public"}" "200"
+
+storage_image="$(find "$SHARED_DIR/storage/app/public" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.webp' \) ! -name '* *' -print -quit)"
+if [ -n "$storage_image" ]; then
+    smoke_url "$STAGING_URL/storage/${storage_image#"$SHARED_DIR/storage/app/public/"}" "200"
+else
+    echo "INFO=No public storage image found; storage image smoke check skipped."
+fi
+
+# Keep the active release, its predecessor, and up to four newer inactive releases.
+current_release="$(readlink -f "$CURRENT_LINK")"
+retained_inactive=0
+mapfile -t releases < <(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2-)
+for candidate in "${releases[@]:-}"; do
+    candidate_real="$(readlink -f "$candidate")"
+    if [ "$candidate_real" = "$current_release" ] || { [ -n "$previous" ] && [ "$candidate_real" = "$previous" ]; }; then
+        continue
+    fi
+    if [ "$retained_inactive" -lt 4 ]; then
+        retained_inactive=$((retained_inactive + 1))
+        continue
+    fi
+    rm -rf -- "$candidate"
 done
 
-echo "CURRENT=$(readlink -f "$CURRENT_LINK")"
+echo "CURRENT=$current_release"
 echo "STATUS=SUCCESS"
