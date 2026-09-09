@@ -17,7 +17,11 @@
             <div class="space-y-6 p-5 sm:p-8">
                 <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
                     <p class="font-bold">Penting</p>
-                    <p class="mt-1">Password akun Generus &amp; Orang Tua telah diselaraskan ke <span class="font-bold">NIS</span> agar keduanya pasti bisa masuk. Setelah berhasil login, sangat disarankan mengganti password masing-masing.</p>
+                    @if($isNewAccount)
+                        <p class="mt-1">Password akun Generus &amp; Orang Tua telah diselaraskan ke <span class="font-bold">NIS</span> agar keduanya pasti bisa masuk. Setelah berhasil login, sangat disarankan mengganti password masing-masing.</p>
+                    @else
+                        <p class="mt-1">Username dan password lama tetap sama. Pembaruan ini hanya menyimpan biodata dan surat pernyataan.</p>
+                    @endif
                 </div>
 
                 @if(!empty($accountInfo))

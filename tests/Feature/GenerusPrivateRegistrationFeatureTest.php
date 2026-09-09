@@ -187,7 +187,8 @@ class GenerusPrivateRegistrationFeatureTest extends TestCase
 
         $this->assertDatabaseCount('generus_registrations', 1);
         $this->assertSame(1, $invite->fresh()->used_count);
-        Storage::disk('local')->assertMissing($oldParentPath);
+        // Signed registration files are retained as the supporting record for each submission.
+        Storage::disk('local')->assertExists($oldParentPath);
     }
 
     public function test_new_registration_still_creates_student_parent_accounts_and_pdf(): void
@@ -233,6 +234,10 @@ class GenerusPrivateRegistrationFeatureTest extends TestCase
             'selected_student_token' => $token,
             'student_name' => $siswa->nama,
         ]))->assertRedirect();
+
+        $registration = GenerusRegistration::query()->where('siswa_id', $siswa->id)->firstOrFail();
+        Storage::disk('local')->assertExists($registration->parent_signature_path);
+        Storage::disk('local')->assertExists($registration->student_signature_path);
 
         $this->actingAs($siswa->fresh(), 'siswa')
             ->get(route('siswa.profile'))

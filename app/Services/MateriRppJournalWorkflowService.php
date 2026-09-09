@@ -70,7 +70,9 @@ class MateriRppJournalWorkflowService
             return false;
         }
 
-        return $this->canManageAll($user) || $this->hasUserAssignee($schedule, $user->id);
+        return $this->canManageAll($user)
+            || $this->hasUserAssignee($schedule, $user->id)
+            || $this->teacherUserId($schedule) === $user->id;
     }
 
     public function canReview(User $user, MateriRppJournal $journal): bool

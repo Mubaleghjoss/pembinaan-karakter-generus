@@ -17,7 +17,7 @@ return [
          * Waktu kadaluarsa token dalam menit.
          * Default: 60 menit (1 jam)
          */
-        'expiry_minutes' => env('QR_TOKEN_EXPIRY_MINUTES', 60),
+        'expiry_minutes' => (int) env('QR_TOKEN_EXPIRY_MINUTES', 60),
 
         /*
          * Algoritma hash yang digunakan untuk generate token.
@@ -28,7 +28,7 @@ return [
         /*
          * Panjang random string untuk token generation.
          */
-        'random_length' => env('QR_TOKEN_RANDOM_LENGTH', 32),
+        'random_length' => (int) env('QR_TOKEN_RANDOM_LENGTH', 32),
     ],
 
     /*
@@ -50,7 +50,7 @@ return [
         /*
          * Panjang salt untuk secret key siswa.
          */
-        'salt_length' => env('QR_SALT_LENGTH', 64),
+        'salt_length' => (int) env('QR_SALT_LENGTH', 64),
     ],
 
     /*
@@ -66,12 +66,12 @@ return [
         /*
          * Ukuran QR Code dalam pixel.
          */
-        'size' => env('QR_CODE_SIZE', 300),
+        'size' => (int) env('QR_CODE_SIZE', 300),
 
         /*
          * Margin QR Code dalam pixel.
          */
-        'margin' => env('QR_CODE_MARGIN', 10),
+        'margin' => (int) env('QR_CODE_MARGIN', 10),
 
         /*
          * Error correction level.
@@ -119,12 +119,12 @@ return [
         /*
          * Lebar logo dalam pixel.
          */
-        'width' => env('QR_LOGO_WIDTH', 60),
+        'width' => (int) env('QR_LOGO_WIDTH', 60),
 
         /*
          * Tinggi logo dalam pixel.
          */
-        'height' => env('QR_LOGO_HEIGHT', 60),
+        'height' => (int) env('QR_LOGO_HEIGHT', 60),
 
         /*
          * Aktifkan punchout background untuk logo.
@@ -172,13 +172,13 @@ return [
          * Maksimum scan per siswa per hari.
          * Set 0 untuk unlimited.
          */
-        'max_per_day' => env('QR_MAX_SCANS_PER_DAY', 2),
+        'max_per_day' => (int) env('QR_MAX_SCANS_PER_DAY', 2),
 
         /*
          * Cooldown antar scan dalam detik.
          * Mencegah scan berulang dalam waktu singkat.
          */
-        'cooldown_seconds' => env('QR_SCAN_COOLDOWN_SECONDS', 60),
+        'cooldown_seconds' => (int) env('QR_SCAN_COOLDOWN_SECONDS', 60),
 
         /*
          * Aktifkan validasi lokasi saat scan.
@@ -189,7 +189,7 @@ return [
          * Radius maksimum dari lokasi sekolah dalam meter.
          * Hanya berlaku jika validate_location = true.
          */
-        'max_distance_meters' => env('QR_MAX_DISTANCE_METERS', 100),
+        'max_distance_meters' => (int) env('QR_MAX_DISTANCE_METERS', 100),
     ],
 
     /*
@@ -205,12 +205,12 @@ return [
         /*
          * Maksimum request per menit untuk scan endpoint.
          */
-        'scan_per_minute' => env('QR_RATE_LIMIT_SCAN', 30),
+        'scan_per_minute' => (int) env('QR_RATE_LIMIT_SCAN', 30),
 
         /*
          * Maksimum request per menit untuk generate endpoint.
          */
-        'generate_per_minute' => env('QR_RATE_LIMIT_GENERATE', 10),
+        'generate_per_minute' => (int) env('QR_RATE_LIMIT_GENERATE', 10),
     ],
 
 ];

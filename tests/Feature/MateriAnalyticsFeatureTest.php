@@ -41,6 +41,7 @@ class MateriAnalyticsFeatureTest extends TestCase
             'nama' => 'Tanpa Level Admin',
             'nis' => 'NL-ADM',
             'tanggal_lahir' => '2020-01-01',
+            'school_grade' => null,
             'kelas_id' => Kelas::factory(),
             'kelompok' => Siswa::KELOMPOK_PANUNGGANGAN_UTARA,
         ]);
@@ -87,6 +88,7 @@ class MateriAnalyticsFeatureTest extends TestCase
             'nama' => 'Tanpa Level Binaan',
             'nis' => 'NL-BIN',
             'tanggal_lahir' => '2020-01-01',
+            'school_grade' => null,
             'kelas_id' => Kelas::factory(),
             'kelompok' => Siswa::KELOMPOK_PANUNGGANGAN_UTARA,
         ]);
@@ -94,6 +96,7 @@ class MateriAnalyticsFeatureTest extends TestCase
             'nama' => 'Tanpa Level Luar',
             'nis' => 'NL-LUAR',
             'tanggal_lahir' => '2020-01-01',
+            'school_grade' => null,
             'kelas_id' => Kelas::factory(),
             'kelompok' => Siswa::KELOMPOK_PANUNGGANGAN_UTARA,
         ]);
@@ -290,6 +293,7 @@ class MateriAnalyticsFeatureTest extends TestCase
 
         return Siswa::factory()->create([
             'tanggal_lahir' => $birthDate,
+            'school_grade' => $grade,
             'kelas_id' => Kelas::factory(),
             'kelompok' => Siswa::KELOMPOK_PANUNGGANGAN_UTARA,
         ]);

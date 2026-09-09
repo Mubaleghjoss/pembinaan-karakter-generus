@@ -130,10 +130,10 @@
         <h2 class="text-sm font-bold uppercase tracking-wide text-gray-600 dark:text-gray-400">Jurnal Pertemuan</h2>
         <div class="mt-3 space-y-2">
             @foreach($journalTasks as $task)
-                <a href="{{ route('siswa.materi-rpp-journals.show', $task['reminder']->id ?? $task['reminder']) }}"
+                <a href="{{ route('siswa.materi-rpp-journals.show', $task) }}"
                    class="block rounded-xl border border-gray-200 p-3 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $task['title'] ?? 'Jurnal pertemuan' }}</p>
-                    <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ $task['subtitle'] ?? 'Lengkapi jurnal pertemuan' }}</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">Tugas Jurnal RPP</p>
+                    <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ $task->sourceMateri?->judul ?? $task->title ?? 'Lengkapi jurnal pertemuan' }}</p>
                 </a>
             @endforeach
         </div>
@@ -174,7 +174,7 @@
             <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">Riwayat presensi</p>
         </a>
         <a href="{{ route('siswa.gamification.dashboard') }}" class="pkg-panel p-3 text-center transition hover:shadow-md">
-            <p class="text-sm font-bold text-gray-900 dark:text-white">Prestasi</p>
+            <p class="text-sm font-bold text-gray-900 dark:text-white">Gamifikasi</p>
             <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">Poin, pin, sertifikat</p>
         </a>
     </div>
@@ -196,7 +196,7 @@
         <a href="{{ route('siswa.rpg.index') }}" class="pkg-panel flex items-center gap-3 p-4 transition hover:shadow-md">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-sm font-black text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">GO</span>
             <div class="min-w-0">
-                <p class="text-sm font-bold text-gray-900 dark:text-white">Game Petualangan</p>
+                <p class="text-sm font-bold text-gray-900 dark:text-white">RPG Quest</p>
                 <p class="text-xs text-gray-600 dark:text-gray-400">Belajar 29 karakter sambil bermain</p>
             </div>
         </a>

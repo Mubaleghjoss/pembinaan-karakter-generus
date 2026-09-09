@@ -175,7 +175,32 @@ class QuranReadingDocumentService
 
             return $this->pdfResponse($merger->Output('S'), $filename);
         } finally {
+            try {
+                // FPDI keeps readers open for supplied source files unless explicitly released.
+                if (isset($merger)) {
+                    $merger->cleanUp(true);
+                }
+            } finally {
+                unset($merger, $chunkFiles);
+                gc_collect_cycles();
+                $this->deleteJobDirectory($jobDirectory);
+            }
+        }
+    }
+
+    private function deleteJobDirectory(string $jobDirectory): void
+    {
+        // A just-released FPDI reader can briefly retain a source file handle.
+        for ($attempt = 0; $attempt < 3; $attempt++) {
             File::deleteDirectory($jobDirectory);
+            clearstatcache(true, $jobDirectory);
+
+            if (! File::isDirectory($jobDirectory)) {
+                return;
+            }
+
+            gc_collect_cycles();
+            usleep(10_000);
         }
     }
 

@@ -85,7 +85,7 @@
     </div>
 
     {{-- Tabel (desktop) --}}
-    <div class="pkg-table-desktop pkg-panel-lg overflow-hidden">
+    <div class="pkg-table-desktop pkg-panel-lg overflow-hidden pkg-mobile-table">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800/60">

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Materi;
 use App\Models\MateriRppJournal;
 use App\Models\MateriRppJournalAssignee;
+use App\Models\PamongPermission;
 use App\Models\Role;
 use App\Models\ScheduleReminder;
 use App\Models\Siswa;
@@ -334,7 +335,16 @@ class MateriRppJournalFeatureTest extends TestCase
             ['display_name' => 'Pamong', 'permissions' => ['view_students'], 'is_active' => true]
         );
 
-        return User::factory()->create(['role_id' => $role->id]);
+        $pamong = User::factory()->create(['role_id' => $role->id]);
+
+        // A teacher needs only the journal view grant; schedule assignment scopes submission.
+        PamongPermission::query()->create([
+            'user_id' => $pamong->id,
+            'menu_permissions' => ['rpp_journals'],
+            'crud_permissions' => ['rpp_journals' => ['view']],
+        ]);
+
+        return $pamong;
     }
 
     private function rppSchedule(User $creator): array

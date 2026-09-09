@@ -24,8 +24,6 @@ class GenerusRegistrationService
         $downloadToken = Str::random(48);
         $parentSignaturePath = "{$documentDirectory}/orang-tua.png";
         $studentSignaturePath = "{$documentDirectory}/generus.png";
-        $oldSignaturePaths = [];
-
         Storage::disk('local')->put(
             $parentSignaturePath,
             $this->decodeSignature($data['parent_signature'], 'Tanda tangan orang tua')
@@ -36,7 +34,7 @@ class GenerusRegistrationService
         );
 
         try {
-            [$registration, $accountCreated, $oldSignaturePaths] = DB::transaction(function () use (
+            [$registration, $accountCreated] = DB::transaction(function () use (
                 $invite,
                 $data,
                 $request,
@@ -79,12 +77,6 @@ class GenerusRegistrationService
         } catch (Throwable $exception) {
             Storage::disk('local')->deleteDirectory($documentDirectory);
             throw $exception;
-        }
-
-        foreach (array_filter($oldSignaturePaths) as $oldPath) {
-            if (! in_array($oldPath, [$parentSignaturePath, $studentSignaturePath], true)) {
-                Storage::disk('local')->delete($oldPath);
-            }
         }
 
         return [$registration, $downloadToken, $accountCreated];
@@ -137,7 +129,7 @@ class GenerusRegistrationService
         $registration->update(['siswa_id' => $siswa->id]);
         $invite?->increment('used_count');
 
-        return [$registration->fresh('siswa'), true, []];
+        return [$registration->fresh('siswa'), true];
     }
 
     private function updateExistingRegistration(
@@ -155,10 +147,6 @@ class GenerusRegistrationService
             ->lockForUpdate()
             ->first();
         $publicId = $registration?->public_id ?: (string) Str::uuid();
-        $oldSignaturePaths = $registration
-            ? [$registration->parent_signature_path, $registration->student_signature_path]
-            : [];
-
         $siswaData = [
             'nama' => trim($data['student_name']),
             'tempat_lahir' => trim($data['birth_place']),
@@ -176,12 +164,7 @@ class GenerusRegistrationService
             $siswaData['alamat'] = $data['kelompok'];
         }
 
-        // Daftar ulang = momentum sinkron akun: reset password Generus & Orang Tua
-        // ke NIS agar keduanya pasti bisa login (mengatasi kasus lupa password).
-        // Yang mengisi form adalah Orang Tua dan menandatangani, sudah diberi tahu di form.
-        $siswaData['password'] = $siswa->nis;
-        $siswaData['ortu_username'] = $siswa->ortu_username ?: $siswa->nis;
-        $siswaData['ortu_password'] = $siswa->nis;
+        // Updating biodata must not replace credentials that the family already uses.
 
         $metadata = is_array($siswa->metadata) ? $siswa->metadata : [];
         $siswaData['metadata'] = array_merge($metadata, [
@@ -208,7 +191,7 @@ class GenerusRegistrationService
             $invite?->increment('used_count');
         }
 
-        return [$registration->fresh('siswa'), false, $oldSignaturePaths];
+        return [$registration->fresh('siswa'), false];
     }
 
     private function registrationPayload(

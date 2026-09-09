@@ -684,6 +684,11 @@ class PresensiController extends Controller
      */
     public function recap(Request $request)
     {
+        // Keep the parameterless legacy URL usable for saved bookmarks.
+        if ($request->query() === []) {
+            return $this->periodPanel($request);
+        }
+
         $query = array_merge($request->query(), [
             'tab' => 'rekap',
             'panel' => 'laporan-periode',

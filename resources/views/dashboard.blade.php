@@ -68,12 +68,23 @@
             </div>
         </div>
         @if($dashboardQrData)
-            <a href="{{ route('pamong-presensi.index') }}" class="shrink-0 rounded-xl bg-gray-50 px-3 py-2 text-center transition hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <a href="#dashboard-qr" class="shrink-0 rounded-xl bg-gray-50 px-3 py-2 text-center transition hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700">
                 <p class="text-xs font-bold text-gray-900 dark:text-white">QR Presensi Saya</p>
-                <p class="text-[10px] text-gray-500 dark:text-gray-400">Lihat / tampilkan</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400">Tampilkan di bawah</p>
             </a>
         @endif
     </div>
+
+    @if($dashboardQrData)
+        <div id="dashboard-qr" class="mb-4">
+            @include('components.dashboard-qr-card', [
+                'dashboardQrData' => $dashboardQrData,
+                'dashboardQrIdentity' => ($user->name ?: $user->username),
+                'dashboardQrDownloadName' => 'barcode-presensi-'.\Illuminate\Support\Str::slug($user->name ?: $user->username).'.png',
+                'dashboardIdCardUrl' => route('pamong-presensi.card', $user),
+            ])
+        </div>
+    @endif
 
     {{-- Presensi diri (hanya saat jadwal terbuka, untuk akun operasional) --}}
     @if($user->usesPamongPermissionSystem() && $attendanceScheduleOpen)

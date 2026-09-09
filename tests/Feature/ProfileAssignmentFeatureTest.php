@@ -115,6 +115,7 @@ class ProfileAssignmentFeatureTest extends TestCase
             'Sawah Dalam 2',
             'Panunggangan Utara',
             'Pakulonan',
+            'Belum Ada Data Kelompok',
         ], $labels);
 
         $this->assertCount(4, Siswa::kelompokOptions());

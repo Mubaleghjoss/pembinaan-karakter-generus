@@ -1001,6 +1001,8 @@ class QuranReadingFeatureTest extends TestCase
 
     public function test_bulk_duplex_pdf_handles_forty_five_students_with_a_256_mb_limit(): void
     {
+        // Other tests/processes may have their own jobs; this test owns only new artifacts.
+        $temporaryPaths = glob(storage_path('app/private/quran-pdf-temp/*')) ?: [];
         $admin = $this->admin();
         $students = Siswa::factory()->count(45)->create();
 
@@ -1013,7 +1015,11 @@ class QuranReadingFeatureTest extends TestCase
         $response->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->assertSame(90, $this->pdfPageCount($response->getContent()));
         $this->assertSame(45, QuranReadingSheet::where('sheet_type', 'monthly')->count());
-        $this->assertSame([], glob(storage_path('app/private/quran-pdf-temp/*')) ?: []);
+
+        $remainingPaths = glob(storage_path('app/private/quran-pdf-temp/*')) ?: [];
+        $newPaths = array_values(array_diff($remainingPaths, $temporaryPaths));
+        sort($newPaths);
+        $this->assertSame([], $newPaths);
     }
 
     public function test_surah_reference_has_114_surahs_in_three_columns_and_masked_nis_without_qr(): void
