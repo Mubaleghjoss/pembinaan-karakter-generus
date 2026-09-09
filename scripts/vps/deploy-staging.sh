@@ -50,15 +50,48 @@ validate_release_source() {
     done < <(git ls-tree -r -z "$release_sha")
 }
 
-ensure_www_data_runtime_access() {
+runtime_paths_are_group_writable() {
     local runtime_dir
 
     for runtime_dir in "$release_dir/bootstrap/cache" "$SHARED_DIR/storage"; do
-        mkdir -p "$runtime_dir"
-        chgrp -R www-data "$runtime_dir"
-        find -P "$runtime_dir" -type d -exec chmod 2775 {} +
-        find -P "$runtime_dir" -type f -exec chmod 0664 {} +
+        if find -P "$runtime_dir" -type d \( ! -perm -g+w -o ! -perm -g+x \) -print -quit | grep -q . \
+            || find -P "$runtime_dir" -type f ! -perm -g+w -print -quit | grep -q .; then
+            return 1
+        fi
     done
+}
+
+ensure_runtime_group_write_access() {
+    local runtime_dir chmod_failed=0
+
+    for runtime_dir in "$release_dir/bootstrap/cache" "$SHARED_DIR/storage"; do
+        mkdir -p "$runtime_dir" || fail "Cannot create runtime directory: $runtime_dir"
+    done
+
+    runtime_paths_are_group_writable && return
+
+    # Only adjust mode bits where needed; the deploy user must not change file groups.
+    for runtime_dir in "$release_dir/bootstrap/cache" "$SHARED_DIR/storage"; do
+        if ! find -P "$runtime_dir" \( -type d \( ! -perm -g+w -o ! -perm -g+x \) -o -type f ! -perm -g+w \) -exec chmod g+rwX {} +; then
+            chmod_failed=1
+        fi
+    done
+
+    runtime_paths_are_group_writable && return
+
+    if command -v pkgenerus-staging-admin >/dev/null 2>&1; then
+        echo "INFO=Runtime paths need privileged permission repair; invoking pkgenerus-staging-admin fix-permissions." >&2
+        if ! pkgenerus-staging-admin fix-permissions; then
+            fail "Privileged permission repair failed. Run 'pkgenerus-staging-admin fix-permissions' and retry; the release was not activated."
+        fi
+        runtime_paths_are_group_writable && return
+        fail "Runtime paths are not group-writable after privileged repair. Run 'pkgenerus-staging-admin fix-permissions' and verify its policy; the release was not activated."
+    fi
+
+    if [ "$chmod_failed" -eq 1 ]; then
+        fail "Runtime paths need privileged permission repair, but pkgenerus-staging-admin is unavailable. Run 'pkgenerus-staging-admin fix-permissions' and retry; the release was not activated."
+    fi
+    fail "Runtime paths are not group-writable, but pkgenerus-staging-admin is unavailable. Run 'pkgenerus-staging-admin fix-permissions' and retry; the release was not activated."
 }
 
 smoke_url() {
@@ -136,7 +169,7 @@ ln -sfn "$SHARED_DIR/storage/app/public" "$release_dir/public/storage"
 test "$(readlink -f "$release_dir/.env")" = "$SHARED_DIR/.env"
 test "$(readlink -f "$release_dir/storage")" = "$SHARED_DIR/storage"
 test "$(readlink -f "$release_dir/public/storage")" = "$SHARED_DIR/storage/app/public"
-ensure_www_data_runtime_access
+ensure_runtime_group_write_access
 
 cd "$release_dir"
 composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
@@ -148,7 +181,7 @@ php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-ensure_www_data_runtime_access
+ensure_runtime_group_write_access
 
 ln -sfn "$release_dir" "$APP_ROOT/current.next"
 mv -Tf "$APP_ROOT/current.next" "$CURRENT_LINK"

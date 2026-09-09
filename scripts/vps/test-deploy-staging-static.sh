@@ -9,7 +9,22 @@ bash -n "$script"
 
 grep -Fq 'flock -n 9' "$script"
 grep -Fq 'validate_release_source' "$script"
-grep -Fq 'ensure_www_data_runtime_access' "$script"
+grep -Fq 'ensure_runtime_group_write_access' "$script"
+grep -Fq 'runtime_paths_are_group_writable' "$script"
+grep -Fq 'pkgenerus-staging-admin fix-permissions' "$script"
+grep -Fq "the release was not activated" "$script"
+if grep -Eq '(^|[[:space:];])chgrp([[:space:];]|$)' "$script"; then
+    echo "staging deploy must not change runtime file groups as the deploy user" >&2
+    exit 1
+fi
+
+permission_line="$(grep -nF 'ensure_runtime_group_write_access' "$script" | tail -n 1 | cut -d: -f1)"
+activation_line="$(grep -nF 'ln -sfn "$release_dir" "$APP_ROOT/current.next"' "$script" | cut -d: -f1)"
+[ "$permission_line" -lt "$activation_line" ] || {
+    echo "runtime permission repair must complete before release activation" >&2
+    exit 1
+}
+
 grep -Fq 'current.next' "$script"
 grep -Fq 'smoke_url "$STAGING_URL/up" "200"' "$script"
 grep -Fq 'smoke_url "$STAGING_URL/login" "200 302"' "$script"
