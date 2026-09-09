@@ -9,7 +9,8 @@
     "dev": "vite --host 127.0.0.1 --port 5174 --strictPort",
     "build": "vite build",
     "build:css": "tailwindcss -c tailwind.config.js -i ./resources/css/app.css -o ./public/css/app.css --minify",
-    "watch:css": "tailwindcss -c tailwind.config.js -i ./resources/css/app.css -o ./public/css/app.css --watch"
+    "watch:css": "tailwindcss -c tailwind.config.js -i ./resources/css/app.css -o ./public/css/app.css --watch",
+    "test:quran-scan": "node --test tests/js/quran-scan.test.mjs"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.13",

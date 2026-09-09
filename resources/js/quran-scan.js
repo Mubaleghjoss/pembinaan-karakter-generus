@@ -230,10 +230,10 @@ async function initQuickScanner(root, state, Html5Qrcode, index) {
         await stopQuickCamera();
         setQuickStatus(root, 'Membaca barcode dari gambar...', 'progress');
         try {
-            const decoded = await quickReader.scanFile(file, true);
+            const decoded = await scanQuickFile(quickReader, file);
             await identify(decoded);
         } catch (error) {
-            setQuickStatus(root, error.message?.includes('Tracer') ? error.message : 'Barcode belum terbaca dari gambar. Potong gambar agar barcode terlihat lebih besar.', 'error');
+            setQuickStatus(root, error.message?.includes('Tracer') ? error.message : 'Barcode belum terbaca dari gambar, termasuk setelah memperbesar area QR. Pastikan QR terlihat jelas lalu coba lagi.', 'error');
         } finally {
             event.currentTarget.value = '';
         }
@@ -282,6 +282,21 @@ async function initQuickScanner(root, state, Html5Qrcode, index) {
 
     const initial = normalizeQrPayload(root.dataset.prefilledPayload || '') || cachedBarcode(root);
     if (initial) identifySafely(initial);
+}
+
+export async function scanQuickFile(reader, file, {
+    loadImage = imageFromFile,
+    makeCanvas = canvasFromImage,
+    read = readQr,
+} = {}) {
+    try {
+        // Keep the inexpensive full-image decoder attempt for close-up QR photos.
+        return await reader.scanFile(file, true);
+    } catch {
+        const image = await loadImage(file);
+        const qr = await read(reader, makeCanvas(image));
+        return qr.payload;
+    }
 }
 
 async function imageFromFile(file) {
@@ -388,6 +403,7 @@ async function readQr(reader, source, deskewed, manualCrop = null) {
             candidates.push({ canvas, rotation: 0 });
             candidates.push({ canvas: cropCanvas(canvas, 0.66, 0, 0.34, 0.3, 2.5), rotation: 0 });
             candidates.push({ canvas: cropCanvas(canvas, 0.58, 0, 0.42, 0.38, 2), rotation: 0 });
+            candidates.push({ canvas: cropCanvas(canvas, 0.28, 0.22, 0.44, 0.5, 2.5), rotation: 0 });
         });
         [90, -90, 180].forEach((angle) => candidates.push({ canvas: rotateCanvas(source, angle), rotation: angle }));
     }
