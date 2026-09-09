@@ -20,7 +20,10 @@
 
 <div class="mx-auto max-w-7xl space-y-5 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
     <div class="pkg-page-header">
-        <div><h1 class="pkg-page-heading">Tracer Bacaan Al-Qur'an</h1><p class="pkg-page-subheading">Input, verifikasi, scan, dan pantau riwayat bacaan Generus sesuai siswa binaan.</p></div>
+        <div><h1 class="pkg-page-heading">Tracer Bacaan Al-Qur'an</h1><p class="pkg-page-subheading">Verifikasi, scan, input manual, dan riwayat bacaan Generus sesuai siswa binaan.</p></div>
+        @if($selectedSiswa && $capabilities['export'])
+            <div class="pkg-page-actions"><a class="btn-primary min-h-11" href="{{ route('quran.sheet', $selectedSiswa) }}">Cetak Lembar Bulanan</a></div>
+        @endif
     </div>
 
     @if(session('success'))<div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200" role="status">{{ session('success') }}</div>@endif
@@ -82,7 +85,7 @@
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h2 class="font-bold">Dokumen Kosong</h2>
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Untuk orang umum atau pencatatan kertas. Tidak berisi identitas, QR, token, dan tidak dapat dipindai ke sistem.</p>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Pilihan manual untuk orang umum; tanpa identitas, QR, token, atau scan sistem.</p>
                         </div>
                         <span class="w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">Manual</span>
                     </div>
@@ -103,9 +106,11 @@
                     <form method="POST" action="{{ route('quran.bulk-sheets') }}" class="mt-4 grid gap-4 sm:grid-cols-2" data-quran-bulk-form>@csrf
                         <input type="hidden" name="search" value="{{ request('search') }}"><input type="hidden" name="school_grade" value="{{ request('school_grade') }}"><input type="hidden" name="pamong_id" value="{{ request('pamong_id') }}"><input type="hidden" name="kelompok" value="{{ request('kelompok') }}"><span data-quran-bulk-hidden></span>
                         <fieldset><legend class="mb-2 text-xs font-semibold">Jenis dokumen</legend><div class="grid gap-2">
-                            <label class="flex min-h-12 items-start gap-3 rounded-xl border border-gray-200 px-3 py-3 dark:border-gray-700"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="monthly" checked><span><strong class="block text-sm">Lembar Bacaan Bulanan</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Satu halaman, 31 baris, dapat dipindai.</span></span></label>
-                            <label class="flex min-h-12 items-start gap-3 rounded-xl border border-gray-200 px-3 py-3 dark:border-gray-700"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="surah_reference"><span><strong class="block text-sm">Peta Khatam</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Referensi 114 surat dan checklist manual.</span></span></label>
-                            <label class="flex min-h-12 items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50/60 px-3 py-3 dark:border-emerald-800 dark:bg-emerald-950/20"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="duplex"><span><strong class="block text-sm">Paket Bolak-Balik</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Depan bulanan, belakang Peta Khatam.</span></span></label>
+                            <label class="flex min-h-12 items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50/60 px-3 py-3 dark:border-emerald-800 dark:bg-emerald-950/20"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="monthly" checked><span><strong class="block text-sm">Lembar Bacaan Bulanan</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Pilihan utama: satu halaman, 31 baris, dan dapat dipindai.</span></span></label>
+                            <details class="rounded-xl border border-gray-200 p-3 dark:border-gray-700"><summary class="min-h-11 cursor-pointer py-2 text-sm font-semibold">Dokumen lanjutan</summary><div class="mt-2 grid gap-2">
+                                <label class="flex min-h-12 items-start gap-3 rounded-xl border border-gray-200 px-3 py-3 dark:border-gray-700"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="surah_reference"><span><strong class="block text-sm">Peta Khatam</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Referensi 114 surat dan checklist manual.</span></span></label>
+                                <label class="flex min-h-12 items-start gap-3 rounded-xl border border-gray-200 px-3 py-3 dark:border-gray-700"><input class="pkg-check mt-0.5" type="radio" name="document_type" value="duplex"><span><strong class="block text-sm">Paket Bolak-Balik</strong><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Lembar bulanan di depan, Peta Khatam di belakang.</span></span></label>
+                            </div></details>
                         </div></fieldset>
                         <fieldset><legend class="mb-2 text-xs font-semibold">Cakupan Generus</legend><div class="grid gap-2"><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="selection_mode" value="selected" data-quran-selection-mode="selected" disabled> Generus Terpilih</label><label class="flex min-h-11 items-center gap-3 rounded-xl border border-gray-200 px-3 dark:border-gray-700"><input class="pkg-check" type="radio" name="selection_mode" value="filtered" data-quran-selection-mode="filtered" checked> Semua Sesuai Filter</label></div><p class="mt-3 rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">Untuk paket dua sisi: cetak landscape, aktifkan bolak-balik, lalu pilih <strong>balik sisi pendek</strong>.</p></fieldset>
                         <button class="btn-primary min-h-12 justify-center sm:col-span-2" data-quran-bulk-submit>Unduh PDF Gabungan</button>
@@ -119,14 +124,10 @@
                     @if($selectedSiswa)
                         <section class="pkg-panel-lg">
                             <h2 class="font-bold">Dokumen {{ $selectedSiswa->nama }}</h2>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Laporan hanya memuat catatan yang sudah terverifikasi.</p>
                             @if($capabilities['export'])
-                                <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                                    <a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.sheet', $selectedSiswa) }}">Lembar Bulanan</a>
-                                    <a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.khatam-map', $selectedSiswa) }}">Peta Khatam</a>
-                                    <a class="btn-success min-h-11 justify-center" href="{{ route('quran.duplex', $selectedSiswa) }}">Paket Bolak-Balik</a>
-                                    <a class="btn-primary min-h-11 justify-center" href="{{ route('quran.report', $selectedSiswa) }}">Laporan PDF</a>
-                                </div>
+                                <a class="btn-primary mt-4 min-h-11 w-full justify-center" href="{{ route('quran.sheet', $selectedSiswa) }}">Cetak Lembar Bulanan</a>
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Lembar utama 31 baris dengan QR untuk scan.</p>
+                                <details class="mt-4 rounded-xl border border-gray-200 p-3 dark:border-gray-700"><summary class="min-h-11 cursor-pointer py-2 text-sm font-semibold">Dokumen lanjutan</summary><div class="mt-2 grid gap-2"><a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.khatam-map', $selectedSiswa) }}">Peta Khatam</a><a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.duplex', $selectedSiswa) }}">Paket Bolak-Balik</a><a class="btn-secondary min-h-11 justify-center" href="{{ route('quran.report', $selectedSiswa) }}">Laporan PDF</a></div><p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Peta Khatam untuk checklist 114 surat; Paket Bolak-Balik untuk cetak dua sisi; Laporan PDF hanya memuat catatan terverifikasi.</p></details>
                             @else
                                 <p class="mt-4 rounded-xl border border-gray-200 p-3 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">Akun ini tidak memiliki izin ekspor PDF.</p>
                             @endif

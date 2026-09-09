@@ -488,6 +488,39 @@ class QuranReadingFeatureTest extends TestCase
             ->assertRedirect(route('quran.index', ['tab' => 'scan', 'siswa_id' => $siswa->id]).'#scan');
     }
 
+    public function test_tracer_prioritizes_monthly_sheet_and_groups_advanced_documents(): void
+    {
+        $siswa = Siswa::factory()->create(['nama' => 'Generus Dokumen']);
+
+        $studentHtml = $this->actingAs($siswa, 'siswa')
+            ->get(route('siswa.quran.index'))
+            ->assertOk()
+            ->assertSee('Cetak Lembar Bulanan')
+            ->assertSee('Dokumen lanjutan')
+            ->assertSee('Peta Khatam')
+            ->assertSee('Paket Bolak-Balik')
+            ->assertSee('Laporan PDF')
+            ->getContent();
+        $this->assertLessThan(
+            strpos($studentHtml, 'Dokumen lanjutan'),
+            strpos($studentHtml, 'Cetak Lembar Bulanan'),
+            'Cetak lembar bulanan harus menjadi tindakan dokumen yang paling jelas untuk siswa.'
+        );
+
+        $adminHtml = $this->actingAs($this->admin())
+            ->get(route('quran.index', ['siswa_id' => $siswa->id]))
+            ->assertOk()
+            ->assertSee('Cetak Lembar Bulanan')
+            ->assertSee('Pilihan utama: satu halaman, 31 baris, dan dapat dipindai.')
+            ->assertSee('Dokumen lanjutan')
+            ->getContent();
+        $this->assertLessThan(
+            strpos($adminHtml, 'Dokumen lanjutan'),
+            strpos($adminHtml, 'Cetak Lembar Bulanan'),
+            'Cetak lembar bulanan harus menjadi tindakan dokumen yang paling jelas untuk operasional.'
+        );
+    }
+
     public function test_structured_scan_requires_valid_sheet_qr_and_confirms_rows_idempotently(): void
     {
         config()->set('quran-reading.scan_enabled', true);

@@ -25,6 +25,9 @@
             <h1 class="pkg-page-heading">Tracer Bacaan Al-Qur'an</h1>
             <p class="pkg-page-subheading">Catat bacaanmu dengan rapi. Catatan baru akan diperiksa {{ $siswa->isGraduated() ? 'Admin' : 'Pamong' }} sebelum masuk laporan resmi.</p>
         </div>
+        <div class="pkg-page-actions">
+            <a href="{{ route('siswa.quran.sheet') }}" class="btn-primary min-h-11">Cetak Lembar Bulanan</a>
+        </div>
     </div>
 
     @if($siswa->isGraduated())
@@ -56,20 +59,18 @@
                 <div class="pkg-card p-4"><p class="text-xs text-gray-500 dark:text-gray-400">Menunggu</p><p class="mt-1 text-2xl font-bold tabular-nums">{{ number_format($pendingCount) }}</p></div>
             </div>
 
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <a href="{{ route('siswa.quran.sheet') }}" class="pkg-card flex min-h-14 items-center justify-between gap-3 p-4 font-semibold transition hover:border-emerald-400">
-                    <span><span class="block">Lembar bulanan</span><span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">31 baris dan dapat dipindai.</span></span><span aria-hidden="true">PDF</span>
-                </a>
-                <a href="{{ route('siswa.quran.khatam-map') }}" class="pkg-card flex min-h-14 items-center justify-between gap-3 p-4 font-semibold transition hover:border-emerald-400">
-                    <span><span class="block">Peta Khatam</span><span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">Referensi 114 surat dan jumlah ayat.</span></span><span aria-hidden="true">PDF</span>
-                </a>
-                <a href="{{ route('siswa.quran.duplex') }}" class="pkg-card flex min-h-14 items-center justify-between gap-3 p-4 font-semibold transition hover:border-emerald-400">
-                    <span><span class="block">Paket bolak-balik</span><span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">Bulanan di depan, Peta Khatam di belakang.</span></span><span aria-hidden="true">2 sisi</span>
-                </a>
-                <a href="{{ route('siswa.quran.report') }}" class="pkg-card flex min-h-14 items-center justify-between gap-3 p-4 font-semibold transition hover:border-emerald-400">
-                    <span><span class="block">Unduh laporan resmi</span><span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">Berisi catatan yang sudah terverifikasi.</span></span><span aria-hidden="true">PDF</span>
-                </a>
-            </div>
+            <section class="pkg-panel">
+                <details class="p-4 sm:p-5">
+                    <summary class="min-h-11 cursor-pointer py-2 font-semibold">Dokumen lanjutan</summary>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Gunakan bila membutuhkan referensi khatam, cetak dua sisi, atau laporan resmi.</p>
+                    <div class="mt-4 grid gap-2 sm:grid-cols-3">
+                        <a href="{{ route('siswa.quran.khatam-map') }}" class="btn-secondary min-h-11 justify-center">Peta Khatam</a>
+                        <a href="{{ route('siswa.quran.duplex') }}" class="btn-secondary min-h-11 justify-center">Paket Bolak-Balik</a>
+                        <a href="{{ route('siswa.quran.report') }}" class="btn-secondary min-h-11 justify-center">Laporan PDF</a>
+                    </div>
+                    <div class="mt-3 grid gap-2 text-xs text-gray-500 dark:text-gray-400 sm:grid-cols-3"><p>Peta Khatam: referensi 114 surat dan checklist manual.</p><p>Paket Bolak-Balik: lembar bulanan di depan, Peta Khatam di belakang.</p><p>Laporan PDF: hanya catatan yang sudah terverifikasi.</p></div>
+                </details>
+            </section>
 
             <section class="pkg-panel overflow-hidden">
                 <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700"><h2 class="font-bold">Riwayat bacaan</h2></div>
