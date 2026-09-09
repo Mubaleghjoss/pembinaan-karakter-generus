@@ -79,9 +79,9 @@ ensure_runtime_group_write_access() {
 
     runtime_paths_are_group_writable && return
 
-    if command -v pkgenerus-staging-admin >/dev/null 2>&1; then
+    if [ -x /usr/local/sbin/pkgenerus-staging-admin ]; then
         echo "INFO=Runtime paths need privileged permission repair; invoking pkgenerus-staging-admin fix-permissions." >&2
-        if ! pkgenerus-staging-admin fix-permissions; then
+        if ! sudo -n /usr/local/sbin/pkgenerus-staging-admin fix-permissions; then
             fail "Privileged permission repair failed. Run 'pkgenerus-staging-admin fix-permissions' and retry; the release was not activated."
         fi
         runtime_paths_are_group_writable && return

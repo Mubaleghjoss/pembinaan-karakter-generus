@@ -11,7 +11,11 @@ grep -Fq 'flock -n 9' "$script"
 grep -Fq 'validate_release_source' "$script"
 grep -Fq 'ensure_runtime_group_write_access' "$script"
 grep -Fq 'runtime_paths_are_group_writable' "$script"
-grep -Fq 'pkgenerus-staging-admin fix-permissions' "$script"
+grep -Fq 'sudo -n /usr/local/sbin/pkgenerus-staging-admin fix-permissions' "$script"
+if grep -Fq 'command -v pkgenerus-staging-admin' "$script"; then
+    echo "staging deploy must use the approved absolute permission helper via sudo -n" >&2
+    exit 1
+fi
 grep -Fq "the release was not activated" "$script"
 if grep -Eq '(^|[[:space:];])chgrp([[:space:];]|$)' "$script"; then
     echo "staging deploy must not change runtime file groups as the deploy user" >&2
