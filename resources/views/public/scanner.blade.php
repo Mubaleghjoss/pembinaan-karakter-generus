@@ -39,12 +39,13 @@
 @section('content')
 <div class="min-h-screen py-4 sm:py-8">
     <div class="mx-auto flex max-w-4xl flex-col px-4 sm:px-6 lg:px-8">
-        <div class="mb-5 grid grid-cols-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900" data-public-scan-mode-root data-initial-mode="{{ request('mode') === 'quran' ? 'quran' : 'presence' }}">
-            <button type="button" class="pkg-public-scan-mode min-h-12 rounded-xl px-3 text-sm font-bold" data-public-scan-mode="presence">Presensi</button>
-            <button type="button" class="pkg-public-scan-mode min-h-12 rounded-xl px-3 text-sm font-bold" data-public-scan-mode="quran">Bacaan Al-Qur'an</button>
+        @php($publicScanMode = request('mode') === 'quran' ? 'quran' : 'presence')
+        <div class="mb-5 grid grid-cols-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900" role="tablist" aria-label="Pilih jenis pemindaian" data-public-scan-mode-root data-initial-mode="{{ $publicScanMode }}">
+            <a href="{{ route('public.scanner') }}" class="pkg-public-scan-mode min-h-12 rounded-xl px-3 text-center text-sm font-bold" role="tab" aria-controls="presence" aria-selected="{{ $publicScanMode === 'presence' ? 'true' : 'false' }}" @if($publicScanMode === 'presence') aria-current="page" @endif data-public-scan-mode="presence">Presensi</a>
+            <a href="{{ route('public.scanner', ['mode' => 'quran']) }}#quran" class="pkg-public-scan-mode min-h-12 rounded-xl px-3 text-center text-sm font-bold" role="tab" aria-controls="quran" aria-selected="{{ $publicScanMode === 'quran' ? 'true' : 'false' }}" @if($publicScanMode === 'quran') aria-current="page" @endif data-public-scan-mode="quran">Bacaan Al-Qur'an</a>
         </div>
 
-        <div class="flex flex-col" data-public-scan-panel="presence">
+        <div id="presence" class="flex flex-col {{ $publicScanMode === 'presence' ? '' : 'hidden' }}" role="tabpanel" data-public-scan-panel="presence">
         <!-- Active Attendance Activities -->
         <div class="order-2 mt-8 pkg-surface rounded-2xl p-6 border-2 {{ $isOpen ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800' }}" data-reveal="up">
             <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -347,7 +348,7 @@
         </div>
         </div>
 
-        <div id="quran" class="hidden" data-public-scan-panel="quran">
+        <div id="quran" class="{{ $publicScanMode === 'quran' ? '' : 'hidden' }}" role="tabpanel" data-public-scan-panel="quran">
             <section class="pkg-panel-lg border-emerald-200 dark:border-emerald-900">
                 @if(session('success'))<div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200" role="status">{{ session('success') }}</div>@endif
                 <div class="mb-5">

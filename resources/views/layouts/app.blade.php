@@ -15,6 +15,10 @@
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     
     <title>@yield('title', ($siteSettings['site_title'] ?? 'PKG Presensi') . ' - ' . ($siteSettings['site_name'] ?? 'Sistem Presensi QR Code'))</title>
+    @php
+        // Prefer the transparent theme logo also used by the public share preview.
+        $headerLogoPath = $currentTheme->logo_path ?: ($siteSettings['site_logo'] ?? null);
+    @endphp
     
     @include('layouts.partials.favicons')
     
@@ -118,8 +122,8 @@ x-effect="localStorage.setItem('sidebarCollapsed', sidebarCollapsed); document.d
             <!-- Logo -->
             <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
                 <a href="{{ route('dashboard') }}" class="flex items-center">
-                    @if(!empty($siteSettings['site_logo']))
-                        <img src="{{ Storage::url($siteSettings['site_logo']) }}" alt="Logo" width="32" height="32" class="h-8 w-8 flex-shrink-0 object-contain" style="width:2rem;height:2rem;object-fit:contain;" decoding="async" fetchpriority="high">
+                    @if(!empty($headerLogoPath))
+                        <img src="{{ Storage::url($headerLogoPath) }}" alt="Logo" width="32" height="32" class="h-8 w-8 flex-shrink-0 object-contain" style="width:2rem;height:2rem;object-fit:contain;" decoding="async" fetchpriority="high">
                     @else
                         <div class="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                             <span class="text-white font-bold text-sm">P</span>

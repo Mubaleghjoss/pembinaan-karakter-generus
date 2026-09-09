@@ -7,8 +7,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
         $publicBrandName = 'PKG Panunggangan';
-        $publicLogoPath = $siteSettings['site_logo'] ?? $theme->logo_path;
+        // Keep the displayed brand aligned with the transparent logo used by public share metadata.
+        $publicLogoPath = $theme->logo_path ?: ($siteSettings['site_logo'] ?? null);
         $publicFallbackLogo = asset('images/icons/pkg-logo-192.png');
+        $publicLogoUrl = $publicLogoPath ? asset('storage/' . $publicLogoPath) : $publicFallbackLogo;
     @endphp
     <title>@yield('title', $publicBrandName)</title>
     <meta name="description" content="{{ $theme->app_description ?? 'Sistem Presensi QR Code - Pembinaan Karakter Generus' }}">
@@ -257,7 +259,7 @@
 <body class="pkg-public-shell h-full text-slate-900 dark:text-slate-100">
     <div id="pkg-pwa-launch-splash" class="pkg-pwa-launch-splash" aria-hidden="true">
         <div class="pkg-pwa-launch-card">
-            <img class="pkg-pwa-launch-logo" src="{{ asset('images/icons/pkg-logo-192.png') }}" alt="Logo PKG" width="124" height="124">
+            <img class="pkg-pwa-launch-logo" src="{{ $publicLogoUrl }}" alt="Logo PKG" width="124" height="124">
             <div class="pkg-pwa-launch-title">Pembinaan Karakter Generus Panunggangan</div>
         </div>
     </div>
@@ -267,7 +269,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex min-h-[4.5rem] items-center justify-between gap-3 py-3 sm:h-20 sm:py-0">
                 <div class="pkg-nav-brand flex min-w-0 items-center gap-3 sm:gap-4">
-                    <img src="{{ $publicLogoPath ? asset('storage/' . $publicLogoPath) : $publicFallbackLogo }}" alt="Logo PKG Panunggangan" width="48" height="48" class="pkg-brand-logo-motion h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12" style="width:3rem;height:3rem;object-fit:contain;" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='{{ $publicFallbackLogo }}';">
+                    <img src="{{ $publicLogoUrl }}" alt="Logo PKG Panunggangan" width="48" height="48" class="pkg-brand-logo-motion h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12" style="width:3rem;height:3rem;object-fit:contain;" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='{{ $publicFallbackLogo }}';">
                     <div class="min-w-0">
                         <h1 class="pkg-brand-title-motion pkg-nav-brand-title truncate text-base font-bold leading-tight sm:text-lg lg:text-2xl" style="color: var(--pkg-public-nav-text, #0f172a);">{{ $publicBrandName }}</h1>
                         <p class="pkg-nav-brand-copy pkg-public-nav-copy mt-1 max-w-[14rem] text-[11px] leading-tight sm:max-w-[20rem] sm:text-xs lg:max-w-[28rem] lg:text-sm">{{ $theme->app_description }}</p>
@@ -383,7 +385,7 @@
         <aside id="mobile-menu" class="pkg-mobile-menu-shell xl:hidden" aria-hidden="true" aria-label="Navigasi mobile" tabindex="-1" inert>
             <div class="pkg-mobile-menu-panel-header">
                 <div class="pkg-mobile-menu-panel-brand">
-                    <img src="{{ $publicLogoPath ? asset('storage/' . $publicLogoPath) : $publicFallbackLogo }}" alt="" width="44" height="44" class="pkg-mobile-menu-panel-logo" onerror="this.onerror=null;this.src='{{ $publicFallbackLogo }}';">
+                    <img src="{{ $publicLogoUrl }}" alt="" width="44" height="44" class="pkg-mobile-menu-panel-logo" onerror="this.onerror=null;this.src='{{ $publicFallbackLogo }}';">
                     <div class="min-w-0">
                         <p class="pkg-mobile-menu-eyebrow text-[10px] font-bold uppercase tracking-[0.2em]">Menu Utama</p>
                         <h2 class="truncate text-base font-extrabold text-slate-900 dark:text-white">{{ $publicBrandName }}</h2>

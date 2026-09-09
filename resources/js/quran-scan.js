@@ -1079,7 +1079,11 @@ function initPublicModes() {
             history.replaceState({}, '', url);
         }
     };
-    container.querySelectorAll('[data-public-scan-mode]').forEach((button) => button.addEventListener('click', () => switchMode(button.dataset.publicScanMode)));
+    container.querySelectorAll('[data-public-scan-mode]').forEach((button) => button.addEventListener('click', (event) => {
+        // Links remain usable without JavaScript, while JS switches modes without reloading the scanner.
+        event.preventDefault();
+        switchMode(button.dataset.publicScanMode);
+    }));
     switchMode(container.dataset.initialMode || 'presence', false);
 }
 

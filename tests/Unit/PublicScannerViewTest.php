@@ -22,4 +22,18 @@ class PublicScannerViewTest extends TestCase
         $this->assertStringNotContainsString('QR &amp; Wajah', $view);
         $this->assertStringNotContainsString('QR & Wajah', $view);
     }
+
+    #[Test]
+    public function scanner_mode_links_have_server_rendered_active_states_and_progressive_enhancement(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $view = file_get_contents($root.'/resources/views/public/scanner.blade.php');
+        $script = file_get_contents($root.'/resources/js/quran-scan.js');
+
+        $this->assertStringContainsString("route('public.scanner', ['mode' => 'quran'])", $view);
+        $this->assertStringContainsString('aria-selected="{{ $publicScanMode === \'presence\' ? \'true\' : \'false\' }}"', $view);
+        $this->assertStringContainsString('aria-selected="{{ $publicScanMode === \'quran\' ? \'true\' : \'false\' }}"', $view);
+        $this->assertStringContainsString('event.preventDefault();', $script);
+        $this->assertStringContainsString('switchMode(button.dataset.publicScanMode);', $script);
+    }
 }

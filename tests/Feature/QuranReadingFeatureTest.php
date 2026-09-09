@@ -10,7 +10,9 @@ use App\Models\QuranReadingEntry;
 use App\Models\QuranReadingScan;
 use App\Models\QuranReadingSheet;
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\Siswa;
+use App\Models\ThemeSetting;
 use App\Models\User;
 use App\Services\QuranKhatamService;
 use App\Services\QuranReadingScanService;
@@ -27,12 +29,38 @@ class QuranReadingFeatureTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_home_links_to_each_public_scan_mode(): void
+    {
+        $this->get(route('public.index'))
+            ->assertOk()
+            ->assertSee('Scan Presensi Sekarang')
+            ->assertSee('href="'.route('public.scanner').'"', false)
+            ->assertSee("Scan Bacaan Al-Qur'an", false)
+            ->assertSee('href="'.route('public.scanner', ['mode' => 'quran']).'"', false);
+    }
+
+    public function test_public_layout_prefers_the_transparent_theme_logo_without_changing_share_metadata(): void
+    {
+        ThemeSetting::current()->update(['logo_path' => 'logos/transparent-share-logo.png']);
+        Setting::set('site_logo', 'logos/legacy-white-background.png');
+
+        $this->get(route('public.index'))
+            ->assertOk()
+            ->assertSee('src="'.asset('storage/logos/transparent-share-logo.png').'"', false)
+            ->assertDontSee('legacy-white-background.png')
+            ->assertSee('<meta property="og:image" content="'.asset('storage/logos/transparent-share-logo.png').'">', false);
+    }
+
     public function test_public_quran_gallery_picker_does_not_force_the_camera(): void
     {
         config()->set('quran-reading.scan_enabled', true);
 
         $this->get(route('public.scanner', ['mode' => 'quran']))
             ->assertOk()
+            ->assertSee('href="'.route('public.scanner').'"', false)
+            ->assertSee('href="'.route('public.scanner', ['mode' => 'quran']).'#quran"', false)
+            ->assertSee('aria-selected="false"', false)
+            ->assertSee('aria-selected="true"', false)
             ->assertSee('Pilih dari Galeri')
             ->assertSee('Pilih PDF')
             ->assertSee('accept="application/pdf,.pdf"', false)
