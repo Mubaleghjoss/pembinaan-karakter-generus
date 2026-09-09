@@ -84,6 +84,17 @@ function loadOpenCv() {
     return cvPromise;
 }
 
+export function isChromeBrowser(userAgent = navigator.userAgent || '') {
+    // Chrome Android and desktop advertise Chrome; exclude Chromium-based competitors.
+    return /(?:Chrome|CriOS)\/\d+/i.test(userAgent)
+        && !/(?:Edg|EdgA|EdgiOS|OPR|Opera|SamsungBrowser|UCBrowser|YaBrowser)\//i.test(userAgent);
+}
+
+function showChromeNotices() {
+    if (isChromeBrowser()) return;
+    document.querySelectorAll('[data-quran-chrome-notice]').forEach((notice) => notice.classList.remove('hidden'));
+}
+
 function setStatus(root, message, tone = 'neutral') {
     const status = root.querySelector('[data-quran-scan-status]');
     const tones = {
@@ -1209,6 +1220,8 @@ function initConfirmation(root) {
         submit.textContent = 'Menyimpan hasil...';
     });
 }
+
+showChromeNotices();
 
 Promise.all([...document.querySelectorAll('[data-quran-scan-root]')].map((root, index) => initRoot(root, index)))
     .catch((error) => document.querySelectorAll('[data-quran-scan-root]').forEach((root) => setStatus(root, error?.message || 'Pemindai tidak dapat dimuat. Muat ulang halaman.', 'error')));

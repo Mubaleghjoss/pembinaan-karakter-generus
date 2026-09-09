@@ -36,7 +36,12 @@ trap rollback ERR
 [ "$(pwd -P)" = "$EXPECTED_REPO" ] || fail "Run only from $EXPECTED_REPO."
 [ "$(git rev-parse --show-toplevel)" = "$EXPECTED_REPO" ] || fail "Unexpected Git repository."
 [ "$(git branch --show-current)" = "develop" ] || fail "Only the develop branch may be deployed to staging."
-[ -z "$(git status --porcelain)" ] || fail "Refusing dirty or uncommitted source."
+# Local agent instructions and dependencies are intentionally never released by git archive.
+if ! git diff --quiet -- . ':(exclude)AGENTS.md' \
+    || ! git diff --cached --quiet -- . ':(exclude)AGENTS.md' \
+    || git ls-files --others --exclude-standard | grep -qvE '^(AGENTS\.md\.before-hermes-lock|vendor(/|$))'; then
+    fail "Refusing dirty or uncommitted release source."
+fi
 [ -f composer.lock ] || fail "composer.lock is required."
 [ -f package-lock.json ] || fail "package-lock.json is required."
 [ -f "$SHARED_DIR/.env" ] || fail "Missing staging shared environment."

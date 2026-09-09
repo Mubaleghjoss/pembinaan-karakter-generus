@@ -762,6 +762,50 @@ class QuranReadingFeatureTest extends TestCase
         $this->actingAs($guru)->get(route('quran.index'))->assertRedirect();
     }
 
+    public function test_pamong_can_store_manual_and_barcode_entries_for_an_assigned_student(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        $assigned = Siswa::factory()->create(['nama' => 'Generus Binaan']);
+        $teacherRole = Role::query()->firstOrCreate(['name' => User::ROLE_TEACHER], [
+            'display_name' => 'Pamong', 'permissions' => [], 'is_active' => true,
+        ]);
+        $pamong = User::factory()->create(['role_id' => $teacherRole->id]);
+        PamongPermission::create([
+            'user_id' => $pamong->id,
+            'menu_permissions' => ['dashboard', 'tracer_bacaan_quran'],
+            'crud_permissions' => ['tracer_bacaan_quran' => ['view', 'create']],
+        ]);
+        PamongSiswa::create(['pamong_id' => $pamong->id, 'siswa_id' => $assigned->id]);
+
+        $this->actingAs($pamong)->post(route('quran.store'), $this->entryPayload(['siswa_id' => $assigned->id]))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+        $this->assertDatabaseHas('quran_reading_entries', [
+            'siswa_id' => $assigned->id,
+            'source' => 'manual',
+            'status' => QuranReadingEntry::STATUS_VERIFIED,
+            'verified_by' => $pamong->id,
+        ]);
+
+        [, $payload] = $this->barcodeSheet($assigned);
+        $flow = $this->actingAs($pamong)
+            ->postJson(route('quran.barcode.identify'), ['sheet_payload' => $payload])
+            ->assertOk()
+            ->json('flow_id');
+        $this->actingAs($pamong)->postJson(route('quran.barcode.store'), [
+            'flow_id' => $flow,
+            'surah_start' => 2,
+            'ayah_start' => 1,
+            'ayah_end' => 5,
+        ])->assertCreated();
+        $this->assertDatabaseHas('quran_reading_entries', [
+            'siswa_id' => $assigned->id,
+            'source' => 'barcode_manual',
+            'status' => QuranReadingEntry::STATUS_VERIFIED,
+            'verified_by' => $pamong->id,
+        ]);
+    }
+
     public function test_view_only_pamong_does_not_see_input_or_scan_tabs(): void
     {
         config()->set('quran-reading.scan_enabled', true);

@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Beranda - ' . ($theme->app_name ?? 'PKG Presensi'))
+@section('title', 'PKG Panunggangan')
 
 @section('content')
 <!-- Hero Section -->

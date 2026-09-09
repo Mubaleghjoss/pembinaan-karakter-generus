@@ -45,6 +45,12 @@
         @endif
     </div>
 
+    <div class="mt-5 hidden rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100" data-quran-chrome-notice role="status">
+        <p class="font-bold">Fitur pemindaian kamera hanya mendukung Google Chrome.</p>
+        <p class="mt-1">Buka halaman ini dengan Chrome terbaru untuk memakai kamera. Input manual tetap dapat digunakan tanpa Chrome.</p>
+        <a class="mt-3 inline-flex min-h-11 items-center font-semibold text-amber-900 underline underline-offset-4 dark:text-amber-100" href="https://www.google.com/chrome/" target="_blank" rel="noopener noreferrer">Buka atau unduh Google Chrome</a>
+    </div>
+
     <div class="pkg-quran-mode-switch mt-5" role="tablist" aria-label="Pilih cara pemindaian">
         <button type="button" class="pkg-quran-mode-button" role="tab" aria-selected="true" data-quran-mode="quick">Scan Barcode Cepat</button>
         <button type="button" class="pkg-quran-mode-button" role="tab" aria-selected="false" data-quran-mode="advanced">Scan Lembar Lengkap</button>
