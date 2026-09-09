@@ -176,10 +176,9 @@
         @if($capabilities['create'])
             <x-tab-panel id="input">
                 <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.8fr)]">
-                    @include('quran-reading.partials.student-picker', ['targetTab' => 'input'])
                     <aside>
                         @if($selectedSiswa)
-                            <section class="pkg-panel-lg">
+                            <section class="pkg-panel-lg" data-quran-input-form>
                                 <h2 class="font-bold">Input untuk {{ $selectedSiswa->nama }}</h2>
                                 <p class="mb-4 mt-1 text-xs text-gray-500 dark:text-gray-400">Input Pamong/Admin langsung berstatus terverifikasi.</p>
                                 <form method="POST" action="{{ route('quran.store') }}">@csrf<input type="hidden" name="siswa_id" value="{{ $selectedSiswa->id }}">@include('quran-reading.partials.entry-fields')<button class="btn-success mt-4 min-h-11 w-full justify-center">Simpan Terverifikasi</button></form>
@@ -188,6 +187,7 @@
                             <div class="pkg-empty-state pkg-panel"><p class="pkg-empty-title">Pilih Generus untuk input manual</p><p class="pkg-empty-copy">Catatan dari Pamong atau Admin langsung terverifikasi.</p></div>
                         @endif
                     </aside>
+                    @include('quran-reading.partials.student-picker', ['targetTab' => 'input', 'collapsed' => (bool) $selectedSiswa])
                 </div>
             </x-tab-panel>
 

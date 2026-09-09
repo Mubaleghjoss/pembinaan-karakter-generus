@@ -29,7 +29,11 @@ class MobileUxRegressionTest extends TestCase
         $navigation = file_get_contents($root.'/resources/views/layouts/partials/portal-mobile-navigation.blade.php');
         $styles = file_get_contents($root.'/resources/css/app.css');
 
-        $this->assertStringContainsString('grid h-16 {{ $bottomColumnClass }}', $navigation);
+        $this->assertStringContainsString('grid min-h-16 {{ $bottomColumnClass }}', $navigation);
+        $this->assertStringContainsString('break-words text-center leading-3', $navigation);
+        $this->assertStringContainsString('break-words leading-tight', $navigation);
+        $this->assertStringNotContainsString('min-w-0 truncate">{{ $item[\'label\'] }}</span>', $navigation);
+        $this->assertStringNotContainsString('max-w-full truncate">{{ $item[\'label\'] }}</span>', $navigation);
         $this->assertStringContainsString('mobileMenuOpen = true', $navigation);
         $this->assertStringContainsString('pkg-portal-mobile-sheet', $navigation);
         $this->assertStringContainsString('env(safe-area-inset-bottom)', $styles);
@@ -151,6 +155,9 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('<x-tabs', $operational);
         $this->assertStringContainsString(':sync-query="true"', $operational);
         $this->assertStringContainsString("\$capabilities['create']", $operational);
+        $this->assertStringContainsString('data-quran-input-form', $operational);
+        $this->assertStringContainsString("'collapsed' => (bool) \$selectedSiswa", $operational);
+        $this->assertStringContainsString('data-quran-student-picker', file_get_contents($root.'/resources/views/quran-reading/partials/student-picker.blade.php'));
         $this->assertStringNotContainsString('capture="environment"', $scan);
         $this->assertStringContainsString('data-quran-pdf-file', $scan);
         $this->assertStringContainsString("import('pdfjs-dist')", $scanScript);

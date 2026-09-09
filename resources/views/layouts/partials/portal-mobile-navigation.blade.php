@@ -42,13 +42,13 @@
 </header>
 
 <nav class="pkg-portal-mobile-bottom lg:hidden" aria-label="Navigasi {{ $mobilePortal['portal_label'] }}">
-    <div class="grid h-16 {{ $bottomColumnClass }}">
+    <div class="grid min-h-16 {{ $bottomColumnClass }}">
         @foreach($mobilePortal['bottom_items'] as $item)
             <a href="{{ $item['url'] }}"
                class="relative flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 text-[10px] font-bold transition {{ $item['active'] ? $activeTextClass : 'text-slate-500 dark:text-slate-400' }}"
                @if($item['active']) aria-current="page" @endif>
                 @include('layouts.partials.portal-mobile-icon', ['icon' => $item['icon'], 'iconClass' => 'h-5 w-5'])
-                <span class="max-w-full truncate">{{ $item['label'] }}</span>
+                <span class="max-w-full break-words text-center leading-3">{{ $item['label'] }}</span>
                 @if(($item['badge'] ?? 0) > 0)
                     <span class="absolute right-1 top-1 inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[9px] font-black leading-none text-white">
                         {{ $item['badge'] > 99 ? '99+' : $item['badge'] }}
@@ -58,7 +58,7 @@
         @endforeach
         <button type="button" @click="mobileMenuOpen = true" class="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 text-[10px] font-bold transition {{ ($mobilePortal['more_active'] ?? false) ? $activeTextClass : 'text-slate-500 dark:text-slate-400' }}" :aria-expanded="mobileMenuOpen.toString()" aria-controls="portal-mobile-sheet">
             @include('layouts.partials.portal-mobile-icon', ['icon' => 'more', 'iconClass' => 'h-5 w-5'])
-            <span>Lainnya</span>
+            <span class="max-w-full break-words text-center leading-3">Lainnya</span>
         </button>
     </div>
 </nav>
@@ -145,7 +145,7 @@
                                 <span class="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
                                     @include('layouts.partials.portal-mobile-icon', ['icon' => $item['icon'], 'iconClass' => 'h-4 w-4'])
                                 </span>
-                                <span class="min-w-0 truncate">{{ $item['label'] }}</span>
+                                <span class="min-w-0 break-words leading-tight">{{ $item['label'] }}</span>
                                 @if(($item['badge'] ?? 0) > 0)
                                     <span class="absolute right-1.5 top-1.5 inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[8px] font-black text-white">
                                         {{ $item['badge'] > 99 ? '99+' : $item['badge'] }}
@@ -174,7 +174,7 @@
                                 <template x-for="(key, index) in selected" :key="`favorite-order-${key}`">
                                     <div class="flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5 dark:bg-slate-800">
                                         <span class="flex h-6 w-6 flex-none items-center justify-center rounded-md bg-amber-100 text-[10px] font-black text-amber-700 dark:bg-amber-900/50 dark:text-amber-300" x-text="index + 1"></span>
-                                        <span class="min-w-0 flex-1 truncate text-xs font-bold text-slate-700 dark:text-slate-200" x-text="item(key).label"></span>
+                                        <span class="min-w-0 flex-1 break-words text-xs font-bold leading-tight text-slate-700 dark:text-slate-200" x-text="item(key).label"></span>
                                         <button type="button" class="rounded-md border border-slate-200 p-1 text-slate-600 disabled:opacity-30 dark:border-slate-700 dark:text-slate-300" @click="move(index, -1)" :disabled="index === 0" aria-label="Naikkan urutan">
                                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                                         </button>
@@ -195,7 +195,7 @@
                                             : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'"
                                         @click="toggle(entry.key)">
                                     <span class="flex h-5 w-5 flex-none items-center justify-center rounded-full border text-[9px] font-black" x-text="has(entry.key) ? 'OK' : '+'"></span>
-                                    <span class="min-w-0 truncate" x-text="entry.label"></span>
+                                    <span class="min-w-0 break-words leading-tight" x-text="entry.label"></span>
                                 </button>
                             </template>
                         </div>
@@ -227,7 +227,7 @@
                                 <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
                                     @include('layouts.partials.portal-mobile-icon', ['icon' => $item['icon'], 'iconClass' => 'h-5 w-5'])
                                 </span>
-                                <span class="min-w-0 truncate">{{ $item['label'] }}</span>
+                                <span class="min-w-0 break-words leading-tight">{{ $item['label'] }}</span>
                                 @if(($item['badge'] ?? 0) > 0)
                                     <span class="absolute right-2 top-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[9px] font-black text-white">
                                         {{ $item['badge'] > 99 ? '99+' : $item['badge'] }}

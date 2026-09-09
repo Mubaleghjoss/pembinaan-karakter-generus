@@ -390,6 +390,30 @@ class QuranReadingFeatureTest extends TestCase
             ->assertSee('Scan Lembar')
             ->assertSee('Generus Tab');
 
+        $inputResponse = $this->actingAs($admin)
+            ->get(route('quran.index', ['tab' => 'input', 'siswa_id' => $siswa->id]))
+            ->assertOk()
+            ->assertSee('data-quran-input-form', false)
+            ->assertSee('name="siswa_id" value="'.$siswa->id.'"', false)
+            ->assertSee('data-quran-student-picker', false)
+            ->assertSee('Ganti Generus');
+        $inputHtml = $inputResponse->getContent();
+        $document = new \DOMDocument;
+        $useInternalErrors = libxml_use_internal_errors(true);
+        $document->loadHTML($inputHtml);
+        libxml_clear_errors();
+        libxml_use_internal_errors($useInternalErrors);
+        $inputPanel = (new \DOMXPath($document))->query('//*[@id="panel-input"]')->item(0);
+        $this->assertNotNull($inputPanel, 'Panel tab input harus dirender.');
+
+        $inputPanelHtml = $document->saveHTML($inputPanel);
+        $this->assertLessThan(
+            strpos($inputPanelHtml, 'data-quran-student-picker'),
+            strpos($inputPanelHtml, 'data-quran-input-form'),
+            'Form input harus dirender sebelum pemilih Generus yang diciutkan di panel input.'
+        );
+        $this->assertStringContainsString('<details class="pkg-panel overflow-hidden" data-quran-student-picker>', $inputPanelHtml);
+
         $this->actingAs($admin)
             ->get(route('quran.scan', $siswa))
             ->assertRedirect(route('quran.index', ['tab' => 'scan', 'siswa_id' => $siswa->id]).'#scan');
