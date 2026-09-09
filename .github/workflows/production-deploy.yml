@@ -28,6 +28,13 @@ jobs:
           node-version: '22'
           cache: npm
       - run: composer validate --strict --no-interaction
+      - name: Prepare Laravel runtime directories
+        run: |
+          mkdir -p storage/framework/cache/data
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          mkdir -p storage/logs
+          mkdir -p bootstrap/cache
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: npm ci --no-audit --no-fund
       - run: npm run build
