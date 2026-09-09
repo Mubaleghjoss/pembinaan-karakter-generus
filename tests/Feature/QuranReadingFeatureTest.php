@@ -105,6 +105,48 @@ class QuranReadingFeatureTest extends TestCase
         $this->get(route('public.quran.scan.open', ['code' => $invalidCode]))->assertNotFound();
     }
 
+    public function test_monthly_pdf_qr_uses_compact_payload_and_identifies_its_sheet(): void
+    {
+        config()->set('quran-reading.scan_enabled', true);
+        $siswa = Siswa::factory()->create();
+        $token = bin2hex(random_bytes(16));
+        $sheet = QuranReadingSheet::create([
+            'siswa_id' => $siswa->id,
+            'public_id' => (string) Str::uuid(),
+            'token_hash' => hash('sha256', $token),
+            'status' => 'active',
+            'sheet_type' => 'monthly',
+            'row_count' => 31,
+            'template_version' => 4,
+        ]);
+        $scanner = app(QuranReadingScanService::class);
+        $payload = $scanner->payload($sheet, $token);
+        $page = app(\App\Services\QuranReadingDocumentService::class)->monthlyPage($sheet, $token);
+
+        // A compact alphanumeric payload stays readable after PDF rasterization/screenshots.
+        $this->assertSame($this->quranQrDataUri($payload), $page['qrDataUri']);
+        $this->assertNotSame(
+            $this->quranQrDataUri(route('public.quran.scan.open', ['code' => $scanner->publicCode($sheet, $token)])),
+            $page['qrDataUri'],
+        );
+
+        $identify = $this->postJson(route('public.quran.barcode.identify'), ['sheet_payload' => $payload])
+            ->assertOk()
+            ->assertJsonPath('student.name', $siswa->nama);
+        $this->postJson(route('public.quran.barcode.store'), [
+            'flow_id' => $identify->json('flow_id'),
+            'surah_start' => 1,
+            'ayah_start' => 1,
+            'ayah_end' => 7,
+        ])->assertCreated();
+        $this->assertDatabaseHas('quran_reading_entries', ['sheet_id' => $sheet->id, 'siswa_id' => $siswa->id]);
+
+        $tamperedPayload = substr($payload, 0, -1).(str_ends_with($payload, 'A') ? 'B' : 'A');
+        $this->postJson(route('public.quran.barcode.identify'), ['sheet_payload' => $tamperedPayload])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('sheet_payload');
+    }
+
     public function test_public_quick_barcode_creates_pending_entry_without_scan_file_or_pages(): void
     {
         config()->set('quran-reading.scan_enabled', true);
@@ -1040,6 +1082,14 @@ class QuranReadingFeatureTest extends TestCase
             'mushaf_label' => 'Mushaf Madinah',
             'notes' => 'Latihan tartil',
         ], $overrides);
+    }
+
+    private function quranQrDataUri(string $payload): string
+    {
+        $method = new \ReflectionMethod(\App\Services\QuranReadingDocumentService::class, 'qrDataUri');
+        $method->setAccessible(true);
+
+        return $method->invoke(app(\App\Services\QuranReadingDocumentService::class), $payload);
     }
 
     private function barcodeSheet(Siswa $siswa): array
