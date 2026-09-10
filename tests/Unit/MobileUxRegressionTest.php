@@ -159,13 +159,18 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString("'collapsed' => (bool) \$selectedSiswa", $operational);
         $this->assertStringContainsString('data-quran-student-picker', file_get_contents($root.'/resources/views/quran-reading/partials/student-picker.blade.php'));
         $this->assertStringNotContainsString('capture="environment"', $scan);
-        $this->assertStringContainsString('data-quran-pdf-file', $scan);
-        $this->assertStringContainsString("import('pdfjs-dist')", $scanScript);
         $this->assertStringContainsString('Scan QR cepat', $scan);
-        $this->assertStringContainsString('data-quran-mode-panel="advanced"', $scan);
+        $this->assertStringContainsString('data-quran-quick-camera-open', $scan);
+        $this->assertStringContainsString('data-quran-quick-file', $scan);
         $this->assertStringContainsString('sessionStorage.setItem', $scanScript);
         $this->assertStringContainsString('fetchWithFreshCsrf', $scanScript);
-        $this->assertStringContainsString('maksimal 8 MB', $scan);
+        $this->assertStringNotContainsString('Scan lembar lengkap', $scan);
+        $this->assertStringNotContainsString('Gunakan foto atau PDF seluruh lembar', $scan);
+        $this->assertStringNotContainsString('data-quran-pdf-file', $scan);
+        $this->assertStringNotContainsString('data-quran-scan-form', $scan);
+        $this->assertStringNotContainsString("import('pdfjs-dist')", $scanScript);
+        $this->assertStringNotContainsString('data-quran-mode-panel', $scan);
+        $this->assertStringNotContainsString('data-quran-pdf-file', $scanScript);
         $this->assertStringNotContainsString('overflow-x-auto', $scan);
     }
 

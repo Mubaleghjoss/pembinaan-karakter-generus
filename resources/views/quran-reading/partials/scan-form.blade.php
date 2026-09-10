@@ -1,10 +1,5 @@
 @php
     $scanLayout = $layout ?? 'operational';
-    $scanAction = match ($scanLayout) {
-        'siswa' => route('siswa.quran.scan.upload'),
-        'public' => route('public.quran.scan.upload'),
-        default => route('quran.scan.upload'),
-    };
     $barcodeIdentifyAction = match ($scanLayout) {
         'siswa' => route('siswa.quran.barcode.identify'),
         'public' => route('public.quran.barcode.identify'),
@@ -17,19 +12,12 @@
     };
     $studentName = isset($siswa) && $siswa ? $siswa->nama : null;
     $prefilledPayload = $prefilledPayload ?? null;
-    $maxUploadBytes = (int) config('quran-reading.max_upload_kilobytes', 8192) * 1024;
 @endphp
 
 <section
     class="pkg-quran-scanner"
     data-quran-scan-root
-    data-ocr-enabled="{{ config('quran-reading.ocr_enabled') ? 'true' : 'false' }}"
-    data-tesseract-worker="{{ asset('vendor/tesseract/worker.min.js') }}"
-    data-tesseract-core="{{ asset('vendor/tesseract/core') }}"
-    data-tesseract-lang="{{ asset('vendor/tesseract/lang') }}"
     data-prefilled-payload="{{ $prefilledPayload }}"
-    data-auto-submit="false"
-    data-max-upload-bytes="{{ $maxUploadBytes }}"
     data-barcode-identify-url="{{ $barcodeIdentifyAction }}"
     data-barcode-store-url="{{ $barcodeStoreAction }}"
 >
@@ -51,16 +39,11 @@
         <a class="mt-3 inline-flex min-h-11 items-center font-semibold text-amber-900 underline underline-offset-4 dark:text-amber-100" href="https://www.google.com/chrome/" target="_blank" rel="noopener noreferrer">Buka atau unduh Google Chrome</a>
     </div>
 
-    <div class="pkg-quran-mode-switch mt-6" role="tablist" aria-label="Pilih cara pemindaian">
-        <button type="button" class="pkg-quran-mode-button" role="tab" aria-selected="true" data-quran-mode="quick">Scan QR cepat</button>
-        <button type="button" class="pkg-quran-mode-button" role="tab" aria-selected="false" data-quran-mode="advanced">Scan lembar lengkap</button>
-    </div>
-
-    <div class="mt-5 min-w-0 max-w-full" data-quran-mode-panel="quick">
+    <div class="mt-5 min-w-0 max-w-full">
         <div class="pkg-card-soft min-w-0 p-4 sm:p-5">
             <div class="flex min-w-0 flex-col gap-2">
-                <h3 class="font-bold leading-6">Kenali Generus dari QR</h3>
-                <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">Arahkan kamera ke QR pada lembar, pilih gambar QR, atau buka QR dengan pemindai di HP.</p>
+                <h3 class="font-bold leading-6">Scan QR cepat</h3>
+                <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">Arahkan kamera ke QR pada lembar, pilih gambar QR, atau buka QR dengan pemindai di HP untuk mengenali Generus.</p>
             </div>
 
             <div class="mt-4 grid min-w-0 gap-3 min-[360px]:grid-cols-2">
@@ -113,89 +96,5 @@
         </form>
     </div>
 
-    <div class="mt-5 hidden min-w-0 max-w-full" data-quran-mode-panel="advanced">
-        <div class="pkg-card-soft p-4 sm:p-5"><h3 class="font-bold leading-6">Scan lembar lengkap</h3><p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Gunakan foto atau PDF seluruh lembar, maksimal 8 MB. Pelurusan dan pembacaan angka otomatis hanya digunakan dalam mode ini.</p></div>
 
-    <div class="mt-5 grid gap-3 sm:grid-cols-3">
-        <div class="pkg-card-soft p-4"><strong class="block">1. Foto rata</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Masukkan seluruh kertas dan empat penanda sudut.</span></div>
-        <div class="pkg-card-soft p-4"><strong class="block">2. Baca QR dan angka</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Sistem meluruskan foto lalu membaca kolom angka.</span></div>
-        <div class="pkg-card-soft p-4"><strong class="block">3. Periksa hasil</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Tulisan tangan tetap harus dicocokkan sebelum disimpan.</span></div>
-    </div>
-
-    <form method="POST" enctype="multipart/form-data" action="{{ $scanAction }}" class="mt-5" data-quran-scan-form>
-        @csrf
-        <input type="hidden" name="sheet_payload" value="{{ old('sheet_payload', $prefilledPayload) }}" data-quran-sheet-payload>
-        <input type="hidden" name="ocr_suggestion" value="{{ old('ocr_suggestion') }}" data-quran-ocr-suggestion>
-        <input type="file" name="processed_image" accept="image/jpeg" class="hidden" tabindex="-1" data-quran-processed-file>
-
-        <div class="grid gap-3 sm:grid-cols-3">
-            <button type="button" class="btn-primary min-h-12 w-full justify-center" data-quran-camera-open>
-                <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                Buka Kamera
-            </button>
-            <label class="btn-secondary min-h-12 w-full cursor-pointer justify-center">
-                <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                Pilih dari Galeri
-                <input type="file" name="scan_image" accept="image/jpeg,image/png,image/webp" class="sr-only" required data-quran-scan-file>
-            </label>
-            <label class="btn-secondary min-h-12 w-full cursor-pointer justify-center">
-                <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2zm7 0v6h6M9 14h6M9 17h4" /></svg>
-                Pilih PDF
-                <input type="file" accept="application/pdf,.pdf" class="sr-only" data-quran-pdf-file>
-            </label>
-        </div>
-
-        <div class="pkg-quran-camera mt-4 hidden" data-quran-camera-panel>
-            <div class="pkg-quran-camera__viewport">
-                <video autoplay muted playsinline data-quran-camera-video></video>
-                <div class="pkg-quran-camera__guide" aria-hidden="true"><span>Sejajarkan seluruh kertas di dalam bingkai</span></div>
-            </div>
-            <div class="mt-3 grid grid-cols-2 gap-3">
-                <button type="button" class="btn-success min-h-12 justify-center" data-quran-camera-capture>Ambil Foto</button>
-                <button type="button" class="btn-secondary min-h-12 justify-center" data-quran-camera-close>Batalkan</button>
-            </div>
-        </div>
-
-        <div class="mt-4 hidden" data-quran-preview-panel>
-            <div class="pkg-quran-preview">
-                <img alt="Pratinjau lembar yang akan diproses" data-quran-preview-image>
-                <div class="pkg-quran-crop hidden" data-quran-crop-box aria-label="Area QR yang akan dibaca"></div>
-            </div>
-            <div class="mt-3 grid grid-cols-2 gap-3">
-                <button type="button" class="btn-secondary min-h-11 justify-center" data-quran-retake>Foto Ulang</button>
-                <button type="button" class="btn-primary min-h-11 justify-center" data-quran-use-photo>Gunakan Foto</button>
-            </div>
-        </div>
-
-        <div class="mt-4 hidden rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30" data-quran-manual-crop>
-            <h3 class="font-bold text-amber-900 dark:text-amber-100">QR belum terbaca</h3>
-            <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">Geser kotak ke QR di kanan atas, ubah ukurannya dari sudut, lalu coba lagi.</p>
-            <button type="button" class="btn-secondary mt-3 min-h-11 w-full justify-center" data-quran-crop-retry>Coba Baca Area QR</button>
-        </div>
-
-        <div class="mt-4 hidden rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30" data-quran-document-corners>
-            <h3 class="font-bold text-amber-900 dark:text-amber-100">Rapikan batas kertas</h3>
-            <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">Geser empat penanda ke sudut kertas, lalu luruskan sebelum membaca angka.</p>
-            <div class="pkg-quran-corners mt-3" data-quran-corners-stage>
-                <img alt="Foto asli untuk mengatur empat sudut kertas" data-quran-corners-image>
-                @foreach(['tl','tr','bl','br'] as $corner)<button type="button" class="pkg-quran-corner pkg-quran-corner--{{ $corner }}" aria-label="Geser sudut {{ $corner }}" data-quran-corner="{{ $corner }}"></button>@endforeach
-            </div>
-            <button type="button" class="btn-primary mt-3 min-h-11 w-full justify-center" data-quran-corners-apply>Luruskan dan Baca Angka</button>
-        </div>
-
-        <div class="mt-4 rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-700" data-quran-scan-status role="status" aria-live="polite">
-            {{ $prefilledPayload ? 'Lembar sudah dikenali. Pilih foto atau PDF untuk diperiksa.' : 'Pilih kamera, galeri, atau PDF untuk mulai scan.' }}
-        </div>
-        <div class="mt-3 hidden" data-quran-progress-wrap>
-            <div class="mb-1 flex items-center justify-between text-xs font-semibold"><span data-quran-progress-label>Memproses</span><span data-quran-progress-value>0%</span></div>
-            <div class="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-full w-0 rounded-full bg-emerald-500 transition-[width] duration-200" data-quran-progress-bar></div></div>
-        </div>
-        @error('sheet_payload')<p class="mt-2 text-sm text-red-600 dark:text-red-300">{{ $message }}</p>@enderror
-        @error('scan_image')<p class="mt-2 text-sm text-red-600 dark:text-red-300">{{ $message }}</p>@enderror
-
-        <button class="btn-primary mt-5 min-h-12 w-full justify-center" disabled data-quran-scan-submit>
-            Unggah dan Periksa Hasil
-        </button>
-    </form>
-    </div>
 </section>

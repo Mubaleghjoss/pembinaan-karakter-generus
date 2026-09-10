@@ -51,7 +51,7 @@ class QuranReadingFeatureTest extends TestCase
             ->assertSee('<meta property="og:image" content="'.asset('storage/logos/transparent-share-logo.png').'">', false);
     }
 
-    public function test_public_quran_gallery_picker_does_not_force_the_camera(): void
+    public function test_public_quran_quick_picker_does_not_force_the_camera(): void
     {
         config()->set('quran-reading.scan_enabled', true);
 
@@ -61,10 +61,11 @@ class QuranReadingFeatureTest extends TestCase
             ->assertSee('href="'.route('public.scanner', ['mode' => 'quran']).'#quran"', false)
             ->assertSee('aria-selected="false"', false)
             ->assertSee('aria-selected="true"', false)
-            ->assertSee('Pilih dari Galeri')
-            ->assertSee('Pilih PDF')
-            ->assertSee('accept="application/pdf,.pdf"', false)
-            ->assertSee('data-quran-scan-file', false)
+            ->assertSee('Scan QR cepat')
+            ->assertSee('Pilih Gambar QR')
+            ->assertSee('data-quran-quick-file', false)
+            ->assertDontSee('Scan lembar lengkap')
+            ->assertDontSee('Pilih PDF')
             ->assertDontSee('capture="environment"', false);
     }
 
@@ -98,8 +99,9 @@ class QuranReadingFeatureTest extends TestCase
         $this->get(route('public.scanner', ['mode' => 'quran']))
             ->assertOk()
             ->assertSee('Lembar sudah dikenali. Menyiapkan identitas Generus...')
-            ->assertSee('data-auto-submit="false"', false)
-            ->assertSee('value="'.$payload.'"', false);
+            ->assertSee('data-prefilled-payload="'.$payload.'"', false)
+            ->assertSee('Scan QR cepat')
+            ->assertDontSee('Scan lembar lengkap');
 
         $invalidCode = $scanner->publicCode($sheet, bin2hex(random_bytes(16)));
         $this->get(route('public.quran.scan.open', ['code' => $invalidCode]))->assertNotFound();
@@ -439,7 +441,8 @@ class QuranReadingFeatureTest extends TestCase
             ->assertSee('Riwayat')
             ->assertSee('Catat Bacaan')
             ->assertSee('Scan Lembar')
-            ->assertSee('data-quran-scan-form', false);
+            ->assertSee('data-quran-quick-form', false)
+            ->assertDontSee('data-quran-scan-form', false);
 
         $this->actingAs($siswa, 'siswa')
             ->get(route('siswa.quran.index', ['tab' => 'tidak-valid']))
