@@ -108,7 +108,10 @@ smoke_url() {
 
 [ "$(pwd -P)" = "$EXPECTED_REPO" ] || fail "Run only from $EXPECTED_REPO."
 [ "$(git rev-parse --show-toplevel)" = "$EXPECTED_REPO" ] || fail "Unexpected Git repository."
-[ "$(git branch --show-current)" = "develop" ] || fail "Only the develop branch may be deployed to staging."
+current_branch="$(git branch --show-current)"
+if [ "$current_branch" != "develop" ]; then
+    [ -z "$current_branch" ] && [ -n "$release_sha" ] || fail "Only the develop branch or an explicit release SHA from develop may be deployed to staging."
+fi
 # Local agent instructions and dependencies are intentionally never released by git archive.
 if ! git diff --quiet -- . ':(exclude)AGENTS.md' \
     || ! git diff --cached --quiet -- . ':(exclude)AGENTS.md' \
