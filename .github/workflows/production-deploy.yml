@@ -69,10 +69,28 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
-          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS"
+          : "${DEPLOY_HOST:?DEPLOY_HOST is required.}"
+          : "${DEPLOY_USER:?DEPLOY_USER is required.}"
+          : "${DEPLOY_SSH_KEY:?DEPLOY_SSH_KEY is required.}"
+          : "${DEPLOY_KNOWN_HOSTS:?DEPLOY_KNOWN_HOSTS is required.}"
+          port="${DEPLOY_PORT:-22}"
+          case "$port" in
+            *[!0-9]* | '') echo "DEPLOY_PORT must be an integer from 1 to 65535." >&2; exit 1 ;;
+          esac
+          if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+            echo "DEPLOY_PORT must be an integer from 1 to 65535." >&2
+            exit 1
+          fi
+          case "$DEPLOY_USER" in
+            *[!A-Za-z0-9_-]* | '') echo "DEPLOY_USER contains unsupported characters." >&2; exit 1 ;;
+          esac
+          case "$DEPLOY_HOST" in
+            -* | *[!A-Za-z0-9._:-]* | '') echo "DEPLOY_HOST contains unsupported characters." >&2; exit 1 ;;
+          esac
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
@@ -87,7 +105,7 @@ jobs:
           RELEASE_NAME: ${{ github.sha }}
         run: |
           port="${DEPLOY_PORT:-22}"
-          ssh -p "$port" "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -p "$port" "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "set -eu; test -f /var/www/pkgenerus.my.id/shared/.env; mkdir -p /var/www/pkgenerus.my.id/releases; test ! -e /var/www/pkgenerus.my.id/releases/$RELEASE_NAME; mkdir /var/www/pkgenerus.my.id/releases/$RELEASE_NAME"
           echo "name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
       - name: Upload release source
@@ -105,7 +123,7 @@ jobs:
             --exclude='/node_modules/' \
             --exclude='/storage/' \
             --exclude='/public/storage' \
-            -e "ssh -p $port" ./ "$DEPLOY_USER@$DEPLOY_HOST:/var/www/pkgenerus.my.id/releases/$RELEASE_NAME/"
+            -e "ssh -p $port" ./ "${DEPLOY_USER}@${DEPLOY_HOST}:/var/www/pkgenerus.my.id/releases/$RELEASE_NAME/"
       - name: Build and activate release
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -114,5 +132,5 @@ jobs:
           RELEASE_NAME: ${{ steps.release.outputs.name }}
         run: |
           port="${DEPLOY_PORT:-22}"
-          ssh -p "$port" "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -p "$port" "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "bash /var/www/pkgenerus.my.id/releases/$RELEASE_NAME/scripts/vps/deploy-release.sh $RELEASE_NAME"
