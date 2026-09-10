@@ -540,13 +540,24 @@ class QuranReadingFeatureTest extends TestCase
         $upload = $this->actingAs($admin)->post(route('quran.scan.upload'), [
             'sheet_payload' => 'PKGQURAN:'.$sheet->public_id.':'.$token,
             'scan_image' => UploadedFile::fake()->image('lembar.jpg', 800, 1200),
+            'processed_image' => UploadedFile::fake()->image('lembar-lurus.jpg', 800, 1200),
         ]);
 
         $scan = QuranReadingScan::firstOrFail();
         $upload->assertRedirect(route('quran.scan.confirm', $scan));
         Storage::disk('local')->assertExists($scan->original_path);
+        Storage::disk('local')->assertExists($scan->processed_path);
 
         $this->actingAs($admin)->get(route('quran.scan.confirm', $scan))->assertOk();
+        $this->actingAs($admin)->get(route('quran.scan.image', $scan))
+            ->assertOk()
+            ->assertHeader('content-type', 'image/jpeg');
+
+        // A missing derived image must not hide the still-available upload.
+        Storage::disk('local')->delete($scan->processed_path);
+        $this->actingAs($admin)->get(route('quran.scan.image', $scan))
+            ->assertOk()
+            ->assertHeader('content-type', 'image/jpeg');
         $this->actingAs($admin)->post(route('quran.scan.confirm.store', $scan), [
             'rows' => [1 => $this->entryPayload(['row_number' => 1])],
         ])->assertRedirect(route('quran.index', ['tab' => 'rekap', 'siswa_id' => $siswa->id]).'#rekap');

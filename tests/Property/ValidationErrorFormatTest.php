@@ -33,13 +33,20 @@ class ValidationErrorFormatTest extends TestCase
     {
         parent::setUp();
         
-        // Create role first
-        $role = Role::firstOrCreate(
+        // Ensure this fixture can reach validation after authorization.
+        $role = Role::updateOrCreate(
             ['name' => 'admin'],
-            ['display_name' => 'Administrator', 'permissions' => ['*']]
+            [
+                'display_name' => 'Administrator',
+                'permissions' => ['*'],
+                'is_active' => true,
+            ]
         );
         
-        $this->user = User::factory()->create(['role_id' => $role->id]);
+        $this->user = User::factory()->create([
+            'role_id' => $role->id,
+            'status' => 'active',
+        ]);
     }
 
     /**

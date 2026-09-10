@@ -190,8 +190,8 @@ class QuranReadingDocumentService
 
     private function deleteJobDirectory(string $jobDirectory): void
     {
-        // A just-released FPDI reader can briefly retain a source file handle.
-        for ($attempt = 0; $attempt < 3; $attempt++) {
+        // FPDI readers may release source handles shortly after cleanUp().
+        for ($attempt = 0; $attempt < 10; $attempt++) {
             File::deleteDirectory($jobDirectory);
             clearstatcache(true, $jobDirectory);
 
@@ -200,7 +200,7 @@ class QuranReadingDocumentService
             }
 
             gc_collect_cycles();
-            usleep(10_000);
+            usleep(100_000);
         }
     }
 

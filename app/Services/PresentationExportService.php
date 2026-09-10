@@ -169,16 +169,14 @@ class PresentationExportService
         $media = [];
         $sequence = 1;
 
+        $disk = Storage::disk('public');
+
         foreach ($presentation->assets as $asset) {
-            $path = Storage::disk('public')->path($asset->path);
-            if (! is_file($path)) {
+            if (! $disk->exists($asset->path)) {
                 continue;
             }
 
-            $bytes = file_get_contents($path);
-            if ($bytes === false) {
-                continue;
-            }
+            $bytes = $disk->get($asset->path);
 
             $extension = match (strtolower(pathinfo($asset->path, PATHINFO_EXTENSION))) {
                 'jpg', 'jpeg' => 'jpeg',

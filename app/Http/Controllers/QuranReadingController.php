@@ -988,12 +988,15 @@ class QuranReadingController extends Controller
         $this->ensureScanEnabled();
         $this->authorizeScan($request, $scan, $isStudent, $isPublic);
         abort_if($scan->files_purged_at || (! $scan->original_path && ! $scan->processed_path), 410, 'Foto scan sudah dibersihkan setelah proses verifikasi selesai.');
-        $path = $request->boolean('original') || ! $scan->processed_path
+        $disk = Storage::disk('local');
+        $preferredPath = $request->boolean('original') || ! $scan->processed_path
             ? $scan->original_path
             : $scan->processed_path;
-        abort_unless(Storage::disk('local')->exists($path), 404);
+        // Keep confirmation usable when an optional derived image is unavailable.
+        $path = $disk->exists($preferredPath) ? $preferredPath : $scan->original_path;
+        abort_unless($path && $disk->exists($path), 404);
 
-        return Storage::disk('local')->response($path, null, [
+        return $disk->response($path, null, [
             'Cache-Control' => 'private, no-store, max-age=0',
             'X-Content-Type-Options' => 'nosniff',
         ]);
