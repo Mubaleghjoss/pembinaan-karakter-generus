@@ -350,11 +350,11 @@
 
         <div id="quran" class="{{ $publicScanMode === 'quran' ? '' : 'hidden' }}" role="tabpanel" data-public-scan-panel="quran">
             <section class="pkg-panel-lg border-emerald-200 dark:border-emerald-900">
-                @if(session('success'))<div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200" role="status">{{ session('success') }}</div>@endif
-                <div class="mb-5">
+                @if(session('success'))<div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200" role="status">{{ session('success') }}</div>@endif
+                <div class="mb-7 max-w-2xl">
                     <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Tracer Bacaan Al-Qur'an</p>
-                    <h1 class="mt-1 text-2xl font-bold text-slate-950 dark:text-white">Scan lembar bacaan</h1>
-                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Tidak perlu login. QR rahasia pada lembar mengenali Generus, dan hasil scan akan menunggu verifikasi Pamong.</p>
+                    <h1 class="mt-2 text-2xl font-bold leading-tight text-slate-950 dark:text-white sm:text-3xl">Scan lembar bacaan</h1>
+                    <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">Tidak perlu login. QR pada lembar akan mengenali Generus, lalu hasil scan dikirim untuk diverifikasi Pamong.</p>
                 </div>
                 @if(config('quran-reading.scan_enabled'))
                     @include('quran-reading.partials.scan-form', [

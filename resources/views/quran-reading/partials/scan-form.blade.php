@@ -33,11 +33,11 @@
     data-barcode-identify-url="{{ $barcodeIdentifyAction }}"
     data-barcode-store-url="{{ $barcodeStoreAction }}"
 >
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-            <h2 class="text-lg font-bold">Scan bacaan Al-Qur'an{{ $studentName ? ' '.$studentName : '' }}</h2>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Scan barcode untuk mengenali Generus, lalu isi surat dan ayat secara manual.
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0 max-w-2xl">
+            <h2 class="text-lg font-bold leading-tight sm:text-xl">Scan bacaan Al-Qur'an{{ $studentName ? ' - '.$studentName : '' }}</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Scan QR pada lembar untuk mengenali Generus, kemudian isi surat dan ayat yang dibaca.
             </p>
         </div>
         @if($scanLayout !== 'public' && isset($siswa) && $siswa)
@@ -51,22 +51,22 @@
         <a class="mt-3 inline-flex min-h-11 items-center font-semibold text-amber-900 underline underline-offset-4 dark:text-amber-100" href="https://www.google.com/chrome/" target="_blank" rel="noopener noreferrer">Buka atau unduh Google Chrome</a>
     </div>
 
-    <div class="pkg-quran-mode-switch mt-5" role="tablist" aria-label="Pilih cara pemindaian">
-        <button type="button" class="pkg-quran-mode-button" role="tab" aria-selected="true" data-quran-mode="quick">Scan Barcode Cepat</button>
-        <button type="button" class="pkg-quran-mode-button" role="tab" aria-selected="false" data-quran-mode="advanced">Scan Lembar Lengkap</button>
+    <div class="pkg-quran-mode-switch mt-6" role="tablist" aria-label="Pilih cara pemindaian">
+        <button type="button" class="pkg-quran-mode-button" role="tab" aria-selected="true" data-quran-mode="quick">Scan QR cepat</button>
+        <button type="button" class="pkg-quran-mode-button" role="tab" aria-selected="false" data-quran-mode="advanced">Scan lembar lengkap</button>
     </div>
 
     <div class="mt-5 min-w-0 max-w-full" data-quran-mode-panel="quick">
         <div class="pkg-card-soft min-w-0 p-4 sm:p-5">
-            <div class="flex min-w-0 flex-col gap-1">
-                <h3 class="font-bold">Kenali Generus dari barcode</h3>
-                <p class="text-sm text-slate-600 dark:text-slate-300">Arahkan kamera ke QR lembar, pilih gambar barcode, atau buka QR memakai pemindai HP.</p>
+            <div class="flex min-w-0 flex-col gap-2">
+                <h3 class="font-bold leading-6">Kenali Generus dari QR</h3>
+                <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">Arahkan kamera ke QR pada lembar, pilih gambar QR, atau buka QR dengan pemindai di HP.</p>
             </div>
 
             <div class="mt-4 grid min-w-0 gap-3 min-[360px]:grid-cols-2">
                 <button type="button" class="btn-primary min-h-12 w-full min-w-0 justify-center" data-quran-quick-camera-open>Scan dengan Kamera</button>
                 <label class="btn-secondary min-h-12 w-full min-w-0 cursor-pointer justify-center text-center">
-                    Pilih Gambar Barcode
+                    Pilih Gambar QR
                     <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" data-quran-quick-file>
                 </label>
             </div>
@@ -75,7 +75,7 @@
                 <button type="button" class="btn-secondary mt-3 min-h-11 w-full justify-center" data-quran-quick-camera-close>Tutup Kamera</button>
             </div>
             <div class="mt-4 rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-700" data-quran-quick-status role="status" aria-live="polite">
-                {{ $prefilledPayload ? 'Lembar sudah dikenali. Menyiapkan identitas Generus...' : 'Barcode belum terbaca. Scan barcode terlebih dahulu.' }}
+                {{ $prefilledPayload ? 'Lembar sudah dikenali. Menyiapkan identitas Generus...' : 'QR belum terbaca. Scan QR terlebih dahulu.' }}
             </div>
         </div>
 
@@ -114,7 +114,7 @@
     </div>
 
     <div class="mt-5 hidden min-w-0 max-w-full" data-quran-mode-panel="advanced">
-        <div class="pkg-card-soft p-4"><h3 class="font-bold">Scan Lembar Lengkap</h3><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Gunakan foto atau PDF seluruh lembar maksimal 8 MB. Pelurusan dan OCR dimuat hanya dalam mode ini.</p></div>
+        <div class="pkg-card-soft p-4 sm:p-5"><h3 class="font-bold leading-6">Scan lembar lengkap</h3><p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Gunakan foto atau PDF seluruh lembar, maksimal 8 MB. Pelurusan dan pembacaan angka otomatis hanya digunakan dalam mode ini.</p></div>
 
     <div class="mt-5 grid gap-3 sm:grid-cols-3">
         <div class="pkg-card-soft p-4"><strong class="block">1. Foto rata</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Masukkan seluruh kertas dan empat penanda sudut.</span></div>
@@ -184,7 +184,7 @@
         </div>
 
         <div class="mt-4 rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-700" data-quran-scan-status role="status" aria-live="polite">
-            {{ $prefilledPayload ? 'Lembar sudah dikenali. Pilih foto atau PDF untuk diperiksa.' : 'Pilih kamera, galeri, atau PDF untuk mulai memindai.' }}
+            {{ $prefilledPayload ? 'Lembar sudah dikenali. Pilih foto atau PDF untuk diperiksa.' : 'Pilih kamera, galeri, atau PDF untuk mulai scan.' }}
         </div>
         <div class="mt-3 hidden" data-quran-progress-wrap>
             <div class="mb-1 flex items-center justify-between text-xs font-semibold"><span data-quran-progress-label>Memproses</span><span data-quran-progress-value>0%</span></div>
