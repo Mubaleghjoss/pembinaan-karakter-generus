@@ -123,10 +123,10 @@
                         >
                     </td>
                     @endif
-                    <td data-label="Tanggal" class="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                    <td data-label="Tanggal" class="hidden md:table-cell px-4 py-4 text-sm text-gray-900 dark:text-white">
                         {{ $l->tanggal_kejadian->format('d/m/Y') }}
                     </td>
-                    <td data-label="Pelapor" class="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                    <td data-label="Pelapor" class="hidden md:table-cell px-4 py-4 text-sm text-gray-900 dark:text-white">
                         {{ $l->nama_pelapor }}
                     </td>
                     <td data-label="Generus" class="px-4 py-4 pkg-mobile-main">
@@ -171,12 +171,24 @@
                                 <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $l->pamong->username }}</div>
                                 @endif
                             </div>
+                            <div class="mt-2 flex flex-wrap items-center gap-2 md:hidden">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $l->tanggal_kejadian->format('d/m/Y') }}</span>
+                                <span class="px-2 py-0.5 text-xs font-medium rounded-full @if($l->status == 'pending') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @elseif($l->status == 'ditindaklanjuti') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 @else bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 @endif">{{ $l->status_label }}</span>
+                            </div>
+                            <details class="mt-2 md:hidden">
+                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail laporan</summary>
+                                <div class="mt-2 space-y-2 text-xs text-gray-600 dark:text-gray-300">
+                                    <p><strong>Pelapor:</strong> {{ $l->nama_pelapor }}</p>
+                                    <p><strong>Karakter:</strong> {{ $l->karakter_belum_optimal }}</p>
+                                    <a href="{{ route('laporan-penyaksian.show', $l) }}" class="btn-secondary inline-flex px-3 py-2 text-xs">Detail</a>
+                                </div>
+                            </details>
                         </div>
                     </td>
-                    <td data-label="Karakter" class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
+                    <td data-label="Karakter" class="hidden md:table-cell px-4 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
                         {{ Str::limit($l->karakter_belum_optimal, 50) }}
                     </td>
-                    <td data-label="Status" class="px-4 py-4">
+                    <td data-label="Status" class="hidden md:table-cell px-4 py-4">
                         <span class="px-2 py-1 text-xs font-medium rounded-full 
                             @if($l->status == 'pending') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
                             @elseif($l->status == 'ditindaklanjuti') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
@@ -184,7 +196,7 @@
                             {{ $l->status_label }}
                         </span>
                     </td>
-                    <td data-label="Aksi" class="px-4 py-4 text-right pkg-mobile-actions">
+                    <td data-label="Aksi" class="hidden md:table-cell px-4 py-4 text-right pkg-mobile-actions">
                         <a href="{{ route('laporan-penyaksian.show', $l) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400">
                             Detail
                         </a>

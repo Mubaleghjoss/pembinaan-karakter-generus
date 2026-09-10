@@ -212,6 +212,7 @@
                                     <p class="font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-800 dark:group-hover:text-indigo-300 transition">{{ $item->siswa->nama ?? '-' }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $item->siswa->nis ?? '-' }}</p>
                                 </a>
+                                <details class="mt-2 md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Rincian konsistensi</summary><p class="mt-2 text-xs text-gray-600 dark:text-gray-300">Hari aktif {{ $item->active_days }}, terlewat {{ $item->skip_days }}, rata-rata {{ $item->days_per_week }} hari per minggu.</p></details>
                             </td>
                             <td class="px-4 py-3 text-center" data-label="Hari aktif">
                                 <span class="text-sm font-bold text-green-600 dark:text-green-400">{{ $item->active_days }}</span>
@@ -277,6 +278,7 @@
                                     <p class="font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-800 dark:group-hover:text-indigo-300 transition">{{ $stat->siswa->nama ?? '-' }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $stat->siswa->nis ?? '-' }}</p>
                                 </a>
+                                <details class="mt-2 md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Rincian peringkat</summary><p class="mt-2 text-xs text-gray-600 dark:text-gray-300">Total {{ $stat->total_tasks }} tugas, {{ $stat->verified_tasks }} terverifikasi.</p></details>
                             </td>
                             <td class="px-6 py-4 text-center" data-label="Total tugas">
                                 <span class="text-lg font-bold text-blue-600">{{ $stat->total_tasks }}</span>
@@ -357,6 +359,8 @@
                             </td>
                             <td class="pkg-mobile-main px-6 py-4" data-label="Siswa">
                                 <p class="font-medium text-gray-800 dark:text-white">{{ $activity->siswa->nama ?? '-' }}</p>
+                                <div class="mt-1 md:hidden text-xs font-semibold {{ $activity->points >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ $activity->points >= 0 ? '+' : '' }}{{ $activity->points }} poin</div>
+                                <details class="mt-2 md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Rincian aktivitas</summary><p class="mt-2 text-xs text-gray-600 dark:text-gray-300">{{ $activity->created_at->format('d/m/Y H:i') }} | {{ ucfirst($activity->type) }} | {{ $activity->description }}</p></details>
                             </td>
                             <td class="px-6 py-4" data-label="Tipe">
                                 <span class="px-2 py-1 text-xs font-medium rounded-full

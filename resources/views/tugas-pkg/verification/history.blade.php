@@ -70,7 +70,31 @@
     </x-collapsible-section>
 
     <!-- History Table -->
-    <div class="pkg-panel">
+    <div class="space-y-3 lg:hidden">
+        @forelse($history as $record)
+            <article class="pkg-card p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-base font-bold text-gray-900 dark:text-white">{{ $record->karakter->nama ?? '-' }}</p>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $record->checked_at->format('d M Y H:i') }}</p>
+                    </div>
+                    <span class="pkg-status-badge pkg-status-info">Tercatat</span>
+                </div>
+                <details class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <summary class="flex min-h-11 cursor-pointer items-center px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Lihat catatan dan riwayat</summary>
+                    <div class="border-t border-slate-200 p-3 text-sm dark:border-slate-700">
+                        <p class="text-gray-600 dark:text-gray-300"><span class="font-semibold">Diceklis oleh:</span> {{ $record->pamong->username ?? '-' }}</p>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300"><span class="font-semibold">Catatan:</span> {{ $record->catatan ?? '-' }}</p>
+                    </div>
+                </details>
+            </article>
+        @empty
+            <div class="pkg-card"><div class="pkg-empty-state"><h3 class="pkg-empty-title">Belum ada riwayat tugas</h3><p class="pkg-empty-copy">Riwayat tugas PKG untuk siswa ini belum tersedia pada rentang tanggal yang dipilih.</p></div></div>
+        @endforelse
+        <div class="px-4">{{ $history->links() }}</div>
+    </div>
+
+    <div class="pkg-panel hidden lg:block">
         <div class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">

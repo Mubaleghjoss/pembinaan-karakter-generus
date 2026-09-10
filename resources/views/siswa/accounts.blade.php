@@ -87,12 +87,14 @@
                 </thead>
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($siswaList as $index => $siswa)
-                    <tr>
+                    <tr x-data="{ detailsOpen: window.matchMedia('(min-width: 768px)').matches }">
                         <td class="px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="No">{{ $index + 1 }}</td>
-                        <td class="pkg-mobile-main px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Siswa">{{ $siswa->nama }}</td>
+                        <td class="pkg-mobile-main px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Siswa">
+                            <div class="flex items-center justify-between gap-2"><span>{{ $siswa->nama }}</span><button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" aria-controls="account-mobile-details-{{ $siswa->id }}" class="btn-secondary !px-2 !py-1 text-xs md:hidden" x-text="detailsOpen ? 'Ringkas' : 'Detail'"></button></div>
+                        </td>
                         <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white" data-label="NIS">{{ $siswa->nis }}</td>
                         <td class="px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Kelas Sekolah">{{ $siswa->school_grade_label }}</td>
-                        <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white" data-label="Password awal">{{ $siswa->nis }}</td>
+                        <td id="account-mobile-details-{{ $siswa->id }}" x-cloak x-show="detailsOpen" class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white" data-label="Password awal">{{ $siswa->nis }}</td>
                     </tr>
                     @empty
                     <tr>

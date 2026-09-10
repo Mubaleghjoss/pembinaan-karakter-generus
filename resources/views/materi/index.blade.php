@@ -375,13 +375,10 @@
     <!-- Materi List -->
     <div class="pkg-cards-mobile">
         @forelse($materi as $item)
-            <article class="pkg-data-card">
+            <article class="pkg-data-card" x-data="{ detailsOpen: false }">
                 <div class="pkg-data-card-head">
                     <div class="min-w-0">
                         <p class="pkg-data-card-title">{{ $item->judul }}</p>
-                        @if($item->deskripsi)
-                            <p class="pkg-data-card-sub">{{ Str::limit($item->deskripsi, 100) }}</p>
-                        @endif
                     </div>
                     <span class="shrink-0 rounded-full px-2 py-1 text-xs font-semibold {{ $item->is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
                         {{ $item->is_active ? 'Aktif' : 'Nonaktif' }}
@@ -391,16 +388,25 @@
                     <div class="pkg-data-card-row"><span class="k">Folder</span><span class="v">{{ $item->folder?->display_name ?? $item->folder?->name ?? 'Tanpa Folder' }}</span></div>
                     <div class="pkg-data-card-row"><span class="k">Media</span><span class="v">{{ collect([$item->pdf_path ? 'PDF' : null, $item->has_video_links ? 'Video' : null])->filter()->join(', ') ?: 'Tidak ada media' }}</span></div>
                 </div>
-                <div class="pkg-data-card-actions flex-wrap">
-                    <a href="{{ route('materi.show', $item) }}" class="btn-secondary">Lihat Detail</a>
-                    @if($canEditMateri ?? false)
-                        <a href="{{ route('materi.edit', $item) }}" class="btn-primary">Edit</a>
-                        <form action="{{ route('materi.toggle-status', $item) }}" method="POST">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn-secondary">{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
-                        </form>
+                <button type="button" @click="detailsOpen = !detailsOpen" class="btn-secondary mt-3 w-full justify-center text-sm" :aria-expanded="detailsOpen.toString()" aria-controls="materi-mobile-details-{{ $item->id }}">
+                    <span x-show="!detailsOpen">Tampilkan detail dan aksi</span>
+                    <span x-show="detailsOpen">Sembunyikan detail dan aksi</span>
+                </button>
+                <div x-cloak x-show="detailsOpen" x-transition id="materi-mobile-details-{{ $item->id }}" class="mt-3">
+                    @if($item->deskripsi)
+                        <p class="pkg-data-card-sub">{{ Str::limit($item->deskripsi, 100) }}</p>
                     @endif
+                    <div class="pkg-data-card-actions flex-wrap">
+                        <a href="{{ route('materi.show', $item) }}" class="btn-secondary">Lihat Detail</a>
+                        @if($canEditMateri ?? false)
+                            <a href="{{ route('materi.edit', $item) }}" class="btn-primary">Edit</a>
+                            <form action="{{ route('materi.toggle-status', $item) }}" method="POST">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn-secondary">{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
             </article>
         @empty

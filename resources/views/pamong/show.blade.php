@@ -17,7 +17,7 @@
                 </svg>
                 Kartu QR
             </a>
-            <form action="{{ route('pamong.reset-password', $pamong) }}" method="POST" class="inline" data-confirm="Reset password ke username ({{ $pamong->username }})?" data-confirm-title="Reset password pamong" data-confirm-button="Reset" data-confirm-tone="warning">
+            <form action="{{ route('pamong.reset-password', $pamong) }}" method="POST" class="hidden sm:inline" data-confirm="Reset password ke username ({{ $pamong->username }})?" data-confirm-title="Reset password pamong" data-confirm-button="Reset" data-confirm-tone="warning">
                 @csrf
                 <button type="submit" class="btn-secondary text-sm">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,6 +27,13 @@
                 </button>
             </form>
             <a href="{{ route('pamong.assign.form', $pamong) }}" class="btn-primary text-sm">Atur Binaan</a>
+            <details class="sm:hidden">
+                <summary class="btn-secondary text-sm cursor-pointer">Tindakan akun</summary>
+                <form action="{{ route('pamong.reset-password', $pamong) }}" method="POST" class="mt-2" data-confirm="Reset password ke username ({{ $pamong->username }})?" data-confirm-title="Reset password pamong" data-confirm-button="Reset" data-confirm-tone="warning">
+                    @csrf
+                    <button type="submit" class="btn-secondary text-sm">Reset Password</button>
+                </form>
+            </details>
         </div>
     </div>
 
@@ -73,9 +80,9 @@
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 @foreach($assignedStudents as $assignment)
-                <tr>
+                <tr x-data="{ detailsOpen: window.matchMedia('(min-width: 768px)').matches }">
                     <td class="pkg-mobile-main px-6 py-4 whitespace-nowrap" data-label="Siswa">
-                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $assignment->siswa->nama }}</div>
+                        <div class="flex items-center justify-between gap-2"><span class="text-sm font-medium text-gray-900 dark:text-white">{{ $assignment->siswa->nama }}</span><button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" aria-controls="assignment-mobile-details-{{ $assignment->siswa->id }}" class="btn-secondary !px-2 !py-1 text-xs md:hidden" x-text="detailsOpen ? 'Ringkas' : 'Detail'"></button></div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" data-label="NIS">
                         {{ $assignment->siswa->nis }}
@@ -84,7 +91,7 @@
                         <span class="block font-medium text-gray-800 dark:text-gray-200">{{ $assignment->siswa->school_grade_label }}</span>
                         <span class="block text-xs">Level PKG: {{ $assignment->siswa->target_grade_label }}</span>
                     </td>
-                    <td class="pkg-mobile-actions px-6 py-4 whitespace-nowrap text-right" data-label="Aksi">
+                    <td id="assignment-mobile-details-{{ $assignment->siswa->id }}" x-cloak x-show="detailsOpen" class="pkg-mobile-actions px-6 py-4 whitespace-nowrap text-right" data-label="Aksi">
                         <form action="{{ route('pamong.remove-assignment', [$pamong, $assignment->siswa]) }}" method="POST" class="inline" data-confirm="Yakin ingin menghapus siswa ini dari penugasan?" data-confirm-title="Hapus penugasan siswa" data-confirm-button="Hapus" data-confirm-tone="danger">
                             @csrf
                             @method('DELETE')

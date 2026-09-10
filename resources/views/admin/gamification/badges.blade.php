@@ -17,12 +17,19 @@
 
         @include('admin.gamification.partials.navigation')
         <!-- Info Box -->
-        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+        <div class="mb-6 hidden rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20 md:block">
             <p class="text-sm text-blue-800 dark:text-blue-300">
                 <strong>Cara Kerja:</strong> Pin penghargaan otomatis diberikan ke siswa saat mereka memenuhi target yang sudah ditentukan.
                 Ada 3 jenis: <strong>Kehadiran</strong> (berapa kali hadir), <strong>Karakter / Tugas PKG</strong> (berapa tugas yang sudah diverifikasi), dan <strong>Naik Level</strong> (saat mencapai level tertentu).
             </p>
         </div>
+        <details class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20 md:hidden">
+            <summary class="cursor-pointer text-sm font-semibold text-blue-800 dark:text-blue-300">Cara kerja pin penghargaan</summary>
+            <p class="mt-3 text-sm text-blue-800 dark:text-blue-300">
+                Pin penghargaan otomatis diberikan ke siswa saat mereka memenuhi target yang sudah ditentukan.
+                Ada 3 jenis: <strong>Kehadiran</strong> (berapa kali hadir), <strong>Karakter / Tugas PKG</strong> (berapa tugas yang sudah diverifikasi), dan <strong>Naik Level</strong> (saat mencapai level tertentu).
+            </p>
+        </details>
 
         <!-- Pin Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -40,7 +47,7 @@
                             </span>
                         </div>
                     </div>
-                    <div class="flex gap-1">
+                    <div class="hidden gap-1 md:flex">
                         <button onclick="editPin({{ $badge->id }})" class="p-2 text-gray-400 hover:text-indigo-600 transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -52,6 +59,13 @@
                             </svg>
                         </button>
                     </div>
+                    <details class="md:hidden">
+                        <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Aksi pin</summary>
+                        <div class="mt-2 flex gap-2">
+                            <button type="button" onclick="editPin({{ $badge->id }})" class="pkg-btn-secondary px-3 py-2 text-xs">Edit</button>
+                            <button type="button" onclick="deletePin({{ $badge->id }})" class="pkg-btn-secondary px-3 py-2 text-xs">Hapus</button>
+                        </div>
+                    </details>
                 </div>
                 
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-3">{{ $badge->deskripsi }}</p>
@@ -126,7 +140,7 @@
                                             #{{ $index + 1 }}
                                         @endif
                                     </td>
-                                    <td class="pkg-mobile-main px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Siswa">{{ $sp->siswa->nama ?? '-' }}</td>
+                                    <td class="pkg-mobile-main px-4 py-3 text-sm text-gray-900 dark:text-white" data-label="Siswa">{{ $sp->siswa->nama ?? '-' }}<div class="mt-1 md:hidden text-xs font-semibold text-indigo-600 dark:text-indigo-400">{{ number_format($sp->total_points) }} poin | Level {{ $sp->level }}</div><details class="mt-2 md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Rincian peringkat</summary><p class="mt-2 text-xs text-gray-600 dark:text-gray-300">Kelas {{ $sp->siswa->school_grade_label ?? 'Belum dikonfirmasi' }}; kehadiran {{ number_format($sp->attendance_points) }}; tugas PKG {{ number_format($sp->character_points) }}.</p></details></td>
                                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400" data-label="Kelas Sekolah">{{ $sp->siswa->school_grade_label ?? 'Belum dikonfirmasi' }}</td>
                                     <td class="px-4 py-3 text-sm text-center text-indigo-600 dark:text-indigo-400 font-medium" data-label="Level">{{ $sp->level }}</td>
                                     <td class="px-4 py-3 text-sm text-center text-blue-600 dark:text-blue-400" data-label="Kehadiran">{{ number_format($sp->attendance_points) }}</td>

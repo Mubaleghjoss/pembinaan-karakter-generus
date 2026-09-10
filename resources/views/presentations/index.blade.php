@@ -83,12 +83,17 @@
                                 {{ $presentation->is_published ? 'Publik' : 'Draft' }}
                             </span>
                         </div>
-                        <p class="mt-4 line-clamp-2 min-h-10 text-sm leading-5 text-gray-600 dark:text-gray-300">
-                            {{ $presentation->description ?: 'Belum ada deskripsi.' }}
-                        </p>
-                        <p class="mt-4 text-xs text-gray-500">Diperbarui {{ $presentation->updated_at->diffForHumans() }}</p>
+                        <div class="hidden md:block">
+                            <p class="mt-4 line-clamp-2 min-h-10 text-sm leading-5 text-gray-600 dark:text-gray-300">
+                                {{ $presentation->description ?: 'Belum ada deskripsi.' }}
+                            </p>
+                            <p class="mt-4 text-xs text-gray-500">Diperbarui {{ $presentation->updated_at->diffForHumans() }}</p>
+                        </div>
 
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        @if($canEdit)
+                            <a href="{{ route('presentations.edit', $presentation) }}" class="btn-primary mt-4 !px-3 !py-2 text-sm md:hidden">Buka Editor</a>
+                        @endif
+                        <div class="mt-5 hidden flex-wrap gap-2 md:flex">
                             @if($canEdit)
                                 <a href="{{ route('presentations.edit', $presentation) }}" class="btn-primary !px-3 !py-2 text-sm">Buka Editor</a>
                             @endif
@@ -102,9 +107,25 @@
                                 </form>
                             @endif
                         </div>
+                        <details class="mt-4 md:hidden">
+                            <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail dan aksi</summary>
+                            <p class="mt-3 text-sm leading-5 text-gray-600 dark:text-gray-300">{{ $presentation->description ?: 'Belum ada deskripsi.' }}</p>
+                            <p class="mt-3 text-xs text-gray-500">Diperbarui {{ $presentation->updated_at->diffForHumans() }}</p>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <a href="{{ route('presentations.preview', $presentation) }}" target="_blank" rel="noopener" class="btn-secondary !px-3 !py-2 text-sm">Pratinjau</a>
+                                <a href="{{ route('presentations.export.pdf', $presentation) }}" class="btn-secondary !px-3 !py-2 text-sm">Unduh PDF</a>
+                                <a href="{{ route('presentations.export.pptx', $presentation) }}" class="btn-secondary !px-3 !py-2 text-sm">Unduh PPTX</a>
+                                @if($canEdit)
+                                    <form method="POST" action="{{ route('presentations.publish', $presentation) }}">
+                                        @csrf @method('PATCH')
+                                        <button class="btn-secondary !px-3 !py-2 text-sm">{{ $presentation->is_published ? 'Tarik Publikasi' : 'Terbitkan' }}</button>
+                                    </form>
+                                @endif
+                            </div>
+                        </details>
 
                         @if($presentation->is_published)
-                            <div class="mt-4 rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
+                            <div class="mt-4 hidden rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30 sm:block">
                                 <p class="text-xs font-semibold text-emerald-800 dark:text-emerald-200">Tautan publik hanya-baca</p>
                                 <a href="{{ route('public.presentations.show', $presentation) }}" target="_blank" rel="noopener" class="mt-1 block break-all text-sm text-emerald-700 underline dark:text-emerald-300">
                                     {{ route('public.presentations.show', $presentation) }}
@@ -113,10 +134,24 @@
                         @endif
 
                         @if($canDelete)
-                            <form method="POST" action="{{ route('presentations.destroy', $presentation) }}" class="mt-4" onsubmit="return window.confirm('Hapus presentasi ini beserta seluruh gambar yang diunggah?')">
+                            <form method="POST" action="{{ route('presentations.destroy', $presentation) }}" class="mt-4 hidden md:block" onsubmit="return window.confirm('Hapus presentasi ini beserta seluruh gambar yang diunggah?')">
                                 @csrf @method('DELETE')
                                 <button class="text-sm font-semibold text-red-600 hover:text-red-700 dark:text-red-400">Hapus Presentasi</button>
                             </form>
+                        @endif
+                        @if($presentation->is_published || $canDelete)
+                            <details class="mt-4 md:hidden">
+                                <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Publikasi dan hapus</summary>
+                                @if($presentation->is_published)
+                                    <a href="{{ route('public.presentations.show', $presentation) }}" target="_blank" rel="noopener" class="mt-3 block break-all text-sm text-emerald-700 underline dark:text-emerald-300">{{ route('public.presentations.show', $presentation) }}</a>
+                                @endif
+                                @if($canDelete)
+                                    <form method="POST" action="{{ route('presentations.destroy', $presentation) }}" class="mt-4" onsubmit="return window.confirm('Hapus presentasi ini beserta seluruh gambar yang diunggah?')">
+                                        @csrf @method('DELETE')
+                                        <button class="text-sm font-semibold text-red-600 hover:text-red-700 dark:text-red-400">Hapus Presentasi</button>
+                                    </form>
+                                @endif
+                            </details>
                         @endif
                     </div>
                 </article>

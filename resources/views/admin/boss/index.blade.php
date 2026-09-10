@@ -68,18 +68,21 @@
                         <span class="pkg-status-badge pkg-status-neutral shrink-0">Selesai</span>
                     @endif
                 </div>
-                <div class="pkg-data-card-meta">
-                    <div class="pkg-data-card-row"><span class="k">HP</span><span class="v">{{ max(0,$b->current_hp) }} / {{ $b->max_hp }}</span></div>
-                    <div class="pkg-data-card-row"><span class="k">Peserta</span><span class="v">{{ $b->hits_count }}</span></div>
-                </div>
-                @if($b->status === 'active')
-                    <div class="pkg-data-card-actions">
-                        <form method="POST" action="{{ route('admin.boss.end', $b) }}" onsubmit="return confirm('Hentikan boss ini?');">
-                            @csrf
-                            <button type="submit" class="btn-danger">Hentikan Boss</button>
-                        </form>
+                <details class="mt-3 md:hidden">
+                    <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail pertarungan</summary>
+                    <div class="pkg-data-card-meta mt-3">
+                        <div class="pkg-data-card-row"><span class="k">HP</span><span class="v">{{ max(0,$b->current_hp) }} / {{ $b->max_hp }}</span></div>
+                        <div class="pkg-data-card-row"><span class="k">Peserta</span><span class="v">{{ $b->hits_count }}</span></div>
                     </div>
-                @endif
+                    @if($b->status === 'active')
+                        <div class="pkg-data-card-actions mt-3">
+                            <form method="POST" action="{{ route('admin.boss.end', $b) }}" onsubmit="return confirm('Hentikan boss ini?');">
+                                @csrf
+                                <button type="submit" class="btn-danger">Hentikan Boss</button>
+                            </form>
+                        </div>
+                    @endif
+                </details>
             </div>
         @empty
             <div class="pkg-empty-state pkg-card">

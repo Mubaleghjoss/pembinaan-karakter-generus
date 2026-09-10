@@ -100,12 +100,15 @@
     </div>
 
     <!-- Generate All Students -->
-    <div class="pkg-card overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Generate Semua Siswa</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Generate QR code untuk semua siswa aktif</p>
+    <div x-data="{ open: false }" class="pkg-card overflow-hidden">
+        <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Generate Semua Siswa</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Generate QR code untuk semua siswa aktif</p>
+            </div>
+            <button type="button" @click="open = !open" :aria-expanded="open.toString()" class="btn-secondary md:hidden">Opsi massal</button>
         </div>
-        <div class="p-6">
+        <div x-show="open" x-cloak class="p-6 md:!block">
             <form method="POST" action="{{ route('qr.generate.post') }}">
                 @csrf
                 <input type="hidden" name="type" value="bulk">

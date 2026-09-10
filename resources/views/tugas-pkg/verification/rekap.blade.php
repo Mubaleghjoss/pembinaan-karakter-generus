@@ -73,7 +73,31 @@
     </x-collapsible-section>
 
     <!-- Rekap Table -->
-    <div class="pkg-panel">
+    <div class="space-y-3 lg:hidden">
+        @forelse($rekapData as $index => $data)
+            <article class="pkg-card p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-base font-bold text-gray-900 dark:text-white">{{ $data['siswa']->nama }}</p>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">NIS: {{ $data['siswa']->nis }}</p>
+                    </div>
+                    <span class="text-sm font-bold {{ $data['percentage'] >= 80 ? 'text-green-600 dark:text-green-400' : ($data['percentage'] >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400') }}">{{ $data['percentage'] }}%</span>
+                </div>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">{{ $data['checked_count'] }}/{{ $data['total_karakter'] }} tugas selesai</p>
+                <details class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <summary class="flex min-h-11 cursor-pointer items-center px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Lihat rekap dan aksi</summary>
+                    <div class="border-t border-slate-200 p-3 dark:border-slate-700">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Kelas: {{ $data['siswa']->school_grade_label }} | Total ceklis: {{ $data['total_checks'] }}x</p>
+                        <a href="{{ route('tugas-pkg.history', $data['siswa']) }}" class="pkg-btn-secondary mt-3 justify-center px-3 py-2 text-sm">Detail</a>
+                    </div>
+                </details>
+            </article>
+        @empty
+            <div class="pkg-card"><div class="pkg-empty-state"><h3 class="pkg-empty-title">Belum ada data rekap</h3><p class="pkg-empty-copy">Coba ubah filter kelas sekolah, Pamong, atau rentang tanggal.</p></div></div>
+        @endforelse
+    </div>
+
+    <div class="pkg-panel hidden lg:block">
         <div class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">

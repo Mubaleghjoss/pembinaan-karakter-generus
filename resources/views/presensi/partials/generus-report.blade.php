@@ -23,10 +23,14 @@
             <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($rows as $row)
                     <tr>
-                        <td data-label="Kelompok" class="px-4 py-3 pkg-mobile-main"><div class="font-semibold">{{ $row['label'] }}</div><div class="text-xs text-gray-500">{{ $row['total_students'] }} Generus</div></td>
-                        <td data-label="Tugas PKG" class="px-4 py-3 text-sm">{{ $row['task']['verified'] }} / {{ $row['task']['submitted'] }} <span class="pkg-status-badge pkg-status-success">{{ $row['task']['percentage'] }}%</span></td>
-                        <td data-label="Kehadiran" class="px-4 py-3 text-sm">{{ $row['attendance']['present'] }} / {{ $row['attendance']['records'] }} <span class="pkg-status-badge pkg-status-info">{{ $row['attendance']['percentage'] }}%</span></td>
-                        <td data-label="Target RPP" class="px-4 py-3 text-sm">{{ $row['rpp']['completed'] }} / {{ $row['rpp']['expected'] }} <span class="pkg-status-badge pkg-status-warning">{{ $row['rpp']['percentage'] }}%</span></td>
+                        <td data-label="Kelompok" class="px-4 py-3 pkg-mobile-main">
+                            <div class="font-semibold">{{ $row['label'] }}</div><div class="text-xs text-gray-500">{{ $row['total_students'] }} Generus</div>
+                            <div class="mt-2 text-sm md:hidden">Kehadiran: {{ $row['attendance']['present'] }} / {{ $row['attendance']['records'] }} <span class="pkg-status-badge pkg-status-info">{{ $row['attendance']['percentage'] }}%</span></div>
+                            <details class="mt-3 text-sm md:hidden"><summary class="cursor-pointer font-semibold text-blue-700 dark:text-blue-300">Lihat detail capaian</summary><div class="mt-2 space-y-1 text-gray-600 dark:text-gray-300"><div>Tugas PKG: {{ $row['task']['verified'] }} / {{ $row['task']['submitted'] }} ({{ $row['task']['percentage'] }}%)</div><div>Target RPP: {{ $row['rpp']['completed'] }} / {{ $row['rpp']['expected'] }} ({{ $row['rpp']['percentage'] }}%)</div></div></details>
+                        </td>
+                        <td data-label="Tugas PKG" class="max-md:!hidden px-4 py-3 text-sm md:table-cell">{{ $row['task']['verified'] }} / {{ $row['task']['submitted'] }} <span class="pkg-status-badge pkg-status-success">{{ $row['task']['percentage'] }}%</span></td>
+                        <td data-label="Kehadiran" class="max-md:!hidden px-4 py-3 text-sm md:table-cell">{{ $row['attendance']['present'] }} / {{ $row['attendance']['records'] }} <span class="pkg-status-badge pkg-status-info">{{ $row['attendance']['percentage'] }}%</span></td>
+                        <td data-label="Target RPP" class="max-md:!hidden px-4 py-3 text-sm md:table-cell">{{ $row['rpp']['completed'] }} / {{ $row['rpp']['expected'] }} <span class="pkg-status-badge pkg-status-warning">{{ $row['rpp']['percentage'] }}%</span></td>
                     </tr>
                 @empty
                     <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">Belum ada Generus dalam cakupan ini.</td></tr>

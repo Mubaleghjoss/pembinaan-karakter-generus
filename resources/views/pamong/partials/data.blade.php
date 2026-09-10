@@ -85,7 +85,7 @@
                 </thead>
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="pamong in pamongList" :key="pamong.id">
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <tr x-data="{ detailsOpen: window.matchMedia('(min-width: 768px)').matches }" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td data-label="Pamong" class="px-4 py-4 pkg-mobile-main">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
@@ -100,7 +100,7 @@
                                                   :class="pamong.role?.name === 'pkg_manager' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'"
                                                   x-text="pamong.role?.name === 'teacher' ? 'Pamong' : (pamong.role?.display_name || 'Pamong')"></span>
                                         </div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400" x-text="pamong.email"></div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400" x-text="pamong.email"></div><button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" :aria-controls="`pamong-data-details-${pamong.id}`" class="btn-secondary !px-2 !py-1 text-xs md:hidden" x-text="detailsOpen ? 'Ringkas' : 'Detail'"></button>
                                         <div x-show="pamong.organizational_title" class="text-xs text-gray-500 dark:text-gray-400" x-text="pamong.organizational_title"></div>
                                     </div>
                                 </div>
@@ -116,7 +116,7 @@
                                     </span>
                                 </div>
                             </td>
-                            <td data-label="Bidang" class="px-4 py-4">
+                            <td :id="`pamong-data-details-${pamong.id}`" x-cloak x-show="detailsOpen" data-label="Bidang" class="px-4 py-4">
                                 <template x-if="pamong.organizational_team">
                                     <div>
                                         <div class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold text-white"
@@ -130,7 +130,7 @@
                                     <span class="text-xs text-gray-500 dark:text-gray-400">Belum ditetapkan</span>
                                 </template>
                             </td>
-                            <td data-label="Login Terakhir" class="px-4 py-4">
+                            <td x-cloak x-show="detailsOpen" data-label="Login Terakhir" class="px-4 py-4">
                                 <template x-if="pamong.last_login_at">
                                     <div>
                                         <div class="flex items-center gap-1.5">
@@ -144,11 +144,11 @@
                                     <span class="text-xs text-red-500 font-medium">Belum Login</span>
                                 </template>
                             </td>
-                            <td data-label="Jumlah Siswa" class="px-4 py-4">
+                            <td x-cloak x-show="detailsOpen" data-label="Jumlah Siswa" class="px-4 py-4">
                                 <span class="px-3 py-1 text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full"
                                       x-text="pamong.role?.name === 'teacher' ? ((pamong.assigned_students_count || 0) + ' siswa') : 'Tidak pakai siswa binaan'"></span>
                             </td>
-                            <td data-label="Aksi" class="px-4 py-4 text-right pkg-mobile-actions">
+                            <td x-cloak x-show="detailsOpen" data-label="Aksi" class="px-4 py-4 text-right pkg-mobile-actions">
                                 <div class="flex items-center justify-end space-x-2">
                                     <button @click="showDetail(pamong)" class="text-blue-600 hover:text-blue-900 dark:text-blue-400" title="Detail">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

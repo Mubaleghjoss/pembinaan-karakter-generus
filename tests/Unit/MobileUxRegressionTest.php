@@ -213,7 +213,12 @@ class MobileUxRegressionTest extends TestCase
 
         $this->assertStringContainsString('class="pkg-cards-mobile"', $students);
         $this->assertStringContainsString('class="pkg-table-desktop overflow-x-auto pkg-mobile-table"', $students);
-        $this->assertStringContainsString('@click="viewBiodata(student)"', $students);
+        $this->assertStringContainsString('x-data="{ detailsOpen: false }"', $students);
+        $this->assertStringContainsString('@click="detailsOpen = !detailsOpen"', $students);
+        $this->assertStringContainsString(':aria-expanded="detailsOpen.toString()"', $students);
+        $this->assertStringContainsString(':aria-controls="`student-mobile-details-${student.id}`"', $students);
+        $this->assertStringContainsString('x-cloak x-show="detailsOpen"', $students);
+        $this->assertStringContainsString('Tampilkan detail dan aksi', $students);
         $this->assertStringContainsString('Lihat Biodata', $students);
         $this->assertStringContainsString('pkg-data-card-title" x-text="student.nama"', $students);
         $this->assertStringContainsString('pkg-data-card-sub" x-text="student.nis', $students);
@@ -223,8 +228,14 @@ class MobileUxRegressionTest extends TestCase
 
         $this->assertStringContainsString('class="pkg-cards-mobile"', $materi);
         $this->assertStringContainsString('class="pkg-table-desktop pkg-card"', $materi);
+        $this->assertStringContainsString('x-data="{ detailsOpen: false }"', $materi);
+        $this->assertStringContainsString('@click="detailsOpen = !detailsOpen"', $materi);
+        $this->assertStringContainsString(':aria-expanded="detailsOpen.toString()"', $materi);
+        $this->assertStringContainsString('aria-controls="materi-mobile-details-{{ $item->id }}"', $materi);
+        $this->assertStringContainsString('x-cloak x-show="detailsOpen"', $materi);
         $this->assertStringContainsString('pkg-data-card-title', $materi);
         $this->assertStringContainsString('Str::limit($item->deskripsi, 100)', $materi);
+        $this->assertStringContainsString('Tampilkan detail dan aksi', $materi);
         $this->assertStringContainsString('Lihat Detail', $materi);
         $this->assertStringContainsString("route('materi.edit', \$item)", $materi);
         $this->assertStringContainsString("route('materi.toggle-status', \$item)", $materi);

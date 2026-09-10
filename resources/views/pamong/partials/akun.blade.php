@@ -109,7 +109,7 @@
                 </thead>
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="pamong in accountPamong" :key="pamong.id">
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <tr x-data="{ detailsOpen: window.matchMedia('(min-width: 768px)').matches }" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td data-label="Anggota" class="px-4 py-4 pkg-mobile-main">
                                 <div class="flex items-center">
                                     <div class="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
@@ -123,10 +123,10 @@
                                                   x-text="pamong.role?.name === 'teacher' ? 'Pamong' : (pamong.role?.display_name || 'Pamong')"></span>
                                         </div>
                                     </div>
-                                </div>
+                                </div><button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" :aria-controls="`pamong-account-details-${pamong.id}`" class="btn-secondary !px-2 !py-1 text-xs md:hidden" x-text="detailsOpen ? 'Ringkas' : 'Detail akun'"></button>
                             </td>
-                            <td data-label="Email" class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400" x-text="pamong.email"></td>
-                            <td data-label="Bidang / Jabatan" class="px-4 py-4">
+                            <td :id="`pamong-account-details-${pamong.id}`" x-cloak x-show="detailsOpen" data-label="Email" class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400" x-text="pamong.email"></td>
+                            <td x-cloak x-show="detailsOpen" data-label="Bidang / Jabatan" class="px-4 py-4">
                                 <template x-if="pamong.organizational_team">
                                     <div>
                                         <div class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold text-white"
@@ -140,7 +140,7 @@
                                     <span class="text-xs text-gray-500 dark:text-gray-400">Belum ditetapkan</span>
                                 </template>
                             </td>
-                            <td data-label="Password" class="px-4 py-4">
+                            <td x-cloak x-show="detailsOpen" data-label="Password" class="px-4 py-4">
                                 <div class="flex items-center gap-2" x-data="{ showPw: false }">
                                     <code class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded font-mono"
                                           :class="showPw && !pamong.plain_password ? 'text-yellow-700 dark:text-yellow-200' : ''"
@@ -161,7 +161,7 @@
                                       :class="pamong.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"
                                       x-text="pamong.status === 'active' ? 'Aktif' : 'Tidak Aktif'"></span>
                             </td>
-                            <td data-label="Aksi" class="px-4 py-4 text-right pkg-mobile-actions">
+                            <td x-cloak x-show="detailsOpen" data-label="Aksi" class="px-4 py-4 text-right pkg-mobile-actions">
                                 <div class="flex items-center justify-end space-x-1">
                                     <button @click="openChangePasswordModal(pamong)" 
                                             class="inline-flex items-center px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 rounded-lg transition-colors"

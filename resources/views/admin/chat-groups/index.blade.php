@@ -26,7 +26,6 @@
                 <div class="pkg-data-card-head">
                     <div class="min-w-0">
                         <p class="pkg-data-card-title">{{ $group->name }}</p>
-                        @if($group->description)<p class="pkg-data-card-sub">{{ Str::limit($group->description, 60) }}</p>@endif
                     </div>
                     <span class="pkg-status-badge shrink-0
                         @if($group->type === 'custom') pkg-status-info
@@ -35,14 +34,18 @@
                         {{ ucfirst(str_replace('_', ' ', $group->type)) }}
                     </span>
                 </div>
-                <div class="pkg-data-card-meta">
-                    <div class="pkg-data-card-row"><span class="k">Anggota</span><span class="v">{{ $group->members->count() }}</span></div>
-                    <div class="pkg-data-card-row"><span class="k">Dibuat</span><span class="v">{{ $group->created_at->format('d M Y') }}</span></div>
-                </div>
-                <div class="pkg-data-card-actions">
-                    <a href="{{ route('chat-groups.show', $group) }}" class="btn-secondary">Detail</a>
-                    <a href="{{ route('chat-groups.edit', $group) }}" class="btn-primary">Edit</a>
-                </div>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Dibuat {{ $group->created_at->format('d M Y') }}</p>
+                <details class="mt-3 md:hidden">
+                    <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail dan aksi</summary>
+                    @if($group->description)<p class="mt-3 text-sm text-gray-600 dark:text-gray-300">{{ $group->description }}</p>@endif
+                    <div class="pkg-data-card-meta mt-3">
+                        <div class="pkg-data-card-row"><span class="k">Anggota</span><span class="v">{{ $group->members->count() }}</span></div>
+                    </div>
+                    <div class="pkg-data-card-actions mt-3">
+                        <a href="{{ route('chat-groups.show', $group) }}" class="btn-secondary">Detail</a>
+                        <a href="{{ route('chat-groups.edit', $group) }}" class="btn-primary">Edit</a>
+                    </div>
+                </details>
             </div>
         @empty
             <div class="pkg-empty-state pkg-card">

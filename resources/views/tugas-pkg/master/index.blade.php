@@ -299,12 +299,13 @@
                 </div>
 
                 <!-- Bulk Actions Toolbar -->
-                <div x-show="selectedIds.length > 0" x-cloak 
-                     class="p-3 bg-blue-50 dark:bg-blue-900/30 border-b border-blue-200 dark:border-blue-800 flex flex-wrap items-center gap-3">
+                <div x-data="{ mobileBulkOpen: false }" x-show="selectedIds.length > 0" x-cloak
+                     class="flex flex-wrap items-center gap-3 border-b border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/30">
                     <span class="text-sm font-medium text-blue-800 dark:text-blue-200">
                         <span x-text="selectedIds.length"></span> item dipilih
                     </span>
-                    <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" @click="mobileBulkOpen = !mobileBulkOpen" :aria-expanded="mobileBulkOpen.toString()" class="btn-secondary px-3 py-1.5 text-xs md:hidden">Aksi massal</button>
+                    <div x-show="mobileBulkOpen" x-cloak class="hidden flex-wrap items-center gap-2 md:!flex">
                         <button @click="doBulk('aktivasi')" class="btn-success px-3 py-1.5 text-xs">
                             Aktifkan
                         </button>

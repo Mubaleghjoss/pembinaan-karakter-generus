@@ -119,12 +119,22 @@
             <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($records as $record)
                     <tr>
-                        <td data-label="Tanggal" class="px-4 py-3 text-sm">{{ $record['date'] }}</td>
-                        <td data-label="Nama" class="px-4 py-3 pkg-mobile-main"><div class="font-semibold">{{ $record['name'] }}</div><div class="text-xs text-gray-500">{{ $record['identifier'] }}</div></td>
-                        <td data-label="Jenis" class="px-4 py-3 text-sm">{{ $record['type_label'] }}</td>
-                        <td data-label="Kelas/Bidang" class="px-4 py-3 text-sm">{{ $record['unit'] }}</td>
-                        <td data-label="Status" class="px-4 py-3"><span class="pkg-status-badge {{ $record['status_class'] }}">{{ $record['status_label'] }}</span></td>
-                        <td data-label="Jam" class="px-4 py-3 text-sm">{{ $record['jam_masuk'] }}</td>
+                        <td data-label="Tanggal" class="max-md:!hidden px-4 py-3 text-sm md:table-cell">{{ $record['date'] }}</td>
+                        <td data-label="Nama" class="px-4 py-3 pkg-mobile-main">
+                            <div class="font-semibold">{{ $record['name'] }}</div>
+                            <div class="text-xs text-gray-500">{{ $record['identifier'] }}</div>
+                            <div class="mt-2 flex flex-wrap items-center gap-2 text-sm md:hidden">
+                                <span>{{ $record['date'] }}</span><span class="pkg-status-badge {{ $record['status_class'] }}">{{ $record['status_label'] }}</span>
+                            </div>
+                            <details class="mt-3 text-sm md:hidden">
+                                <summary class="cursor-pointer font-semibold text-blue-700 dark:text-blue-300">Lihat detail</summary>
+                                <dl class="mt-2 space-y-1 text-gray-600 dark:text-gray-300"><div>Jenis: {{ $record['type_label'] }}</div><div>Kelas/Bidang: {{ $record['unit'] }}</div><div>Jam: {{ $record['jam_masuk'] }}</div></dl>
+                            </details>
+                        </td>
+                        <td data-label="Jenis" class="max-md:!hidden px-4 py-3 text-sm md:table-cell">{{ $record['type_label'] }}</td>
+                        <td data-label="Kelas/Bidang" class="max-md:!hidden px-4 py-3 text-sm md:table-cell">{{ $record['unit'] }}</td>
+                        <td data-label="Status" class="max-md:!hidden px-4 py-3 md:table-cell"><span class="pkg-status-badge {{ $record['status_class'] }}">{{ $record['status_label'] }}</span></td>
+                        <td data-label="Jam" class="max-md:!hidden px-4 py-3 text-sm md:table-cell">{{ $record['jam_masuk'] }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">Belum ada data pada periode ini.</td></tr>

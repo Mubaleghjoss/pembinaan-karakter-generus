@@ -432,6 +432,12 @@
                                 <td class="pkg-mobile-main px-4 py-3" data-label="Siswa">
                                     <p class="font-medium text-gray-800 dark:text-white">{{ $t->siswa->nama ?? '-' }}</p>
                                     <p class="text-xs text-gray-400">{{ $t->siswa->nis ?? '' }}</p>
+                                    <div class="mt-1 md:hidden text-xs font-semibold {{ $t->color }}">{{ $t->formatted_points }}</div>
+                                    <details class="mt-2 md:hidden">
+                                        <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail transaksi</summary>
+                                        <div class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300"><p><strong>Deskripsi:</strong> {{ $t->description }}</p><p><strong>Sumber:</strong> {{ $t->source_label }}</p><p><strong>Periode:</strong> {{ data_get($t->metadata, 'period_name') ?? '-' }}</p><p><strong>Waktu:</strong> {{ $t->created_at->format('d M Y H:i') }}</p></div>
+                                        <div class="mt-2 flex gap-2"><button type="button" @click="editing = true" class="pkg-btn-secondary px-3 py-2 text-xs">Edit</button><form action="{{ route('admin.gamification.transactions.destroy', $t->id) }}" method="POST" data-confirm="Hapus transaksi #{{ $t->id }}? Poin akan dihitung ulang." data-confirm-title="Hapus transaksi" data-confirm-button="Hapus" data-confirm-tone="danger">@csrf @method('DELETE')<button type="submit" class="pkg-btn-secondary px-3 py-2 text-xs">Hapus</button></form></div>
+                                    </details>
                                 </td>
                             </template>
                             <template x-if="!editing">
@@ -458,7 +464,7 @@
                                 </td>
                             </template>
                             <template x-if="!editing">
-                                <td class="pkg-mobile-actions px-4 py-3 text-center" data-label="Aksi">
+                                <td class="hidden md:table-cell pkg-mobile-actions px-4 py-3 text-center" data-label="Aksi">
                                     <div class="flex items-center justify-center gap-1">
                                         <button @click="editing = true" class="rounded-lg p-1.5 transition hover:bg-blue-50 dark:hover:bg-blue-900/20" title="Edit">
                                             <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>

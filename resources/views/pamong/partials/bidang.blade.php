@@ -277,7 +277,7 @@
                     </thead>
                     <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                         @foreach($teams as $team)
-                            <tr class="align-top hover:bg-gray-50 dark:hover:bg-gray-700/60">
+                            <tr x-data="{ detailsOpen: window.matchMedia('(min-width: 768px)').matches }" class="align-top hover:bg-gray-50 dark:hover:bg-gray-700/60">
                                 <td data-label="Bidang" class="px-4 py-4 pkg-mobile-main">
                                     <div class="flex items-center gap-3">
                                         <span class="inline-flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold text-white"
@@ -290,14 +290,14 @@
                                                 {{ $team->short_name ?: 'Tanpa singkatan' }} | Urutan {{ $team->sort_order }}
                                             </div>
                                         </div>
-                                    </div>
+                                    </div><button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" aria-controls="bidang-mobile-details-{{ $team->id }}" class="btn-secondary !px-2 !py-1 text-xs md:hidden" x-text="detailsOpen ? 'Ringkas' : 'Detail bidang'"></button>
                                 </td>
-                                <td data-label="Status" class="px-4 py-4">
+                                <td id="bidang-mobile-details-{{ $team->id }}" x-cloak x-show="detailsOpen" data-label="Status" class="px-4 py-4">
                                     <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $team->is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }}">
                                         {{ $team->is_active ? 'Aktif' : 'Nonaktif' }}
                                     </span>
                                 </td>
-                                <td data-label="Anggota" class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                <td x-cloak x-show="detailsOpen" data-label="Anggota" class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
                                     <div>{{ $team->total_users_count }} akun</div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400">{{ $team->pkg_manager_count }} pengurus PKG | {{ $team->active_users_count }} aktif</div>
 
@@ -343,10 +343,10 @@
                                         @endforelse
                                     </div>
                                 </td>
-                                <td data-label="Deskripsi" class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                <td x-cloak x-show="detailsOpen" data-label="Deskripsi" class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
                                     {{ $team->description ?: 'Belum ada deskripsi.' }}
                                 </td>
-                                <td data-label="Aksi" class="px-4 py-4 pkg-mobile-actions">
+                                <td x-cloak x-show="detailsOpen" data-label="Aksi" class="px-4 py-4 pkg-mobile-actions">
                                     <div class="flex flex-col items-end gap-2">
                                         <a href="{{ route('settings.index', ['tab' => 'pamong', 'pamong_tab' => 'bidang', 'target_team' => $team->id]) }}" class="btn-success !px-3 !py-2 text-xs">
                                             Tambah Anggota

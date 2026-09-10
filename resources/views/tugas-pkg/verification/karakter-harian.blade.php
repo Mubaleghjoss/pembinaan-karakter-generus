@@ -185,7 +185,31 @@
             </div>
         </div>
 
-        <div class="pkg-mobile-table overflow-x-auto">
+        <div class="space-y-3 p-4 lg:hidden">
+            @forelse($checklists as $checklist)
+                <article class="pkg-card-soft p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0"><p class="font-bold text-gray-900 dark:text-white">{{ $checklist->siswa->nama }}</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $checklist->karakter->nama }}</p></div>
+                        @if($checklist->isVerified())<span class="pkg-status-badge pkg-status-success">Terverifikasi</span>@else<span class="pkg-status-badge pkg-status-warning">Menunggu</span>@endif
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $checklist->checked_at->isoFormat('D MMM YYYY HH:mm') }}</p>
+                    <details class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <summary class="flex min-h-11 cursor-pointer items-center px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Lihat catatan dan aksi</summary>
+                        <div class="border-t border-slate-200 p-3 dark:border-slate-700">
+                            @if($checklist->student_note)<p class="text-sm text-gray-600 dark:text-gray-300">{{ $checklist->student_note }}</p>@endif
+                            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                                @if(!$checklist->isVerified())<button type="button" onclick="openVerifyModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}')" class="btn-success justify-center px-3 py-2 text-sm">Verifikasi</button>@else<button type="button" onclick="openUnverifyModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}', {{ $checklist->karakter->poin ?? 10 }})" class="pkg-btn-secondary justify-center px-3 py-2 text-sm">Batal verifikasi</button>@endif
+                                <button type="button" onclick="openDeleteModal({{ $checklist->id }}, '{{ addslashes($checklist->siswa->nama) }}', '{{ addslashes($checklist->karakter->nama) }}', {{ $checklist->isVerified() ? 'true' : 'false' }}, {{ $checklist->karakter->poin ?? 10 }})" class="btn-danger justify-center px-3 py-2 text-sm">Tolak verifikasi</button>
+                            </div>
+                        </div>
+                    </details>
+                </article>
+            @empty
+                <div class="pkg-empty-state py-8"><h3 class="pkg-empty-title">Tidak ada data checklist</h3><p class="pkg-empty-copy">Belum ada checklist yang cocok dengan filter saat ini.</p></div>
+            @endforelse
+        </div>
+
+        <div class="hidden lg:block pkg-mobile-table overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>

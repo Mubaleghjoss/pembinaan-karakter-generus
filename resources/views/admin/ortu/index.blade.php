@@ -35,7 +35,7 @@
     {{-- Kartu (mobile) --}}
     <div class="pkg-cards-mobile">
         @forelse($siswa as $s)
-            <div class="pkg-data-card">
+            <div class="pkg-data-card" x-data="{ detailsOpen: false }">
                 <div class="pkg-data-card-head">
                     <div class="flex min-w-0 items-start gap-3">
                         @if($s->foto_path)
@@ -52,6 +52,14 @@
                 <div class="pkg-data-card-meta">
                     <div class="pkg-data-card-row"><span class="k">Pamong</span><span class="v">{{ $s->pamongAssignments->pluck('pamong')->filter()->map(fn ($pamong) => $pamong->name ?: $pamong->username)->join(', ') ?: 'Belum ada' }}</span></div>
                     <div class="pkg-data-card-row"><span class="k">Username Ortu</span><span class="v font-mono">{{ $s->ortu_username ?? '-' }}</span></div>
+                </div>
+                <div class="pkg-data-card-actions">
+                    <button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" aria-controls="ortu-mobile-details-{{ $s->id }}" class="btn-secondary">
+                        <span x-text="detailsOpen ? 'Sembunyikan detail' : 'Detail akun'"></span>
+                    </button>
+                </div>
+                <div id="ortu-mobile-details-{{ $s->id }}" x-cloak x-show="detailsOpen" class="mt-3 space-y-3">
+                    <div class="pkg-data-card-meta">
                     <div class="pkg-data-card-row" x-data="{ show: false }">
                         <span class="k">Password</span>
                         <span class="v flex items-center justify-end gap-2">
@@ -65,11 +73,13 @@
                     </div>
                     <div class="pkg-data-card-row"><span class="k">Aktivitas</span><span class="v">{{ $s->last_activity ? \Carbon\Carbon::parse($s->last_activity)->diffForHumans() : 'Belum ada' }}</span></div>
                 </div>
-                <div class="pkg-data-card-actions">
+                    </div>
+                    <div class="pkg-data-card-actions">
                     <form action="{{ route('ortu-management.reset', $s->id) }}" method="POST" data-confirm="Yakin reset password ortu siswa ini?" data-confirm-title="Reset password ortu" data-confirm-button="Reset" data-confirm-tone="warning">
                         @csrf
                         <button type="submit" class="btn-secondary">Reset Password Ortu</button>
                     </form>
+                    </div>
                 </div>
             </div>
         @empty

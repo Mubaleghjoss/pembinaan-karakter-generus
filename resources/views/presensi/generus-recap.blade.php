@@ -111,8 +111,10 @@
                                 <td data-label="Kelompok" class="px-5 py-4 pkg-mobile-main">
                                     <div class="font-semibold text-gray-900 dark:text-white">{{ $row['label'] }}</div>
                                     <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $row['total_students'] }} Generus aktif</div>
+                                    <div class="mt-2 flex items-center gap-2 text-sm md:hidden"><span>Kehadiran {{ $row['attendance']['present'] }} / {{ $row['attendance']['records'] }}</span><span class="pkg-status-badge pkg-status-info">{{ $row['attendance']['percentage'] }}%</span></div>
+                                    <details class="mt-3 text-sm md:hidden"><summary class="cursor-pointer font-semibold text-blue-700 dark:text-blue-300">Lihat detail capaian</summary><div class="mt-2 space-y-1 text-gray-600 dark:text-gray-300"><div>Tugas PKG: {{ $row['task']['verified'] }} / {{ $row['task']['submitted'] }} ({{ $row['task']['percentage'] }}%)</div><div>Target RPP: {{ $row['rpp']['completed'] }} / {{ $row['rpp']['expected'] }} ({{ $row['rpp']['percentage'] }}%)</div></div></details>
                                 </td>
-                                <td data-label="Tugas PKG" class="px-5 py-4 align-top">
+                                <td data-label="Tugas PKG" class="max-md:!hidden px-5 py-4 align-top md:table-cell">
                                     <div class="flex items-center gap-2">
                                         <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $row['task']['verified'] }} / {{ $row['task']['submitted'] }}</span>
                                         <span class="pkg-status-badge pkg-status-success">{{ $row['task']['percentage'] }}%</span>
@@ -121,7 +123,7 @@
                                         {{ $row['task']['student_count'] }} Generus terverifikasi; {{ $row['task']['pending'] }} tugas menunggu.
                                     </div>
                                 </td>
-                                <td data-label="Kehadiran" class="px-5 py-4 align-top">
+                                <td data-label="Kehadiran" class="max-md:!hidden px-5 py-4 align-top md:table-cell">
                                     <div class="flex items-center gap-2">
                                         <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $row['attendance']['present'] }} / {{ $row['attendance']['records'] }}</span>
                                         <span class="pkg-status-badge pkg-status-info">{{ $row['attendance']['percentage'] }}%</span>
@@ -130,7 +132,7 @@
                                         {{ $row['attendance']['student_count'] }} Generus pernah hadir; {{ $row['attendance']['absent'] }} catatan tidak hadir/izin/sakit.
                                     </div>
                                 </td>
-                                <td data-label="Target RPP" class="px-5 py-4 align-top">
+                                <td data-label="Target RPP" class="max-md:!hidden px-5 py-4 align-top md:table-cell">
                                     <div class="flex items-center gap-2">
                                         <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $row['rpp']['completed'] }} / {{ $row['rpp']['expected'] }}</span>
                                         <span class="pkg-status-badge pkg-status-warning">{{ $row['rpp']['percentage'] }}%</span>

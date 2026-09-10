@@ -123,7 +123,7 @@
                 </thead>
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="pamong in permissionsPamong" :key="pamong.id">
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <tr x-data="{ detailsOpen: window.matchMedia('(min-width: 768px)').matches }" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td class="px-4 py-4" data-label="Pilih">
                                 <input type="checkbox" 
                                        :value="pamong.id"
@@ -137,11 +137,11 @@
                                     </div>
                                     <div class="ml-3">
                                         <div class="text-sm font-medium text-gray-900 dark:text-white" x-text="pamong.username"></div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400" x-text="pamong.email"></div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400" x-text="pamong.email"></div><button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" :aria-controls="`pamong-permissions-details-${pamong.id}`" class="btn-secondary !px-2 !py-1 text-xs md:hidden" x-text="detailsOpen ? 'Ringkas' : 'Detail akses'"></button>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4" data-label="Status akses">
+                            <td :id="`pamong-permissions-details-${pamong.id}`" x-cloak x-show="detailsOpen" class="px-4 py-4" data-label="Status akses">
                                 <template x-if="pamong.pamong_permission?.is_excluded">
                                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                                         Full Access
@@ -153,7 +153,7 @@
                                     </span>
                                 </template>
                             </td>
-                            <td class="px-4 py-4" data-label="Menu diizinkan">
+                            <td x-cloak x-show="detailsOpen" class="px-4 py-4" data-label="Menu diizinkan">
                                 <template x-if="pamong.pamong_permission?.is_excluded">
                                     <span class="text-sm text-gray-500 dark:text-gray-400">Semua menu</span>
                                 </template>
@@ -173,7 +173,7 @@
                                     </div>
                                 </template>
                             </td>
-                            <td class="pkg-mobile-actions px-4 py-4 text-right" data-label="Aksi">
+                            <td x-cloak x-show="detailsOpen" class="pkg-mobile-actions px-4 py-4 text-right" data-label="Aksi">
                                 <div class="flex items-center justify-end space-x-2">
                                     <button @click="toggleExcluded(pamong)" 
                                             class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"

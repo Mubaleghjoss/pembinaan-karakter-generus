@@ -78,7 +78,7 @@
                             };
                         @endphp
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300" data-label="Tanggal">
+                            <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-700 dark:text-gray-300" data-label="Tanggal">
                                 {{ $schedule->start_date?->format('d M Y') }}
                                 <span class="block text-xs text-gray-500 dark:text-gray-400">
                                     {{ $schedule->start_time ? substr($schedule->getAttributes()['start_time'], 0, 5) : 'Sepanjang hari' }}
@@ -87,23 +87,37 @@
                             </td>
                             <td class="px-6 py-4 pkg-mobile-main" data-label="Materi">
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $schedule->sourceMateri?->judul ?? $schedule->title }}</p>
+                                <div class="mt-1 flex flex-wrap items-center gap-2 md:hidden">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $schedule->start_date?->format('d M Y') }}</span>
+                                    <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $workflowTone }}">{{ $workflowLabel }}</span>
+                                </div>
                                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                     Pertemuan {{ data_get($schedule->source_payload, 'number', '-') }} · {{ data_get($schedule->source_payload, 'page_range', '-') }}
                                 </p>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300" data-label="Petugas">
+                            <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-700 dark:text-gray-300" data-label="Petugas">
                                 {{ $schedule->journal_assignee_label }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300" data-label="Realisasi">
+                            <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-700 dark:text-gray-300" data-label="Realisasi">
                                 {{ $journal?->actual_page_range ?? '-' }}
                             </td>
-                            <td class="px-6 py-4 text-sm" data-label="Status">
+                            <td class="hidden md:table-cell px-6 py-4 text-sm" data-label="Status">
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $workflowTone }}">{{ $workflowLabel }}</span>
                             </td>
-                            <td class="px-6 py-4 text-right pkg-mobile-actions" data-label="Aksi">
+                            <td class="hidden md:table-cell px-6 py-4 text-right pkg-mobile-actions" data-label="Aksi">
                                 <a href="{{ route('materi-rpp-journals.schedule', $schedule) }}" class="btn-secondary px-3 py-2 text-xs">
                                     {{ $workflowState === 'pending_review' ? 'Tinjau Jurnal' : ($journal ? 'Lihat Jurnal' : 'Buka Tugas') }}
                                 </a>
+                            </td>
+                            <td class="px-6 pb-4 md:hidden" colspan="6">
+                                <details>
+                                    <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail jurnal</summary>
+                                    <div class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                                        <p><strong>Petugas:</strong> {{ $schedule->journal_assignee_label }}</p>
+                                        <p><strong>Realisasi:</strong> {{ $journal?->actual_page_range ?? '-' }}</p>
+                                        <a href="{{ route('materi-rpp-journals.schedule', $schedule) }}" class="btn-secondary mt-2 px-3 py-2 text-xs">{{ $workflowState === 'pending_review' ? 'Tinjau Jurnal' : ($journal ? 'Lihat Jurnal' : 'Buka Tugas') }}</a>
+                                    </div>
+                                </details>
                             </td>
                         </tr>
                     @empty

@@ -57,24 +57,27 @@
                         <span class="pkg-status-badge pkg-status-neutral shrink-0">Nonaktif</span>
                     @endif
                 </div>
-                <div class="pkg-data-card-meta">
-                    <div class="pkg-data-card-row"><span class="k">Kategori</span><span class="v">{{ $item->kategori ?: '—' }}</span></div>
-                    <div class="pkg-data-card-row"><span class="k">Studi Kasus</span><span class="v">{{ count($item->studiKasusList()) }} skenario</span></div>
-                </div>
-                <div class="pkg-data-card-actions">
-                    <a href="{{ route('admin.karakter-luhur.edit', $item) }}" class="btn-primary">Edit</a>
-                    <form method="POST" action="{{ route('admin.karakter-luhur.toggle', $item) }}">
-                        @csrf
-                        <button type="submit" class="btn-secondary">{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
-                    </form>
-                    <form method="POST" action="{{ route('admin.karakter-luhur.destroy', $item) }}" onsubmit="return confirm('Hapus karakter {{ $item->nama }}?');" class="!flex-none">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn-danger !w-auto !px-3" aria-label="Hapus">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
-                    </form>
-                </div>
+                <details class="mt-3 md:hidden">
+                    <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail dan aksi</summary>
+                    <div class="pkg-data-card-meta mt-3">
+                        <div class="pkg-data-card-row"><span class="k">Kategori</span><span class="v">{{ $item->kategori ?: '—' }}</span></div>
+                        <div class="pkg-data-card-row"><span class="k">Studi Kasus</span><span class="v">{{ count($item->studiKasusList()) }} skenario</span></div>
+                    </div>
+                    <div class="pkg-data-card-actions mt-3">
+                        <a href="{{ route('admin.karakter-luhur.edit', $item) }}" class="btn-primary">Edit</a>
+                        <form method="POST" action="{{ route('admin.karakter-luhur.toggle', $item) }}">
+                            @csrf
+                            <button type="submit" class="btn-secondary">{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                        </form>
+                        <form method="POST" action="{{ route('admin.karakter-luhur.destroy', $item) }}" onsubmit="return confirm('Hapus karakter {{ $item->nama }}?');" class="!flex-none">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-danger !w-auto !px-3" aria-label="Hapus">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                </details>
             </div>
         @empty
             <div class="pkg-empty-state pkg-card">

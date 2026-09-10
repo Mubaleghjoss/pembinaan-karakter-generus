@@ -159,7 +159,34 @@
     </x-collapsible-section>
 
     <!-- Student List -->
-    <div class="pkg-card">
+    <div class="space-y-3 lg:hidden">
+        @forelse($siswaList as $siswa)
+            <article class="pkg-card p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-base font-bold text-gray-900 dark:text-white">{{ $siswa->nama }}</p>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">NIS: {{ $siswa->nis }}</p>
+                    </div>
+                    <span class="shrink-0 text-xs text-gray-500 dark:text-gray-400">{{ $siswa->school_grade_label }}</span>
+                </div>
+                <details class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <summary class="flex min-h-11 cursor-pointer items-center px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Lihat binaan dan aksi</summary>
+                    <div class="border-t border-slate-200 p-3 dark:border-slate-700">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">{{ $siswa->pamongAssignments->pluck('pamong')->filter()->map(fn ($pamong) => $pamong->name ?: $pamong->username)->join(', ') ?: 'Belum memiliki Pamong' }}</p>
+                        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                            <a href="{{ route('tugas-pkg.check', $siswa) }}" class="pkg-btn-primary justify-center px-3 py-2 text-sm">Pamong Bantu Ceklis</a>
+                            <a href="{{ route('tugas-pkg.history', $siswa) }}" class="pkg-btn-secondary justify-center px-3 py-2 text-sm">Riwayat</a>
+                        </div>
+                    </div>
+                </details>
+            </article>
+        @empty
+            <div class="pkg-card"><div class="pkg-empty-state"><h3 class="pkg-empty-title">Tidak ada siswa ditemukan</h3><p class="pkg-empty-copy">Ubah filter pencarian, Pamong, atau kelas sekolah untuk melihat data lain.</p></div></div>
+        @endforelse
+        <div class="px-4">{{ $siswaList->links() }}</div>
+    </div>
+
+    <div class="pkg-card hidden lg:block">
         <div class="pkg-mobile-table overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">

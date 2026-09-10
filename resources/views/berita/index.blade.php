@@ -88,9 +88,13 @@
                         {{ $item->judul }}
                     </a>
                 </h3>
-                <p class="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3 text-sm">
+                <p class="mb-4 hidden text-sm text-gray-600 line-clamp-3 dark:text-gray-400 md:block">
                     {{ $item->excerpt }}
                 </p>
+                <details class="mb-4 md:hidden">
+                    <summary class="cursor-pointer text-sm font-semibold text-blue-600 dark:text-blue-400">Ringkasan berita</summary>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ $item->excerpt }}</p>
+                </details>
                 <div class="mt-auto flex flex-wrap items-center justify-between gap-3">
                     <a href="{{ route('public.berita', $item->slug) }}" class="text-blue-600 dark:text-blue-400 font-medium text-sm hover:underline">
                         Baca Selengkapnya &rarr;

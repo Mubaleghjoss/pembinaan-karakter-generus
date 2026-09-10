@@ -89,7 +89,7 @@
     {{-- Kartu (mobile) --}}
     <div class="pkg-cards-mobile">
         @forelse($users as $user)
-            <div class="pkg-data-card">
+            <div class="pkg-data-card" x-data="{ detailsOpen: false }">
                 <div class="pkg-data-card-head">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="pkg-data-card-badge">{{ strtoupper(substr($user->username, 0, 1)) }}</span>
@@ -104,11 +104,19 @@
                 </div>
                 <div class="pkg-data-card-meta">
                     <div class="pkg-data-card-row"><span class="k">Role</span><span class="v">{{ $user->role->display_name ?? $user->role->name }}</span></div>
-                    <div class="pkg-data-card-row"><span class="k">Biometrik</span><span class="v">@if(($user->valid_biometric_credentials_count ?? 0) > 0)Aktif @elseif(($user->legacy_biometric_credentials_count ?? 0) > 0)Legacy @else Belum @endif</span></div>
-                    <div class="pkg-data-card-row"><span class="k">Login Terakhir</span><span class="v">{{ $user->last_login_at ? $user->last_login_at->diffForHumans() : 'Belum pernah' }}</span></div>
                 </div>
                 <div class="pkg-data-card-actions flex-wrap">
                     <a href="{{ route('users.edit', $user) }}" class="btn-primary">Edit</a>
+                    <button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" aria-controls="user-mobile-details-{{ $user->id }}" class="btn-secondary md:hidden">
+                        <span x-text="detailsOpen ? 'Sembunyikan detail' : 'Detail & tindakan'"></span>
+                    </button>
+                </div>
+                <div id="user-mobile-details-{{ $user->id }}" x-cloak x-show="detailsOpen" class="mt-3 space-y-3">
+                    <div class="pkg-data-card-meta">
+                        <div class="pkg-data-card-row"><span class="k">Biometrik</span><span class="v">@if(($user->valid_biometric_credentials_count ?? 0) > 0)Aktif @elseif(($user->legacy_biometric_credentials_count ?? 0) > 0)Legacy @else Belum @endif</span></div>
+                        <div class="pkg-data-card-row"><span class="k">Login Terakhir</span><span class="v">{{ $user->last_login_at ? $user->last_login_at->diffForHumans() : 'Belum pernah' }}</span></div>
+                    </div>
+                    <div class="pkg-data-card-actions flex-wrap">
                     @if($user->id !== auth()->id())
                         <form action="{{ route('users.toggle-status', $user) }}" method="POST">
                             @csrf @method('PATCH')
@@ -121,6 +129,7 @@
                             </button>
                         </form>
                     @endif
+                    </div>
                 </div>
             </div>
         @empty

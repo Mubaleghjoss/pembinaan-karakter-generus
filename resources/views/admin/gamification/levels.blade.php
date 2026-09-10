@@ -54,6 +54,8 @@
                     <p class="text-2xl font-bold text-gray-800">{{ $level->siswa_points_count }}</p>
                 </div>
                 
+                <details class="mt-3 md:hidden">
+                    <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail level</summary>
                 @if($level->benefits)
                 <div class="mt-3">
                     <p class="text-xs text-gray-500 mb-1">Benefits:</p>
@@ -86,7 +88,15 @@
                     </ul>
                 </div>
                 @endif
-                
+                </details>
+                <div class="hidden md:block">
+                    @if($level->benefits)
+                    <div class="mt-3"><p class="text-xs text-gray-500 mb-1">Benefits:</p><ul class="text-xs text-gray-600 space-y-1">@foreach($level->benefits as $benefit)<li class="flex items-center gap-1"><span class="text-green-500">OK</span> {{ $benefit }}</li>@endforeach</ul></div>
+                    @endif
+                    @if($linkedPins->count() > 0)
+                    <div class="mt-2"><p class="text-xs text-gray-500 mb-1">Pin Otomatis:</p><ul class="text-xs space-y-1">@foreach($linkedPins as $pin)<li class="flex items-center gap-1 text-indigo-600"><span>{{ $pin->icon_url }}</span> {{ $pin->nama }} @if($pin->poin_reward > 0)<span class="text-[10px] text-green-600">(+{{ $pin->poin_reward }} poin)</span>@endif</li>@endforeach</ul></div>
+                    @endif
+                </div>
                 <button onclick="editLevel({{ $level->id }})" class="mt-4 w-full px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
                     Edit Level
                 </button>

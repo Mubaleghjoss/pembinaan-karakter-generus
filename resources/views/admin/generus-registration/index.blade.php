@@ -24,7 +24,7 @@
     @endif
 
     <!-- Pengaturan Template Pesan WhatsApp -->
-    <section x-data="{ open: {{ $errors->any() ? 'true' : 'false' }} }" class="mb-6 pkg-panel-lg p-4 sm:p-5">
+    <section x-data="{ open: {{ $errors->any() ? 'true' : 'window.innerWidth >= 768' }} }" class="mb-6 pkg-panel-lg p-4 sm:p-5">
         <button type="button" @click="open = !open" class="flex w-full items-center justify-between text-left">
             <span>
                 <span class="block font-bold text-gray-900 dark:text-white">Template Pesan WhatsApp</span>
@@ -49,7 +49,7 @@
     </section>
 
     <!-- Pengaturan Template Pesan Informasi Akun -->
-    <section x-data="{ open: false }" class="mb-6 pkg-panel-lg p-4 sm:p-5">
+    <section x-data="{ open: {{ $errors->any() ? 'true' : 'window.innerWidth >= 768' }} }" class="mb-6 pkg-panel-lg p-4 sm:p-5">
         <button type="button" @click="open = !open" class="flex w-full items-center justify-between text-left">
             <span>
                 <span class="block font-bold text-gray-900 dark:text-white">Template Pesan Informasi Akun</span>
@@ -182,38 +182,43 @@
                         @endif
                     </div>
                 </div>
-                <div class="pkg-data-card-meta">
-                    <div class="pkg-data-card-row"><span class="k">Orang Tua</span><span class="v">{{ $s->nama_wali ?: '—' }}</span></div>
-                    @if($row['signed'])
-                        <div class="pkg-data-card-row"><span class="k">Tgl TTD</span><span class="v">{{ optional($row['registration']->statement_accepted_at)->translatedFormat('d M Y H:i') }}</span></div>
-                        <div class="pkg-data-card-row"><span class="k">Update terakhir</span><span class="v">{{ optional($row['registration']->updated_at)->translatedFormat('d M Y H:i') }}</span></div>
-                    @endif
-                </div>
-                <div class="pkg-data-card-actions flex-wrap">
-                    <button type="button" class="btn-secondary" data-copy-link="{{ $row['direct_url'] }}" data-mark-shared="{{ $row['mark_shared_url'] }}" data-channel="link" data-share-target="share-{{ $s->id }}">Salin Link</button>
-                    @if($waTarget)
-                        <a href="{{ $waTarget }}?text={{ $waMsg }}" target="_blank" rel="noopener" class="btn-success" data-mark-shared="{{ $row['mark_shared_url'] }}" data-channel="wa" data-share-target="share-{{ $s->id }}">Kirim WA</a>
-                    @endif
-                    @if($row['preview_url'])
-                        <a href="{{ $row['preview_url'] }}" target="_blank" rel="noopener" class="btn-primary">Lihat Surat</a>
-                        <a href="{{ $row['download_url'] }}" class="btn-secondary">Unduh</a>
-                    @endif
-                    @if($row['signed'])
-                        <form method="POST" action="{{ route('admin.generus-registration.reset', ['siswa' => $s->id]) }}" onsubmit="return confirm('Reset daftar ulang {{ addslashes($s->nama) }}? Data pernyataan &amp; tanda tangan akan dihapus, status kembali Belum. Biodata siswa tetap.');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn-danger">Reset</button>
-                        </form>
-                    @endif
-                </div>
-                <p id="share-{{ $s->id }}" class="mt-2 text-[11px] {{ $row['shared_at'] ? 'text-gray-500 dark:text-gray-400' : 'text-amber-600 dark:text-amber-400' }}">
-                    @if($row['shared_at'])
-                        Terakhir dibagikan: {{ $row['shared_at']->translatedFormat('d M Y H:i') }}
-                        ({{ $row['shared_channel'] === 'wa' ? 'WA' : 'Salin link' }}@if($row['shared_by']) · {{ $row['shared_by'] }}@endif)
-                    @else
-                        Belum pernah dibagikan
-                    @endif
-                </p>
+                @if($row['signed'])
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">TTD {{ optional($row['registration']->statement_accepted_at)->translatedFormat('d M Y H:i') }}</p>
+                @endif
+                <details class="mt-3 md:hidden">
+                    <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail dan aksi</summary>
+                    <div class="pkg-data-card-meta mt-3">
+                        <div class="pkg-data-card-row"><span class="k">Orang Tua</span><span class="v">{{ $s->nama_wali ?: '—' }}</span></div>
+                        @if($row['signed'])
+                            <div class="pkg-data-card-row"><span class="k">Update terakhir</span><span class="v">{{ optional($row['registration']->updated_at)->translatedFormat('d M Y H:i') }}</span></div>
+                        @endif
+                    </div>
+                    <div class="pkg-data-card-actions mt-3 flex-wrap">
+                        <button type="button" class="btn-secondary" data-copy-link="{{ $row['direct_url'] }}" data-mark-shared="{{ $row['mark_shared_url'] }}" data-channel="link" data-share-target="share-{{ $s->id }}">Salin Link</button>
+                        @if($waTarget)
+                            <a href="{{ $waTarget }}?text={{ $waMsg }}" target="_blank" rel="noopener" class="btn-success" data-mark-shared="{{ $row['mark_shared_url'] }}" data-channel="wa" data-share-target="share-{{ $s->id }}">Kirim WA</a>
+                        @endif
+                        @if($row['preview_url'])
+                            <a href="{{ $row['preview_url'] }}" target="_blank" rel="noopener" class="btn-primary">Lihat Surat</a>
+                            <a href="{{ $row['download_url'] }}" class="btn-secondary">Unduh</a>
+                        @endif
+                        @if($row['signed'])
+                            <form method="POST" action="{{ route('admin.generus-registration.reset', ['siswa' => $s->id]) }}" onsubmit="return confirm('Reset daftar ulang {{ addslashes($s->nama) }}? Data pernyataan &amp; tanda tangan akan dihapus, status kembali Belum. Biodata siswa tetap.');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-danger">Reset</button>
+                            </form>
+                        @endif
+                    </div>
+                    <p id="share-{{ $s->id }}" class="mt-2 text-[11px] {{ $row['shared_at'] ? 'text-gray-500 dark:text-gray-400' : 'text-amber-600 dark:text-amber-400' }}">
+                        @if($row['shared_at'])
+                            Terakhir dibagikan: {{ $row['shared_at']->translatedFormat('d M Y H:i') }}
+                            ({{ $row['shared_channel'] === 'wa' ? 'WA' : 'Salin link' }}@if($row['shared_by']) · {{ $row['shared_by'] }}@endif)
+                        @else
+                            Belum pernah dibagikan
+                        @endif
+                    </p>
+                </details>
             </div>
         @empty
             <div class="pkg-empty-state pkg-card">

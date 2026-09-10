@@ -93,15 +93,17 @@
                             <td class="px-4 py-3 pkg-mobile-main" data-label="Siswa">
                                 <div class="font-medium text-gray-900 dark:text-white">{{ $t->siswa->nama ?? '-' }}</div>
                                 <div class="text-xs text-gray-500">{{ $t->siswa->school_grade_label ?? 'Kelas belum dikonfirmasi' }}</div>
+                                <div class="mt-2 flex flex-wrap items-center gap-2 text-sm md:hidden"><span>{{ $t->created_at->format('d M Y H:i') }}</span><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-bold {{ $t->points > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' }}">{{ $t->points > 0 ? '+' : '' }}{{ $t->points }}</span></div>
+                                <details class="mt-3 text-sm md:hidden"><summary class="cursor-pointer font-semibold text-blue-700 dark:text-blue-300">Lihat detail dan aksi</summary><div class="mt-2 text-gray-600 dark:text-gray-300">{{ $t->description }}</div>@if($t->points > 0)<button @click="showDeleteModal = true; deleteId = {{ $t->id }}; deleteDesc = '{{ addslashes($t->description) }}'; reason = ''" class="mt-3 text-sm font-semibold text-red-600 dark:text-red-400">Hapus poin</button>@endif</details>
                             </td>
-                            <td class="px-4 py-3 text-gray-700 dark:text-gray-300" data-label="Deskripsi">{{ $t->description }}</td>
-                            <td class="px-4 py-3 text-gray-600 dark:text-gray-400" data-label="Tanggal">{{ $t->created_at->format('d M Y H:i') }}</td>
-                            <td class="px-4 py-3 text-center" data-label="Poin">
+                            <td class="max-md:!hidden px-4 py-3 text-gray-700 dark:text-gray-300 md:table-cell" data-label="Deskripsi">{{ $t->description }}</td>
+                            <td class="max-md:!hidden px-4 py-3 text-gray-600 dark:text-gray-400 md:table-cell" data-label="Tanggal">{{ $t->created_at->format('d M Y H:i') }}</td>
+                            <td class="max-md:!hidden px-4 py-3 text-center md:table-cell" data-label="Poin">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-bold {{ $t->points > 0 ? 'text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30' : 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30' }}">
                                     {{ $t->points > 0 ? '+' : '' }}{{ $t->points }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-center pkg-mobile-actions" data-label="Aksi">
+                            <td class="max-md:!hidden px-4 py-3 text-center pkg-mobile-actions md:table-cell" data-label="Aksi">
                                 @if($t->points > 0)
                                 <button @click="showDeleteModal = true; deleteId = {{ $t->id }}; deleteDesc = '{{ addslashes($t->description) }}'; reason = ''" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors" title="Hapus Poin">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>

@@ -295,8 +295,8 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($pullResult['details'] as $table => $detail)
-                    <tr x-data="{ detailOpen: false }" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td data-label="#" class="px-4 py-3 text-sm text-gray-500">{{ $loop->iteration }}</td>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td data-label="#" class="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{{ $loop->iteration }}</td>
                         <td data-label="Tabel" class="px-4 py-3 text-sm font-mono text-gray-800 dark:text-white pkg-mobile-main">{{ $table }}</td>
                         <td data-label="Status" class="px-4 py-3 text-center">
                             @if($detail['status'] === 'success')
@@ -311,20 +311,11 @@
                             {{ number_format($detail['count'] ?? 0) }}
                         </td>
                         <td data-label="Keterangan" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="block min-w-0 truncate">{{ $detail['message'] ?? '-' }}</span>
-                                <button
-                                    type="button"
-                                    @click="detailOpen = !detailOpen"
-                                    class="pkg-btn-secondary shrink-0 px-3 py-1 text-xs"
-                                >
-                                    <span x-text="detailOpen ? 'Tutup' : 'Detail'"></span>
-                                </button>
-                            </div>
-                            <div x-show="detailOpen" x-cloak class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                                <p class="font-semibold text-slate-900 dark:text-white">Detail {{ $table }}</p>
+                            <span class="hidden md:block">{{ $detail['message'] ?? '-' }}</span>
+                            <details class="md:hidden">
+                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Keterangan lengkap</summary>
                                 <pre class="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-5">{{ $detail['message'] ?? '-' }}</pre>
-                            </div>
+                            </details>
                         </td>
                     </tr>
                     @endforeach
@@ -391,7 +382,7 @@
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse(($pullResult['media']['details'] ?? []) as $mediaDetail)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td data-label="#" class="px-4 py-3 text-sm text-gray-500">{{ $loop->iteration }}</td>
+                        <td data-label="#" class="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{{ $loop->iteration }}</td>
                         <td data-label="Path" class="px-4 py-3 text-sm font-mono text-gray-800 dark:text-white break-all pkg-mobile-main">{{ $mediaDetail['path'] ?? '-' }}</td>
                         <td data-label="Status" class="px-4 py-3 text-center">
                             @if(($mediaDetail['status'] ?? null) === 'success')
@@ -402,7 +393,7 @@
                                 <span class="pkg-status-badge pkg-status-danger">Gagal</span>
                             @endif
                         </td>
-                        <td data-label="Keterangan" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $mediaDetail['message'] ?? '-' }}</td>
+                        <td data-label="Keterangan" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400"><span class="hidden md:block">{{ $mediaDetail['message'] ?? '-' }}</span><details class="md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Keterangan lengkap</summary><p class="mt-2 break-words">{{ $mediaDetail['message'] ?? '-' }}</p></details></td>
                     </tr>
                     @empty
                     <tr>

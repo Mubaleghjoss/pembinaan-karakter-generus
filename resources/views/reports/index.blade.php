@@ -142,12 +142,12 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="kelas in classPerformance" :key="kelas.id">
                         <tr>
-                            <td data-label="Kelas Sekolah" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white pkg-mobile-main" x-text="kelas.nama"></td>
-                            <td data-label="Total Siswa" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="kelas.total_siswa"></td>
-                            <td data-label="Hadir" class="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400" x-text="kelas.hadir"></td>
-                            <td data-label="Terlambat" class="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 dark:text-yellow-400" x-text="kelas.terlambat"></td>
-                            <td data-label="Tidak Hadir" class="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400" x-text="kelas.tidak_hadir"></td>
-                            <td data-label="% Kehadiran" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="`${kelas.persentase_kehadiran}%`"></td>
+                            <td data-label="Kelas Sekolah" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white pkg-mobile-main"><span x-text="kelas.nama"></span><div class="mt-1 md:hidden text-xs font-semibold text-emerald-600 dark:text-emerald-400" x-text="`${kelas.persentase_kehadiran}% kehadiran`"></div><details class="mt-2 md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Rincian kehadiran</summary><div class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300"><p x-text="`Total siswa: ${kelas.total_siswa}`"></p><p x-text="`Hadir: ${kelas.hadir}; Terlambat: ${kelas.terlambat}; Tidak hadir: ${kelas.tidak_hadir}`"></p></div></details></td>
+                            <td data-label="Total Siswa" class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="kelas.total_siswa"></td>
+                            <td data-label="Hadir" class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400" x-text="kelas.hadir"></td>
+                            <td data-label="Terlambat" class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-yellow-600 dark:text-yellow-400" x-text="kelas.terlambat"></td>
+                            <td data-label="Tidak Hadir" class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400" x-text="kelas.tidak_hadir"></td>
+                            <td data-label="% Kehadiran" class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="`${kelas.persentase_kehadiran}%`"></td>
                         </tr>
                     </template>
                 </tbody>
@@ -173,12 +173,12 @@
                 </tr></thead>
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="pamong in pamongPerformance" :key="pamong.id"><tr>
-                        <td data-label="Pamong" class="pkg-mobile-main px-6 py-4 text-sm font-medium text-gray-900 dark:text-white" x-text="pamong.nama"></td>
-                        <td data-label="Generus Binaan" class="px-6 py-4 text-sm tabular-nums" x-text="pamong.total_siswa"></td>
-                        <td data-label="Hadir" class="px-6 py-4 text-sm tabular-nums text-green-600 dark:text-green-400" x-text="pamong.hadir"></td>
-                        <td data-label="Terlambat" class="px-6 py-4 text-sm tabular-nums text-yellow-600 dark:text-yellow-400" x-text="pamong.terlambat"></td>
-                        <td data-label="Tidak Hadir" class="px-6 py-4 text-sm tabular-nums text-red-600 dark:text-red-400" x-text="pamong.tidak_hadir"></td>
-                        <td data-label="% Kehadiran" class="px-6 py-4 text-sm tabular-nums" x-text="`${pamong.persentase_kehadiran}%`"></td>
+                        <td data-label="Pamong" class="pkg-mobile-main px-6 py-4 text-sm font-medium text-gray-900 dark:text-white"><span x-text="pamong.nama"></span><div class="mt-1 md:hidden text-xs font-semibold text-emerald-600 dark:text-emerald-400" x-text="`${pamong.persentase_kehadiran}% kehadiran`"></div><details class="mt-2 md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Rincian binaan</summary><div class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300"><p x-text="`Generus binaan: ${pamong.total_siswa}`"></p><p x-text="`Hadir: ${pamong.hadir}; Terlambat: ${pamong.terlambat}; Tidak hadir: ${pamong.tidak_hadir}`"></p></div></details></td>
+                        <td data-label="Generus Binaan" class="hidden md:table-cell px-6 py-4 text-sm tabular-nums" x-text="pamong.total_siswa"></td>
+                        <td data-label="Hadir" class="hidden md:table-cell px-6 py-4 text-sm tabular-nums text-green-600 dark:text-green-400" x-text="pamong.hadir"></td>
+                        <td data-label="Terlambat" class="hidden md:table-cell px-6 py-4 text-sm tabular-nums text-yellow-600 dark:text-yellow-400" x-text="pamong.terlambat"></td>
+                        <td data-label="Tidak Hadir" class="hidden md:table-cell px-6 py-4 text-sm tabular-nums text-red-600 dark:text-red-400" x-text="pamong.tidak_hadir"></td>
+                        <td data-label="% Kehadiran" class="hidden md:table-cell px-6 py-4 text-sm tabular-nums" x-text="`${pamong.persentase_kehadiran}%`"></td>
                     </tr></template>
                     <tr x-show="!pamongPerformance.length"><td colspan="6" class="pkg-mobile-empty px-6 py-0"><div class="pkg-empty-state"><h3 class="pkg-empty-title">Belum ada binaan aktif</h3><p class="pkg-empty-copy">Rekap Pamong muncul setelah Generus memiliki hubungan binaan aktif.</p></div></td></tr>
                 </tbody>
@@ -205,7 +205,7 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="(siswa, index) in topStudents" :key="siswa.id">
                         <tr>
-                            <td data-label="Peringkat" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="index + 1"></td>
+                            <td data-label="Peringkat" class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="index + 1"></td>
                             <td data-label="Siswa" class="px-6 py-4 whitespace-nowrap pkg-mobile-main">
                                 <div class="flex items-center gap-3">
                                     <img class="h-10 w-10 rounded-full object-cover"
@@ -216,10 +216,12 @@
                                         <div class="text-sm text-gray-500 dark:text-gray-400" x-text="siswa.nis"></div>
                                     </div>
                                 </div>
+                                <div class="mt-1 md:hidden text-xs font-semibold text-emerald-600 dark:text-emerald-400" x-text="`${siswa.persentase_kehadiran}% kehadiran`"></div>
+                                <details class="mt-2 md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Rincian siswa</summary><div class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300"><p x-text="`Kelas: ${siswa.school_grade_label || 'Belum dikonfirmasi'}`"></p><p x-text="`Total hadir: ${siswa.total_hadir}`"></p></div></details>
                             </td>
                             <td data-label="Kelas Sekolah" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="siswa.school_grade_label || 'Belum dikonfirmasi'"></td>
-                            <td data-label="Total Hadir" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="siswa.total_hadir"></td>
-                            <td data-label="% Kehadiran" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="`${siswa.persentase_kehadiran}%`"></td>
+                            <td data-label="Total Hadir" class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="siswa.total_hadir"></td>
+                            <td data-label="% Kehadiran" class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="`${siswa.persentase_kehadiran}%`"></td>
                         </tr>
                     </template>
                 </tbody>

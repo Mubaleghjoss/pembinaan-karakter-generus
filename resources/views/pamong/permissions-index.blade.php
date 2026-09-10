@@ -89,7 +89,7 @@
             </thead>
             <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($pamongList as $p)
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <tr x-data="{ detailsOpen: window.matchMedia('(min-width: 768px)').matches }" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td class="px-4 py-4" data-label="Pilih">
                         <input type="checkbox" :value="{{ $p->id }}" x-model="selectedPamong"
                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
@@ -101,11 +101,11 @@
                             </div>
                             <div class="ml-3 min-w-0">
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $p->username }}</div>
-                                <div class="mt-1"><x-role-badges :user="$p" size="xs" :max-duty="2" /></div>
+                                <div class="mt-1"><x-role-badges :user="$p" size="xs" :max-duty="2" /></div><button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" aria-controls="permissions-index-details-{{ $p->id }}" class="btn-secondary !px-2 !py-1 text-xs md:hidden" x-text="detailsOpen ? 'Ringkas' : 'Detail akses'"></button>
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-4" data-label="Status akses">
+                    <td id="permissions-index-details-{{ $p->id }}" x-cloak x-show="detailsOpen" class="px-4 py-4" data-label="Status akses">
                         @if($p->pamongPermission?->is_excluded)
                             <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                                 Bypass pembatasan
@@ -129,7 +129,7 @@
                             {{ $bisaManual ? ($semuaGenerus ? 'semua generus' : 'hanya binaan') : 'tidak berizin' }}
                         </p>
                     </td>
-                    <td class="px-4 py-4" data-label="Menu diizinkan">
+                    <td x-cloak x-show="detailsOpen" class="px-4 py-4" data-label="Menu diizinkan">
                         @if($p->pamongPermission?->is_excluded)
                             <span class="text-sm text-orange-600 dark:text-orange-400">Semua Menu</span>
                         @elseif($p->pamongPermission?->menu_permissions)
@@ -149,7 +149,7 @@
                             <span class="text-sm text-gray-500 dark:text-gray-400">Semua Menu (Default)</span>
                         @endif
                     </td>
-                    <td class="pkg-mobile-actions px-4 py-4 text-right" data-label="Aksi">
+                    <td x-cloak x-show="detailsOpen" class="pkg-mobile-actions px-4 py-4 text-right" data-label="Aksi">
                         <div class="flex flex-col items-end gap-1.5">
                             <a href="{{ route('pamong.permissions', $p) }}" class="text-sm font-semibold text-orange-600 hover:text-orange-900 dark:text-orange-400">
                                 Edit Hak Akses

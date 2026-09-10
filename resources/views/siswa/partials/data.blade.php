@@ -216,9 +216,9 @@
         <!-- Compact cards keep the primary student identity and detail affordance reachable on touch screens. -->
         <div x-show="!loading && students.length > 0" class="pkg-cards-mobile">
             <template x-for="student in students" :key="student.id">
-                <article class="pkg-data-card">
+                <article class="pkg-data-card" x-data="{ detailsOpen: false }">
                     <div class="pkg-data-card-head">
-                        <button type="button" @click="viewBiodata(student)" class="flex min-w-0 flex-1 items-center gap-3 text-left" :aria-label="`Lihat biodata ${student.nama}`">
+                        <div class="flex min-w-0 flex-1 items-center gap-3">
                             <div class="flex-shrink-0 h-10 w-10">
                                 <template x-if="student.foto_url">
                                     <img class="h-10 w-10 rounded-full object-cover" :src="student.foto_url" :alt="student.nama">
@@ -231,26 +231,32 @@
                                 <p class="pkg-data-card-title" x-text="student.nama"></p>
                                 <p class="pkg-data-card-sub" x-text="student.nis ? `NIS ${student.nis}` : 'NIS belum tersedia'"></p>
                             </div>
-                        </button>
+                        </div>
                         <span class="shrink-0 rounded-full px-2 py-1 text-xs font-semibold"
                               :class="student.status === 'graduated' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200' : (student.status === 'active' && student.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200')"
                               x-text="student.status === 'graduated' ? 'Alumni' : (student.status === 'transferred' ? 'Pindah' : (student.status === 'active' && student.is_active ? 'Aktif' : 'Nonaktif'))"></span>
                     </div>
-                    <div class="pkg-data-card-meta">
-                        <div class="pkg-data-card-row"><span class="k">Kelas</span><span class="v" x-text="student.school_grade_label || 'Belum dikonfirmasi'"></span></div>
-                        <div class="pkg-data-card-row"><span class="k">Biodata</span><span class="v" x-text="student.is_biodata_complete ? 'Lengkap' : 'Belum lengkap'"></span></div>
-                    </div>
-                    <div class="pkg-data-card-actions flex-wrap">
-                        <button type="button" @click="viewBiodata(student)" class="btn-secondary">Lihat Biodata</button>
-                        @if(auth()->user()->hasPamongCrudPermission('siswa', 'edit'))
-                        <button type="button" @click="editStudent(student)" class="btn-primary">Edit</button>
-                        @endif
-                        @if(auth()->user()->isAdmin())
-                        <button type="button" @click="openAlumniModal(student)" class="btn-secondary" x-text="student.is_alumni ? 'Atur Alumni' : 'Jadikan Alumni'"></button>
-                        @endif
-                        @if(auth()->user()->hasPamongCrudPermission('siswa', 'delete'))
-                        <button type="button" @click="deleteStudent(student)" class="btn-danger">Hapus</button>
-                        @endif
+                    <button type="button" @click="detailsOpen = !detailsOpen" class="btn-secondary mt-3 w-full justify-center text-sm" :aria-expanded="detailsOpen.toString()" :aria-controls="`student-mobile-details-${student.id}`">
+                        <span x-show="!detailsOpen">Tampilkan detail dan aksi</span>
+                        <span x-show="detailsOpen">Sembunyikan detail dan aksi</span>
+                    </button>
+                    <div x-cloak x-show="detailsOpen" x-transition :id="`student-mobile-details-${student.id}`" class="mt-3">
+                        <div class="pkg-data-card-meta">
+                            <div class="pkg-data-card-row"><span class="k">Kelas</span><span class="v" x-text="student.school_grade_label || 'Belum dikonfirmasi'"></span></div>
+                            <div class="pkg-data-card-row"><span class="k">Biodata</span><span class="v" x-text="student.is_biodata_complete ? 'Lengkap' : 'Belum lengkap'"></span></div>
+                        </div>
+                        <div class="pkg-data-card-actions flex-wrap">
+                            <button type="button" @click="viewBiodata(student)" class="btn-secondary">Lihat Biodata</button>
+                            @if(auth()->user()->hasPamongCrudPermission('siswa', 'edit'))
+                            <button type="button" @click="editStudent(student)" class="btn-primary">Edit</button>
+                            @endif
+                            @if(auth()->user()->isAdmin())
+                            <button type="button" @click="openAlumniModal(student)" class="btn-secondary" x-text="student.is_alumni ? 'Atur Alumni' : 'Jadikan Alumni'"></button>
+                            @endif
+                            @if(auth()->user()->hasPamongCrudPermission('siswa', 'delete'))
+                            <button type="button" @click="deleteStudent(student)" class="btn-danger">Hapus</button>
+                            @endif
+                        </div>
                     </div>
                 </article>
             </template>

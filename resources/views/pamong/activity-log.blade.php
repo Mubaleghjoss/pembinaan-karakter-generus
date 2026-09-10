@@ -131,22 +131,33 @@
                 <tbody class="pkg-table-body divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($logs as $log)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="px-4 py-3 whitespace-nowrap" data-label="Waktu">
+                        <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap" data-label="Waktu">
                             <div class="text-sm text-gray-900 dark:text-white">{{ $log->created_at->format('d M Y') }}</div>
                             <div class="text-xs text-gray-500 dark:text-gray-400">{{ $log->created_at->format('H:i:s') }}</div>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap" data-label="Aksi">
+                        <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap" data-label="Aksi">
                             <span class="text-sm">{{ $log->action_label }}</span>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap" data-label="Modul">
+                        <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap" data-label="Modul">
                             <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                                 {{ $log->module_label }}
                             </span>
                         </td>
                         <td class="pkg-mobile-main px-4 py-3" data-label="Deskripsi">
                             <span class="text-sm text-gray-700 dark:text-gray-300">{{ $log->description }}</span>
+                            <div class="mt-1 flex items-center gap-2 md:hidden">
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ $log->module_label }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $log->created_at->format('d M Y H:i') }}</span>
+                            </div>
+                            <details class="mt-2 md:hidden">
+                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail aktivitas</summary>
+                                <dl class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                                    <div><dt class="inline font-medium">Aksi:</dt> <dd class="inline">{{ $log->action_label }}</dd></div>
+                                    <div><dt class="inline font-medium">Alamat IP:</dt> <dd class="inline font-mono">{{ $log->ip_address ?? '-' }}</dd></div>
+                                </dl>
+                            </details>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap" data-label="Alamat IP">
+                        <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap" data-label="Alamat IP">
                             <span class="text-xs font-mono text-gray-500 dark:text-gray-400">{{ $log->ip_address ?? '-' }}</span>
                         </td>
                     </tr>
