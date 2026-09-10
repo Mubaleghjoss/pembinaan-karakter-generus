@@ -161,7 +161,7 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringNotContainsString('capture="environment"', $scan);
         $this->assertStringContainsString('data-quran-pdf-file', $scan);
         $this->assertStringContainsString("import('pdfjs-dist')", $scanScript);
-        $this->assertStringContainsString('Scan Barcode Cepat', $scan);
+        $this->assertStringContainsString('Scan QR cepat', $scan);
         $this->assertStringContainsString('data-quran-mode-panel="advanced"', $scan);
         $this->assertStringContainsString('sessionStorage.setItem', $scanScript);
         $this->assertStringContainsString('fetchWithFreshCsrf', $scanScript);
