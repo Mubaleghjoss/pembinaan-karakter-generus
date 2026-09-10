@@ -4,7 +4,9 @@ set -euo pipefail
 
 export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
-readonly EXPECTED_REPO="/home/hermesadmin/projects/pembinaan-karakter-generus"
+# A detached temporary worktree may be supplied so a deploy never inspects or mutates
+# unrelated changes in the canonical workspace.
+readonly EXPECTED_REPO="${DEPLOY_SOURCE_ROOT:-/home/hermesadmin/projects/pembinaan-karakter-generus}"
 readonly APP_ROOT="/var/www/pkgenerus-staging"
 readonly SHARED_DIR="$APP_ROOT/shared"
 readonly RELEASES_DIR="$APP_ROOT/releases"
