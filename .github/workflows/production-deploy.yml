@@ -33,6 +33,7 @@ jobs:
           mkdir -p storage/framework/cache/data
           mkdir -p storage/framework/sessions
           mkdir -p storage/framework/views
+          mkdir -p storage/app/public
           mkdir -p storage/logs
           mkdir -p bootstrap/cache
       - run: composer install --no-interaction --prefer-dist --no-progress

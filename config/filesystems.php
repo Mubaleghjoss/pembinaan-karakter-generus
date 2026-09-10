@@ -36,7 +36,7 @@ return [
             'driver' => 'local',
             // Production: simpan langsung ke public/storage
             // Local: tetap ke storage/app/public (pakai symlink)
-            'root' => env('FILESYSTEM_PUBLIC_ROOT', storage_path('app/public')),
+            'root' => env('FILESYSTEM_PUBLIC_ROOT') ?: storage_path('app/public'),
             'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
