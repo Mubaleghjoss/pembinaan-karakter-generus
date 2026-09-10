@@ -3,16 +3,16 @@
     $folderOptions = $folderOptions ?? collect();
 @endphp
 
-<form method="POST" action="{{ route('materi.folders.update', $currentFolder) }}" class="mt-3 space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+<form method="POST" action="{{ route('materi.folders.update', $currentFolder) }}" class="mt-3 min-w-0 space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
     @csrf
     @method('PATCH')
     <div>
         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Nama</label>
-        <input type="text" name="name" value="{{ old('name', $currentFolder->name) }}" class="w-full pkg-field text-sm" required>
+        <input type="text" name="name" value="{{ old('name', $currentFolder->name) }}" class="w-full min-w-0 pkg-field text-sm" required>
     </div>
     <div>
         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Folder Induk</label>
-        <select name="parent_id" class="w-full pkg-field text-sm">
+        <select name="parent_id" class="w-full min-w-0 max-w-full pkg-field text-sm">
             <option value="">Folder Utama</option>
             @foreach($folderOptions as $option)
                 @continue((int) $option->id === (int) $currentFolder->id)
@@ -24,7 +24,7 @@
     </div>
     <div>
         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Keterangan</label>
-        <textarea name="description" rows="2" class="w-full pkg-field text-sm">{{ old('description', $currentFolder->description) }}</textarea>
+        <textarea name="description" rows="2" class="w-full min-w-0 pkg-field text-sm">{{ old('description', $currentFolder->description) }}</textarea>
     </div>
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>

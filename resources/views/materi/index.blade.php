@@ -215,8 +215,8 @@
         </div>
     </section>
 
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px] mb-6">
-        <details class="pkg-panel group overflow-hidden">
+    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px] mb-6">
+        <details class="pkg-panel group min-w-0 overflow-hidden">
             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
                 <div class="min-w-0">
                     <h2 class="text-base font-semibold text-gray-900 dark:text-white">Folder Materi</h2>
@@ -248,8 +248,8 @@
                                 @endif
                                 <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">Urutan: {{ $folder->sort_order }} - {{ $folder->is_active ? 'Aktif' : 'Nonaktif' }}</p>
                             </div>
-                            <div class="flex shrink-0 items-center gap-2">
-                                <span class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{{ $totalCount }}</span>
+                            <div class="flex max-w-full shrink-0 items-center gap-2">
+                                <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{{ $totalCount }}</span>
                                 <span class="btn-secondary px-3 py-2 text-xs">
                                     <span class="group-open:hidden">Buka</span>
                                     <span class="hidden group-open:inline">Tutup</span>
@@ -318,9 +318,9 @@
         </details>
 
         @if($canCreateMateri ?? false)
-        <div class="pkg-panel p-4">
+        <div class="pkg-panel min-w-0 p-4">
             <h2 class="text-base font-semibold text-gray-900 dark:text-white">Buat Folder</h2>
-            <form method="POST" action="{{ route('materi.folders.store') }}" class="mt-4 space-y-3">
+            <form method="POST" action="{{ route('materi.folders.store') }}" class="mt-4 min-w-0 space-y-3">
                 @csrf
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Folder</label>
@@ -348,27 +348,27 @@
     </div>
 
     <!-- Filters -->
-    <div class="pkg-filter-bar mb-6">
-        <form method="GET" class="flex flex-wrap gap-3">
+    <div class="pkg-filter-bar mb-6 min-w-0">
+        <form method="GET" class="flex min-w-0 flex-wrap gap-3">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari materi..."
-                class="flex-1 min-w-[200px] px-3 py-2 pkg-field text-sm">
-            <select name="folder_id" class="px-3 py-2 pkg-field text-sm">
+                class="min-w-0 flex-1 px-3 py-2 pkg-field text-sm sm:min-w-[200px]">
+            <select name="folder_id" class="min-w-0 max-w-full px-3 py-2 pkg-field text-sm sm:flex-1">
                 <option value="">Semua Folder</option>
                 @foreach($materiFolders as $folder)
                     <option value="{{ $folder->id }}" @selected((int) request('folder_id') === $folder->id)>{{ $folder->display_name ?? $folder->name }}</option>
                 @endforeach
             </select>
             <input type="month" name="bulan" value="{{ request('bulan') }}"
-                class="px-3 py-2 pkg-field text-sm">
+                class="min-w-0 max-w-full px-3 py-2 pkg-field text-sm sm:w-auto">
             @if($canManageMateri ?? false)
-            <select name="status" class="px-3 py-2 pkg-field text-sm">
+            <select name="status" class="min-w-0 max-w-full px-3 py-2 pkg-field text-sm sm:flex-1">
                 <option value="">Semua Status</option>
                 <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
                 <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Nonaktif</option>
             </select>
             @endif
-            <button type="submit" class="btn-primary text-sm !px-4 !py-2">Filter</button>
-            <a href="{{ route('materi.index') }}" class="btn-secondary text-sm !px-4 !py-2">Reset</a>
+            <button type="submit" class="btn-primary w-full justify-center text-sm !px-4 !py-2 sm:w-auto">Filter</button>
+            <a href="{{ route('materi.index') }}" class="btn-secondary w-full justify-center text-sm !px-4 !py-2 sm:w-auto">Reset</a>
         </form>
     </div>
 

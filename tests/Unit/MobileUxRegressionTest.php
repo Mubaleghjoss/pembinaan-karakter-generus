@@ -126,6 +126,20 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('closeGrupConversation()', file_get_contents(dirname(__DIR__, 2).'/resources/views/pamong/chat/partials/grup.blade.php'));
     }
 
+    public function test_admin_materi_controls_wrap_without_forcing_mobile_horizontal_overflow(): void
+    {
+        $materi = file_get_contents(dirname(__DIR__, 2).'/resources/views/materi/index.blade.php');
+        $folderForm = file_get_contents(dirname(__DIR__, 2).'/resources/views/materi/partials/folder-edit-form.blade.php');
+
+        $this->assertStringContainsString('grid min-w-0 grid-cols-1', $materi);
+        $this->assertStringContainsString('class="flex min-w-0 flex-wrap gap-3"', $materi);
+        $this->assertStringContainsString('class="min-w-0 flex-1 px-3 py-2 pkg-field text-sm sm:min-w-[200px]"', $materi);
+        $this->assertStringContainsString('class="min-w-0 max-w-full px-3 py-2 pkg-field text-sm sm:flex-1"', $materi);
+        $this->assertStringContainsString('class="pkg-panel min-w-0 p-4"', $materi);
+        $this->assertStringContainsString('class="mt-3 min-w-0 space-y-3', $folderForm);
+        $this->assertStringContainsString('w-full min-w-0 max-w-full pkg-field text-sm', $folderForm);
+    }
+
     public function test_lazy_tab_panels_and_mobile_tables_are_enabled(): void
     {
         $tabPanel = file_get_contents(dirname(__DIR__, 2).'/resources/views/components/tab-panel.blade.php');
