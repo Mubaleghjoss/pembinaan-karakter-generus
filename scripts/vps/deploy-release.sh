@@ -39,6 +39,7 @@ ln -s "$SHARED_DIR/storage/app/public" public/storage
 composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 npm ci --no-audit --no-fund
 npm run build
+node scripts/vps/verify-vite-manifest-assets.mjs public/build
 rm -rf node_modules
 
 php artisan optimize:clear
