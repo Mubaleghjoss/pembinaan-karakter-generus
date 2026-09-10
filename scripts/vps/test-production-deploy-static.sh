@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify production uploads a fresh Vite build before activating a release.
+# Verify production uploads a fresh Vite build and reloads PHP-FPM after activation.
 set -euo pipefail
 
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -35,9 +35,26 @@ for step in required_workflow_steps:
 if positions != sorted(positions):
     raise SystemExit('production workflow must verify a fresh Vite build before rsync uploads the release')
 
-upload_block = deploy_job[positions[-1]:deploy_job.find('      - name: Build and activate release', positions[-1])]
+activation_step = '      - name: Build, activate, and reload PHP-FPM'
+activation_position = deploy_job.find(activation_step)
+if activation_position < positions[-1]:
+    raise SystemExit('production workflow must activate only after uploading the verified Vite build')
+
+upload_block = deploy_job[positions[-1]:activation_position]
 if "--exclude='/public/build/'" in upload_block or "--exclude='/public/build'" in upload_block:
     raise SystemExit('production workflow must upload public/build')
+
+activation_block = deploy_job[activation_position:]
+deploy_command = 'bash /var/www/pkgenerus.my.id/releases/$RELEASE_NAME/scripts/vps/deploy-release.sh $RELEASE_NAME'
+reload_command = 'sudo -n systemctl reload php8.2-fpm'
+deploy_position = activation_block.find(deploy_command)
+reload_position = activation_block.find(reload_command)
+if deploy_position < 0 or reload_position < 0 or deploy_position >= reload_position:
+    raise SystemExit('production workflow must reload PHP-FPM only after deploy-release succeeds')
+if '&&' not in activation_block[deploy_position:reload_position]:
+    raise SystemExit('PHP-FPM reload must be conditional on successful deploy-release')
+if 'systemctl restart php8.2-fpm' in activation_block:
+    raise SystemExit('production workflow must reload PHP-FPM, not restart it')
 
 if 'node scripts/vps/verify-vite-manifest-assets.mjs public/build' not in deploy_script:
     raise SystemExit('release activation must verify manifest assets after its server build')

@@ -133,7 +133,7 @@ jobs:
             --exclude='/storage/' \
             --exclude='/public/storage' \
             -e "ssh -p $port" ./ "${DEPLOY_USER}@${DEPLOY_HOST}:/var/www/pkgenerus.my.id/releases/$RELEASE_NAME/"
-      - name: Build and activate release
+      - name: Build, activate, and reload PHP-FPM
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
@@ -142,4 +142,4 @@ jobs:
         run: |
           port="${DEPLOY_PORT:-22}"
           ssh -p "$port" "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "bash /var/www/pkgenerus.my.id/releases/$RELEASE_NAME/scripts/vps/deploy-release.sh $RELEASE_NAME"
+            "bash /var/www/pkgenerus.my.id/releases/$RELEASE_NAME/scripts/vps/deploy-release.sh $RELEASE_NAME && sudo -n systemctl reload php8.2-fpm"
