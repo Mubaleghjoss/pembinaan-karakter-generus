@@ -373,7 +373,45 @@
     </div>
 
     <!-- Materi List -->
-    <div class="pkg-card">
+    <div class="pkg-cards-mobile">
+        @forelse($materi as $item)
+            <article class="pkg-data-card">
+                <div class="pkg-data-card-head">
+                    <div class="min-w-0">
+                        <p class="pkg-data-card-title">{{ $item->judul }}</p>
+                        @if($item->deskripsi)
+                            <p class="pkg-data-card-sub">{{ Str::limit($item->deskripsi, 100) }}</p>
+                        @endif
+                    </div>
+                    <span class="shrink-0 rounded-full px-2 py-1 text-xs font-semibold {{ $item->is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
+                        {{ $item->is_active ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                </div>
+                <div class="pkg-data-card-meta">
+                    <div class="pkg-data-card-row"><span class="k">Folder</span><span class="v">{{ $item->folder?->display_name ?? $item->folder?->name ?? 'Tanpa Folder' }}</span></div>
+                    <div class="pkg-data-card-row"><span class="k">Media</span><span class="v">{{ collect([$item->pdf_path ? 'PDF' : null, $item->has_video_links ? 'Video' : null])->filter()->join(', ') ?: 'Tidak ada media' }}</span></div>
+                </div>
+                <div class="pkg-data-card-actions flex-wrap">
+                    <a href="{{ route('materi.show', $item) }}" class="btn-secondary">Lihat Detail</a>
+                    @if($canEditMateri ?? false)
+                        <a href="{{ route('materi.edit', $item) }}" class="btn-primary">Edit</a>
+                        <form action="{{ route('materi.toggle-status', $item) }}" method="POST">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn-secondary">{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                        </form>
+                    @endif
+                </div>
+            </article>
+        @empty
+            <div class="pkg-empty-state pkg-card">
+                <p class="pkg-empty-title">Belum ada materi</p>
+                <p class="pkg-empty-copy">Tambahkan materi pertama untuk mulai membagikan pembelajaran ke siswa.</p>
+            </div>
+        @endforelse
+    </div>
+
+    <div class="pkg-table-desktop pkg-card">
         <div class="overflow-x-auto pkg-mobile-table">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">

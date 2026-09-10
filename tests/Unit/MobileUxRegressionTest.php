@@ -205,6 +205,31 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString('env(safe-area-inset-bottom)', $styles);
     }
 
+    public function test_student_and_materi_lists_use_compact_mobile_cards_without_changing_desktop_tables(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $students = file_get_contents($root.'/resources/views/siswa/partials/data.blade.php');
+        $materi = file_get_contents($root.'/resources/views/materi/index.blade.php');
+
+        $this->assertStringContainsString('class="pkg-cards-mobile"', $students);
+        $this->assertStringContainsString('class="pkg-table-desktop overflow-x-auto pkg-mobile-table"', $students);
+        $this->assertStringContainsString('@click="viewBiodata(student)"', $students);
+        $this->assertStringContainsString('Lihat Biodata', $students);
+        $this->assertStringContainsString('pkg-data-card-title" x-text="student.nama"', $students);
+        $this->assertStringContainsString('pkg-data-card-sub" x-text="student.nis', $students);
+        $this->assertStringContainsString("hasPamongCrudPermission('siswa', 'edit')", $students);
+        $this->assertStringContainsString("hasPamongCrudPermission('siswa', 'delete')", $students);
+        $this->assertStringContainsString('openAlumniModal(student)', $students);
+
+        $this->assertStringContainsString('class="pkg-cards-mobile"', $materi);
+        $this->assertStringContainsString('class="pkg-table-desktop pkg-card"', $materi);
+        $this->assertStringContainsString('pkg-data-card-title', $materi);
+        $this->assertStringContainsString('Str::limit($item->deskripsi, 100)', $materi);
+        $this->assertStringContainsString('Lihat Detail', $materi);
+        $this->assertStringContainsString("route('materi.edit', \$item)", $materi);
+        $this->assertStringContainsString("route('materi.toggle-status', \$item)", $materi);
+    }
+
     public function test_interactive_tables_use_mobile_cards_or_an_explicit_mobile_alternative(): void
     {
         $root = dirname(__DIR__, 2);

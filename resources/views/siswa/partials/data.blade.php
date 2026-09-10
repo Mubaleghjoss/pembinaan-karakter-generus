@@ -213,8 +213,51 @@
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Mulai dengan menambahkan siswa baru.</p>
         </div>
 
+        <!-- Compact cards keep the primary student identity and detail affordance reachable on touch screens. -->
+        <div x-show="!loading && students.length > 0" class="pkg-cards-mobile">
+            <template x-for="student in students" :key="student.id">
+                <article class="pkg-data-card">
+                    <div class="pkg-data-card-head">
+                        <button type="button" @click="viewBiodata(student)" class="flex min-w-0 flex-1 items-center gap-3 text-left" :aria-label="`Lihat biodata ${student.nama}`">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <template x-if="student.foto_url">
+                                    <img class="h-10 w-10 rounded-full object-cover" :src="student.foto_url" :alt="student.nama">
+                                </template>
+                                <template x-if="!student.foto_url">
+                                    <span class="pkg-data-card-badge" x-text="student.nama?.charAt(0).toUpperCase()"></span>
+                                </template>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="pkg-data-card-title" x-text="student.nama"></p>
+                                <p class="pkg-data-card-sub" x-text="student.nis ? `NIS ${student.nis}` : 'NIS belum tersedia'"></p>
+                            </div>
+                        </button>
+                        <span class="shrink-0 rounded-full px-2 py-1 text-xs font-semibold"
+                              :class="student.status === 'graduated' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200' : (student.status === 'active' && student.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200')"
+                              x-text="student.status === 'graduated' ? 'Alumni' : (student.status === 'transferred' ? 'Pindah' : (student.status === 'active' && student.is_active ? 'Aktif' : 'Nonaktif'))"></span>
+                    </div>
+                    <div class="pkg-data-card-meta">
+                        <div class="pkg-data-card-row"><span class="k">Kelas</span><span class="v" x-text="student.school_grade_label || 'Belum dikonfirmasi'"></span></div>
+                        <div class="pkg-data-card-row"><span class="k">Biodata</span><span class="v" x-text="student.is_biodata_complete ? 'Lengkap' : 'Belum lengkap'"></span></div>
+                    </div>
+                    <div class="pkg-data-card-actions flex-wrap">
+                        <button type="button" @click="viewBiodata(student)" class="btn-secondary">Lihat Biodata</button>
+                        @if(auth()->user()->hasPamongCrudPermission('siswa', 'edit'))
+                        <button type="button" @click="editStudent(student)" class="btn-primary">Edit</button>
+                        @endif
+                        @if(auth()->user()->isAdmin())
+                        <button type="button" @click="openAlumniModal(student)" class="btn-secondary" x-text="student.is_alumni ? 'Atur Alumni' : 'Jadikan Alumni'"></button>
+                        @endif
+                        @if(auth()->user()->hasPamongCrudPermission('siswa', 'delete'))
+                        <button type="button" @click="deleteStudent(student)" class="btn-danger">Hapus</button>
+                        @endif
+                    </div>
+                </article>
+            </template>
+        </div>
+
         <!-- Table -->
-        <div x-show="!loading && students.length > 0" class="overflow-x-auto pkg-mobile-table">
+        <div x-show="!loading && students.length > 0" class="pkg-table-desktop overflow-x-auto pkg-mobile-table">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
