@@ -130,7 +130,7 @@
         </div>
     </div>
 
-    <details class="pkg-card-soft mb-8 border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20 md:hidden">
+    <details class="pkg-mobile-disclosure pkg-card-soft mb-8 border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20 md:hidden" name="mobile-secondary">
         <summary class="cursor-pointer text-sm font-semibold text-green-800 dark:text-green-200">Tentang full backup</summary>
         <ul class="mt-3 list-inside list-disc text-sm text-green-700 dark:text-green-300">
             <li><strong>Full Backup</strong> menyertakan vendor, node_modules, dan semua file project.</li>
@@ -159,7 +159,7 @@
         </div>
     </div>
 
-    <details class="pkg-card-soft mb-8 border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20 md:hidden">
+    <details class="pkg-mobile-disclosure pkg-card-soft mb-8 border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20 md:hidden" name="mobile-secondary">
         <summary class="cursor-pointer text-sm font-semibold text-blue-800 dark:text-blue-200">Cara pulihkan full backup</summary>
         <ol class="mt-3 list-inside list-decimal space-y-1 text-sm text-blue-700 dark:text-blue-300">
             <li>Extract file ZIP ke folder htdocs/www.</li>

@@ -91,7 +91,7 @@
                 <p class="mb-4 hidden text-sm text-gray-600 line-clamp-3 dark:text-gray-400 md:block">
                     {{ $item->excerpt }}
                 </p>
-                <details class="mb-4 md:hidden">
+                <details class="pkg-mobile-disclosure mb-4 md:hidden" name="mobile-secondary">
                     <summary class="cursor-pointer text-sm font-semibold text-blue-600 dark:text-blue-400">Ringkasan berita</summary>
                     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ $item->excerpt }}</p>
                 </details>

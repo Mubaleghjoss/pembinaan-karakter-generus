@@ -68,7 +68,7 @@
                         <span class="pkg-status-badge pkg-status-neutral shrink-0">Selesai</span>
                     @endif
                 </div>
-                <details class="mt-3 md:hidden">
+                <details class="pkg-mobile-disclosure mt-3 md:hidden" name="mobile-secondary">
                     <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail pertarungan</summary>
                     <div class="pkg-data-card-meta mt-3">
                         <div class="pkg-data-card-row"><span class="k">HP</span><span class="v">{{ max(0,$b->current_hp) }} / {{ $b->max_hp }}</span></div>

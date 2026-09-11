@@ -107,7 +107,7 @@
                                 </form>
                             @endif
                         </div>
-                        <details class="mt-4 md:hidden">
+                        <details class="pkg-mobile-disclosure mt-4 md:hidden" name="mobile-secondary">
                             <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail dan aksi</summary>
                             <p class="mt-3 text-sm leading-5 text-gray-600 dark:text-gray-300">{{ $presentation->description ?: 'Belum ada deskripsi.' }}</p>
                             <p class="mt-3 text-xs text-gray-500">Diperbarui {{ $presentation->updated_at->diffForHumans() }}</p>
@@ -140,7 +140,7 @@
                             </form>
                         @endif
                         @if($presentation->is_published || $canDelete)
-                            <details class="mt-4 md:hidden">
+                            <details class="pkg-mobile-disclosure mt-4 md:hidden" name="mobile-secondary">
                                 <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Publikasi dan hapus</summary>
                                 @if($presentation->is_published)
                                     <a href="{{ route('public.presentations.show', $presentation) }}" target="_blank" rel="noopener" class="mt-3 block break-all text-sm text-emerald-700 underline dark:text-emerald-300">{{ route('public.presentations.show', $presentation) }}</a>

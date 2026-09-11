@@ -185,7 +185,7 @@
                 @if($row['signed'])
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">TTD {{ optional($row['registration']->statement_accepted_at)->translatedFormat('d M Y H:i') }}</p>
                 @endif
-                <details class="mt-3 md:hidden">
+                <details class="pkg-mobile-disclosure mt-3 md:hidden" name="mobile-secondary">
                     <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail dan aksi</summary>
                     <div class="pkg-data-card-meta mt-3">
                         <div class="pkg-data-card-row"><span class="k">Orang Tua</span><span class="v">{{ $s->nama_wali ?: '—' }}</span></div>

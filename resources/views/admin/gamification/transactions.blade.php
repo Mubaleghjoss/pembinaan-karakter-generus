@@ -244,7 +244,7 @@
                         @endif
                     </div>
 
-                    <details class="mt-3 md:hidden rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+                    <details class="pkg-mobile-disclosure mt-3 md:hidden rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300" name="mobile-secondary">
                         <summary class="cursor-pointer font-medium text-slate-700 dark:text-slate-200">Info tombol</summary>
                         <div class="mt-2 space-y-1 leading-relaxed">
                             <p><strong>Lihat Transaksi</strong>: buka detail log poin periode ini.</p>
@@ -433,7 +433,7 @@
                                     <p class="font-medium text-gray-800 dark:text-white">{{ $t->siswa->nama ?? '-' }}</p>
                                     <p class="text-xs text-gray-400">{{ $t->siswa->nis ?? '' }}</p>
                                     <div class="mt-1 md:hidden text-xs font-semibold {{ $t->color }}">{{ $t->formatted_points }}</div>
-                                    <details class="mt-2 md:hidden">
+                                    <details class="pkg-mobile-disclosure mt-2 md:hidden" name="mobile-secondary">
                                         <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail transaksi</summary>
                                         <div class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300"><p><strong>Deskripsi:</strong> {{ $t->description }}</p><p><strong>Sumber:</strong> {{ $t->source_label }}</p><p><strong>Periode:</strong> {{ data_get($t->metadata, 'period_name') ?? '-' }}</p><p><strong>Waktu:</strong> {{ $t->created_at->format('d M Y H:i') }}</p></div>
                                         <div class="mt-2 flex gap-2"><button type="button" @click="editing = true" class="pkg-btn-secondary px-3 py-2 text-xs">Edit</button><form action="{{ route('admin.gamification.transactions.destroy', $t->id) }}" method="POST" data-confirm="Hapus transaksi #{{ $t->id }}? Poin akan dihitung ulang." data-confirm-title="Hapus transaksi" data-confirm-button="Hapus" data-confirm-tone="danger">@csrf @method('DELETE')<button type="submit" class="pkg-btn-secondary px-3 py-2 text-xs">Hapus</button></form></div>

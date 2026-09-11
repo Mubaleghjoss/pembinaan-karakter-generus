@@ -241,6 +241,24 @@ class MobileUxRegressionTest extends TestCase
         $this->assertStringContainsString("route('materi.toggle-status', \$item)", $materi);
     }
 
+    public function test_mobile_disclosures_have_a_consistent_state_indicator_and_close_sibling_cards(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $styles = file_get_contents($root.'/resources/css/app.css');
+        $students = file_get_contents($root.'/resources/views/siswa/partials/data.blade.php');
+        $materi = file_get_contents($root.'/resources/views/materi/index.blade.php');
+        $users = file_get_contents($root.'/resources/views/users/index.blade.php');
+        $verification = file_get_contents($root.'/resources/views/tugas-pkg/verification/index.blade.php');
+
+        $this->assertStringContainsString('.pkg-mobile-disclosure[open] > summary::after', $styles);
+        $this->assertStringContainsString("closest('a, button, input, label, form')", $students);
+        $this->assertStringContainsString("closest('a, button, input, label, form')", $materi);
+        $this->assertStringContainsString("closest('a, button, input, label, form')", $users);
+        $this->assertStringContainsString("detailsOpen ? 'rotate-180' : ''", $students);
+        $this->assertStringContainsString("detailsOpen ? 'rotate-180' : ''", $materi);
+        $this->assertStringContainsString('name="pkg-mobile-card" class="pkg-mobile-disclosure', $verification);
+    }
+
     public function test_interactive_tables_use_mobile_cards_or_an_explicit_mobile_alternative(): void
     {
         $root = dirname(__DIR__, 2);

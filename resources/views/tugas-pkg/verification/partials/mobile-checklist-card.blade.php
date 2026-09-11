@@ -74,7 +74,7 @@
             </div>
 
             @if($hasEvidenceDetails)
-            <details class="pkg-task-evidence overflow-hidden rounded-xl border border-slate-200 bg-white/70 dark:border-slate-700 dark:bg-slate-950/20">
+            <details name="pkg-mobile-card" class="pkg-mobile-disclosure pkg-task-evidence overflow-hidden rounded-xl border border-slate-200 bg-white/70 dark:border-slate-700 dark:bg-slate-950/20">
                 <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                     <span>Lihat jawaban dan bukti</span>
                     <svg class="h-4 w-4 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

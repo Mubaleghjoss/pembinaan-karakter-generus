@@ -375,7 +375,7 @@
     <!-- Materi List -->
     <div class="pkg-cards-mobile">
         @forelse($materi as $item)
-            <article class="pkg-data-card" x-data="{ detailsOpen: false }">
+            <article class="pkg-data-card cursor-pointer" x-data="{ detailsOpen: false }" @click="if (!$event.target.closest('a, button, input, label, form')) detailsOpen = !detailsOpen">
                 <div class="pkg-data-card-head">
                     <div class="min-w-0">
                         <p class="pkg-data-card-title">{{ $item->judul }}</p>
@@ -389,8 +389,8 @@
                     <div class="pkg-data-card-row"><span class="k">Media</span><span class="v">{{ collect([$item->pdf_path ? 'PDF' : null, $item->has_video_links ? 'Video' : null])->filter()->join(', ') ?: 'Tidak ada media' }}</span></div>
                 </div>
                 <button type="button" @click="detailsOpen = !detailsOpen" class="btn-secondary mt-3 w-full justify-center text-sm" :aria-expanded="detailsOpen.toString()" aria-controls="materi-mobile-details-{{ $item->id }}">
-                    <span x-show="!detailsOpen">Tampilkan detail dan aksi</span>
-                    <span x-show="detailsOpen">Sembunyikan detail dan aksi</span>
+                    <span x-text="detailsOpen ? 'Sembunyikan detail dan aksi' : 'Tampilkan detail dan aksi'"></span>
+                    <svg class="ml-1 h-4 w-4 transition-transform" :class="detailsOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
                 </button>
                 <div x-cloak x-show="detailsOpen" x-transition id="materi-mobile-details-{{ $item->id }}" class="mt-3">
                     @if($item->deskripsi)

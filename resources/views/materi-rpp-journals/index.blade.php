@@ -110,7 +110,7 @@
                                 </a>
                             </td>
                             <td class="px-6 pb-4 md:hidden" colspan="6">
-                                <details>
+                                <details name="mobile-secondary" class="pkg-mobile-disclosure">
                                     <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail jurnal</summary>
                                     <div class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
                                         <p><strong>Petugas:</strong> {{ $schedule->journal_assignee_label }}</p>

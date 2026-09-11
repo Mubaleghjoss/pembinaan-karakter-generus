@@ -57,7 +57,7 @@
                         <span class="pkg-status-badge pkg-status-neutral shrink-0">Nonaktif</span>
                     @endif
                 </div>
-                <details class="mt-3 md:hidden">
+                <details class="pkg-mobile-disclosure mt-3 md:hidden" name="mobile-secondary">
                     <summary class="cursor-pointer text-sm font-semibold text-emerald-700 dark:text-emerald-300">Detail dan aksi</summary>
                     <div class="pkg-data-card-meta mt-3">
                         <div class="pkg-data-card-row"><span class="k">Kategori</span><span class="v">{{ $item->kategori ?: '—' }}</span></div>

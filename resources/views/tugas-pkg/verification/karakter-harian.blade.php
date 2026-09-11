@@ -193,7 +193,7 @@
                         @if($checklist->isVerified())<span class="pkg-status-badge pkg-status-success">Terverifikasi</span>@else<span class="pkg-status-badge pkg-status-warning">Menunggu</span>@endif
                     </div>
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $checklist->checked_at->isoFormat('D MMM YYYY HH:mm') }}</p>
-                    <details class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <details name="pkg-mobile-card" class="pkg-mobile-disclosure mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
                         <summary class="flex min-h-11 cursor-pointer items-center px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Lihat catatan dan aksi</summary>
                         <div class="border-t border-slate-200 p-3 dark:border-slate-700">
                             @if($checklist->student_note)<p class="text-sm text-gray-600 dark:text-gray-300">{{ $checklist->student_note }}</p>@endif

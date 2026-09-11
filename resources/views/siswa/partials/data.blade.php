@@ -216,7 +216,7 @@
         <!-- Compact cards keep the primary student identity and detail affordance reachable on touch screens. -->
         <div x-show="!loading && students.length > 0" class="pkg-cards-mobile">
             <template x-for="student in students" :key="student.id">
-                <article class="pkg-data-card" x-data="{ detailsOpen: false }">
+                <article class="pkg-data-card cursor-pointer" x-data="{ detailsOpen: false }" @click="if (!$event.target.closest('a, button, input, label, form')) detailsOpen = !detailsOpen">
                     <div class="pkg-data-card-head">
                         <div class="flex min-w-0 flex-1 items-center gap-3">
                             <div class="flex-shrink-0 h-10 w-10">
@@ -237,8 +237,8 @@
                               x-text="student.status === 'graduated' ? 'Alumni' : (student.status === 'transferred' ? 'Pindah' : (student.status === 'active' && student.is_active ? 'Aktif' : 'Nonaktif'))"></span>
                     </div>
                     <button type="button" @click="detailsOpen = !detailsOpen" class="btn-secondary mt-3 w-full justify-center text-sm" :aria-expanded="detailsOpen.toString()" :aria-controls="`student-mobile-details-${student.id}`">
-                        <span x-show="!detailsOpen">Tampilkan detail dan aksi</span>
-                        <span x-show="detailsOpen">Sembunyikan detail dan aksi</span>
+                        <span x-text="detailsOpen ? 'Sembunyikan detail dan aksi' : 'Tampilkan detail dan aksi'"></span>
+                        <svg class="ml-1 h-4 w-4 transition-transform" :class="detailsOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
                     </button>
                     <div x-cloak x-show="detailsOpen" x-transition :id="`student-mobile-details-${student.id}`" class="mt-3">
                         <div class="pkg-data-card-meta">

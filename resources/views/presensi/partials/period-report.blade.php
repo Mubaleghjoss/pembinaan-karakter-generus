@@ -126,7 +126,7 @@
                             <div class="mt-2 flex flex-wrap items-center gap-2 text-sm md:hidden">
                                 <span>{{ $record['date'] }}</span><span class="pkg-status-badge {{ $record['status_class'] }}">{{ $record['status_label'] }}</span>
                             </div>
-                            <details class="mt-3 text-sm md:hidden">
+                            <details class="pkg-mobile-disclosure mt-3 text-sm md:hidden" name="mobile-secondary">
                                 <summary class="cursor-pointer font-semibold text-blue-700 dark:text-blue-300">Lihat detail</summary>
                                 <dl class="mt-2 space-y-1 text-gray-600 dark:text-gray-300"><div>Jenis: {{ $record['type_label'] }}</div><div>Kelas/Bidang: {{ $record['unit'] }}</div><div>Jam: {{ $record['jam_masuk'] }}</div></dl>
                             </details>

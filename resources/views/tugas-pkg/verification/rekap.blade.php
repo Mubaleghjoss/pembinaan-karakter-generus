@@ -84,7 +84,7 @@
                     <span class="text-sm font-bold {{ $data['percentage'] >= 80 ? 'text-green-600 dark:text-green-400' : ($data['percentage'] >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400') }}">{{ $data['percentage'] }}%</span>
                 </div>
                 <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">{{ $data['checked_count'] }}/{{ $data['total_karakter'] }} tugas selesai</p>
-                <details class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                <details name="pkg-mobile-card" class="pkg-mobile-disclosure mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
                     <summary class="flex min-h-11 cursor-pointer items-center px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Lihat rekap dan aksi</summary>
                     <div class="border-t border-slate-200 p-3 dark:border-slate-700">
                         <p class="text-sm text-gray-600 dark:text-gray-300">Kelas: {{ $data['siswa']->school_grade_label }} | Total ceklis: {{ $data['total_checks'] }}x</p>

@@ -149,7 +149,7 @@
                                 <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ $log->module_label }}</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ $log->created_at->format('d M Y H:i') }}</span>
                             </div>
-                            <details class="mt-2 md:hidden">
+                            <details class="pkg-mobile-disclosure mt-2 md:hidden" name="mobile-secondary">
                                 <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail aktivitas</summary>
                                 <dl class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
                                     <div><dt class="inline font-medium">Aksi:</dt> <dd class="inline">{{ $log->action_label }}</dd></div>

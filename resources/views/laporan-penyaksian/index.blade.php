@@ -175,7 +175,7 @@
                                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ $l->tanggal_kejadian->format('d/m/Y') }}</span>
                                 <span class="px-2 py-0.5 text-xs font-medium rounded-full @if($l->status == 'pending') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @elseif($l->status == 'ditindaklanjuti') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 @else bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 @endif">{{ $l->status_label }}</span>
                             </div>
-                            <details class="mt-2 md:hidden">
+                            <details class="pkg-mobile-disclosure mt-2 md:hidden" name="mobile-secondary">
                                 <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Detail laporan</summary>
                                 <div class="mt-2 space-y-2 text-xs text-gray-600 dark:text-gray-300">
                                     <p><strong>Pelapor:</strong> {{ $l->nama_pelapor }}</p>

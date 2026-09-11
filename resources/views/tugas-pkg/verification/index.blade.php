@@ -169,7 +169,7 @@
                     </div>
                     <span class="shrink-0 text-xs text-gray-500 dark:text-gray-400">{{ $siswa->school_grade_label }}</span>
                 </div>
-                <details class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                <details name="pkg-mobile-card" class="pkg-mobile-disclosure mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
                     <summary class="flex min-h-11 cursor-pointer items-center px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Lihat binaan dan aksi</summary>
                     <div class="border-t border-slate-200 p-3 dark:border-slate-700">
                         <p class="text-sm text-gray-600 dark:text-gray-300">{{ $siswa->pamongAssignments->pluck('pamong')->filter()->map(fn ($pamong) => $pamong->name ?: $pamong->username)->join(', ') ?: 'Belum memiliki Pamong' }}</p>

@@ -89,7 +89,7 @@
     {{-- Kartu (mobile) --}}
     <div class="pkg-cards-mobile">
         @forelse($users as $user)
-            <div class="pkg-data-card" x-data="{ detailsOpen: false }">
+            <div class="pkg-data-card cursor-pointer" x-data="{ detailsOpen: false }" @click="if (!$event.target.closest('a, button, input, label, form')) detailsOpen = !detailsOpen">
                 <div class="pkg-data-card-head">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="pkg-data-card-badge">{{ strtoupper(substr($user->username, 0, 1)) }}</span>
@@ -109,6 +109,7 @@
                     <a href="{{ route('users.edit', $user) }}" class="btn-primary">Edit</a>
                     <button type="button" @click="detailsOpen = !detailsOpen" :aria-expanded="detailsOpen.toString()" aria-controls="user-mobile-details-{{ $user->id }}" class="btn-secondary md:hidden">
                         <span x-text="detailsOpen ? 'Sembunyikan detail' : 'Detail & tindakan'"></span>
+                        <svg class="ml-1 h-4 w-4 transition-transform" :class="detailsOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
                     </button>
                 </div>
                 <div id="user-mobile-details-{{ $user->id }}" x-cloak x-show="detailsOpen" class="mt-3 space-y-3">

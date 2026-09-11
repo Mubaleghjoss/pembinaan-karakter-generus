@@ -80,7 +80,7 @@
                     </div>
                     <span class="pkg-status-badge pkg-status-info">Tercatat</span>
                 </div>
-                <details class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                <details name="pkg-mobile-card" class="pkg-mobile-disclosure mt-3 rounded-lg border border-slate-200 dark:border-slate-700">
                     <summary class="flex min-h-11 cursor-pointer items-center px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Lihat catatan dan riwayat</summary>
                     <div class="border-t border-slate-200 p-3 text-sm dark:border-slate-700">
                         <p class="text-gray-600 dark:text-gray-300"><span class="font-semibold">Diceklis oleh:</span> {{ $record->pamong->username ?? '-' }}</p>

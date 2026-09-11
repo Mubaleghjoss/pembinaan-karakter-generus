@@ -1417,6 +1417,36 @@ html.reveal-ready [data-reveal].is-visible {
     font-weight: 700;
 }
 
+/* Shared summary affordance for secondary mobile content. */
+.pkg-mobile-disclosure > summary {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    list-style: none;
+    min-height: 2.75rem;
+}
+
+.pkg-mobile-disclosure > summary::-webkit-details-marker {
+    display: none;
+}
+
+.pkg-mobile-disclosure > summary::after {
+    border-bottom: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    content: '';
+    flex: none;
+    height: 0.45rem;
+    margin-right: 0.3rem;
+    transform: rotate(45deg) translateY(-0.15rem);
+    transition: transform 150ms ease;
+    width: 0.45rem;
+}
+
+.pkg-mobile-disclosure[open] > summary::after {
+    transform: rotate(225deg) translate(-0.15rem, -0.1rem);
+}
+
 /* Ikon lingkaran aksen brand untuk kartu (gaya app toko online) */
 .pkg-data-card-badge {
     flex: none;

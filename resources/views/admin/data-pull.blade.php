@@ -312,7 +312,7 @@
                         </td>
                         <td data-label="Keterangan" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                             <span class="hidden md:block">{{ $detail['message'] ?? '-' }}</span>
-                            <details class="md:hidden">
+                            <details class="pkg-mobile-disclosure md:hidden" name="mobile-secondary">
                                 <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Keterangan lengkap</summary>
                                 <pre class="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-5">{{ $detail['message'] ?? '-' }}</pre>
                             </details>
@@ -393,7 +393,7 @@
                                 <span class="pkg-status-badge pkg-status-danger">Gagal</span>
                             @endif
                         </td>
-                        <td data-label="Keterangan" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400"><span class="hidden md:block">{{ $mediaDetail['message'] ?? '-' }}</span><details class="md:hidden"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Keterangan lengkap</summary><p class="mt-2 break-words">{{ $mediaDetail['message'] ?? '-' }}</p></details></td>
+                        <td data-label="Keterangan" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400"><span class="hidden md:block">{{ $mediaDetail['message'] ?? '-' }}</span><details class="pkg-mobile-disclosure md:hidden" name="mobile-secondary"><summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400">Keterangan lengkap</summary><p class="mt-2 break-words">{{ $mediaDetail['message'] ?? '-' }}</p></details></td>
                     </tr>
                     @empty
                     <tr>
