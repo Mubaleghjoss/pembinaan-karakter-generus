@@ -1105,8 +1105,9 @@ class RpgThreeScene {
         this.applyThemeEnvironment(colors, gridSize);
 
         const center = (gridSize - 1) / 2;
-        const floorMaterialA = new THREE.MeshLambertMaterial({ color: colors.floor, emissive: colors.floor, emissiveIntensity: 0.08 });
-        const floorMaterialB = new THREE.MeshLambertMaterial({ color: colors.floorAlt, emissive: colors.floorAlt, emissiveIntensity: 0.08 });
+        const floorGlow = this.inkwaveMode ? 0.14 : 0.08;
+        const floorMaterialA = new THREE.MeshLambertMaterial({ color: colors.floor, emissive: colors.floor, emissiveIntensity: floorGlow });
+        const floorMaterialB = new THREE.MeshLambertMaterial({ color: colors.floorAlt, emissive: colors.floorAlt, emissiveIntensity: floorGlow });
         const floorGeometry = new THREE.BoxGeometry(TILE_SIZE, 0.08, TILE_SIZE);
 
         for (let y = 0; y < gridSize; y += 1) {
@@ -1148,7 +1149,47 @@ class RpgThreeScene {
         const grid = new THREE.GridHelper(gridSize * TILE_SIZE, gridSize, colors.grid || 0xffffff, darkenHexColor(colors.grid || 0xffffff, 0.5));
         grid.position.y = 0.03;
         this.staticGroup.add(grid);
+        if (this.inkwaveMode) {
+            this.addInkWaveArenaAccents(gridSize, colors);
+        }
         this.updateMinimap();
+    }
+
+    addInkWaveArenaAccents(gridSize, colors) {
+        const arenaSize = gridSize * TILE_SIZE;
+        const accent = colors.grid || 0xffffff;
+        const railMaterial = new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.24, depthWrite: false });
+        const laneMaterial = new THREE.MeshBasicMaterial({ color: mixHexColor(accent, colors.floor, 0.2), transparent: true, opacity: 0.18, depthWrite: false });
+        const railGeometry = new THREE.BoxGeometry(arenaSize, 0.035, 0.1);
+        const sideRailGeometry = new THREE.BoxGeometry(0.1, 0.035, arenaSize);
+        const laneGeometry = new THREE.BoxGeometry(arenaSize, 0.025, 0.16);
+        const sideLaneGeometry = new THREE.BoxGeometry(0.16, 0.025, arenaSize);
+        const edge = ((gridSize - 1) * TILE_SIZE) / 2;
+
+        [[0, edge], [0, -edge]].forEach(([x, z]) => {
+            const rail = new THREE.Mesh(railGeometry, railMaterial);
+            rail.position.set(x, 0.055, z);
+            this.staticGroup.add(rail);
+        });
+        [[edge, 0], [-edge, 0]].forEach(([x, z]) => {
+            const rail = new THREE.Mesh(sideRailGeometry, railMaterial);
+            rail.position.set(x, 0.055, z);
+            this.staticGroup.add(rail);
+        });
+
+        const crossX = new THREE.Mesh(laneGeometry, laneMaterial);
+        const crossZ = new THREE.Mesh(sideLaneGeometry, laneMaterial);
+        crossX.position.set(0, 0.052, 0);
+        crossZ.position.set(0, 0.053, 0);
+        this.staticGroup.add(crossX, crossZ);
+
+        const beaconGeometry = new THREE.CylinderGeometry(0.12, 0.2, 0.45, 8);
+        const beaconMaterial = new THREE.MeshBasicMaterial({ color: accent });
+        [[-edge, -edge], [-edge, edge], [edge, -edge], [edge, edge]].forEach(([x, z]) => {
+            const beacon = new THREE.Mesh(beaconGeometry, beaconMaterial);
+            beacon.position.set(x, 0.28, z);
+            this.staticGroup.add(beacon);
+        });
     }
 
     applyThemeEnvironment(colors, gridSize) {
@@ -2134,7 +2175,9 @@ class RpgThreeScene {
         });
         this.shieldAura.rotation.y += delta;
         if (this.aimIndicator?.visible) {
-            this.aimIndicator.rotation.z += delta * 2.8;
+            this.aimIndicator.rotation.y += delta * 2.8;
+            const pulse = 1 + (Math.sin(elapsed * 7) * 0.08);
+            this.aimIndicator.scale.setScalar(pulse);
         }
         if (this.playerViewModel) {
             const moving = this.playerMotion.moving || this.controlState.forward || this.controlState.back || this.controlState.strafeLeft || this.controlState.strafeRight;
@@ -2285,6 +2328,7 @@ class RpgThreeScene {
             primary: 0x2563eb,
             secondary: 0x93c5fd,
             labelColor: 0x1d4ed8,
+            role: 'npc',
             opacity: 0.98,
         });
     }
@@ -2296,6 +2340,7 @@ class RpgThreeScene {
             primary: 0xdc2626,
             secondary: 0xf97316,
             labelColor: 0x991b1b,
+            role: 'enemy',
             opacity: 0.98,
         });
     }
@@ -2308,6 +2353,7 @@ class RpgThreeScene {
             primary: color,
             secondary: mixHexColor(color, 0xffffff, 0.46),
             labelColor: color,
+            role: 'player',
             opacity: 0.42,
         });
     }
@@ -2526,13 +2572,21 @@ class RpgThreeScene {
     }
 
     makeAimIndicator() {
-        const ring = new THREE.Mesh(
-            new THREE.RingGeometry(0.52, 0.68, 16),
-            new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.92, side: THREE.DoubleSide, depthWrite: false }),
-        );
+        const group = new THREE.Group();
+        const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.92, side: THREE.DoubleSide, depthWrite: false });
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.52, 0.68, 16), ringMaterial);
         ring.rotation.x = -Math.PI / 2;
-        ring.visible = false;
-        return ring;
+        const innerRing = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.32, 12), ringMaterial.clone());
+        innerRing.rotation.x = -Math.PI / 2;
+        innerRing.position.y = 0.012;
+        const beacon = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.025, 0.025, 1.35, 8),
+            new THREE.MeshBasicMaterial({ color: 0xa5f3fc, transparent: true, opacity: 0.4, depthWrite: false }),
+        );
+        beacon.position.y = 0.68;
+        group.add(ring, innerRing, beacon);
+        group.visible = false;
+        return group;
     }
 
     makeShieldAura() {
@@ -2570,11 +2624,18 @@ class RpgThreeScene {
         });
 
         const shadow = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.6, 0.6, 0.025, 36),
+            new THREE.CylinderGeometry(0.6, 0.6, 0.025, 20),
             new THREE.MeshBasicMaterial({ color: 0x020617, transparent: true, opacity: 0.18 * opacity, depthWrite: false }),
         );
         shadow.scale.z = 0.72;
         shadow.position.y = 0.02;
+        const roleColor = options.role === 'enemy' ? 0xfca5a5 : (options.role === 'npc' ? 0x93c5fd : primary);
+        const roleRing = new THREE.Mesh(
+            new THREE.RingGeometry(0.48, 0.54, 16),
+            new THREE.MeshBasicMaterial({ color: roleColor, transparent: true, opacity: 0.56 * opacity, side: THREE.DoubleSide, depthWrite: false }),
+        );
+        roleRing.rotation.x = -Math.PI / 2;
+        roleRing.position.y = 0.045;
 
         // Pinggul + torso yang mengecil ke atas (siluet lebih manusiawi).
         const hips = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.28, 18), material(dark, dark, 0.04));
@@ -2633,12 +2694,12 @@ class RpgThreeScene {
         rightLeg.position.set(0.17, 0.62, 0);
 
         group.add(
-            shadow, hips, torso, chest, lShoulder, rShoulder, neck, head, hair,
+            shadow, roleRing, hips, torso, chest, lShoulder, rShoulder, neck, head, hair,
             leftArm, rightArm, leftLeg, rightLeg,
             this.makeAvatarBadgeSprite(options.avatar || '?', primary, { opacity, y: 1.86, scale: 0.5 }),
             this.makeTextSprite(options.label || 'NPC', options.labelColor || primary, { opacity, y: 2.4 }),
         );
-        group.userData.humanoidParts = { leftArm, rightArm, leftLeg, rightLeg, head };
+        group.userData.humanoidParts = { leftArm, rightArm, leftLeg, rightLeg, head, roleRing };
         group.userData.walkPhase = Math.random() * Math.PI * 2;
         return group;
     }
@@ -2662,6 +2723,10 @@ class RpgThreeScene {
         parts.leftArm.rotation.z = 0.06 + (moving ? 0 : Math.sin(elapsed * 1.6) * 0.02);
         parts.rightArm.rotation.z = -0.06 - (moving ? 0 : Math.sin(elapsed * 1.6) * 0.02);
         parts.head.position.y = 1.82 + Math.sin(phase * 2) * (moving ? 0.03 : 0.014);
+        if (parts.roleRing) {
+            parts.roleRing.rotation.z += delta * (moving ? 1.8 : 0.7);
+            parts.roleRing.material.opacity = 0.42 + (Math.sin(elapsed * 3 + index) * 0.12);
+        }
         object.position.y = Math.sin(elapsed * 2.1 + index) * (moving ? 0.035 : 0.02);
     }
 
@@ -2759,12 +2824,18 @@ class RpgThreeScene {
         this.shotPool = [];
         this.impactPool = [];
         this.impacts = [];
-        this.prebuilt.shotGeometry = new THREE.SphereGeometry(0.12, 12, 10);
+        this.prebuilt.shotGeometry = new THREE.SphereGeometry(0.12, 10, 8);
         this.prebuilt.shotMaterial = new THREE.MeshBasicMaterial({ color: 0xfde047 });
-        this.prebuilt.tracerMaterial = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.5 });
-        // Muzzle flash sprite di ujung senjata.
-        this.muzzleFlash = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xfff3c4, transparent: true, opacity: 0, depthWrite: false }));
-        this.muzzleFlash.scale.set(0.6, 0.6, 1);
+        this.prebuilt.tracerMaterial = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.64, depthWrite: false });
+        // Primitif kecil, dipakai ulang untuk kilatan moncong tanpa tekstur atau partikel.
+        this.muzzleFlash = new THREE.Group();
+        const flashMaterial = new THREE.MeshBasicMaterial({ color: 0xfff3c4, transparent: true, opacity: 0, depthWrite: false });
+        const flashCore = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), flashMaterial);
+        const flashRay = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.5, 4), flashMaterial);
+        flashRay.rotation.x = -Math.PI / 2;
+        flashRay.position.z = -0.22;
+        this.muzzleFlash.add(flashCore, flashRay);
+        this.muzzleFlash.userData.materials = [flashMaterial];
         this.muzzleFlash.visible = false;
         this.scene.add(this.muzzleFlash);
         this.setupAudio();
@@ -2775,8 +2846,9 @@ class RpgThreeScene {
         if (!mesh) {
             mesh = new THREE.Group();
             const core = new THREE.Mesh(this.prebuilt.shotGeometry, this.prebuilt.shotMaterial);
-            const tracer = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1, 8), this.prebuilt.tracerMaterial);
+            const tracer = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.35, 6), this.prebuilt.tracerMaterial);
             tracer.rotation.x = Math.PI / 2; // sumbu Z
+            tracer.position.z = 0.52;
             // Tidak memakai PointLight per peluru (penyebab lag). Material sudah terang sendiri.
             mesh.add(core, tracer);
             mesh.userData.tracer = tracer;
@@ -3025,11 +3097,14 @@ class RpgThreeScene {
 
         if (this.muzzleFlash) {
             this.muzzleFlash.position.set(originX, originY, originZ);
-            this.muzzleFlash.material.opacity = 0.9;
+            this.muzzleFlash.userData.materials.forEach((material) => { material.opacity = 0.9; });
             this.muzzleFlash.visible = true;
             window.clearTimeout(this._muzzleTimer);
             this._muzzleTimer = window.setTimeout(() => {
-                if (this.muzzleFlash) { this.muzzleFlash.material.opacity = 0; this.muzzleFlash.visible = false; }
+                if (this.muzzleFlash) {
+                    this.muzzleFlash.userData.materials.forEach((material) => { material.opacity = 0; });
+                    this.muzzleFlash.visible = false;
+                }
             }, 60);
         }
     }
@@ -3047,14 +3122,20 @@ class RpgThreeScene {
     spawnImpactVisual(x, z) {
         let impact = this.impactPool.pop();
         if (!impact) {
-            impact = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xfef08a, transparent: true, depthWrite: false }));
+            impact = new THREE.Group();
+            const material = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 1, depthWrite: false, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.2, 12), material);
+            ring.rotation.x = -Math.PI / 2;
+            const burst = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), material.clone());
+            impact.add(ring, burst);
+            impact.userData.materials = [material, burst.material];
         }
         impact.position.set(x, CAMERA_HEIGHT * 0.78, z);
-        impact.scale.set(0.25, 0.25, 1);
-        impact.material.opacity = 1;
+        impact.scale.setScalar(0.45);
+        impact.userData.materials.forEach((material) => { material.opacity = 1; });
         impact.visible = true;
         this.scene.add(impact);
-        impact.userData.expiresAt = performance.now() + 180;
+        impact.userData.expiresAt = performance.now() + 220;
         this.impacts.push(impact);
     }
 
@@ -3077,9 +3158,10 @@ class RpgThreeScene {
 
         this.impacts = this.impacts.filter((impact) => {
             if (now < Number(impact.userData.expiresAt || 0)) {
-                const progress = clamp((Number(impact.userData.expiresAt) - now) / 180, 0, 1);
-                impact.material.opacity = progress;
-                impact.scale.setScalar(0.25 + ((1 - progress) * 0.8));
+                const progress = clamp((Number(impact.userData.expiresAt) - now) / 220, 0, 1);
+                impact.userData.materials.forEach((material) => { material.opacity = progress; });
+                impact.scale.setScalar(0.45 + ((1 - progress) * 1.15));
+                impact.rotation.y += delta * 8;
                 return true;
             }
             this.scene.remove(impact);
