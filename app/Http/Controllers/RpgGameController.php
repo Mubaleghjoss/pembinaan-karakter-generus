@@ -252,14 +252,29 @@ class RpgGameController extends Controller
         }
 
         $siswa = Auth::guard('siswa')->user();
-        $npc = $rpgMap->activeNpcs()->inRandomOrder()->first();
+        $settings = $this->inkwaveQuestionSettings($rpgMap);
+        $summaryKey = $this->inkwaveSummaryKey($siswa->id, $rpgMap->id);
+        $summary = Cache::get($summaryKey, $this->emptyInkWaveSummary());
+
+        if ($settings['max_questions'] > 0 && $summary['defeated'] >= $settings['max_questions']) {
+            return response()->json(['message' => 'Batas pertanyaan InkWave untuk permainan ini sudah tercapai.'], 422);
+        }
+
+        $questions = $rpgMap->activeNpcs();
+        if ($settings['difficulty'] !== 'all') {
+            $questions->where('difficulty', $settings['difficulty']);
+        }
+        if ($settings['repeat_policy'] === 'no_repeat' && ! empty($summary['question_ids'])) {
+            $questions->whereNotIn('id', $summary['question_ids']);
+        }
+        $npc = $settings['randomize'] ? $questions->inRandomOrder()->first() : $questions->orderBy('id')->first();
 
         if (! $npc) {
             return response()->json(['message' => 'Map ini belum memiliki pertanyaan karakter aktif.'], 422);
         }
 
         $pendingKey = $this->inkwavePendingKey($siswa->id, $rpgMap->id);
-        if (! Cache::add($pendingKey, ['question_id' => $npc->id], now()->addMinutes(5))) {
+        if (! Cache::add($pendingKey, ['question_id' => $npc->id], now()->addSeconds($settings['time_limit_seconds']))) {
             return response()->json(['message' => 'Selesaikan pertanyaan yang sedang aktif.'], 409);
         }
 
@@ -270,6 +285,7 @@ class RpgGameController extends Controller
                 'avatar' => RpgCatalog::resolveNpcAvatar($npc->avatar),
                 'pertanyaan' => $npc->pertanyaan,
                 'poin' => $npc->poin,
+                'time_limit_seconds' => $settings['time_limit_seconds'],
                 'answers' => collect($npc->pilihan_jawaban ?? [])->values()->map(fn ($text, $id) => ['id' => $id, 'text' => $text])->all(),
             ],
         ]);
@@ -318,10 +334,11 @@ class RpgGameController extends Controller
             }
 
             $summaryKey = $this->inkwaveSummaryKey($siswa->id, $rpgMap->id);
-            $summary = Cache::get($summaryKey, ['defeated' => 0, 'correct' => 0, 'incorrect' => 0, 'points' => 0]);
+            $summary = Cache::get($summaryKey, $this->emptyInkWaveSummary());
             $summary['defeated']++;
             $summary[$correct ? 'correct' : 'incorrect']++;
             $summary['points'] += $points;
+            $summary['question_ids'] = array_values(array_unique(array_merge($summary['question_ids'] ?? [], [(int) $npc->id])));
             Cache::put($summaryKey, $summary, now()->addHours(4));
 
             return response()->json([
@@ -342,6 +359,22 @@ class RpgGameController extends Controller
     private function inkwaveSummaryKey(int $siswaId, int $mapId): string
     {
         return "inkwave:summary:{$siswaId}:{$mapId}";
+    }
+
+    private function emptyInkWaveSummary(): array
+    {
+        return ['defeated' => 0, 'correct' => 0, 'incorrect' => 0, 'points' => 0, 'question_ids' => []];
+    }
+
+    private function inkwaveQuestionSettings(RpgMap $rpgMap): array
+    {
+        return [
+            'randomize' => $rpgMap->inkwave_randomize_questions ?? true,
+            'difficulty' => $rpgMap->inkwave_question_difficulty ?? 'all',
+            'repeat_policy' => $rpgMap->inkwave_repeat_policy ?? 'allow_repeat',
+            'max_questions' => (int) ($rpgMap->inkwave_max_questions ?? 10),
+            'time_limit_seconds' => (int) ($rpgMap->inkwave_question_time_limit_seconds ?? 30),
+        ];
     }
 
     /**
@@ -900,6 +933,11 @@ class RpgGameController extends Controller
             'ammo_per_pickup' => 'nullable|integer|min:1|max:999',
             'shield_pickups_count' => 'nullable|integer|min:0|max:10',
             'ammo_pickups_count' => 'nullable|integer|min:0|max:50',
+            'inkwave_randomize_questions' => 'nullable|boolean',
+            'inkwave_question_difficulty' => 'nullable|string|in:all,easy,medium,hard',
+            'inkwave_repeat_policy' => 'nullable|string|in:no_repeat,allow_repeat',
+            'inkwave_max_questions' => 'nullable|integer|min:0|max:100',
+            'inkwave_question_time_limit_seconds' => 'nullable|integer|min:5|max:300',
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -910,6 +948,11 @@ class RpgGameController extends Controller
         $validated['ammo_per_pickup'] = $validated['ammo_per_pickup'] ?? 3;
         $validated['shield_pickups_count'] = $validated['shield_pickups_count'] ?? 1;
         $validated['ammo_pickups_count'] = $validated['ammo_pickups_count'] ?? 2;
+        $validated['inkwave_randomize_questions'] = $request->boolean('inkwave_randomize_questions', true);
+        $validated['inkwave_question_difficulty'] = $validated['inkwave_question_difficulty'] ?? 'all';
+        $validated['inkwave_repeat_policy'] = $validated['inkwave_repeat_policy'] ?? 'allow_repeat';
+        $validated['inkwave_max_questions'] = $validated['inkwave_max_questions'] ?? 10;
+        $validated['inkwave_question_time_limit_seconds'] = $validated['inkwave_question_time_limit_seconds'] ?? 30;
         $validated['obstacles'] = $this->normalizeObstacles($request->input('obstacles', []));
         $validated['enemies'] = RpgCatalog::normalizeEnemies($request->input('enemies', []));
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -943,6 +986,11 @@ class RpgGameController extends Controller
             'ammo_per_pickup' => 'nullable|integer|min:1|max:999',
             'shield_pickups_count' => 'nullable|integer|min:0|max:10',
             'ammo_pickups_count' => 'nullable|integer|min:0|max:50',
+            'inkwave_randomize_questions' => 'nullable|boolean',
+            'inkwave_question_difficulty' => 'nullable|string|in:all,easy,medium,hard',
+            'inkwave_repeat_policy' => 'nullable|string|in:no_repeat,allow_repeat',
+            'inkwave_max_questions' => 'nullable|integer|min:0|max:100',
+            'inkwave_question_time_limit_seconds' => 'nullable|integer|min:5|max:300',
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -953,6 +1001,13 @@ class RpgGameController extends Controller
         $validated['ammo_per_pickup'] = $validated['ammo_per_pickup'] ?? ($rpgMap->ammo_per_pickup ?? 3);
         $validated['shield_pickups_count'] = $validated['shield_pickups_count'] ?? ($rpgMap->shield_pickups_count ?? 1);
         $validated['ammo_pickups_count'] = $validated['ammo_pickups_count'] ?? ($rpgMap->ammo_pickups_count ?? 2);
+        $validated['inkwave_randomize_questions'] = $request->has('inkwave_randomize_questions')
+            ? $request->boolean('inkwave_randomize_questions')
+            : ($rpgMap->inkwave_randomize_questions ?? true);
+        $validated['inkwave_question_difficulty'] = $validated['inkwave_question_difficulty'] ?? ($rpgMap->inkwave_question_difficulty ?? 'all');
+        $validated['inkwave_repeat_policy'] = $validated['inkwave_repeat_policy'] ?? ($rpgMap->inkwave_repeat_policy ?? 'allow_repeat');
+        $validated['inkwave_max_questions'] = $validated['inkwave_max_questions'] ?? ($rpgMap->inkwave_max_questions ?? 10);
+        $validated['inkwave_question_time_limit_seconds'] = $validated['inkwave_question_time_limit_seconds'] ?? ($rpgMap->inkwave_question_time_limit_seconds ?? 30);
         $validated['obstacles'] = $this->normalizeObstacles($request->input('obstacles', []));
         $validated['enemies'] = RpgCatalog::normalizeEnemies($request->input('enemies', []));
         $validated['is_active'] = $request->boolean('is_active', $rpgMap->is_active);
@@ -988,6 +1043,11 @@ class RpgGameController extends Controller
             'ammo_per_pickup' => $rpgMap->ammo_per_pickup ?? 3,
             'shield_pickups_count' => $rpgMap->shield_pickups_count ?? 1,
             'ammo_pickups_count' => $rpgMap->ammo_pickups_count ?? 2,
+            'inkwave_randomize_questions' => $rpgMap->inkwave_randomize_questions ?? true,
+            'inkwave_question_difficulty' => $rpgMap->inkwave_question_difficulty ?? 'all',
+            'inkwave_repeat_policy' => $rpgMap->inkwave_repeat_policy ?? 'allow_repeat',
+            'inkwave_max_questions' => $rpgMap->inkwave_max_questions ?? 10,
+            'inkwave_question_time_limit_seconds' => $rpgMap->inkwave_question_time_limit_seconds ?? 30,
             'is_active' => false,
         ]);
 
@@ -1002,6 +1062,7 @@ class RpgGameController extends Controller
                 'pilihan_jawaban' => $npc->pilihan_jawaban,
                 'jawaban_benar' => $npc->jawaban_benar,
                 'poin' => $npc->poin,
+                'difficulty' => $npc->difficulty ?? 'medium',
                 'is_active' => $npc->is_active,
             ]);
         }
@@ -1052,11 +1113,13 @@ class RpgGameController extends Controller
             'pilihan_jawaban.*' => 'required|string',
             'jawaban_benar' => 'required|integer|min:0|max:3',
             'poin' => 'integer|min:1',
+            'difficulty' => 'nullable|string|in:easy,medium,hard',
         ]);
 
         $validated['avatar'] = $validated['avatar'] ?? '🧙';
         $validated['avatar'] = RpgCatalog::resolveNpcAvatar($validated['avatar'] ?? null);
         $validated['poin'] = $validated['poin'] ?? 10;
+        $validated['difficulty'] = $validated['difficulty'] ?? 'medium';
 
         $npc = RpgNpc::create($validated);
         $this->forgetPublicRpgCache((int) $npc->rpg_map_id);
@@ -1079,10 +1142,12 @@ class RpgGameController extends Controller
             'pilihan_jawaban.*' => 'required|string',
             'jawaban_benar' => 'required|integer|min:0|max:3',
             'poin' => 'integer|min:1',
+            'difficulty' => 'nullable|string|in:easy,medium,hard',
             'is_active' => 'boolean',
         ]);
 
         $validated['avatar'] = RpgCatalog::resolveNpcAvatar($validated['avatar'] ?? null);
+        $validated['difficulty'] = $validated['difficulty'] ?? ($rpgNpc->difficulty ?? 'medium');
 
         $rpgNpc->update($validated);
         $this->forgetPublicRpgCache((int) $rpgNpc->rpg_map_id);

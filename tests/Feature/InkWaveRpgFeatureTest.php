@@ -148,6 +148,50 @@ class InkWaveRpgFeatureTest extends TestCase
         $this->assertSame(23, PointTransaction::query()->where('siswa_id', $siswa->id)->sum('points'));
     }
 
+    public function test_inkwave_uses_configured_difficulty_order_repeat_policy_and_maximum(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map([
+            'inkwave_randomize_questions' => false,
+            'inkwave_question_difficulty' => 'hard',
+            'inkwave_repeat_policy' => 'no_repeat',
+            'inkwave_max_questions' => 1,
+        ]);
+        $easy = $this->npc($map, ['difficulty' => 'easy', 'nama' => 'Soal Mudah']);
+        $hard = $this->npc($map, ['difficulty' => 'hard', 'nama' => 'Soal Sulit']);
+
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.question', $map))
+            ->assertOk()
+            ->assertJsonPath('question.id', $hard->id);
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $hard->id, 'answer_id' => 0])
+            ->assertOk();
+
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.question', $map))
+            ->assertUnprocessable();
+        $this->assertNotSame($easy->id, $hard->id);
+    }
+
+    public function test_inkwave_rejects_an_answer_after_the_server_time_limit(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map(['inkwave_question_time_limit_seconds' => 5]);
+        $npc = $this->npc($map);
+
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.question', $map))
+            ->assertOk()
+            ->assertJsonPath('question.time_limit_seconds', 5);
+
+        $this->travel(6)->seconds();
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id, 'answer_id' => 0])
+            ->assertUnprocessable();
+        $this->assertDatabaseCount('point_transactions', 0);
+    }
+
     public function test_reset_clears_inkwave_pending_question_and_summary_for_the_map_session(): void
     {
         $siswa = Siswa::factory()->create();

@@ -1686,7 +1686,7 @@ class RpgThreeScene {
                         <span>${avatar}</span>
                         <div>
                             <strong>${escapeHtml(npc.nama || 'NPC')}</strong>
-                            <small>${Number(npc.poin || 0)} poin</small>
+                            <small>${Number(npc.poin || 0)} poin${npc.time_limit_seconds ? ` | ${Number(npc.time_limit_seconds)} detik` : ''}</small>
                         </div>
                     </header>
                     <div class="pkg-rpg-3d-dialog-body">

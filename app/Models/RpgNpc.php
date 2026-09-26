@@ -20,6 +20,7 @@ class RpgNpc extends Model
         'pilihan_jawaban',
         'jawaban_benar',
         'poin',
+        'difficulty',
         'is_active',
     ];
 

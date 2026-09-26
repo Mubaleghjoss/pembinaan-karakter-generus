@@ -389,6 +389,17 @@
                         Peluru/pickup <span x-text="mapForm.ammo_per_pickup"></span>
                     </p>
                 </div>
+                <div class="rounded-xl border border-sky-200 bg-sky-50/80 p-3 dark:border-sky-900/40 dark:bg-sky-900/10">
+                    <p class="text-sm font-semibold text-sky-900 dark:text-sky-100">Pertanyaan InkWave</p>
+                    <p class="mt-1 text-xs text-sky-800 dark:text-sky-200">Menggunakan bank pertanyaan NPC di peta ini. Poin dan tingkat kesulitan diatur pada masing-masing NPC.</p>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tingkat soal<select x-model="mapForm.inkwave_question_difficulty" class="pkg-field mt-1 w-full rounded-lg px-3 py-2 text-sm"><option value="all">Semua tingkat</option><option value="easy">Mudah</option><option value="medium">Sedang</option><option value="hard">Sulit</option></select></label>
+                        <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Ulangi soal<select x-model="mapForm.inkwave_repeat_policy" class="pkg-field mt-1 w-full rounded-lg px-3 py-2 text-sm"><option value="no_repeat">Jangan dalam satu permainan</option><option value="allow_repeat">Boleh diulang</option></select></label>
+                        <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Maks. pertanyaan (0 = tanpa batas)<input type="number" min="0" max="100" x-model.number="mapForm.inkwave_max_questions" class="pkg-field mt-1 w-full rounded-lg px-3 py-2 text-sm"></label>
+                        <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Batas waktu jawaban<input type="number" min="5" max="300" x-model.number="mapForm.inkwave_question_time_limit_seconds" class="pkg-field mt-1 w-full rounded-lg px-3 py-2 text-sm"><span class="mt-1 block text-gray-400">detik</span></label>
+                    </div>
+                    <label class="mt-3 flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300"><input type="checkbox" x-model="mapForm.inkwave_randomize_questions" class="pkg-check rounded"> Acak urutan pertanyaan</label>
+                </div>
                 <div x-show="hasBalanceWarning()" class="rounded-xl border border-amber-200 bg-amber-50/90 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-100">
                     <p class="font-semibold">Perhatian Balancing</p>
                     <p class="mt-1" x-text="balanceWarningMessage()"></p>
@@ -742,6 +753,10 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Poin</label>
                                 <input type="number" x-model.number="npcForm.poin" min="1" class="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                             </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tingkat soal</label>
+                                <select x-model="npcForm.difficulty" class="pkg-field w-full rounded-lg px-2 py-1.5 text-sm"><option value="easy">Mudah</option><option value="medium">Sedang</option><option value="hard">Sulit</option></select>
+                            </div>
                         </div>
 
                         {{-- Row 3: Question --}}
@@ -828,7 +843,7 @@ function rpgAdmin() {
         editingNpcId: null,
         npcForm: { 
             rpg_map_id: null, nama: '', avatar: @js(\App\Support\RpgCatalog::npcAvatarOptions()[0]['value']), pos_x: 0, pos_y: 0, 
-            pertanyaan: '', pilihan_jawaban: ['','','',''], jawaban_benar: 0, poin: 10 
+            pertanyaan: '', pilihan_jawaban: ['','','',''], jawaban_benar: 0, poin: 10, difficulty: 'medium'
         },
         npcAvatarOptions: @json(\App\Support\RpgCatalog::npcAvatarOptions()),
         enemyAvatarOptions: @json(\App\Support\RpgCatalog::enemyAvatarOptions()),
@@ -917,6 +932,11 @@ function rpgAdmin() {
                 ammo_per_pickup: 3,
                 shield_pickups_count: 1,
                 ammo_pickups_count: 2,
+                inkwave_randomize_questions: true,
+                inkwave_question_difficulty: 'all',
+                inkwave_repeat_policy: 'allow_repeat',
+                inkwave_max_questions: 10,
+                inkwave_question_time_limit_seconds: 30,
                 obstacles: [],
                 enemies: [],
                 boss_enabled: false,
@@ -1080,7 +1100,12 @@ function rpgAdmin() {
                 ammo_per_pickup: parseInt(map.ammo_per_pickup || 3),
                 shield_pickups_count: parseInt(map.shield_pickups_count ?? 1),
                 ammo_pickups_count: parseInt(map.ammo_pickups_count ?? 2),
-                obstacles: safeParse(map.obstacles),
+                inkwave_randomize_questions: map.inkwave_randomize_questions !== false,
+                inkwave_question_difficulty: map.inkwave_question_difficulty || 'all',
+                inkwave_repeat_policy: map.inkwave_repeat_policy || 'allow_repeat',
+                inkwave_max_questions: parseInt(map.inkwave_max_questions ?? 10),
+                inkwave_question_time_limit_seconds: parseInt(map.inkwave_question_time_limit_seconds ?? 30),
+                obstacles: safeParse(map.obstacles)
                 enemies: safeParse(map.enemies).map(enemy => this.normalizeEnemy(enemy)),
                 boss_enabled: !!(map.boss_enabled),
                 boss: this.parseBossConfig(map.boss_config)
@@ -1351,6 +1376,11 @@ function rpgAdmin() {
                     ammo_per_pickup: parseInt(this.selectedMap.ammo_per_pickup || 3),
                     shield_pickups_count: parseInt(this.selectedMap.shield_pickups_count ?? 1),
                     ammo_pickups_count: parseInt(this.selectedMap.ammo_pickups_count ?? 2),
+                    inkwave_randomize_questions: this.selectedMap.inkwave_randomize_questions !== false,
+                    inkwave_question_difficulty: this.selectedMap.inkwave_question_difficulty || 'all',
+                    inkwave_repeat_policy: this.selectedMap.inkwave_repeat_policy || 'allow_repeat',
+                    inkwave_max_questions: parseInt(this.selectedMap.inkwave_max_questions ?? 10),
+                    inkwave_question_time_limit_seconds: parseInt(this.selectedMap.inkwave_question_time_limit_seconds ?? 30),
                     obstacles: this.mapObstacles,
                     enemies: this.mapEnemies.map(enemy => this.normalizeEnemy(enemy))
                 };
@@ -1387,7 +1417,7 @@ function rpgAdmin() {
             this.npcForm = {
                 rpg_map_id: this.selectedMap.id, nama: '', avatar: this.npcAvatarOptions[0].value,
                 pos_x: x, pos_y: y, pertanyaan: '', pilihan_jawaban: ['','','',''],
-                jawaban_benar: 0, poin: 10
+                jawaban_benar: 0, poin: 10, difficulty: 'medium'
             };
             this.showNpcForm = true;
         },
@@ -1399,7 +1429,7 @@ function rpgAdmin() {
                 nama: npc.nama, avatar: npc.avatar, pos_x: npc.pos_x, pos_y: npc.pos_y,
                 pertanyaan: npc.pertanyaan,
                 pilihan_jawaban: [...(npc.pilihan_jawaban || ['','','',''])],
-                jawaban_benar: npc.jawaban_benar, poin: npc.poin
+                jawaban_benar: npc.jawaban_benar, poin: npc.poin, difficulty: npc.difficulty || 'medium'
             };
             // Pad to 4 choices
             while (this.npcForm.pilihan_jawaban.length < 4) this.npcForm.pilihan_jawaban.push('');

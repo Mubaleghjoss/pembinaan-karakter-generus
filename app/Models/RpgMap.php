@@ -24,6 +24,11 @@ class RpgMap extends Model
         'ammo_per_pickup',
         'shield_pickups_count',
         'ammo_pickups_count',
+        'inkwave_randomize_questions',
+        'inkwave_question_difficulty',
+        'inkwave_repeat_policy',
+        'inkwave_max_questions',
+        'inkwave_question_time_limit_seconds',
         'is_active',
     ];
 
@@ -38,6 +43,9 @@ class RpgMap extends Model
         'ammo_per_pickup' => 'integer',
         'shield_pickups_count' => 'integer',
         'ammo_pickups_count' => 'integer',
+        'inkwave_randomize_questions' => 'boolean',
+        'inkwave_max_questions' => 'integer',
+        'inkwave_question_time_limit_seconds' => 'integer',
     ];
 
     public function npcs(): HasMany

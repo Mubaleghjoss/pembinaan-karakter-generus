@@ -2584,6 +2584,7 @@ function rpgGame() {
                     pertanyaan: question.pertanyaan,
                     pilihan_jawaban: question.answers.map(answer => answer.text),
                     poin: question.poin,
+                    time_limit_seconds: question.time_limit_seconds,
                 };
                 this.answerResult = null;
                 this.showNpcDialog = true;
