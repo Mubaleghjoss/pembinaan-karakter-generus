@@ -721,6 +721,8 @@
                         data-rpg-3d-provider="pkgSiswaRpg3dState"
                         data-rpg-3d-controls="pkgSiswaRpg3dControls"
                         data-rpg-3d-resettable="true"
+                        :data-rpg-3d-view-locked="inkwaveMode ? 'true' : null"
+                        :data-rpg-3d-graphics="inkwaveMode ? 'low' : null"
                         class="pkg-rpg-3d-scene mt-4"
                     ></div>
 
@@ -1128,8 +1130,8 @@ function rpgGame() {
         activeStudentsCount: 1,
         controlMode: 'dpad',
         actionMode: 'move',
-        // InkWave intentionally stays in the low-graphics 2D arena.
-        viewMode: '2d',
+        // InkWave locks the existing 3D arena to its low graphics profile.
+        viewMode: '3d',
         difficulty: '{{ $rpgMap->difficulty ?? "easy" }}',
         npcAvatarLookup: @json(\App\Support\RpgCatalog::npcAvatarLookup()),
         enemyAvatarLookup: @json(\App\Support\RpgCatalog::enemyAvatarLookup()),
@@ -1251,7 +1253,9 @@ function rpgGame() {
                 shoot: ({ dx, dy }) => this.shootDirection(Number(dx || 0), Number(dy || 0)),
                 answer: ({ index }) => this.submitAnswer(Number(index || 0)),
                 closeNpc: () => this.closeDialog(),
-                view2d: () => this.setViewMode('2d'),
+                view2d: () => {
+                    if (!this.inkwaveMode) this.setViewMode('2d');
+                },
                 reset: () => this.resetGame(),
                 dash: () => this.useDash(),
                 ulti: () => this.useUlti(),
@@ -1347,7 +1351,7 @@ function rpgGame() {
 
         resolveStoredViewMode() {
             if (this.inkwaveMode) {
-                return '2d';
+                return '3d';
             }
             // Prioritas: query param ?mode= dari daftar peta (tombol Main 3D / 2D).
             try {
@@ -1369,7 +1373,7 @@ function rpgGame() {
 
         setViewMode(mode) {
             if (this.inkwaveMode) {
-                this.viewMode = '2d';
+                this.viewMode = '3d';
                 return;
             }
             this.viewMode = mode === '3d' ? '3d' : '2d';
@@ -1473,7 +1477,9 @@ function rpgGame() {
                 this.shootDirection(Number(detail.dx || 0), Number(detail.dy || 0));
             });
 
-            scene.addEventListener('rpg3d:view2d', () => this.setViewMode('2d'));
+            scene.addEventListener('rpg3d:view2d', () => {
+                if (!this.inkwaveMode) this.setViewMode('2d');
+            });
         },
 
         getThreeState() {

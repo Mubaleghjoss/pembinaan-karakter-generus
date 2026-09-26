@@ -95,6 +95,8 @@ class RpgThreeScene {
         this.controlsName = root.getAttribute('data-rpg-3d-controls') || root.dataset.rpg3dControls;
         this.readOnly = (root.getAttribute('data-rpg-3d-readonly') || root.dataset.rpg3dReadonly) === 'true';
         this.canReset = (root.getAttribute('data-rpg-3d-resettable') || root.dataset.rpg3dResettable) === 'true';
+        this.viewLocked = (root.getAttribute('data-rpg-3d-view-locked') || root.dataset.rpg3dViewLocked) === 'true';
+        this.lowGraphics = (root.getAttribute('data-rpg-3d-graphics') || root.dataset.rpg3dGraphics) === 'low';
         this.headingIndex = 0;
         this.state = {};
         this.lastMapKey = '';
@@ -157,7 +159,7 @@ class RpgThreeScene {
         const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
         this.performance = {
             basePixelRatio: pixelRatio,
-            currentPixelRatio: Math.min(pixelRatio, 1.75),
+            currentPixelRatio: this.lowGraphics ? 1 : Math.min(pixelRatio, 1.75),
             frames: 0,
             lastSampleAt: performance.now(),
         };
@@ -250,7 +252,7 @@ class RpgThreeScene {
                 <button type="button" data-rpg-3d-action="turn-right" title="Putar kamera kanan">Putar +</button>
                 <button type="button" data-rpg-3d-action="shoot" title="Tembak">Tembak</button>
                 <button type="button" data-rpg-3d-action="fullscreen" title="Layar penuh">Layar</button>
-                <button type="button" data-rpg-3d-action="view2d" title="Kembali ke tampilan 2D">2D</button>
+                ${this.viewLocked ? '' : '<button type="button" data-rpg-3d-action="view2d" title="Kembali ke tampilan 2D">2D</button>'}
             </div>
             ${!this.readOnly ? `
             <div class="pkg-rpg-3d-mobile-controls" aria-label="Kontrol 3D mobile">
@@ -301,7 +303,7 @@ class RpgThreeScene {
         this.uiToggleText = this.root.querySelector('[data-rpg-3d-ui-toggle-text]');
         this.uiClose = this.root.querySelector('[data-rpg-3d-ui-close]');
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+        this.renderer = new THREE.WebGLRenderer({ antialias: !this.lowGraphics, alpha: false, powerPreference: 'high-performance' });
         this.renderer.setPixelRatio(this.performance.currentPixelRatio);
         this.renderer.setClearColor(0xe7f8ed, 1);
         this.renderer.domElement.className = 'pkg-rpg-3d-renderer';
@@ -571,6 +573,9 @@ class RpgThreeScene {
         }
 
         if (action === 'view2d') {
+            if (this.viewLocked) {
+                return;
+            }
             if (!this.invokeControl('view2d')) {
                 this.root.dispatchEvent(new CustomEvent('rpg3d:view2d', { bubbles: true }));
             }

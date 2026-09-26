@@ -164,6 +164,21 @@ class InkWaveRpgFeatureTest extends TestCase
         $this->assertNull(Cache::get("inkwave:summary:{$siswa->id}:{$map->id}"));
     }
 
+    public function test_inkwave_play_locks_the_existing_3d_scene_to_low_graphics(): void
+    {
+        $map = $this->map();
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertViewIs('siswa.rpg.play')
+            ->assertViewHas('inkwaveMode', true)
+            ->assertSee("viewMode: '3d'", false)
+            ->assertSee('data-rpg-3d-scene', false)
+            ->assertSee(':data-rpg-3d-view-locked="inkwaveMode ? \'true\' : null"', false)
+            ->assertSee(':data-rpg-3d-graphics="inkwaveMode ? \'low\' : null"', false);
+    }
+
     public function test_adventure_route_remains_the_non_inkwave_mode(): void
     {
         $map = $this->map();
@@ -172,7 +187,8 @@ class InkWaveRpgFeatureTest extends TestCase
             ->get(route('siswa.rpg.play', $map))
             ->assertOk()
             ->assertViewIs('siswa.rpg.play')
-            ->assertViewHas('inkwaveMode', false);
+            ->assertViewHas('inkwaveMode', false)
+            ->assertSee('x-show="!inkwaveMode"', false);
     }
 
     private function map(array $attributes = []): RpgMap
