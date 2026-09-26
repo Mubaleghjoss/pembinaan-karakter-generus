@@ -3272,6 +3272,34 @@ html.dark [class~="dark:border-purple-700"] {
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
+    /* Landscape phones are wider than the portrait breakpoint; keep touch MOBA controls mounted. */
+    .pkg-rpg-3d-mobile-controls {
+        pointer-events: none;
+        position: absolute;
+        right: calc(0.45rem + env(safe-area-inset-right));
+        bottom: calc(0.45rem + env(safe-area-inset-bottom));
+        left: calc(0.45rem + env(safe-area-inset-left));
+        z-index: 3;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+    }
+
+    .pkg-rpg-3d-mobile-pad { pointer-events: auto; }
+    .pkg-rpg-3d-mobile-pad button { pointer-events: auto; }
+    .pkg-rpg-3d-mobile-pad--turn {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(2.55rem, auto));
+        gap: 0.45rem;
+    }
+    .pkg-rpg-3d-mobile-pad--turn button:first-child {
+        grid-column: 1 / -1;
+        width: 100%;
+        border-radius: 0.8rem;
+        background: rgba(220, 38, 38, 0.82);
+        font-size: 0.7rem;
+    }
+
     .pkg-rpg-3d-scene {
         min-height: max(320px, calc(100svh - 1rem));
         border-radius: 0.9rem;
@@ -3383,8 +3411,16 @@ html.dark [class~="dark:border-purple-700"] {
     }
 
     .pkg-rpg-3d-mobile-pad--turn {
-        grid-template-columns: 2.55rem;
+        grid-template-columns: repeat(3, minmax(2.55rem, auto));
         gap: 0.45rem;
+    }
+
+    .pkg-rpg-3d-mobile-pad--turn button:first-child {
+        grid-column: 1 / -1;
+        width: 100%;
+        border-radius: 0.8rem;
+        background: rgba(220, 38, 38, 0.82);
+        font-size: 0.7rem;
     }
 
     .pkg-rpg-3d-mobile-pad--turn button {

@@ -181,6 +181,7 @@ class RpgThreeScene {
             <div class="pkg-rpg-3d-canvas" data-rpg-3d-canvas></div>
             <div class="pkg-rpg-3d-ui-actions">
                 ${this.canReset ? '<button type="button" data-rpg-3d-action="reset" title="Reset poin dan jawab ulang NPC">Reset</button>' : ''}
+                <button type="button" data-rpg-3d-action="fullscreen" title="Masuk/keluar layar penuh">Layar penuh</button>
                 <button type="button" data-rpg-3d-ui-toggle aria-pressed="false" title="Tampilkan panel game">
                     <span data-rpg-3d-ui-toggle-text>Panel</span>
                 </button>
@@ -267,7 +268,8 @@ class RpgThreeScene {
                     <button type="button" data-rpg-3d-action="back" aria-label="Mundur"><span aria-hidden="true">&darr;</span></button>
                     <span></span>
                 </div>
-                <div class="pkg-rpg-3d-mobile-pad pkg-rpg-3d-mobile-pad--turn" aria-label="Putar kamera">
+                <div class="pkg-rpg-3d-mobile-pad pkg-rpg-3d-mobile-pad--turn" aria-label="Aksi dan putar kamera">
+                    <button type="button" data-rpg-3d-action="shoot" aria-label="Tembak"><span aria-hidden="true">Tembak</span></button>
                     <button type="button" data-rpg-3d-action="turn-left" aria-label="Putar kamera kiri"><span aria-hidden="true">&#8630;</span></button>
                     <button type="button" data-rpg-3d-action="turn-right" aria-label="Putar kamera kanan"><span aria-hidden="true">&#8631;</span></button>
                 </div>
@@ -800,19 +802,18 @@ class RpgThreeScene {
     }
 
     enterImmersiveMode() {
-        if (this.readOnly) {
-            return;
+        if (!document.fullscreenElement && this.root.requestFullscreen) {
+            this.root.requestFullscreen({ navigationUI: 'hide' }).then(() => {
+                if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                    screen.orientation.lock('landscape').catch(() => null);
+                }
+                this.showNotice('Layar penuh aktif. Tekan tombol lagi untuk keluar.');
+            }).catch(() => this.showNotice('Layar penuh tidak diizinkan browser.'));
+        } else if (document.fullscreenElement) {
+            document.exitFullscreen?.().then(() => this.showNotice('Layar penuh dinonaktifkan.'));
+        } else {
+            this.showNotice('Browser ini tidak mendukung layar penuh.');
         }
-
-        const request = !document.fullscreenElement && this.root.requestFullscreen
-            ? this.root.requestFullscreen({ navigationUI: 'hide' }).catch(() => null)
-            : Promise.resolve();
-
-        request.then(() => {
-            if (screen.orientation && typeof screen.orientation.lock === 'function') {
-                screen.orientation.lock('landscape').catch(() => null);
-            }
-        });
 
         this.root.focus({ preventScroll: true });
     }
