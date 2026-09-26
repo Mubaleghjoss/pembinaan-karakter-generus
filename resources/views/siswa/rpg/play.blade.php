@@ -1069,8 +1069,13 @@
                             <p class="text-xs text-gray-400 mt-1">Kunjungi NPC ini lagi untuk menjawab ulang.</p>
                         </div>
                     </template>
+                    <template x-if="inkwaveMode">
+                        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                            Ringkasan InkWave: <span x-text="inkwaveSummary.defeated"></span> NPC, <span x-text="inkwaveSummary.correct"></span> benar, <span x-text="inkwaveSummary.incorrect"></span> salah, <span x-text="inkwaveSummary.points"></span> poin.
+                        </p>
+                    </template>
                     <button @click="closeDialog()" class="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors">
-                        <span x-text="answerResult?.correct ? 'Lanjutkan' : 'Coba lagi nanti'"></span>
+                        <span x-text="inkwaveMode ? 'Lanjutkan arena' : (answerResult?.correct ? 'Lanjutkan' : 'Coba lagi nanti')"></span>
                     </button>
                 </div>
             </div>
@@ -1109,6 +1114,9 @@
 function rpgGame() {
     return {
         previewMode: @json($previewMode ?? false),
+        inkwaveMode: @json($inkwaveMode ?? false),
+        inkwavePaused: false,
+        inkwaveSummary: { defeated: 0, correct: 0, incorrect: 0, points: 0 },
         gridSize: {{ $rpgMap->grid_size }},
         session: @json($session),
         character: @json($character),
@@ -1688,7 +1696,7 @@ function rpgGame() {
             if (!this.enemies || this.enemies.length === 0) return;
             const speed = 250;
             this.enemyTimer = setInterval(() => {
-                if (this.showNpcDialog || this.showCompletion || this.showGuideModal) return;
+                if (this.showNpcDialog || this.showCompletion || this.showGuideModal || this.inkwavePaused) return;
                 // Player is safe on NPC tile
                 if (this.isNpcTile(this.session.pos_x, this.session.pos_y)) return;
                 this.moveEnemies();
@@ -2473,7 +2481,7 @@ function rpgGame() {
         },
 
         shootDirection(dx, dy) {
-            if (this.showGuideModal) return;
+            if (this.showGuideModal || this.inkwavePaused) return;
 
             // Prioritas: kalau ada bos aktif, peluru tak terbatas untuk melawan bos.
             if (this.bossActive && this.boss) {
@@ -2508,7 +2516,7 @@ function rpgGame() {
                 const defeatedEnemy = { ...this.enemies[targetIndex] };
                 this.flashShotAt(defeatedEnemy.x, defeatedEnemy.y);
                 this.enemies.splice(targetIndex, 1);
-                this.notifyPlayer('Musuh berhasil dikalahkan.', 'success');
+                this.handleEnemyDefeated(defeatedEnemy);
                 this.scheduleEnemyRespawn(defeatedEnemy);
             } else {
                 this.notifyPlayer('Tembakan meleset.', 'warning');
@@ -2531,8 +2539,43 @@ function rpgGame() {
             this.playTone('shoot');
             this.scheduleEnemyRespawn(defeatedEnemy);
             this.actionMode = 'move';
-            this.notifyPlayer('Peluru otomatis ditembakkan ke musuh terdekat.', 'success');
+            this.handleEnemyDefeated(defeatedEnemy);
             return true;
+        },
+
+        async handleEnemyDefeated(enemy) {
+            if (!this.inkwaveMode) {
+                this.notifyPlayer('Musuh berhasil dikalahkan.', 'success');
+                return;
+            }
+
+            this.inkwavePaused = true;
+            try {
+                const response = await fetch("{{ route('siswa.rpg.inkwave.question', $rpgMap) }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.question) throw new Error(data.message || 'Pertanyaan tidak tersedia.');
+                const question = data.question;
+                this.currentNpc = {
+                    id: question.id,
+                    nama: question.nama,
+                    avatar: question.avatar,
+                    avatar_display: question.avatar,
+                    pertanyaan: question.pertanyaan,
+                    pilihan_jawaban: question.answers.map(answer => answer.text),
+                    poin: question.poin,
+                };
+                this.answerResult = null;
+                this.showNpcDialog = true;
+            } catch (error) {
+                this.inkwavePaused = false;
+                this.notifyPlayer(error.message || 'Gagal mengambil pertanyaan.', 'error');
+            }
         },
 
         findAutoShootTarget(maxRange = 3) {
@@ -2773,7 +2816,7 @@ function rpgGame() {
         },
 
         movePlayer(dx, dy) {
-            if (this.showNpcDialog || this.showGuideModal) return false;
+            if (this.showNpcDialog || this.showGuideModal || this.inkwavePaused) return false;
             
             // Throttle: 100ms between moves
             const now = Date.now();
@@ -2808,7 +2851,7 @@ function rpgGame() {
             const npcHere = this.activeNpcs().find(n =>
                 n.pos_x === newX && n.pos_y === newY && !answeredIds.includes(n.id)
             );
-            if (npcHere) {
+            if (npcHere && !this.inkwaveMode) {
                 this.playTone('npc');
                 this.currentNpc = {
                     id: npcHere.id,
@@ -2927,6 +2970,30 @@ function rpgGame() {
             if (this.submittingAnswer || !this.currentNpc) return;
             this.submittingAnswer = true;
 
+            if (this.inkwaveMode) {
+                try {
+                    const response = await fetch("{{ route('siswa.rpg.inkwave.answer', $rpgMap) }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ question_id: this.currentNpc.id, answer_id: idx })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Jawaban tidak dapat diproses.');
+                    this.answerResult = { correct: !!data.correct, poin: Number(data.points || 0) };
+                    this.inkwaveSummary = data.summary || this.inkwaveSummary;
+                } catch (error) {
+                    this.notifyPlayer(error.message || 'Gagal memeriksa jawaban.', 'error');
+                    this.closeDialog();
+                } finally {
+                    this.submittingAnswer = false;
+                }
+                return;
+            }
+
             // Instant client-side answer check (no delay!)
             const npcData = this.npcs.find(n => Number(n.id) === Number(this.currentNpc.id));
             const correctIndex = this.correctAnswerIndex(npcData || this.currentNpc);
@@ -3007,6 +3074,7 @@ function rpgGame() {
 
         closeDialog() {
             this.showNpcDialog = false;
+            this.inkwavePaused = false;
             this.currentNpc = null;
             this.answerResult = null;
             this.focusThreeScene();

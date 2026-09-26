@@ -422,6 +422,11 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
             Route::get('/', [RpgGameController::class, 'index'])->name('index');
             Route::get('/beta-3d', [RpgGameController::class, 'beta3d'])->name('beta-3d');
             Route::get('/{rpgMap}/play', [RpgGameController::class, 'play'])->name('play');
+            Route::get('/{rpgMap}/inkwave', [RpgGameController::class, 'inkwavePlay'])->name('inkwave.play');
+            Route::post('/{rpgMap}/inkwave/question', [RpgGameController::class, 'inkwaveQuestion'])
+                ->middleware('throttle:30,1')->name('inkwave.question');
+            Route::post('/{rpgMap}/inkwave/answer', [RpgGameController::class, 'inkwaveAnswer'])
+                ->middleware('throttle:30,1')->name('inkwave.answer');
             Route::post('/{rpgMap}/move', [RpgGameController::class, 'move'])->name('move');
             Route::post('/{rpgMap}/answer', [RpgGameController::class, 'answer'])->name('answer');
             Route::post('/{rpgMap}/boss-defeat', [RpgGameController::class, 'bossDefeat'])->name('boss-defeat');

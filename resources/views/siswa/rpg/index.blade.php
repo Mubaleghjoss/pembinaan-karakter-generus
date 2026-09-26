@@ -96,6 +96,11 @@
                            title="Versi ringan untuk HP lama">
                             2D
                         </a>
+                        <a href="{{ route('siswa.rpg.inkwave.play', $map) }}?mode=2d"
+                           class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                           title="InkWave memakai grafik rendah dan kontrol mobile arena">
+                            InkWave
+                        </a>
                     </div>
                 </div>
             </div>

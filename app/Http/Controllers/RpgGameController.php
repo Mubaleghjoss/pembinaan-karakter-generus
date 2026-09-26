@@ -199,7 +199,149 @@ class RpgGameController extends Controller
         $bossDefeated = ! is_null($session->boss_defeated_at ?? null);
         $previewMode = false;
 
-        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode'));
+        $inkwaveMode = false;
+
+        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode', 'inkwaveMode'));
+    }
+
+    /**
+     * InkWave is an opt-in combat mode that reuses an existing RPG map.
+     */
+    public function inkwavePlay(RpgMap $rpgMap)
+    {
+        if (! $rpgMap->is_active) {
+            return redirect()->route('siswa.rpg.index')->with('error', 'Map tidak tersedia.');
+        }
+
+        $siswa = Auth::guard('siswa')->user();
+        $session = RpgGameSession::firstOrCreate(
+            ['siswa_id' => $siswa->id, 'rpg_map_id' => $rpgMap->id],
+            ['pos_x' => 0, 'pos_y' => 0, 'answered_npcs' => [], 'total_score' => 0]
+        );
+        $session->touch();
+        $character = RpgCharacter::firstOrCreate(
+            ['siswa_id' => $siswa->id],
+            ['avatar' => RpgCatalog::resolvePlayerAvatar(null), 'nama_karakter' => $siswa->nama, 'warna' => '#3B82F6']
+        );
+        // Do not expose the answer key in this combat-triggered question mode.
+        $npcs = $rpgMap->activeNpcs()->get()->map(fn (RpgNpc $npc) => [
+            'id' => $npc->id,
+            'nama' => $npc->nama,
+            'avatar' => RpgCatalog::resolveNpcAvatar($npc->avatar),
+            'pos_x' => $npc->pos_x,
+            'pos_y' => $npc->pos_y,
+            'is_active' => $npc->is_active,
+        ]);
+        $enemies = RpgCatalog::normalizeEnemies($rpgMap->enemies);
+        $obstacles = $rpgMap->obstacles ?? [];
+        $boss = null;
+        $bossDefeated = false;
+        $previewMode = false;
+        $inkwaveMode = true;
+
+        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode', 'inkwaveMode'));
+    }
+
+    /**
+     * Select a random character question only after a client reports an NPC defeat.
+     */
+    public function inkwaveQuestion(RpgMap $rpgMap)
+    {
+        if (! $rpgMap->is_active) {
+            return response()->json(['message' => 'Map tidak tersedia.'], 404);
+        }
+
+        $siswa = Auth::guard('siswa')->user();
+        $npc = $rpgMap->activeNpcs()->inRandomOrder()->first();
+
+        if (! $npc) {
+            return response()->json(['message' => 'Map ini belum memiliki pertanyaan karakter aktif.'], 422);
+        }
+
+        $pendingKey = $this->inkwavePendingKey($siswa->id, $rpgMap->id);
+        if (! Cache::add($pendingKey, ['question_id' => $npc->id], now()->addMinutes(5))) {
+            return response()->json(['message' => 'Selesaikan pertanyaan yang sedang aktif.'], 409);
+        }
+
+        return response()->json([
+            'question' => [
+                'id' => $npc->id,
+                'nama' => $npc->nama,
+                'avatar' => RpgCatalog::resolveNpcAvatar($npc->avatar),
+                'pertanyaan' => $npc->pertanyaan,
+                'poin' => $npc->poin,
+                'answers' => collect($npc->pilihan_jawaban ?? [])->values()->map(fn ($text, $id) => ['id' => $id, 'text' => $text])->all(),
+            ],
+        ]);
+    }
+
+    /**
+     * Validate the pending InkWave answer and award the server-derived point value.
+     */
+    public function inkwaveAnswer(Request $request, RpgMap $rpgMap)
+    {
+        if (! $rpgMap->is_active) {
+            return response()->json(['message' => 'Map tidak tersedia.'], 404);
+        }
+
+        $validated = $request->validate([
+            'question_id' => ['required', 'integer'],
+            'answer_id' => ['required', 'integer', 'min:0', 'max:3'],
+        ]);
+        $siswa = Auth::guard('siswa')->user();
+        $pendingKey = $this->inkwavePendingKey($siswa->id, $rpgMap->id);
+        $lock = Cache::lock("{$pendingKey}:answer", 10);
+
+        if (! $lock->get()) {
+            return response()->json(['message' => 'Jawaban sedang diproses.'], 409);
+        }
+
+        try {
+            $pending = Cache::get($pendingKey);
+
+            if (! $pending || (int) $pending['question_id'] !== (int) $validated['question_id']) {
+                return response()->json(['message' => 'Pertanyaan tidak aktif atau sudah dijawab.'], 422);
+            }
+
+            Cache::forget($pendingKey);
+            $npc = $rpgMap->activeNpcs()->findOrFail($pending['question_id']);
+            $correct = $this->isCorrectAnswer((int) $validated['answer_id'], $npc);
+            $points = $correct ? (int) $npc->poin : 0;
+
+            if ($points > 0) {
+                app(GamificationService::class)->awardGamePoints(
+                    $siswa,
+                    $points,
+                    "InkWave: {$npc->nama} - jawaban benar (+{$points} poin)",
+                    $npc
+                );
+            }
+
+            $summaryKey = $this->inkwaveSummaryKey($siswa->id, $rpgMap->id);
+            $summary = Cache::get($summaryKey, ['defeated' => 0, 'correct' => 0, 'incorrect' => 0, 'points' => 0]);
+            $summary['defeated']++;
+            $summary[$correct ? 'correct' : 'incorrect']++;
+            $summary['points'] += $points;
+            Cache::put($summaryKey, $summary, now()->addHours(4));
+
+            return response()->json([
+                'correct' => $correct,
+                'points' => $points,
+                'summary' => $summary,
+            ]);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function inkwavePendingKey(int $siswaId, int $mapId): string
+    {
+        return "inkwave:pending:{$siswaId}:{$mapId}";
+    }
+
+    private function inkwaveSummaryKey(int $siswaId, int $mapId): string
+    {
+        return "inkwave:summary:{$siswaId}:{$mapId}";
     }
 
     /**
@@ -586,6 +728,10 @@ class RpgGameController extends Controller
         $session->total_score = 0;
         $session->completed_at = null;
         $session->save();
+
+        // InkWave progress is deliberately ephemeral, so reset it with the map session.
+        Cache::forget($this->inkwavePendingKey($siswa->id, $rpgMap->id));
+        Cache::forget($this->inkwaveSummaryKey($siswa->id, $rpgMap->id));
 
         return response()->json(['success' => true, 'message' => 'Game direset. Poin game dikembalikan. Selamat bermain lagi.']);
     }
