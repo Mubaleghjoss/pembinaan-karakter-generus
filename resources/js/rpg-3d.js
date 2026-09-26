@@ -97,6 +97,7 @@ class RpgThreeScene {
         this.canReset = (root.getAttribute('data-rpg-3d-resettable') || root.dataset.rpg3dResettable) === 'true';
         this.viewLocked = (root.getAttribute('data-rpg-3d-view-locked') || root.dataset.rpg3dViewLocked) === 'true';
         this.lowGraphics = (root.getAttribute('data-rpg-3d-graphics') || root.dataset.rpg3dGraphics) === 'low';
+        this.inkwaveMode = (root.getAttribute('data-rpg-3d-inkwave') || root.dataset.rpg3dInkwave) === 'true';
         this.headingIndex = 0;
         this.state = {};
         this.lastMapKey = '';
@@ -212,6 +213,7 @@ class RpgThreeScene {
                 </div>
                 <div class="pkg-rpg-3d-target" data-rpg-3d-target>Target: cari NPC</div>
             </div>
+            ${this.inkwaveMode ? '<div class="pkg-rpg-3d-crosshair" data-rpg-3d-crosshair aria-hidden="true"><i></i><b data-rpg-3d-aim-label>Bidik arena</b></div>' : ''}
             <div class="pkg-rpg-3d-energy" data-rpg-3d-energy-wrap style="display:none;">
                 <span class="pkg-rpg-3d-energy-label">⚡ Energi <em data-rpg-3d-energy-text>0/100</em></span>
                 <div class="pkg-rpg-3d-energy-bar"><div class="pkg-rpg-3d-energy-fill" data-rpg-3d-energy-fill></div></div>
@@ -299,6 +301,7 @@ class RpgThreeScene {
         };
         this.headingLabel = this.root.querySelector('[data-rpg-3d-heading]');
         this.targetLabel = this.root.querySelector('[data-rpg-3d-target]');
+        this.aimLabel = this.root.querySelector('[data-rpg-3d-aim-label]');
         this.minimap = this.root.querySelector('[data-rpg-3d-minimap]');
         this.dialogHost = this.root.querySelector('[data-rpg-3d-dialog]');
         this.uiToggle = this.root.querySelector('[data-rpg-3d-ui-toggle]');
@@ -345,6 +348,10 @@ class RpgThreeScene {
 
         this.shieldAura = this.makeShieldAura();
         this.scene.add(this.shieldAura);
+        if (this.inkwaveMode) {
+            this.aimIndicator = this.makeAimIndicator();
+            this.scene.add(this.aimIndicator);
+        }
         this.prewarmRuntimeAssets();
 
         if (typeof ResizeObserver !== 'undefined') {
@@ -602,8 +609,10 @@ class RpgThreeScene {
             return;
         }
 
-        const direction = this.cardinalFromYaw();
         if (action === 'shoot') {
+            // InkWave uses camera-facing, line-of-sight aim assist while preserving grid combat rules.
+            const inkWaveTarget = this.inkwaveMode ? this.findInkWaveAimTarget() : null;
+            const direction = inkWaveTarget?.direction || this.cardinalFromYaw();
             // Saat lawan bos peluru tak terbatas; selain itu perlu amunisi.
             const canFire = !!this.state.boss || Number(this.state.ammo || 0) > 0;
             this.dispatchShoot(direction.dx, direction.dy);
@@ -611,6 +620,9 @@ class RpgThreeScene {
                 this.playSound('shot');
                 this.kickWeapon();
                 this.flashShot(direction.dx, direction.dy);
+                if (this.inkwaveMode) {
+                    this.showInkWaveShotFeedback(inkWaveTarget);
+                }
             } else {
                 this.playSound('miss');
             }
@@ -1669,6 +1681,88 @@ class RpgThreeScene {
         }
     }
 
+    inkwaveAimDirection() {
+        return this.findInkWaveAimTarget()?.direction || this.cardinalFromYaw();
+    }
+
+    findInkWaveAimTarget() {
+        if (!this.inkwaveMode || !this.state.session) {
+            return null;
+        }
+
+        const playerX = Number(this.state.session.pos_x || 0);
+        const playerY = Number(this.state.session.pos_y || 0);
+        const cameraDirection = this.directionVectorFromYaw();
+        let best = null;
+
+        (this.state.enemies || []).forEach((enemy) => {
+            const dx = Number(enemy.x) - playerX;
+            const dy = Number(enemy.y) - playerY;
+            if ((dx !== 0 && dy !== 0) || (dx === 0 && dy === 0)) {
+                return;
+            }
+
+            const direction = dx === 0
+                ? { dx: 0, dy: Math.sign(dy) }
+                : { dx: Math.sign(dx), dy: 0 };
+            const distance = Math.abs(dx) + Math.abs(dy);
+            if (!this.hasClearShot(playerX, playerY, direction, distance)) {
+                return;
+            }
+
+            const worldDirection = direction.dy !== 0
+                ? { x: 0, z: -direction.dy }
+                : { x: direction.dx, z: 0 };
+            const facing = (worldDirection.x * cameraDirection.dx) + (worldDirection.z * cameraDirection.dz);
+            if (facing < 0.2) {
+                return;
+            }
+
+            const score = (facing * 10) - distance;
+            if (!best || score > best.score) {
+                best = { enemy, direction, distance, score };
+            }
+        });
+
+        return best;
+    }
+
+    hasClearShot(x, y, direction, distance) {
+        for (let step = 1; step < distance; step += 1) {
+            if (this.isObstacleCell(x + (direction.dx * step), y + (direction.dy * step))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    updateInkWaveAimFeedback() {
+        if (!this.inkwaveMode) {
+            return;
+        }
+
+        const target = this.findInkWaveAimTarget();
+        if (this.aimIndicator) {
+            this.aimIndicator.visible = !!target;
+            if (target) {
+                const pos = this.tileToWorld(Number(target.enemy.x), Number(target.enemy.y));
+                this.aimIndicator.position.set(pos.x, 0.08, pos.z);
+            }
+        }
+        this.root.classList.toggle('is-inkwave-targeting', !!target);
+        if (this.aimLabel) {
+            this.aimLabel.textContent = target ? `Kunci ${target.distance} petak` : 'Bidik arena';
+        }
+    }
+
+    showInkWaveShotFeedback(target) {
+        if (!target) {
+            return;
+        }
+        const pos = this.tileToWorld(Number(target.enemy.x), Number(target.enemy.y));
+        this.spawnImpactVisual(pos.x, pos.z);
+    }
+
     findNearestUnansweredNpc() {
         const session = this.state.session || { pos_x: 0, pos_y: 0, answered_npcs: [] };
         const answered = new Set((session.answered_npcs || []).map((id) => Number(id)));
@@ -2039,6 +2133,9 @@ class RpgThreeScene {
             object.position.y = 0.12 + Math.sin(elapsed * 3.4) * 0.06;
         });
         this.shieldAura.rotation.y += delta;
+        if (this.aimIndicator?.visible) {
+            this.aimIndicator.rotation.z += delta * 2.8;
+        }
         if (this.playerViewModel) {
             const moving = this.playerMotion.moving || this.controlState.forward || this.controlState.back || this.controlState.strafeLeft || this.controlState.strafeRight;
             this.playerViewModel.position.y = moving ? Math.sin(elapsed * 8) * 0.025 : Math.sin(elapsed * 1.8) * 0.01;
@@ -2075,6 +2172,7 @@ class RpgThreeScene {
             this.updateContinuousControls(delta);
             this.updateCamera(delta);
             this.animateMarkers(delta);
+            this.updateInkWaveAimFeedback();
             this.updatePlayerShots(delta);
             this.renderer.render(this.scene, this.camera);
             this.updateAdaptiveQuality();
@@ -2427,6 +2525,16 @@ class RpgThreeScene {
         return group;
     }
 
+    makeAimIndicator() {
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.52, 0.68, 16),
+            new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.92, side: THREE.DoubleSide, depthWrite: false }),
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.visible = false;
+        return ring;
+    }
+
     makeShieldAura() {
         const group = new THREE.Group();
         const aura = new THREE.Mesh(
@@ -2649,6 +2757,8 @@ class RpgThreeScene {
         // Peluru terbang nyata (bola bercahaya + trail). Dipakai berulang lewat pool.
         this.playerShots = [];
         this.shotPool = [];
+        this.impactPool = [];
+        this.impacts = [];
         this.prebuilt.shotGeometry = new THREE.SphereGeometry(0.12, 12, 10);
         this.prebuilt.shotMaterial = new THREE.MeshBasicMaterial({ color: 0xfde047 });
         this.prebuilt.tracerMaterial = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.5 });
@@ -2874,8 +2984,10 @@ class RpgThreeScene {
     }
 
     flashShot(dx, dy) {
-        // Tembak manual: arah = pandangan kamera (yaw).
-        const dir = this.directionVectorFromYaw ? this.directionVectorFromYaw() : { dx, dz: -1 };
+        // InkWave locks a line-of-sight target; adventure retains free camera-facing visuals.
+        const dir = this.inkwaveMode
+            ? { dx: Number(dx || 0), dz: -Number(dy || 0) }
+            : (this.directionVectorFromYaw ? this.directionVectorFromYaw() : { dx: 0, dz: -1 });
         this.spawnShotVisual(Number(dir.dx || 0), Number(dir.dz || 0));
     }
 
@@ -2932,21 +3044,49 @@ class RpgThreeScene {
         this.playSound('shot');
     }
 
-    updatePlayerShots(delta) {
-        if (!this.playerShots || !this.playerShots.length) return;
-        const now = performance.now();
-        const survive = [];
-        for (const shot of this.playerShots) {
-            shot.x += shot.vx * delta;
-            shot.z += shot.vz * delta;
-            shot.mesh.position.set(shot.x, shot.y, shot.z);
-            if (now - shot.born < shot.ttl) {
-                survive.push(shot);
-            } else {
-                this.releaseShotMesh(shot.mesh);
-            }
+    spawnImpactVisual(x, z) {
+        let impact = this.impactPool.pop();
+        if (!impact) {
+            impact = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xfef08a, transparent: true, depthWrite: false }));
         }
-        this.playerShots = survive;
+        impact.position.set(x, CAMERA_HEIGHT * 0.78, z);
+        impact.scale.set(0.25, 0.25, 1);
+        impact.material.opacity = 1;
+        impact.visible = true;
+        this.scene.add(impact);
+        impact.userData.expiresAt = performance.now() + 180;
+        this.impacts.push(impact);
+    }
+
+    updatePlayerShots(delta) {
+        const now = performance.now();
+        if (this.playerShots?.length) {
+            const survive = [];
+            for (const shot of this.playerShots) {
+                shot.x += shot.vx * delta;
+                shot.z += shot.vz * delta;
+                shot.mesh.position.set(shot.x, shot.y, shot.z);
+                if (now - shot.born < shot.ttl) {
+                    survive.push(shot);
+                } else {
+                    this.releaseShotMesh(shot.mesh);
+                }
+            }
+            this.playerShots = survive;
+        }
+
+        this.impacts = this.impacts.filter((impact) => {
+            if (now < Number(impact.userData.expiresAt || 0)) {
+                const progress = clamp((Number(impact.userData.expiresAt) - now) / 180, 0, 1);
+                impact.material.opacity = progress;
+                impact.scale.setScalar(0.25 + ((1 - progress) * 0.8));
+                return true;
+            }
+            this.scene.remove(impact);
+            impact.visible = false;
+            this.impactPool.push(impact);
+            return false;
+        });
     }
 
     resize() {

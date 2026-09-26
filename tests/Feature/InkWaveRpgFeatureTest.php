@@ -176,7 +176,8 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee("viewMode: '3d'", false)
             ->assertSee('data-rpg-3d-scene', false)
             ->assertSee(':data-rpg-3d-view-locked="inkwaveMode ? \'true\' : null"', false)
-            ->assertSee(':data-rpg-3d-graphics="inkwaveMode ? \'low\' : null"', false);
+            ->assertSee(':data-rpg-3d-graphics="inkwaveMode ? \'low\' : null"', false)
+            ->assertSee(':data-rpg-3d-inkwave="inkwaveMode ? \'true\' : null"', false);
     }
 
     public function test_adventure_route_remains_the_non_inkwave_mode(): void

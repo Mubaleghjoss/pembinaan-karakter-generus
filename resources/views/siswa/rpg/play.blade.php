@@ -723,6 +723,7 @@
                         data-rpg-3d-resettable="true"
                         :data-rpg-3d-view-locked="inkwaveMode ? 'true' : null"
                         :data-rpg-3d-graphics="inkwaveMode ? 'low' : null"
+                        :data-rpg-3d-inkwave="inkwaveMode ? 'true' : null"
                         class="pkg-rpg-3d-scene mt-4"
                     ></div>
 
