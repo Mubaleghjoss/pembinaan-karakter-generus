@@ -124,16 +124,24 @@ class MateriController extends Controller
         // pdf_path adalah array (cast) berisi path relatif di disk 'public'.
         // URL dibuat absolut supaya bisa dibuka langsung oleh klien mobile.
         $pdfs = [];
-        foreach ($m->pdf_files as $index => $path) {
-            if (! is_string($path) || $path === '') {
+        foreach ($m->pdf_files as $index => $pdf) {
+            // Format lama menyimpan string path; format saat ini menyimpan
+            // object {path, name, original_name} di kolom pdf_path.
+            $path = is_array($pdf) ? ($pdf['path'] ?? null) : $pdf;
+            if (! is_string($path) || trim($path) === '') {
                 continue;
             }
 
+            $nama = is_array($pdf) && is_string($pdf['name'] ?? null)
+                ? $pdf['name']
+                : $m->pdfFileName((int) $index);
+            $exists = Storage::disk('public')->exists($path);
+
             $pdfs[] = [
                 'index' => $index,
-                'nama' => $m->pdfFileName($index),
+                'nama' => $nama,
                 'url' => Storage::disk('public')->url($path),
-                'exists' => Storage::disk('public')->exists($path),
+                'exists' => $exists,
             ];
         }
 
