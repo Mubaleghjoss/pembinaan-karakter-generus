@@ -8,7 +8,7 @@
     <div class="pkg-page-header mb-6">
         <div>
             <h1 class="pkg-page-heading">Petualangan 29 Karakter</h1>
-            <p class="pkg-page-subheading">Jelajahi peta 3D, temui NPC, dan jawab pertanyaan untuk mendapatkan poin. Tersedia juga mode 2D ringan.</p>
+            <p class="pkg-page-subheading">Jelajahi peta 3D, temui NPC, dan jawab pertanyaan untuk mendapatkan poin. Pilih InkWave untuk arena 2D ringan di mobile.</p>
         </div>
     </div>
 
@@ -96,10 +96,10 @@
                            title="Versi ringan untuk HP lama">
                             2D
                         </a>
-                        <a href="{{ route('siswa.rpg.inkwave.play', $map) }}?mode=2d"
+                        <a href="{{ route('siswa.rpg.inkwave.play', $map) }}"
                            class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
-                           title="InkWave memakai grafik rendah dan kontrol mobile arena">
-                            InkWave
+                           title="Arena 2D ringan; map ini dipilih dari map aktif">
+                            Main InkWave
                         </a>
                     </div>
                 </div>

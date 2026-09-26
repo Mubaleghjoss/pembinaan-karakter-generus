@@ -61,6 +61,29 @@
             </div>
         </div>
 
+        {{-- ========================= INKWAVE ========================= --}}
+        <section class="pkg-panel mb-8 overflow-hidden">
+            <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 p-5 text-white sm:p-6">
+                <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="max-w-2xl">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-100">Mode siswa</p>
+                        <h2 class="mt-2 text-2xl font-black">InkWave</h2>
+                        <p class="mt-2 text-sm leading-6 text-emerald-50">
+                            Arena ringan untuk mobile: kalahkan musuh, lalu jawab tantangan karakter. Login sebagai siswa diperlukan agar jawaban benar tercatat sebagai poin.
+                        </p>
+                    </div>
+                    <a href="{{ route('siswa.rpg.index') }}" class="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-emerald-700 transition hover:bg-emerald-50">
+                        {{ Auth::guard('siswa')->check() ? 'Pilih map InkWave' : 'Login siswa untuk mulai' }}
+                    </a>
+                </div>
+            </div>
+            <div class="grid gap-3 p-4 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-3">
+                <p><span class="font-bold text-slate-900 dark:text-white">Grafik ringan.</span> Default 2D untuk layar kecil.</p>
+                <p><span class="font-bold text-slate-900 dark:text-white">Jawaban aman.</span> Nilai jawaban diperiksa server.</p>
+                <p><span class="font-bold text-slate-900 dark:text-white">Map aktif.</span> Pilih map yang tersedia setelah login.</p>
+            </div>
+        </section>
+
         {{-- ========================= GAME EDUKATIF ========================= --}}
         <div class="mb-8">
             <div class="mb-4 flex items-center justify-between">

@@ -19,7 +19,9 @@ class AuthenticateSiswa
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
             
-            return redirect()->route('siswa.login');
+            // Preserve the requested student page so public InkWave entry can
+            // continue to its map picker after a successful login.
+            return redirect()->guest(route('siswa.login'));
         }
 
         if (! Auth::guard('siswa')->user()->canLogin()) {

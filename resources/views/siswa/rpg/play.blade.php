@@ -612,7 +612,7 @@
                     <div class="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500" :style="'width:' + (totalNpcs > 0 ? (answeredCount / totalNpcs * 100) : 0) + '%'"> </div>
                 </div>
 
-                <div class="rpg-mobile-view-switch">
+                <div x-show="!inkwaveMode" class="rpg-mobile-view-switch">
                     <div class="pkg-rpg-view-toggle" aria-label="Pilih tampilan arena">
                         <button type="button" @click="setViewMode('2d')" :class="viewMode === '2d' ? 'is-active' : ''" :aria-pressed="(viewMode === '2d').toString()">2D</button>
                         <button type="button" @click="setViewMode('3d')" :class="viewMode === '3d' ? 'is-active' : ''" :aria-pressed="(viewMode === '3d').toString()">3D</button>
@@ -700,7 +700,7 @@
                             <p class="rpg-stage-copy text-sm text-slate-500 dark:text-slate-400">Grid besar tetap diprioritaskan terlihat penuh di mobile.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <div class="pkg-rpg-view-toggle" aria-label="Pilih tampilan arena">
+                            <div x-show="!inkwaveMode" class="pkg-rpg-view-toggle" aria-label="Pilih tampilan arena">
                                 <button type="button" @click="setViewMode('2d')" :class="viewMode === '2d' ? 'is-active' : ''" :aria-pressed="(viewMode === '2d').toString()">2D</button>
                                 <button type="button" @click="setViewMode('3d')" :class="viewMode === '3d' ? 'is-active' : ''" :aria-pressed="(viewMode === '3d').toString()">3D</button>
                             </div>
@@ -1128,6 +1128,7 @@ function rpgGame() {
         activeStudentsCount: 1,
         controlMode: 'dpad',
         actionMode: 'move',
+        // InkWave intentionally stays in the low-graphics 2D arena.
         viewMode: '2d',
         difficulty: '{{ $rpgMap->difficulty ?? "easy" }}',
         npcAvatarLookup: @json(\App\Support\RpgCatalog::npcAvatarLookup()),
@@ -1345,6 +1346,9 @@ function rpgGame() {
         },
 
         resolveStoredViewMode() {
+            if (this.inkwaveMode) {
+                return '2d';
+            }
             // Prioritas: query param ?mode= dari daftar peta (tombol Main 3D / 2D).
             try {
                 const params = new URLSearchParams(window.location.search);
@@ -1364,6 +1368,10 @@ function rpgGame() {
         },
 
         setViewMode(mode) {
+            if (this.inkwaveMode) {
+                this.viewMode = '2d';
+                return;
+            }
             this.viewMode = mode === '3d' ? '3d' : '2d';
 
             try {

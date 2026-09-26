@@ -20,11 +20,38 @@ class InkWaveRpgFeatureTest extends TestCase
     {
         parent::setUp();
         $this->withoutMiddleware(ThrottleRequests::class);
+        Cache::flush();
 
         // The production migration extends MySQL's enum; SQLite keeps the legacy CHECK constraint.
         if (DB::getDriverName() === 'sqlite') {
             DB::statement('PRAGMA ignore_check_constraints = ON');
         }
+    }
+
+    public function test_public_inkwave_cta_sends_guests_to_login_and_preserves_the_map_picker(): void
+    {
+        $this->get(route('public.rpg.index'))
+            ->assertOk()
+            ->assertSee('InkWave')
+            ->assertSee(route('siswa.rpg.index'), false)
+            ->assertSee('Login siswa untuk mulai');
+
+        $this->get(route('siswa.rpg.index'))
+            ->assertRedirect(route('siswa.login'))
+            ->assertSessionHas('url.intended', route('siswa.rpg.index'));
+    }
+
+    public function test_active_map_index_provides_a_valid_inkwave_entry(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $activeMap = $this->map();
+        $this->map(['is_active' => false, 'nama' => 'Peta Nonaktif']);
+
+        $this->actingAs($siswa, 'siswa')
+            ->get(route('siswa.rpg.index'))
+            ->assertOk()
+            ->assertSee(route('siswa.rpg.inkwave.play', $activeMap), false)
+            ->assertDontSee('Peta Nonaktif');
     }
 
     public function test_inkwave_routes_require_siswa_auth_and_reject_inactive_or_missing_maps(): void
