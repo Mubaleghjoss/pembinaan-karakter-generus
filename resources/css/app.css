@@ -2389,14 +2389,40 @@ html.dark [class~="dark:border-purple-700"] {
     background: rgba(2, 23, 32, 0.72);
 }
 
+.pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"].is-inkwave-hit::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    border: clamp(6px, 1.5vw, 16px) solid rgba(251, 113, 133, 0.72);
+    box-shadow: inset 0 0 4rem rgba(190, 18, 60, 0.48);
+}
+
+.pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"].is-inkwave-locked .pkg-rpg-3d-mobile-controls,
+.pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"].is-inkwave-locked .pkg-rpg-3d-controls {
+    pointer-events: none;
+    opacity: 0.42;
+}
+
 @media (max-width: 640px) {
     .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] {
         min-height: max(390px, 72svh);
     }
 
     .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-hud {
-        max-width: calc(100% - 1.5rem);
-        padding-right: 3.4rem;
+        max-width: calc(100% - 4.5rem);
+        padding-right: 0;
+        gap: 0.2rem;
+    }
+
+    .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-avatar-stat,
+    .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-stat:nth-child(2) {
+        display: none;
+    }
+
+    .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-crosshair {
+        top: 48%;
     }
 
     .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-stat span {

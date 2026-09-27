@@ -23,6 +23,7 @@ const INKWAVE_CAMERA_DISTANCE = TILE_SIZE * 2.35;
 const INKWAVE_CAMERA_HEIGHT = TILE_SIZE * 1.75;
 const INKWAVE_POSITION_SYNC_MS = 180;
 const INKWAVE_AIM_COS = Math.cos(Math.PI / 7);
+const INKWAVE_ENEMY_SHOT_CAP = 10;
 
 const DIRECTIONS = [
     { dx: 0, dy: 1, label: 'Utara' },
@@ -178,6 +179,8 @@ class RpgThreeScene {
         };
         this.inkWaveEffects = [];
         this.inkWaveEffectPool = [];
+        this.inkWaveEnemyShots = [];
+        this.inkWaveEnemyShotPool = [];
 
         this.mount();
         this.bindControls();
@@ -216,7 +219,7 @@ class RpgThreeScene {
                     <span>Tameng</span>
                     <strong data-rpg-3d-shield>OFF</strong>
                 </div>
-                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div>' : ''}
+                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-combat-stat"><span>HP / Tameng</span><strong data-rpg-3d-combat>100 / 0</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div>' : ''}
             </div>
             <div class="pkg-rpg-3d-compass">
                 <div class="pkg-rpg-3d-compass-ring">
@@ -297,6 +300,7 @@ class RpgThreeScene {
         this.hudNpc = this.root.querySelector('[data-rpg-3d-npc]');
         this.hudAmmo = this.root.querySelector('[data-rpg-3d-ammo]');
         this.hudShield = this.root.querySelector('[data-rpg-3d-shield]');
+        this.hudCombat = this.root.querySelector('[data-rpg-3d-combat]');
         this.hudTerritory = this.root.querySelector('[data-rpg-3d-territory]');
         this.hudMatchTimer = this.root.querySelector('[data-rpg-3d-match-timer]');
         this.hudEncounter = this.root.querySelector('[data-rpg-3d-encounter]');
@@ -448,15 +452,19 @@ class RpgThreeScene {
             const completionCloseButton = event.target.closest('[data-rpg-3d-close-completion]');
             const mapListButton = event.target.closest('[data-rpg-3d-map-list]');
             const resetButton = event.target.closest('[data-rpg-3d-reset]');
+            const retryInkWaveButton = event.target.closest('[data-rpg-3d-inkwave-retry]');
 
-            if (!answerButton && !closeButton && !completionCloseButton && !mapListButton && !resetButton) {
+            if (!answerButton && !closeButton && !completionCloseButton && !mapListButton && !resetButton && !retryInkWaveButton) {
                 return;
             }
 
             event.preventDefault();
             event.stopPropagation();
 
-            if (answerButton) {
+            if (retryInkWaveButton) {
+                this.invokeControl('retryInkWave');
+                this.root.focus({ preventScroll: true });
+            } else if (answerButton) {
                 this.invokeControl('answer', { index: Number(answerButton.getAttribute('data-rpg-3d-answer')) });
             } else if (closeButton) {
                 this.invokeControl('closeNpc');
@@ -814,6 +822,11 @@ class RpgThreeScene {
 
             if (method === 'shootInkWave' && typeof data.shootInkWaveTarget === 'function') {
                 data.shootInkWaveTarget(detail.targetId);
+                return true;
+            }
+
+            if (method === 'retryInkWave' && typeof data.retryInkWaveCombat === 'function') {
+                data.retryInkWaveCombat();
                 return true;
             }
 
@@ -1670,6 +1683,12 @@ class RpgThreeScene {
         const bossActive = !!this.state.boss;
         this.hudAmmo.textContent = bossActive ? '∞' : String(Number(this.state.ammo || 0));
         this.hudShield.textContent = this.state.shieldActive ? `${Number(this.state.shieldSecondsLeft || 0)}d` : 'OFF';
+        if (this.hudCombat) {
+            const combat = this.state.inkwaveCombat || {};
+            this.hudCombat.textContent = `${Number(combat.health || 0)} / ${Number(combat.shield || 0)}`;
+            this.root.classList.toggle('is-inkwave-hit', !!combat.hit);
+            this.root.classList.toggle('is-inkwave-locked', !!combat.locked);
+        }
         if (this.hudTerritory) {
             const territory = this.state.territory || {};
             this.hudTerritory.textContent = `${Number(territory.coverage_percent || 0)}% / ${Number(territory.neutral_cells || 0)}`;
@@ -1680,7 +1699,7 @@ class RpgThreeScene {
             this.hudMatchTimer.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
         }
         if (this.hudEncounter) {
-            this.hudEncounter.textContent = this.state.inkwaveMatch?.finished ? 'Selesai' : (this.state.npcDialogOpen ? 'Pertanyaan' : 'Siap');
+            this.hudEncounter.textContent = this.state.inkwaveMatch?.finished ? 'Selesai' : (this.state.inkwaveCombat?.respawnOpen ? 'Respawn' : (this.state.npcDialogOpen ? 'Pertanyaan' : 'Siap'));
         }
         this.updatePlayerEquipment();
     }
@@ -1702,7 +1721,7 @@ class RpgThreeScene {
     }
 
     isDialogOpen() {
-        return !!((this.state.npcDialogOpen && this.state.currentNpc) || this.state.completionOpen || this.state.inkwaveSummaryOpen);
+        return !!((this.state.npcDialogOpen && this.state.currentNpc) || this.state.completionOpen || this.state.inkwaveSummaryOpen || this.state.inkwaveCombat?.respawnOpen);
     }
 
     updateDialog() {
@@ -1714,8 +1733,9 @@ class RpgThreeScene {
         const completionOpen = !!this.state.completionOpen;
         const inkwaveSummaryOpen = !!this.state.inkwaveSummaryOpen;
         const open = !!(this.state.npcDialogOpen && npc);
+        const respawnOpen = !!this.state.inkwaveCombat?.respawnOpen;
 
-        if (!open && !completionOpen && !inkwaveSummaryOpen) {
+        if (!open && !completionOpen && !inkwaveSummaryOpen && !respawnOpen) {
             this.dialogHost.hidden = true;
             this.dialogHost.innerHTML = '';
             this.lastDialogKey = '';
@@ -1728,6 +1748,22 @@ class RpgThreeScene {
         this.controlState.strafeRight = false;
         this.controlState.turnLeft = false;
         this.controlState.turnRight = false;
+
+        if (respawnOpen) {
+            this.lastDialogKey = 'inkwave-respawn';
+            this.dialogHost.innerHTML = `
+                <div class="pkg-rpg-3d-dialog-backdrop">
+                    <section class="pkg-rpg-3d-dialog-card pkg-rpg-3d-completion-card" aria-label="Respawn InkWave">
+                        <div class="pkg-rpg-3d-completion-body">
+                            <h2>Kamu tumbang</h2>
+                            <p>Combat dijeda. Pertanyaan dan poin yang sudah sah tetap tersimpan.</p>
+                            <div class="pkg-rpg-3d-completion-actions"><button type="button" data-rpg-3d-inkwave-retry>Coba lagi</button></div>
+                        </div>
+                    </section>
+                </div>`;
+            this.dialogHost.hidden = false;
+            return;
+        }
 
         if (inkwaveSummaryOpen) {
             const summary = this.state.inkwaveSummary || {};
@@ -2101,10 +2137,11 @@ class RpgThreeScene {
         const lookAt = this.cameraLookTarget;
         if (this.inkwaveMode) {
             // Elevated chase framing keeps turf, cover, and locked targets readable on Low DPR.
+            const followDistance = this.safeInkWaveCameraDistance(direction);
             this.camera.position.set(
-                this.playerVisual.x - (direction.dx * INKWAVE_CAMERA_DISTANCE),
+                this.playerVisual.x - (direction.dx * followDistance),
                 INKWAVE_CAMERA_HEIGHT + bob,
-                this.playerVisual.z - (direction.dz * INKWAVE_CAMERA_DISTANCE),
+                this.playerVisual.z - (direction.dz * followDistance),
             );
             lookAt.set(
                 this.playerVisual.x + (direction.dx * TILE_SIZE * 1.4),
@@ -2126,6 +2163,16 @@ class RpgThreeScene {
         if (this.shieldAura) {
             this.shieldAura.position.set(this.playerVisual.x, CAMERA_HEIGHT * 0.55, this.playerVisual.z);
         }
+    }
+
+    safeInkWaveCameraDistance(direction) {
+        const stepSize = TILE_SIZE * 0.25;
+        for (let distance = stepSize; distance <= INKWAVE_CAMERA_DISTANCE; distance += stepSize) {
+            const x = this.playerVisual.x - (direction.dx * distance);
+            const z = this.playerVisual.z - (direction.dz * distance);
+            if (this.isObstacleWorldPoint(x, z)) return Math.max(TILE_SIZE * 0.35, distance - stepSize);
+        }
+        return INKWAVE_CAMERA_DISTANCE;
     }
 
     updateContinuousControls(delta) {
@@ -2364,6 +2411,7 @@ class RpgThreeScene {
             if (this.inkwaveMode && object === this.dynamicObjects.localInkWavePlayer) {
                 object.position.x = this.playerVisual.x;
                 object.position.z = this.playerVisual.z;
+                object.rotation.y = this.yaw;
             }
             const moving = this.advanceDynamicObject(object, moveLerp);
             this.animateHumanoidObject(object, delta, elapsed, moving, index + 20);
@@ -2416,6 +2464,7 @@ class RpgThreeScene {
             this.animateMarkers(delta);
             this.updateInkWaveAimFeedback();
             this.updatePlayerShots(delta);
+            this.updateInkWaveEnemyShots(delta);
             this.renderer.render(this.scene, this.camera);
             this.updateAdaptiveQuality();
         }
@@ -2561,7 +2610,11 @@ class RpgThreeScene {
         );
         paintRing.rotation.x = -Math.PI / 2;
         paintRing.position.y = 0.06;
-        group.add(paintRing);
+        const weapon = this.makeWeaponModel();
+        weapon.position.set(0.34, 1.18, -0.42);
+        weapon.rotation.set(-0.12, 0, 0);
+        group.add(paintRing, weapon);
+        group.userData.weapon = weapon;
         return group;
     }
 
@@ -3293,8 +3346,9 @@ class RpgThreeScene {
 
         // Arah "kanan" relatif untuk menggeser origin ke sisi senjata (kanan-bawah layar).
         const rx = -vz, rz = vx;
-        const originX = this.camera.position.x + vx * 1.3 + rx * 0.42;
-        const originZ = this.camera.position.z + vz * 1.3 + rz * 0.42;
+        const originBase = this.inkwaveMode ? this.playerVisual : this.camera.position;
+        const originX = originBase.x + vx * 0.72 + rx * 0.34;
+        const originZ = originBase.z + vz * 0.72 + rz * 0.34;
         const originY = CAMERA_HEIGHT * 0.72;
 
         // Batasi jumlah peluru aktif agar tak nge-lag saat beruntun.
@@ -3327,6 +3381,45 @@ class RpgThreeScene {
                 }
             }, 60);
         }
+    }
+
+    fireInkWaveEnemyShot(fromX, fromY) {
+        if (!this.inkwaveMode || this.isDialogOpen()) return;
+        if (this.inkWaveEnemyShots.length >= INKWAVE_ENEMY_SHOT_CAP) {
+            const oldest = this.inkWaveEnemyShots.shift();
+            oldest.mesh.visible = false;
+            this.inkWaveEnemyShotPool.push(oldest.mesh);
+        }
+        const from = this.tileToWorld(Number(fromX), Number(fromY));
+        const dx = this.playerVisual.x - from.x;
+        const dz = this.playerVisual.z - from.z;
+        const length = Math.hypot(dx, dz) || 1;
+        let mesh = this.inkWaveEnemyShotPool.pop();
+        if (!mesh) {
+            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfb7185 }));
+            this.inkWaveEffectGroup.add(mesh);
+        }
+        mesh.visible = true;
+        mesh.position.set(from.x, CAMERA_HEIGHT * 0.72, from.z);
+        this.inkWaveEnemyShots.push({ mesh, vx: (dx / length) * SHOT_SPEED * 0.58, vz: (dz / length) * SHOT_SPEED * 0.58, ttl: performance.now() + 700 });
+    }
+
+    updateInkWaveEnemyShots(delta) {
+        if (!this.inkwaveMode || !this.inkWaveEnemyShots.length) return;
+        const now = performance.now();
+        let write = 0;
+        for (let index = 0; index < this.inkWaveEnemyShots.length; index++) {
+            const shot = this.inkWaveEnemyShots[index];
+            shot.mesh.position.x += shot.vx * delta;
+            shot.mesh.position.z += shot.vz * delta;
+            if (now < shot.ttl) {
+                this.inkWaveEnemyShots[write++] = shot;
+            } else {
+                shot.mesh.visible = false;
+                this.inkWaveEnemyShotPool.push(shot.mesh);
+            }
+        }
+        this.inkWaveEnemyShots.length = write;
     }
 
     // Tembakan menuju sebuah petak (dipakai auto-shoot / tembak bos dari Alpine).

@@ -358,6 +358,52 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee('shootInkWave: ({ targetId })', false);
     }
 
+    public function test_inkwave_view_exposes_mode_scoped_mutual_combat_and_respawn_state(): void
+    {
+        $map = $this->map();
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee('inkwaveHealth: 100', false)
+            ->assertSee('inkwaveEnemyFireTick()', false)
+            ->assertSee('retryInkWave: ()', false)
+            ->assertSee('inkwaveCombat: this.inkwaveMode ?', false);
+    }
+
+    public function test_adventure_view_keeps_combat_state_disabled_by_mode_guard(): void
+    {
+        $map = $this->map();
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.play', $map))
+            ->assertOk()
+            ->assertViewHas('inkwaveMode', false)
+            ->assertSee('if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.inkwavePaused) return;', false);
+    }
+
+    public function test_client_supplied_combat_points_are_ignored(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $this->npc($map, ['poin' => 11]);
+
+        $this->actingAs($siswa, 'siswa')->get(route('siswa.rpg.inkwave.play', $map))->assertOk();
+        $this->travel(2)->seconds();
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.encounter', $map), [
+                'target_id' => 0,
+                'x' => 3,
+                'y' => 3,
+                'points' => 999999,
+                'damage' => 999999,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseCount('point_transactions', 0);
+        $this->assertSame(0, (int) RpgGameSession::query()->where('siswa_id', $siswa->id)->value('total_score'));
+    }
+
     public function test_grid_position_endpoint_rejects_fractional_world_coordinates(): void
     {
         $siswa = Siswa::factory()->create();

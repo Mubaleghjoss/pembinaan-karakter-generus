@@ -1124,6 +1124,14 @@ function rpgGame() {
         inkwaveSummary: @json($inkwaveSummary ?? []),
         inkwaveMatch: @json($inkwaveMatch ?? []),
         inkwaveMatchTimer: null,
+        // Client-only combat vitality; questions and points remain server-authoritative.
+        inkwaveHealth: 100,
+        inkwaveMaxHealth: 100,
+        inkwaveShield: 0,
+        inkwaveMaxShield: 100,
+        inkwaveRespawnOpen: false,
+        inkwaveHitUntil: 0,
+        inkwaveSpawn: { x: Number(@json($session['pos_x'] ?? $session->pos_x ?? 0)), y: Number(@json($session['pos_y'] ?? $session->pos_y ?? 0)) },
         // Separate cosmetic coverage from questions and educational points.
         inkwaveTerritory: @json($inkwaveTerritory ?? []),
         inkwaveQuestionSecondsLeft: 0,
@@ -1262,6 +1270,7 @@ function rpgGame() {
                 syncInkWavePosition: ({ x, y }) => this.syncInkWavePosition(Number(x), Number(y)),
                 shoot: ({ dx, dy }) => this.shootDirection(Number(dx || 0), Number(dy || 0)),
                 shootInkWave: ({ targetId }) => this.shootInkWaveTarget(targetId),
+                retryInkWave: () => this.retryInkWaveCombat(),
                 answer: ({ index }) => this.submitAnswer(Number(index || 0)),
                 closeNpc: () => this.closeDialog(),
                 view2d: () => {
@@ -1527,6 +1536,15 @@ function rpgGame() {
                 shieldActive: this.shieldActive,
                 shieldSecondsLeft: this.shieldSecondsLeft,
                 ammo: this.ammo,
+                inkwaveCombat: this.inkwaveMode ? {
+                    health: this.inkwaveHealth,
+                    maxHealth: this.inkwaveMaxHealth,
+                    shield: this.inkwaveShield,
+                    maxShield: this.inkwaveMaxShield,
+                    respawnOpen: this.inkwaveRespawnOpen,
+                    hit: Date.now() < this.inkwaveHitUntil,
+                    locked: this.inkwavePaused || this.showNpcDialog || this.inkwaveRespawnOpen,
+                } : null,
                 boss: this.bossActive && this.boss ? {
                     avatar: this.boss.avatar,
                     nama: this.boss.nama,
@@ -1734,6 +1752,7 @@ function rpgGame() {
                 if (this.isNpcTile(this.session.pos_x, this.session.pos_y)) return;
                 this.moveEnemies();
                 if (!this.checkEnemyCatch()) {
+                    if (this.inkwaveMode) this.inkwaveEnemyFireTick();
                     this.tryAutoShoot();
                 }
             }, speed);
@@ -1766,6 +1785,10 @@ function rpgGame() {
             if (this.isNpcTile(px, py)) return false;
             if (this.showNpcDialog) return false;
             if (this.enemies.some(e => e.x === px && e.y === py)) {
+                if (this.inkwaveMode) {
+                    this.applyInkWaveDamage(28);
+                    return true;
+                }
                 if (this.shieldActive) {
                     this.clearShieldState();
                     this.enemies = JSON.parse(JSON.stringify(this.enemyInitial));
@@ -2389,6 +2412,7 @@ function rpgGame() {
                 _patrolDirection: Number(enemy?._patrolDirection) === -1 ? -1 : 1,
                 _alertedUntil: Number(enemy?._alertedUntil || 0),
                 _nextMoveAt: Number(enemy?._nextMoveAt || 0),
+                _nextShotAt: Number(enemy?._nextShotAt || 0),
             };
         },
 
@@ -2422,6 +2446,7 @@ function rpgGame() {
             if (shieldIndex !== -1) {
                 const pickup = { ...this.pickups.shield.splice(shieldIndex, 1)[0] };
                 this.activateShield();
+                if (this.inkwaveMode) this.inkwaveShield = this.inkwaveMaxShield;
                 this.playTone('shield');
                 this.notifyPlayer(`Tameng aktif ${this.shieldDurationSeconds} detik.`, 'success');
                 this.schedulePickupRespawn('shield', pickup);
@@ -2512,6 +2537,81 @@ function rpgGame() {
             }
 
             this.movePlayer(dx, dy);
+        },
+
+        inkwaveHasLineOfSight(fromX, fromY, toX, toY) {
+            const distance = Math.max(Math.abs(toX - fromX), Math.abs(toY - fromY));
+            for (let step = 1; step < distance; step++) {
+                const x = Math.round(fromX + ((toX - fromX) * step / distance));
+                const y = Math.round(fromY + ((toY - fromY) * step / distance));
+                if (this.isObstacle(x, y)) return false;
+            }
+            return true;
+        },
+
+        inkwaveEnemyFireTick() {
+            if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.inkwavePaused) return;
+            const now = Date.now();
+            const px = Number(this.session.pos_x), py = Number(this.session.pos_y);
+            // Stable array order and per-unit cooldown make this bounded and reproducible.
+            for (let index = 0; index < this.enemies.length; index++) {
+                const enemy = this.enemies[index];
+                const distance = Math.hypot(px - enemy.x, py - enemy.y);
+                const range = enemy.intelligence_level === 'high' ? 6 : (enemy.intelligence_level === 'low' ? 4 : 5);
+                if (distance > range || now < enemy._nextShotAt || !this.inkwaveHasLineOfSight(enemy.x, enemy.y, px, py)) continue;
+                const cooldown = enemy.speed_level === 'fast' ? 1500 : (enemy.speed_level === 'slow' ? 2600 : 2050);
+                enemy._nextShotAt = now + cooldown + (index * 90);
+                const scene = document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene;
+                scene?.fireInkWaveEnemyShot?.(enemy.x, enemy.y);
+                this.applyInkWaveDamage(enemy.intelligence_level === 'high' ? 18 : 14);
+                break;
+            }
+        },
+
+        applyInkWaveDamage(amount) {
+            if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.inkwavePaused || this.showNpcDialog) return;
+            let damage = Math.max(0, Number(amount || 0));
+            if (this.shieldActive && this.inkwaveShield > 0) {
+                const absorbed = Math.min(this.inkwaveShield, damage);
+                this.inkwaveShield -= absorbed;
+                damage -= absorbed;
+                if (this.inkwaveShield <= 0) this.clearShieldState();
+            }
+            this.inkwaveHealth = Math.max(0, this.inkwaveHealth - damage);
+            this.inkwaveHitUntil = Date.now() + 320;
+            this.caughtFlash = true;
+            setTimeout(() => { this.caughtFlash = false; }, 320);
+            this.playTone('hit');
+            if (this.inkwaveHealth <= 0) {
+                this.inkwaveRespawnOpen = true;
+                this.inkwavePaused = true;
+                this.notifyPlayer('Kamu tumbang. Coba lagi dari titik aman.', 'error');
+            }
+        },
+
+        retryInkWaveCombat() {
+            if (!this.inkwaveMode || !this.inkwaveRespawnOpen) return;
+            const spawn = this.findInkWaveSafeSpawn();
+            this.session.pos_x = spawn.x;
+            this.session.pos_y = spawn.y;
+            this.inkwaveHealth = this.inkwaveMaxHealth;
+            this.inkwaveShield = 0;
+            this.clearShieldState();
+            this.inkwaveRespawnOpen = false;
+            this.inkwavePaused = false;
+            this.enemies = JSON.parse(JSON.stringify(this.enemyInitial)).map(enemy => this.normalizeEnemy(enemy));
+            this.focusThreeScene();
+        },
+
+        findInkWaveSafeSpawn() {
+            const preferred = this.inkwaveSpawn || { x: 0, y: 0 };
+            if (!this.isObstacle(preferred.x, preferred.y)) return preferred;
+            for (let y = 0; y < this.gridSize; y++) {
+                for (let x = 0; x < this.gridSize; x++) {
+                    if (!this.isObstacle(x, y) && !this.enemies.some(enemy => enemy.x === x && enemy.y === y)) return { x, y };
+                }
+            }
+            return { x: 0, y: 0 };
         },
 
         shootInkWaveTarget(targetId) {
