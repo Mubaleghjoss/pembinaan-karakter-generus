@@ -371,6 +371,40 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee('inkwaveCombat: this.inkwaveMode ?', false);
     }
 
+    public function test_inkwave_exposes_local_four_vs_four_end_spawn_and_bounded_respawn_markers(): void
+    {
+        $map = $this->map([
+            'obstacles' => [['x' => 0, 'y' => 0], ['x' => 9, 'y' => 9]],
+        ]);
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee('inkwaveTeamSize: 4', false)
+            ->assertSee('initializeInkWaveTeams()', false)
+            ->assertSee('const byOwnEnd', false)
+            ->assertSee('const byRivalEnd', false)
+            ->assertSee("team: 'rival'", false)
+            ->assertSee('inkwaveRespawnSeconds = 3', false)
+            ->assertSee('findInkWaveRivalSpawnTile()', false)
+            ->assertSee('educational progress and territory stay intact', false);
+    }
+
+    public function test_inkwave_death_flow_has_no_point_award_request(): void
+    {
+        $map = $this->map();
+
+        $response = $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk();
+
+        $html = $response->getContent();
+        $deathFlow = substr($html, strpos($html, 'beginInkWaveRespawn()'), 1800);
+        $this->assertStringNotContainsString('points', $deathFlow);
+        $this->assertStringNotContainsString('total_score', $deathFlow);
+        $this->assertDatabaseCount('point_transactions', 0);
+    }
+
     public function test_adventure_view_keeps_combat_state_disabled_by_mode_guard(): void
     {
         $map = $this->map();

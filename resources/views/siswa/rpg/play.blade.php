@@ -1131,7 +1131,13 @@ function rpgGame() {
         inkwaveShield: 0,
         inkwaveMaxShield: 100,
         inkwaveRespawnOpen: false,
+        inkwaveRespawnSeconds: 0,
+        inkwaveRespawnTimer: null,
         inkwaveHitUntil: 0,
+        // Local 4v4 presentation only: one student plus three PKG bots versus four rival bots.
+        inkwaveTeamSize: 4,
+        inkwaveTeams: { pkg: [], rival: [] },
+        inkwaveEnemySpawnTiles: [],
         inkwaveInkMax: 100,
         inkwaveInkShotCost: 12,
         inkwaveInkRechargeDelayMs: 700,
@@ -1305,10 +1311,12 @@ function rpgGame() {
             window.addEventListener('orientationchange', this.resizeHandler);
 
             if (this.inkwaveMode) {
+                this.initializeInkWaveTeams();
                 this.startInkWaveMatchTimer();
                 this.startInkWaveInkTank();
+            } else {
+                this.enemies = (this.enemies || []).map(enemy => this.normalizeEnemy(enemy));
             }
-            this.enemies = (this.enemies || []).map(enemy => this.normalizeEnemy(enemy));
             this.enemyInitial = JSON.parse(JSON.stringify(this.enemies));
             this.generatePickups();
             this.initBoss();
@@ -1347,6 +1355,7 @@ function rpgGame() {
             if (this.inkwaveQuestionTimer) clearInterval(this.inkwaveQuestionTimer);
             if (this.inkwaveMatchTimer) clearInterval(this.inkwaveMatchTimer);
             if (this.inkwaveInkTimer) clearInterval(this.inkwaveInkTimer);
+            if (this.inkwaveRespawnTimer) clearInterval(this.inkwaveRespawnTimer);
             if (this.shieldTimer) clearInterval(this.shieldTimer);
             if (this.bossTimer) clearInterval(this.bossTimer);
             if (this.bossRespawnTimer) clearTimeout(this.bossRespawnTimer);
@@ -1562,9 +1571,11 @@ function rpgGame() {
                     shield: this.inkwaveShield,
                     maxShield: this.inkwaveMaxShield,
                     respawnOpen: this.inkwaveRespawnOpen,
+                    respawnSeconds: this.inkwaveRespawnSeconds,
                     hit: Date.now() < this.inkwaveHitUntil,
                     locked: this.inkwavePaused || this.showNpcDialog || this.inkwaveRespawnOpen,
                 } : null,
+                inkwaveTeams: this.inkwaveMode ? this.inkwaveTeams : null,
                 boss: this.bossActive && this.boss ? {
                     avatar: this.boss.avatar,
                     nama: this.boss.nama,
@@ -2416,6 +2427,46 @@ function rpgGame() {
             return Number.isFinite(raw) && raw >= 1 && raw <= choices.length && selected === raw - 1;
         },
 
+        initializeInkWaveTeams() {
+            const walkable = [];
+            for (let y = 0; y < this.gridSize; y++) {
+                for (let x = 0; x < this.gridSize; x++) {
+                    if (!this.isObstacle(x, y) && !this.isNpcTile(x, y)) walkable.push({ x, y });
+                }
+            }
+            const byOwnEnd = [...walkable].sort((a, b) => a.y - b.y || a.x - b.x);
+            const byRivalEnd = [...walkable].sort((a, b) => b.y - a.y || a.x - b.x);
+            const ownTiles = byOwnEnd.slice(0, this.inkwaveTeamSize);
+            const rivalTiles = byRivalEnd.filter(tile => !ownTiles.some(own => own.x === tile.x && own.y === tile.y)).slice(0, this.inkwaveTeamSize);
+            const ownSpawn = ownTiles[0] || { x: 0, y: 0 };
+            this.inkwaveSpawn = ownSpawn;
+            this.session.pos_x = ownSpawn.x;
+            this.session.pos_y = ownSpawn.y;
+            this.inkwaveEnemySpawnTiles = rivalTiles.length ? rivalTiles : [ownSpawn];
+
+            const sources = (this.enemies || []).length ? this.enemies : [{ avatar: 'enemy_slime' }];
+            this.enemies = Array.from({ length: this.inkwaveTeamSize }, (_, index) => this.normalizeEnemy({
+                ...sources[index % sources.length],
+                ...this.inkwaveEnemySpawnTiles[index % this.inkwaveEnemySpawnTiles.length],
+                team: 'rival',
+                bot_slot: index + 1,
+            }));
+            this.inkwaveTeams = {
+                pkg: ownTiles.map((tile, index) => ({ ...tile, slot: index + 1, isPlayer: index === 0, team: 'pkg' })),
+                rival: this.enemies.map(enemy => ({ slot: enemy.bot_slot, team: 'rival' })),
+            };
+            this.persistInkWaveSpawn(ownSpawn);
+        },
+
+        persistInkWaveSpawn(spawn) {
+            if (this.previewMode) return;
+            fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
+                body: JSON.stringify({ pos_x: spawn.x, pos_y: spawn.y })
+            }).catch(error => console.error('InkWave spawn sync failed', error));
+        },
+
         normalizeEnemy(enemy) {
             const x = Number(enemy?.x ?? 0);
             const y = Number(enemy?.y ?? 0);
@@ -2423,7 +2474,11 @@ function rpgGame() {
             return {
                 x,
                 y,
+                id: enemy?.id,
+                encounter_id: enemy?.encounter_id,
                 avatar: enemy?.avatar,
+                team: enemy?.team || null,
+                bot_slot: Number(enemy?.bot_slot || 0),
                 speed_level: ['slow', 'normal', 'fast'].includes(enemy?.speed_level) ? enemy.speed_level : 'normal',
                 intelligence_level: ['low', 'normal', 'high'].includes(enemy?.intelligence_level) ? enemy.intelligence_level : 'normal',
                 _lastX: Number(enemy?._lastX ?? x),
@@ -2605,14 +2660,29 @@ function rpgGame() {
             setTimeout(() => { this.caughtFlash = false; }, 320);
             this.playTone('hit');
             if (this.inkwaveHealth <= 0) {
-                this.inkwaveRespawnOpen = true;
-                this.inkwavePaused = true;
-                this.notifyPlayer('Kamu tumbang. Coba lagi dari titik aman.', 'error');
+                this.beginInkWaveRespawn();
             }
         },
 
+        beginInkWaveRespawn() {
+            if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.showNpcDialog) return;
+            this.inkwaveRespawnOpen = true;
+            this.inkwavePaused = true;
+            this.inkwaveRespawnSeconds = 3;
+            if (this.inkwaveRespawnTimer) clearInterval(this.inkwaveRespawnTimer);
+            this.inkwaveRespawnTimer = setInterval(() => {
+                this.inkwaveRespawnSeconds = Math.max(0, this.inkwaveRespawnSeconds - 1);
+                if (this.inkwaveRespawnSeconds <= 0) this.retryInkWaveCombat();
+            }, 1000);
+            this.notifyPlayer('Kamu tumbang. Respawn di base PKG dalam 3 detik.', 'error');
+        },
+
         retryInkWaveCombat() {
-            if (!this.inkwaveMode || !this.inkwaveRespawnOpen) return;
+            if (!this.inkwaveMode || !this.inkwaveRespawnOpen || this.inkwaveRespawnSeconds > 0) return;
+            if (this.inkwaveRespawnTimer) {
+                clearInterval(this.inkwaveRespawnTimer);
+                this.inkwaveRespawnTimer = null;
+            }
             const spawn = this.findInkWaveSafeSpawn();
             this.session.pos_x = spawn.x;
             this.session.pos_y = spawn.y;
@@ -2623,9 +2693,11 @@ function rpgGame() {
             this.inkwaveShield = 0;
             this.clearShieldState();
             this.inkwaveRespawnOpen = false;
+            this.inkwaveRespawnSeconds = 0;
             this.inkwavePaused = false;
-            this.enemies = JSON.parse(JSON.stringify(this.enemyInitial)).map(enemy => this.normalizeEnemy(enemy));
+            // Death only resets transient combat state; educational progress and territory stay intact.
             this.focusThreeScene();
+            this.persistInkWaveSpawn(spawn);
         },
 
         findInkWaveSafeSpawn() {
@@ -2863,12 +2935,14 @@ function rpgGame() {
         },
 
         scheduleEnemyRespawn(enemy) {
-            const respawnTarget = this.findEnemyRespawnTile();
+            const respawnTarget = this.inkwaveMode ? this.findInkWaveRivalSpawnTile() : this.findEnemyRespawnTile();
             if (!respawnTarget) return;
 
             setTimeout(() => {
+                if (this.inkwaveMode && this.enemies.length >= this.inkwaveTeamSize) return;
                 this.enemies.push({
                     ...enemy,
+                    team: this.inkwaveMode ? 'rival' : enemy.team,
                     x: respawnTarget.x,
                     y: respawnTarget.y,
                     _lastX: respawnTarget.x,
@@ -2878,6 +2952,13 @@ function rpgGame() {
                     _nextMoveAt: Date.now() + this.getEnemyMoveInterval(enemy),
                 });
             }, 900);
+        },
+
+        findInkWaveRivalSpawnTile() {
+            return this.inkwaveEnemySpawnTiles.find(tile =>
+                !this.enemies.some(enemy => enemy.x === tile.x && enemy.y === tile.y)
+                && !(this.session.pos_x === tile.x && this.session.pos_y === tile.y)
+            ) || this.inkwaveEnemySpawnTiles[0] || null;
         },
 
         findEnemyRespawnTile() {

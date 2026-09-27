@@ -2381,6 +2381,18 @@ html.dark [class~="dark:border-purple-700"] {
     color: #cffafe;
 }
 
+.pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-team-stat {
+    border-color: rgba(251, 191, 36, 0.62);
+    background: linear-gradient(90deg, rgba(8, 145, 178, 0.3), rgba(217, 119, 6, 0.3));
+}
+
+.pkg-rpg-3d-respawn-count {
+    display: block;
+    margin-top: 1rem;
+    color: #67e8f9;
+    font-size: clamp(1.15rem, 4vw, 1.75rem);
+}
+
 .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-crosshair {
     top: 55%;
 }

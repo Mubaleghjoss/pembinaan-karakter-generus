@@ -114,6 +114,7 @@ class RpgThreeScene {
             enemies: new Map(),
             pickups: new Map(),
             players: new Map(),
+            inkwaveAllies: new Map(),
         };
         this.cameraTarget = new THREE.Vector3();
         this.cameraLookTarget = new THREE.Vector3(0, CAMERA_HEIGHT, -TILE_SIZE);
@@ -219,7 +220,7 @@ class RpgThreeScene {
                     <span>Tameng</span>
                     <strong data-rpg-3d-shield>OFF</strong>
                 </div>
-                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-combat-stat"><span>HP / Tameng</span><strong data-rpg-3d-combat>100 / 0</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div>' : ''}
+                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-team-stat"><span>Tim lokal</span><strong data-rpg-3d-teams>PKG 4 vs 4 Rival</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-combat-stat"><span>HP / Tameng</span><strong data-rpg-3d-combat>100 / 0</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div>' : ''}
             </div>
             ${this.inkwaveMode ? '<div class="pkg-rpg-3d-ink-tank" data-rpg-3d-ink-tank><div><span>Tangki tinta</span><strong data-rpg-3d-ink-value>100 / 100</strong></div><div class="pkg-rpg-3d-ink-track"><i data-rpg-3d-ink-fill></i></div><small data-rpg-3d-ink-status>Siap menembak</small></div>' : ''}
             <div class="pkg-rpg-3d-compass">
@@ -301,6 +302,7 @@ class RpgThreeScene {
         this.hudNpc = this.root.querySelector('[data-rpg-3d-npc]');
         this.hudAmmo = this.root.querySelector('[data-rpg-3d-ammo]');
         this.hudShield = this.root.querySelector('[data-rpg-3d-shield]');
+        this.hudTeams = this.root.querySelector('[data-rpg-3d-teams]');
         this.hudCombat = this.root.querySelector('[data-rpg-3d-combat]');
         this.hudTerritory = this.root.querySelector('[data-rpg-3d-territory]');
         this.hudMatchTimer = this.root.querySelector('[data-rpg-3d-match-timer]');
@@ -1360,6 +1362,7 @@ class RpgThreeScene {
         const npcs = (this.state.npcs || []).filter((npc) => npc.is_active !== false);
         const enemies = this.state.enemies || [];
         const onlinePlayers = this.state.onlinePlayers || this.state.online_players || [];
+        const inkWaveAllies = this.inkwaveMode ? (this.state.inkwaveTeams?.pkg || []).filter(member => !member.isPlayer) : [];
         const pickups = [
             ...(this.state.pickups?.shield || []).map((pickup) => ({ ...pickup, type: 'shield' })),
             ...(this.state.pickups?.ammo || []).map((pickup) => ({ ...pickup, type: 'ammo' })),
@@ -1404,6 +1407,12 @@ class RpgThreeScene {
             marker.position.set(pos.x, 0, pos.z);
             marker.visible = true;
         }
+
+        this.syncCollection(this.dynamicObjects.inkwaveAllies, this.playerGroup, inkWaveAllies, (member) => `inkwave-ally-${member.slot}`, (member) => this.makeInkWaveAllyMarker(member), (object, member) => {
+            const pos = this.tileToWorld(Number(member.x), Number(member.y));
+            object.position.set(pos.x, 0, pos.z);
+            object.visible = true;
+        });
 
         this.syncCollection(this.dynamicObjects.players, this.playerGroup, onlinePlayers, (player, index) => `player-${player.siswa_id || player.id || index}-${player.avatar_display || player.avatar || 'player'}`, (player) => this.makeOtherPlayerMarker(player), (object, player) => {
             const pos = this.tileToWorld(Number(player.pos_x), Number(player.pos_y));
@@ -1690,6 +1699,11 @@ class RpgThreeScene {
         const bossActive = !!this.state.boss;
         this.hudAmmo.textContent = bossActive ? '∞' : String(Number(this.state.ammo || 0));
         this.hudShield.textContent = this.state.shieldActive ? `${Number(this.state.shieldSecondsLeft || 0)}d` : 'OFF';
+        if (this.hudTeams) {
+            const pkg = Number(this.state.inkwaveTeams?.pkg?.length || 0);
+            const rival = Number(this.state.inkwaveTeams?.rival?.length || 0);
+            this.hudTeams.textContent = `PKG ${pkg} vs ${rival} Rival`;
+        }
         if (this.hudCombat) {
             const combat = this.state.inkwaveCombat || {};
             this.hudCombat.textContent = `${Number(combat.health || 0)} / ${Number(combat.shield || 0)}`;
@@ -1782,8 +1796,8 @@ class RpgThreeScene {
                     <section class="pkg-rpg-3d-dialog-card pkg-rpg-3d-completion-card" aria-label="Respawn InkWave">
                         <div class="pkg-rpg-3d-completion-body">
                             <h2>Kamu tumbang</h2>
-                            <p>Combat dijeda. Pertanyaan dan poin yang sudah sah tetap tersimpan.</p>
-                            <div class="pkg-rpg-3d-completion-actions"><button type="button" data-rpg-3d-inkwave-retry>Coba lagi</button></div>
+                            <p>Combat dijeda. Pertanyaan, poin, dan wilayah tetap tersimpan.</p>
+                            <strong class="pkg-rpg-3d-respawn-count">Respawn di base PKG dalam ${Math.max(0, Number(this.state.inkwaveCombat?.respawnSeconds || 0))}</strong>
                         </div>
                     </section>
                 </div>`;
@@ -2608,15 +2622,46 @@ class RpgThreeScene {
     }
 
     makeEnemyMarker(enemy = {}) {
-        return this.makeHumanoidMarker({
+        const rival = this.inkwaveMode && enemy.team === 'rival';
+        const group = this.makeHumanoidMarker({
             avatar: enemy.avatar || '!',
-            label: 'Musuh',
-            primary: 0xdc2626,
-            secondary: 0xf97316,
-            labelColor: 0x991b1b,
+            label: rival ? `Rival ${enemy.bot_slot || ''}`.trim() : 'Musuh',
+            primary: rival ? 0xd97706 : 0xdc2626,
+            secondary: rival ? 0xfbbf24 : 0xf97316,
+            labelColor: rival ? 0x92400e : 0x991b1b,
             role: 'enemy',
             opacity: 0.98,
         });
+        if (rival) {
+            const ring = new THREE.Mesh(
+                new THREE.RingGeometry(0.62, 0.82, 12),
+                new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.78, side: THREE.DoubleSide, depthWrite: false }),
+            );
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.06;
+            group.add(ring);
+        }
+        return group;
+    }
+
+    makeInkWaveAllyMarker(member = {}) {
+        const group = this.makeHumanoidMarker({
+            avatar: 'PKG',
+            label: `PKG ${member.slot || ''}`.trim(),
+            primary: 0x0891b2,
+            secondary: 0x67e8f9,
+            labelColor: 0x0e7490,
+            role: 'player',
+            opacity: 0.9,
+        });
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.54, 0.76, 12),
+            new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false }),
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.06;
+        group.add(ring);
+        return group;
     }
 
     makeInkWavePlayerMarker() {
