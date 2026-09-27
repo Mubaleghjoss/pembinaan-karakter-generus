@@ -1259,7 +1259,9 @@ function rpgGame() {
             window.pkgSiswaRpg3dState = () => this.getThreeState();
             window.pkgSiswaRpg3dControls = {
                 move: ({ dx, dy }) => this.movePlayer(Number(dx || 0), Number(dy || 0)),
+                syncInkWavePosition: ({ x, y }) => this.syncInkWavePosition(Number(x), Number(y)),
                 shoot: ({ dx, dy }) => this.shootDirection(Number(dx || 0), Number(dy || 0)),
+                shootInkWave: ({ targetId }) => this.shootInkWaveTarget(targetId),
                 answer: ({ index }) => this.submitAnswer(Number(index || 0)),
                 closeNpc: () => this.closeDialog(),
                 view2d: () => {
@@ -2512,6 +2514,29 @@ function rpgGame() {
             this.movePlayer(dx, dy);
         },
 
+        shootInkWaveTarget(targetId) {
+            if (!this.inkwaveMode || this.showGuideModal || this.inkwavePaused || this.inkwaveMatchCompleted) return;
+            if (this.ammo <= 0) {
+                this.notifyPlayer('Amunisi habis.', 'warning');
+                return;
+            }
+
+            this.ammo--;
+            const targetIndex = targetId === null
+                ? -1
+                : this.enemies.findIndex(enemy => Number(enemy.encounter_id) === Number(targetId));
+            if (targetIndex === -1) {
+                this.notifyPlayer('Tembakan meleset.', 'warning');
+                return;
+            }
+
+            const defeatedEnemy = { ...this.enemies[targetIndex] };
+            this.flashShotAt(defeatedEnemy.x, defeatedEnemy.y);
+            this.enemies.splice(targetIndex, 1);
+            this.handleEnemyDefeated(defeatedEnemy);
+            this.scheduleEnemyRespawn(defeatedEnemy);
+        },
+
         shootDirection(dx, dy) {
             if (this.showGuideModal || this.inkwavePaused || this.inkwaveMatchCompleted) return;
 
@@ -2874,6 +2899,14 @@ function rpgGame() {
             if (Math.abs(dx) + Math.abs(dy) === 1) {
                 this.performDirectionalAction(dx, dy);
             }
+        },
+
+        syncInkWavePosition(x, y) {
+            if (!this.inkwaveMode || !Number.isInteger(x) || !Number.isInteger(y)) return false;
+            const dx = x - Number(this.session.pos_x);
+            const dy = y - Number(this.session.pos_y);
+            if (dx === 0 && dy === 0) return true;
+            return this.movePlayer(dx, dy);
         },
 
         movePlayer(dx, dy) {

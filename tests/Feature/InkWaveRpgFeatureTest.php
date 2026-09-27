@@ -347,6 +347,43 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee('x-show="!inkwaveMode"', false);
     }
 
+    public function test_inkwave_view_exposes_a_mode_scoped_quantized_position_bridge(): void
+    {
+        $map = $this->map();
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee('syncInkWavePosition: ({ x, y })', false)
+            ->assertSee('shootInkWave: ({ targetId })', false);
+    }
+
+    public function test_grid_position_endpoint_rejects_fractional_world_coordinates(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        RpgGameSession::query()->create([
+            'siswa_id' => $siswa->id,
+            'rpg_map_id' => $map->id,
+            'pos_x' => 0,
+            'pos_y' => 0,
+            'total_score' => 0,
+            'answered_npcs' => [],
+        ]);
+
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.move', $map), ['pos_x' => 1.25, 'pos_y' => 2.5])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['pos_x', 'pos_y']);
+
+        $this->assertDatabaseHas('rpg_game_sessions', [
+            'siswa_id' => $siswa->id,
+            'rpg_map_id' => $map->id,
+            'pos_x' => 0,
+            'pos_y' => 0,
+        ]);
+    }
+
     public function test_match_timer_is_wall_clock_and_rejects_encounters_after_the_boundary(): void
     {
         $siswa = Siswa::factory()->create();

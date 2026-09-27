@@ -21,6 +21,8 @@ const INKWAVE_MAX_TERRITORY_PATCHES = 64;
 const INKWAVE_MAX_EFFECTS = 18;
 const INKWAVE_CAMERA_DISTANCE = TILE_SIZE * 2.35;
 const INKWAVE_CAMERA_HEIGHT = TILE_SIZE * 1.75;
+const INKWAVE_POSITION_SYNC_MS = 180;
+const INKWAVE_AIM_COS = Math.cos(Math.PI / 7);
 
 const DIRECTIONS = [
     { dx: 0, dy: 1, label: 'Utara' },
@@ -116,6 +118,7 @@ class RpgThreeScene {
         this.cameraLookTarget = new THREE.Vector3(0, CAMERA_HEIGHT, -TILE_SIZE);
         this.playerVisual = new THREE.Vector3(0, CAMERA_HEIGHT, 0);
         this.playerVelocity = new THREE.Vector3();
+        this.targetPlayerVelocity = new THREE.Vector3();
         this.playerInitialized = false;
         this.currentPlayerCell = null;
         this.lastDispatchedCellKey = '';
@@ -128,6 +131,7 @@ class RpgThreeScene {
         this.noticeUntil = 0;
         this.lastDialogKey = '';
         this.lastStateSyncAt = 0;
+        this.lastInkWavePositionSyncAt = 0;
         this.uiOpen = false;
         this.uiHidden = false;
         this.controlState = {
@@ -624,19 +628,22 @@ class RpgThreeScene {
         }
 
         if (action === 'shoot') {
-            // InkWave uses camera-facing, line-of-sight aim assist while preserving grid combat rules.
             const inkWaveTarget = this.inkwaveMode ? this.findInkWaveAimTarget() : null;
-            const direction = inkWaveTarget?.direction || this.cardinalFromYaw();
-            // Saat lawan bos peluru tak terbatas; selain itu perlu amunisi.
+            const cameraAim = this.directionVectorFromYaw();
+            const direction = inkWaveTarget?.direction || (this.inkwaveMode
+                ? { dx: cameraAim.dx, dy: -cameraAim.dz }
+                : this.cardinalFromYaw());
             const canFire = !!this.state.boss || Number(this.state.ammo || 0) > 0;
-            this.dispatchShoot(direction.dx, direction.dy);
+            if (this.inkwaveMode) {
+                this.dispatchInkWaveShoot(inkWaveTarget);
+            } else {
+                this.dispatchShoot(direction.dx, direction.dy);
+            }
             if (canFire) {
                 this.playSound('shot');
                 this.kickWeapon();
                 this.flashShot(direction.dx, direction.dy);
-                if (this.inkwaveMode) {
-                    this.showInkWaveShotFeedback(inkWaveTarget);
-                }
+                if (this.inkwaveMode) this.showInkWaveShotFeedback(inkWaveTarget);
             } else {
                 this.playSound('miss');
             }
@@ -762,6 +769,15 @@ class RpgThreeScene {
         this.lastStateSyncAt = 0;
     }
 
+    dispatchInkWaveShoot(target) {
+        const detail = target ? { targetId: Number(target.enemy.encounter_id) } : { targetId: null };
+        if (!this.invokeControl('shootInkWave', detail)) {
+            const direction = target?.direction || this.cardinalFromYaw();
+            this.dispatchShoot(direction.dx, direction.dy);
+        }
+        this.lastStateSyncAt = 0;
+    }
+
     invokeControl(method, detail = {}) {
         const controls = this.controlsName ? window[this.controlsName] : null;
         if (controls && typeof controls[method] === 'function') {
@@ -793,6 +809,16 @@ class RpgThreeScene {
 
             if (method === 'shoot' && typeof data.shootDirection === 'function') {
                 data.shootDirection(dx, dy);
+                return true;
+            }
+
+            if (method === 'shootInkWave' && typeof data.shootInkWaveTarget === 'function') {
+                data.shootInkWaveTarget(detail.targetId);
+                return true;
+            }
+
+            if (method === 'syncInkWavePosition' && typeof data.syncInkWavePosition === 'function') {
+                data.syncInkWavePosition(Number(detail.x), Number(detail.y));
                 return true;
             }
 
@@ -1352,7 +1378,9 @@ class RpgThreeScene {
                 this.dynamicObjects.localInkWavePlayer = marker;
                 this.playerGroup.add(marker);
             }
-            const pos = this.tileToWorld(Number(localPlayer.pos_x || 0), Number(localPlayer.pos_y || 0));
+            const pos = this.playerInitialized
+                ? this.playerVisual
+                : this.tileToWorld(Number(localPlayer.pos_x || 0), Number(localPlayer.pos_y || 0));
             marker.position.set(pos.x, 0, pos.z);
             marker.visible = true;
         }
@@ -1861,45 +1889,43 @@ class RpgThreeScene {
     }
 
     findInkWaveAimTarget() {
-        if (!this.inkwaveMode || !this.state.session) {
-            return null;
-        }
+        if (!this.inkwaveMode || !this.playerInitialized) return null;
 
-        const playerX = Number(this.state.session.pos_x || 0);
-        const playerY = Number(this.state.session.pos_y || 0);
         const cameraDirection = this.directionVectorFromYaw();
         let best = null;
-
         (this.state.enemies || []).forEach((enemy) => {
-            const dx = Number(enemy.x) - playerX;
-            const dy = Number(enemy.y) - playerY;
-            if ((dx !== 0 && dy !== 0) || (dx === 0 && dy === 0)) {
-                return;
-            }
+            const enemyWorld = this.tileToWorld(Number(enemy.x), Number(enemy.y));
+            const worldX = enemyWorld.x - this.playerVisual.x;
+            const worldZ = enemyWorld.z - this.playerVisual.z;
+            const worldDistance = Math.hypot(worldX, worldZ);
+            if (worldDistance < 0.01 || worldDistance > TILE_SIZE * 6) return;
 
-            const direction = dx === 0
-                ? { dx: 0, dy: Math.sign(dy) }
-                : { dx: Math.sign(dx), dy: 0 };
-            const distance = Math.abs(dx) + Math.abs(dy);
-            if (!this.hasClearShot(playerX, playerY, direction, distance)) {
-                return;
-            }
+            const aimX = worldX / worldDistance;
+            const aimZ = worldZ / worldDistance;
+            const facing = (aimX * cameraDirection.dx) + (aimZ * cameraDirection.dz);
+            if (facing < INKWAVE_AIM_COS || !this.hasInkWaveLineOfSight(enemyWorld.x, enemyWorld.z, worldDistance)) return;
 
-            const worldDirection = direction.dy !== 0
-                ? { x: 0, z: -direction.dy }
-                : { x: direction.dx, z: 0 };
-            const facing = (worldDirection.x * cameraDirection.dx) + (worldDirection.z * cameraDirection.dz);
-            if (facing < 0.2) {
-                return;
-            }
-
-            const score = (facing * 10) - distance;
+            const score = (facing * 12) - (worldDistance / TILE_SIZE);
             if (!best || score > best.score) {
-                best = { enemy, direction, distance, score };
+                best = {
+                    enemy,
+                    direction: { dx: aimX, dy: -aimZ },
+                    distance: Math.max(1, Math.round(worldDistance / TILE_SIZE)),
+                    score,
+                };
             }
         });
-
         return best;
+    }
+
+    hasInkWaveLineOfSight(targetX, targetZ, distance) {
+        const steps = Math.max(1, Math.ceil(distance / (TILE_SIZE * 0.35)));
+        const stepX = (targetX - this.playerVisual.x) / steps;
+        const stepZ = (targetZ - this.playerVisual.z) / steps;
+        for (let step = 1; step < steps; step += 1) {
+            if (this.isObstacleWorldPoint(this.playerVisual.x + (stepX * step), this.playerVisual.z + (stepZ * step))) return false;
+        }
+        return true;
     }
 
     hasClearShot(x, y, direction, distance) {
@@ -2123,7 +2149,7 @@ class RpgThreeScene {
         const strafe = hasTouchMove
             ? (Math.abs(touchMove.axisX) > TOUCH_MOVE_DEADZONE ? touchMove.axisX : 0)
             : (this.controlState.strafeRight ? 1 : 0) - (this.controlState.strafeLeft ? 1 : 0);
-        const targetVelocity = new THREE.Vector3();
+        const targetVelocity = this.targetPlayerVelocity.set(0, 0, 0);
 
         if (forward !== 0 || strafe !== 0) {
             const sin = Math.sin(this.yaw);
@@ -2180,10 +2206,6 @@ class RpgThreeScene {
 
         const nextKey = this.cellKey(cell);
         const currentKey = this.currentPlayerCell ? this.cellKey(this.currentPlayerCell) : '';
-        if (nextKey === currentKey) {
-            return;
-        }
-
         const stateCell = {
             x: Number(this.state.session?.pos_x ?? this.currentPlayerCell?.x ?? 0),
             y: Number(this.state.session?.pos_y ?? this.currentPlayerCell?.y ?? 0),
@@ -2191,10 +2213,21 @@ class RpgThreeScene {
         const dx = cell.x - stateCell.x;
         const dy = cell.y - stateCell.y;
 
-        this.currentPlayerCell = cell;
-        this.lastDispatchedCellKey = nextKey;
-        if (dx !== 0 || dy !== 0) {
+        if (nextKey !== currentKey) {
+            this.currentPlayerCell = cell;
+            this.lastDispatchedCellKey = nextKey;
+        }
+        if (dx === 0 && dy === 0) return;
+        if (!this.inkwaveMode) {
             this.dispatchMove(dx, dy);
+            return;
+        }
+
+        const now = performance.now();
+        if (now - this.lastInkWavePositionSyncAt >= INKWAVE_POSITION_SYNC_MS) {
+            this.lastInkWavePositionSyncAt = now;
+            this.invokeControl('syncInkWavePosition', { x: cell.x, y: cell.y });
+            this.lastStateSyncAt = 0;
         }
     }
 
@@ -2229,17 +2262,30 @@ class RpgThreeScene {
     }
 
     isBlockedWorld(x, z) {
-        const samples = [
-            [x - PLAYER_RADIUS, z - PLAYER_RADIUS],
-            [x + PLAYER_RADIUS, z - PLAYER_RADIUS],
-            [x - PLAYER_RADIUS, z + PLAYER_RADIUS],
-            [x + PLAYER_RADIUS, z + PLAYER_RADIUS],
-        ];
+        if (!this.inkwaveMode) {
+            const samples = [[x - PLAYER_RADIUS, z - PLAYER_RADIUS], [x + PLAYER_RADIUS, z - PLAYER_RADIUS], [x - PLAYER_RADIUS, z + PLAYER_RADIUS], [x + PLAYER_RADIUS, z + PLAYER_RADIUS]];
+            return samples.some(([sampleX, sampleZ]) => {
+                const cell = this.worldToCell(sampleX, sampleZ);
+                return !cell || this.isObstacleCell(cell.x, cell.y);
+            });
+        }
 
-        return samples.some(([sampleX, sampleZ]) => {
-            const cell = this.worldToCell(sampleX, sampleZ);
-            return !cell || this.isObstacleCell(cell.x, cell.y);
-        });
+        const halfArena = (this.gridSize() * TILE_SIZE) / 2;
+        if (x - PLAYER_RADIUS < -halfArena || x + PLAYER_RADIUS > halfArena || z - PLAYER_RADIUS < -halfArena || z + PLAYER_RADIUS > halfArena) return true;
+        for (const obstacle of (this.state.obstacles || [])) {
+            const center = this.tileToWorld(Number(obstacle.x), Number(obstacle.y));
+            const nearestX = clamp(x, center.x - (TILE_SIZE / 2), center.x + (TILE_SIZE / 2));
+            const nearestZ = clamp(z, center.z - (TILE_SIZE / 2), center.z + (TILE_SIZE / 2));
+            const offsetX = x - nearestX;
+            const offsetZ = z - nearestZ;
+            if ((offsetX * offsetX) + (offsetZ * offsetZ) < PLAYER_RADIUS * PLAYER_RADIUS) return true;
+        }
+        return false;
+    }
+
+    isObstacleWorldPoint(x, z) {
+        const cell = this.worldToCell(x, z);
+        return !cell || this.isObstacleCell(cell.x, cell.y);
     }
 
     isObstacleCell(x, y) {
@@ -2315,6 +2361,10 @@ class RpgThreeScene {
             this.bossHpBar.position.z = this.bossObject.position.z;
         }
         this.playerGroup.children.forEach((object, index) => {
+            if (this.inkwaveMode && object === this.dynamicObjects.localInkWavePlayer) {
+                object.position.x = this.playerVisual.x;
+                object.position.z = this.playerVisual.z;
+            }
             const moving = this.advanceDynamicObject(object, moveLerp);
             this.animateHumanoidObject(object, delta, elapsed, moving, index + 20);
         });
