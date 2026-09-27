@@ -206,7 +206,7 @@ class RpgThreeScene {
                     <span>Tameng</span>
                     <strong data-rpg-3d-shield>OFF</strong>
                 </div>
-                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>Area PKG</span><strong data-rpg-3d-territory>0% / netral</strong></div>' : ''}
+                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div>' : ''}
             </div>
             <div class="pkg-rpg-3d-compass">
                 <div class="pkg-rpg-3d-compass-ring">
@@ -288,6 +288,8 @@ class RpgThreeScene {
         this.hudAmmo = this.root.querySelector('[data-rpg-3d-ammo]');
         this.hudShield = this.root.querySelector('[data-rpg-3d-shield]');
         this.hudTerritory = this.root.querySelector('[data-rpg-3d-territory]');
+        this.hudMatchTimer = this.root.querySelector('[data-rpg-3d-match-timer]');
+        this.hudEncounter = this.root.querySelector('[data-rpg-3d-encounter]');
         this.hudEnergyWrap = this.root.querySelector('[data-rpg-3d-energy-wrap]');
         this.hudEnergyFill = this.root.querySelector('[data-rpg-3d-energy-fill]');
         this.hudEnergyText = this.root.querySelector('[data-rpg-3d-energy-text]');
@@ -1590,7 +1592,15 @@ class RpgThreeScene {
         this.hudShield.textContent = this.state.shieldActive ? `${Number(this.state.shieldSecondsLeft || 0)}d` : 'OFF';
         if (this.hudTerritory) {
             const territory = this.state.territory || {};
-            this.hudTerritory.textContent = `${Number(territory.coverage_percent || 0)}% / ${Number(territory.neutral_cells || 0)} netral`;
+            this.hudTerritory.textContent = `${Number(territory.coverage_percent || 0)}% / ${Number(territory.neutral_cells || 0)}`;
+        }
+        if (this.hudMatchTimer) {
+            const match = this.state.inkwaveMatch || {};
+            const left = Math.max(0, Number(match.seconds_left || 0));
+            this.hudMatchTimer.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+        }
+        if (this.hudEncounter) {
+            this.hudEncounter.textContent = this.state.inkwaveMatch?.finished ? 'Selesai' : (this.state.npcDialogOpen ? 'Pertanyaan' : 'Siap');
         }
         this.updatePlayerEquipment();
     }
@@ -1655,12 +1665,13 @@ class RpgThreeScene {
                             <h2>InkWave selesai</h2>
                             <p>${escapeHtml(this.state.mapName || this.state.map?.nama || 'Arena')}</p>
                             <div class="pkg-rpg-3d-score-box">
-                                <span>Skor permainan</span>
-                                <strong>${Number(summary.gameplay_score || 0)}</strong>
-                                <small>${Number(summary.defeated || 0)} NPC dikalahkan</small>
+                                <span>Wilayah PKG</span>
+                                <strong>${Number(summary.territory?.coverage_percent || 0)}%</strong>
+                                <small>${Number(summary.territory?.pkg_cells || 0)} PKG, ${Number(summary.territory?.neutral_cells || 0)} netral</small>
                             </div>
+                            <p>Status pertandingan: ${escapeHtml(this.state.inkwaveMatch?.status || 'finished')}.</p>
                             <p>${Number(summary.questions_answered || 0)} pertanyaan dijawab, ${Number(summary.correct || 0)} benar.</p>
-                            <p>Poin karakter diterima: ${Number(summary.points || 0)}.</p>
+                            <p>Poin karakter diterima: ${Number(summary.points || 0)}. Poin tidak menentukan hasil wilayah.</p>
                             <div class="pkg-rpg-3d-completion-actions">
                                 <button type="button" class="is-secondary" data-rpg-3d-map-list="${escapeHtml(this.state.mapListUrl || '')}">Peta lain</button>
                             </div>

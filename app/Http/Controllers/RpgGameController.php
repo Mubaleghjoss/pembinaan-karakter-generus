@@ -245,17 +245,18 @@ class RpgGameController extends Controller
         $inkwaveMode = true;
         // This ephemeral nonce scopes encounter tokens to this authenticated InkWave visit.
         Cache::put($this->inkwaveActiveKey($siswa->id, $rpgMap->id), ['nonce' => Str::random(40)], now()->addHours(4));
+        $inkwaveMatch = $this->startInkWaveMatch($siswa->id, $rpgMap);
         $inkwaveSummary = $this->inkwaveSummaryPayload(
             Cache::get($this->inkwaveSummaryKey($siswa->id, $rpgMap->id), $this->emptyInkWaveSummary()),
             $siswa->id,
-            $rpgMap->id
+            $rpgMap
         );
         $inkwaveTerritory = app(InkWaveTerritoryService::class)->snapshot($siswa->id, $rpgMap);
         $inkwaveSettings = $this->inkwaveQuestionSettings($rpgMap);
-        $inkwaveMatchCompleted = $inkwaveSettings['max_questions'] > 0
-            && $inkwaveSummary['defeated'] >= $inkwaveSettings['max_questions'];
+        $inkwaveMatchCompleted = $inkwaveMatch['finished'] || ($inkwaveSettings['max_questions'] > 0
+            && $inkwaveSummary['defeated'] >= $inkwaveSettings['max_questions']);
 
-        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode', 'inkwaveMode', 'inkwaveSummary', 'inkwaveTerritory', 'inkwaveMatchCompleted'));
+        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode', 'inkwaveMode', 'inkwaveMatch', 'inkwaveSummary', 'inkwaveTerritory', 'inkwaveMatchCompleted'));
     }
 
     /**
@@ -274,6 +275,9 @@ class RpgGameController extends Controller
             'y' => ['required', 'integer', 'min:0', 'max:' . ($rpgMap->grid_size - 1)],
         ]);
         $siswa = Auth::guard('siswa')->user();
+        if ($this->inkwaveMatch($siswa->id, $rpgMap)['finished']) {
+            return $this->inkwaveFinishedResponse($siswa->id, $rpgMap);
+        }
         $active = Cache::get($this->inkwaveActiveKey($siswa->id, $rpgMap->id));
         $enemies = RpgCatalog::normalizeEnemies($rpgMap->enemies);
         $target = $enemies[$validated['target_id']] ?? null;
@@ -334,6 +338,9 @@ class RpgGameController extends Controller
 
         $validated = $request->validate(['encounter_token' => ['required', 'string', 'size:64']]);
         $siswa = Auth::guard('siswa')->user();
+        if ($this->inkwaveMatch($siswa->id, $rpgMap)['finished']) {
+            return $this->inkwaveFinishedResponse($siswa->id, $rpgMap);
+        }
         $active = Cache::get($this->inkwaveActiveKey($siswa->id, $rpgMap->id));
         $encounterKey = $this->inkwaveEncounterKey($validated['encounter_token']);
         $consumeLock = Cache::lock("{$encounterKey}:consume", 5);
@@ -359,7 +366,7 @@ class RpgGameController extends Controller
             return response()->json([
                 'message' => 'Batas pertanyaan InkWave untuk permainan ini sudah tercapai.',
                 'completed' => true,
-                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap->id),
+                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap),
             ], 422);
         }
 
@@ -376,7 +383,7 @@ class RpgGameController extends Controller
             return response()->json([
                 'message' => 'Tidak ada pertanyaan InkWave lain yang tersedia.',
                 'completed' => $summary['defeated'] > 0,
-                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap->id),
+                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap),
             ], 422);
         }
 
@@ -418,6 +425,10 @@ class RpgGameController extends Controller
             'answer_id' => ['required', 'integer', 'min:0', 'max:3'],
         ]);
         $siswa = Auth::guard('siswa')->user();
+        if ($this->inkwaveMatch($siswa->id, $rpgMap)['finished']) {
+            Cache::forget($this->inkwavePendingKey($siswa->id, $rpgMap->id));
+            return $this->inkwaveFinishedResponse($siswa->id, $rpgMap);
+        }
         $pendingKey = $this->inkwavePendingKey($siswa->id, $rpgMap->id);
         $lock = Cache::lock("{$pendingKey}:answer", 10);
 
@@ -466,7 +477,7 @@ class RpgGameController extends Controller
                 'correct' => $correct,
                 'points' => $points,
                 'completed' => $settings['max_questions'] > 0 && $summary['defeated'] >= $settings['max_questions'],
-                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap->id),
+                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap),
             ]);
         } finally {
             $lock->release();
@@ -504,16 +515,59 @@ class RpgGameController extends Controller
         return "inkwave:summary:{$siswaId}:{$mapId}";
     }
 
+    private function inkwaveMatchKey(int $siswaId, int $mapId): string
+    {
+        return "inkwave:match:{$siswaId}:{$mapId}";
+    }
+
+    /** Wall-clock time intentionally continues while a question modal is open. */
+    private function startInkWaveMatch(int $siswaId, RpgMap $rpgMap): array
+    {
+        $key = $this->inkwaveMatchKey($siswaId, $rpgMap->id);
+        $state = Cache::get($key);
+        if (! $state) {
+            $state = ['started_at' => now()->timestamp, 'ends_at' => now()->addSeconds(180)->timestamp, 'duration_seconds' => 180];
+            Cache::put($key, $state, now()->addHours(4));
+        }
+
+        return $this->inkwaveMatchPayload($state);
+    }
+
+    private function inkwaveMatch(int $siswaId, RpgMap $rpgMap): array
+    {
+        return $this->startInkWaveMatch($siswaId, $rpgMap);
+    }
+
+    private function inkwaveMatchPayload(array $state): array
+    {
+        $endsAt = (int) ($state['ends_at'] ?? now()->timestamp);
+        $secondsLeft = max(0, $endsAt - now()->timestamp);
+
+        return ['status' => $secondsLeft > 0 ? 'active' : 'finished', 'started_at' => (int) ($state['started_at'] ?? now()->timestamp), 'ends_at' => $endsAt, 'duration_seconds' => (int) ($state['duration_seconds'] ?? 180), 'seconds_left' => $secondsLeft, 'finished' => $secondsLeft <= 0];
+    }
+
+    private function inkwaveFinishedResponse(int $siswaId, RpgMap $rpgMap)
+    {
+        return response()->json(['message' => 'Waktu pertandingan InkWave telah selesai.', 'completed' => true, 'match' => $this->inkwaveMatch($siswaId, $rpgMap), 'summary' => $this->inkwaveSummaryPayload(Cache::get($this->inkwaveSummaryKey($siswaId, $rpgMap->id), $this->emptyInkWaveSummary()), $siswaId, $rpgMap)], 422);
+    }
+
+    public function inkwaveState(RpgMap $rpgMap)
+    {
+        if (! $rpgMap->is_active) abort(404);
+        $siswa = Auth::guard('siswa')->user();
+        return response()->json(['match' => $this->inkwaveMatch($siswa->id, $rpgMap), 'summary' => $this->inkwaveSummaryPayload(Cache::get($this->inkwaveSummaryKey($siswa->id, $rpgMap->id), $this->emptyInkWaveSummary()), $siswa->id, $rpgMap)]);
+    }
+
     private function emptyInkWaveSummary(): array
     {
         return ['defeated' => 0, 'correct' => 0, 'incorrect' => 0, 'points' => 0, 'question_ids' => []];
     }
 
-    private function inkwaveSummaryPayload(array $summary, int $siswaId, int $mapId): array
+    private function inkwaveSummaryPayload(array $summary, int $siswaId, RpgMap $rpgMap): array
     {
         $sessionScore = (int) RpgGameSession::query()
             ->where('siswa_id', $siswaId)
-            ->where('rpg_map_id', $mapId)
+            ->where('rpg_map_id', $rpgMap->id)
             ->value('total_score');
 
         return [
@@ -523,6 +577,7 @@ class RpgGameController extends Controller
             'points' => (int) ($summary['points'] ?? 0),
             'questions_answered' => (int) ($summary['correct'] ?? 0) + (int) ($summary['incorrect'] ?? 0),
             'gameplay_score' => $sessionScore,
+            'territory' => app(InkWaveTerritoryService::class)->snapshot($siswaId, $rpgMap),
         ];
     }
 
@@ -926,6 +981,7 @@ class RpgGameController extends Controller
         Cache::forget($this->inkwavePendingKey($siswa->id, $rpgMap->id));
         Cache::forget($this->inkwaveActiveKey($siswa->id, $rpgMap->id));
         Cache::forget($this->inkwaveSummaryKey($siswa->id, $rpgMap->id));
+        Cache::forget($this->inkwaveMatchKey($siswa->id, $rpgMap->id));
         app(InkWaveTerritoryService::class)->clear($siswa->id, $rpgMap->id);
 
         return response()->json(['success' => true, 'message' => 'Game direset. Poin game dikembalikan. Selamat bermain lagi.']);

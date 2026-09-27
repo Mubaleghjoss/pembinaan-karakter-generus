@@ -1122,6 +1122,8 @@ function rpgGame() {
         inkwaveMatchCompleted: @json($inkwaveMatchCompleted ?? false),
         inkwaveCompletionReady: false,
         inkwaveSummary: @json($inkwaveSummary ?? []),
+        inkwaveMatch: @json($inkwaveMatch ?? []),
+        inkwaveMatchTimer: null,
         // Separate cosmetic coverage from questions and educational points.
         inkwaveTerritory: @json($inkwaveTerritory ?? []),
         inkwaveQuestionSecondsLeft: 0,
@@ -1283,6 +1285,7 @@ function rpgGame() {
             window.addEventListener('resize', this.resizeHandler);
             window.addEventListener('orientationchange', this.resizeHandler);
 
+            if (this.inkwaveMode) this.startInkWaveMatchTimer();
             this.enemies = (this.enemies || []).map(enemy => this.normalizeEnemy(enemy));
             this.enemyInitial = JSON.parse(JSON.stringify(this.enemies));
             this.generatePickups();
@@ -1320,6 +1323,7 @@ function rpgGame() {
             if (this.joystickTimer) clearInterval(this.joystickTimer);
             if (this.enemyTimer) clearInterval(this.enemyTimer);
             if (this.inkwaveQuestionTimer) clearInterval(this.inkwaveQuestionTimer);
+            if (this.inkwaveMatchTimer) clearInterval(this.inkwaveMatchTimer);
             if (this.shieldTimer) clearInterval(this.shieldTimer);
             if (this.bossTimer) clearInterval(this.bossTimer);
             if (this.bossRespawnTimer) clearTimeout(this.bossRespawnTimer);
@@ -1513,6 +1517,7 @@ function rpgGame() {
                 })),
                 pickups: this.pickups,
                 territory: this.inkwaveTerritory,
+                inkwaveMatch: this.inkwaveMatch,
                 onlinePlayers: (this.onlinePlayers || []).map(player => ({
                     ...player,
                     avatar_display: this.resolvePlayerAvatar(player.avatar_display || player.avatar),
@@ -2626,9 +2631,7 @@ function rpgGame() {
                 this.startInkWaveQuestionTimer(question.time_limit_seconds);
             } catch (error) {
                 if (error.completed && error.summary) {
-                    this.inkwaveSummary = error.summary;
-                    this.inkwaveMatchCompleted = true;
-                    this.inkwavePaused = true;
+                    this.finishInkWaveMatch(error.summary);
                 } else {
                     this.inkwavePaused = false;
                     this.notifyPlayer(error.message || 'Gagal mengambil pertanyaan.', 'error');
@@ -3040,7 +3043,10 @@ function rpgGame() {
                         body: JSON.stringify({ question_id: this.currentNpc.id, answer_id: idx })
                     });
                     const data = await response.json();
-                    if (!response.ok) throw new Error(data.message || 'Jawaban tidak dapat diproses.');
+                    if (!response.ok) {
+                        if (data.match?.finished) this.finishInkWaveMatch(data.summary);
+                        throw new Error(data.message || 'Jawaban tidak dapat diproses.');
+                    }
                     this.answerResult = { correct: !!data.correct, poin: Number(data.points || 0) };
                     this.inkwaveSummary = data.summary || this.inkwaveSummary;
                     this.inkwaveCompletionReady = !!data.completed;
@@ -3132,6 +3138,29 @@ function rpgGame() {
             this.submittingAnswer = false;
         },
 
+        startInkWaveMatchTimer() {
+            if (!this.inkwaveMode) return;
+            if (this.inkwaveMatchTimer) clearInterval(this.inkwaveMatchTimer);
+            const tick = () => {
+                const endsAt = Number(this.inkwaveMatch?.ends_at || 0) * 1000;
+                const secondsLeft = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)) : 0;
+                this.inkwaveMatch = { ...this.inkwaveMatch, seconds_left: secondsLeft, status: secondsLeft > 0 ? 'active' : 'finished', finished: secondsLeft <= 0 };
+                if (secondsLeft <= 0) this.finishInkWaveMatch();
+            };
+            tick();
+            this.inkwaveMatchTimer = setInterval(tick, 1000);
+        },
+
+        finishInkWaveMatch(summary = null) {
+            if (!this.inkwaveMode || this.inkwaveMatchCompleted) return;
+            if (summary) this.inkwaveSummary = summary;
+            this.inkwaveMatchCompleted = true;
+            this.inkwavePaused = true;
+            this.stopInkWaveQuestionTimer();
+            this.showNpcDialog = false;
+            this.currentNpc = null;
+        },
+
         startInkWaveQuestionTimer(seconds) {
             this.stopInkWaveQuestionTimer();
             this.inkwaveQuestionSecondsLeft = Math.max(0, Number(seconds || 0));
@@ -3179,6 +3208,15 @@ function rpgGame() {
         // ===== MULTIPLAYER POLLING =====
         async pollState() {
             try {
+                if (this.inkwaveMode) {
+                    const res = await fetch("{{ route('siswa.rpg.inkwave.state', $rpgMap) }}", { headers: { 'Accept': 'application/json' } });
+                    const data = await res.json();
+                    if (data.match) {
+                        this.inkwaveMatch = data.match;
+                        if (data.match.finished) this.finishInkWaveMatch(data.summary);
+                    }
+                    return;
+                }
                 const res = await fetch("{{ route('siswa.rpg.state', $rpgMap) }}", {
                     headers: { 'Accept': 'application/json' }
                 });

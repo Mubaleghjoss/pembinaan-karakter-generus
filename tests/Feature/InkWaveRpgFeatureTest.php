@@ -267,6 +267,7 @@ class InkWaveRpgFeatureTest extends TestCase
         $this->assertNull(Cache::get("inkwave:pending:{$siswa->id}:{$map->id}"));
         $this->assertNull(Cache::get("inkwave:active:{$siswa->id}:{$map->id}"));
         $this->assertNull(Cache::get("inkwave:summary:{$siswa->id}:{$map->id}"));
+        $this->assertNull(Cache::get("inkwave:match:{$siswa->id}:{$map->id}"));
     }
 
     public function test_accepted_encounter_applies_isolated_idempotent_territory_without_points(): void
@@ -344,6 +345,45 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertViewIs('siswa.rpg.play')
             ->assertViewHas('inkwaveMode', false)
             ->assertSee('x-show="!inkwaveMode"', false);
+    }
+
+    public function test_match_timer_is_wall_clock_and_rejects_encounters_after_the_boundary(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $this->npc($map);
+
+        $this->actingAs($siswa, 'siswa')->get(route('siswa.rpg.inkwave.play', $map))->assertOk();
+        $this->travel(180)->seconds(); // The question modal never pauses this server clock.
+
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.encounter', $map), ['target_id' => 0, 'x' => 3, 'y' => 3])
+            ->assertUnprocessable()
+            ->assertJsonPath('match.status', 'finished')
+            ->assertJsonPath('summary.territory.coverage_percent', 0);
+    }
+
+    public function test_finished_match_summary_survives_reload_without_awarding_points(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $this->npc($map);
+
+        $this->actingAs($siswa, 'siswa')->get(route('siswa.rpg.inkwave.play', $map))->assertOk();
+        $this->travel(181)->seconds();
+
+        $this->actingAs($siswa, 'siswa')
+            ->getJson(route('siswa.rpg.inkwave.state', $map))
+            ->assertOk()
+            ->assertJsonPath('match.finished', true)
+            ->assertJsonPath('summary.points', 0)
+            ->assertJsonPath('summary.territory.pkg_cells', 0);
+        $this->assertDatabaseCount('point_transactions', 0);
+
+        $this->actingAs($siswa, 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee('inkwaveMatchCompleted: true', false);
     }
 
     private function question(Siswa $siswa, RpgMap $map)

@@ -429,6 +429,8 @@ Route::prefix('siswa')->name('siswa.')->group(function () {
                 ->middleware('throttle:30,1')->name('inkwave.question');
             Route::post('/{rpgMap}/inkwave/answer', [RpgGameController::class, 'inkwaveAnswer'])
                 ->middleware('throttle:30,1')->name('inkwave.answer');
+            Route::get('/{rpgMap}/inkwave/state', [RpgGameController::class, 'inkwaveState'])
+                ->middleware('throttle:60,1')->name('inkwave.state');
             Route::post('/{rpgMap}/move', [RpgGameController::class, 'move'])->name('move');
             Route::post('/{rpgMap}/answer', [RpgGameController::class, 'answer'])->name('answer');
             Route::post('/{rpgMap}/boss-defeat', [RpgGameController::class, 'bossDefeat'])->name('boss-defeat');
