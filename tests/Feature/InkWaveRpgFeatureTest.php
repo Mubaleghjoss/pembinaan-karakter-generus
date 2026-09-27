@@ -478,6 +478,31 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee('educational progress and territory stay intact', false);
     }
 
+    public function test_inkwave_continuous_actor_loop_exposes_teammate_objectives_and_world_state(): void
+    {
+        $map = $this->map();
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee('updateInkWaveActors(0.25)', false)
+            ->assertSee("this.steerInkWaveActor(actor, player, delta, now, 'pkg'", false)
+            ->assertSee("actor.objective = distance > 4.5 ? 'advance'", false)
+            ->assertSee('worldX: Number(tile.x)', false)
+            ->assertSee('thinkCooldown: 0', false)
+            ->assertSee('this.slideInkWaveActor(actor', false);
+    }
+
+    public function test_inkwave_renderer_uses_continuous_positions_without_changing_adventure_targets(): void
+    {
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+
+        $this->assertStringContainsString('inkWaveActorWorldPosition(actor)', $script);
+        $this->assertStringContainsString('this.inkWaveActorWorldPosition(enemy)', $script);
+        $this->assertStringContainsString('this.inkwaveMode ? 280 : 620', $script);
+        $this->assertStringContainsString('this.dispatchShoot(direction.dx, direction.dy)', $script);
+    }
+
     public function test_inkwave_death_flow_has_no_point_award_request(): void
     {
         $map = $this->map();

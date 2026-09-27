@@ -1797,17 +1797,19 @@ function rpgGame() {
         },
 
         moveEnemies() {
+            if (this.inkwaveMode) {
+                this.updateInkWaveActors(0.25);
+                return;
+            }
+
+            // Adventure keeps its original cell-based AI isolated from InkWave steering.
             const now = Date.now();
             const px = this.session.pos_x, py = this.session.pos_y;
             this.enemies.forEach(enemy => {
                 const moveInterval = this.getEnemyMoveInterval(enemy);
-                if (enemy._nextMoveAt && now < enemy._nextMoveAt) {
-                    return;
-                }
-
+                if (enemy._nextMoveAt && now < enemy._nextMoveAt) return;
                 const nextMove = this.pickEnemyStep(enemy, px, py);
                 enemy._nextMoveAt = now + moveInterval;
-
                 if (nextMove) {
                     enemy._lastX = enemy.x;
                     enemy._lastY = enemy.y;
@@ -1817,12 +1819,77 @@ function rpgGame() {
             });
         },
 
+        updateInkWaveActors(delta) {
+            if (!this.inkwaveMode) return;
+            const now = Date.now();
+            const player = { x: Number(this.session.pos_x), y: Number(this.session.pos_y) };
+            this.enemies.slice(0, this.inkwaveTeamSize).forEach((actor, index) => {
+                this.steerInkWaveActor(actor, player, delta, now, 'rival', index);
+            });
+            (this.inkwaveTeams.pkg || []).filter(actor => !actor.isPlayer).slice(0, this.inkwaveTeamSize - 1).forEach((actor, index) => {
+                this.steerInkWaveActor(actor, player, delta, now, 'pkg', index);
+            });
+        },
+
+        steerInkWaveActor(actor, player, delta, now, team, index) {
+            if (!Number.isFinite(actor.worldX)) actor.worldX = Number(actor.x || 0);
+            if (!Number.isFinite(actor.worldZ)) actor.worldZ = Number(actor.y || 0);
+            const dx = player.x - actor.worldX;
+            const dz = player.y - actor.worldZ;
+            const distance = Math.max(0.001, Math.hypot(dx, dz));
+            if (now >= Number(actor.thinkCooldown || 0)) {
+                if (team === 'rival') actor.objective = distance < 1.5 ? 'retreat' : (distance < 5.5 ? (index % 2 ? 'strafe' : 'chase') : 'patrol');
+                else actor.objective = distance > 4.5 ? 'advance' : (distance < 1.4 ? 'retreat' : (index % 2 ? 'support' : 'patrol'));
+                actor.state = actor.objective;
+                actor.thinkCooldown = now + 700 + ((Number(actor.slot || actor.bot_slot || index) % 3) * 140);
+            }
+
+            const sign = index % 2 ? 1 : -1;
+            let desiredX = dx / distance;
+            let desiredZ = dz / distance;
+            if (actor.objective === 'retreat') { desiredX *= -1; desiredZ *= -1; }
+            if (actor.objective === 'strafe' || actor.objective === 'support') {
+                const forwardWeight = actor.objective === 'support' ? 0.35 : 0.18;
+                [desiredX, desiredZ] = [(desiredX * forwardWeight) - (desiredZ * sign), (desiredZ * forwardWeight) + (desiredX * sign)];
+            }
+            if (actor.objective === 'patrol') {
+                const phase = ((Number(actor.slot || actor.bot_slot || index) * 1.7) + (now / 2600));
+                desiredX = Math.cos(phase);
+                desiredZ = Math.sin(phase);
+            }
+            const length = Math.max(1, Math.hypot(desiredX, desiredZ));
+            const speedBase = team === 'pkg' ? 0.82 : (actor.speed_level === 'fast' ? 1.18 : (actor.speed_level === 'slow' ? 0.72 : 0.94));
+            const targetVX = (desiredX / length) * speedBase;
+            const targetVZ = (desiredZ / length) * speedBase;
+            const blend = Math.min(1, delta * 4.5);
+            actor.velocityX += (targetVX - actor.velocityX) * blend;
+            actor.velocityZ += (targetVZ - actor.velocityZ) * blend;
+            this.slideInkWaveActor(actor, actor.velocityX * delta, actor.velocityZ * delta);
+            actor.facing = Math.atan2(actor.velocityX, actor.velocityZ);
+            actor.x = Math.max(0, Math.min(this.gridSize - 1, Math.round(actor.worldX)));
+            actor.y = Math.max(0, Math.min(this.gridSize - 1, Math.round(actor.worldZ)));
+        },
+
+        slideInkWaveActor(actor, dx, dz) {
+            const canOccupy = (x, y) => x >= 0 && y >= 0 && x <= this.gridSize - 1 && y <= this.gridSize - 1
+                && !this.isObstacle(Math.round(x), Math.round(y));
+            const nextX = actor.worldX + dx;
+            const nextZ = actor.worldZ + dz;
+            if (canOccupy(nextX, actor.worldZ)) actor.worldX = nextX;
+            else actor.velocityX = 0;
+            if (canOccupy(actor.worldX, nextZ)) actor.worldZ = nextZ;
+            else actor.velocityZ = 0;
+        },
+
         checkEnemyCatch() {
             const px = this.session.pos_x, py = this.session.pos_y;
             // Player is safe on NPC tiles
             if (this.isNpcTile(px, py)) return false;
             if (this.showNpcDialog) return false;
-            if (this.enemies.some(e => e.x === px && e.y === py)) {
+            const caught = this.inkwaveMode
+                ? this.enemies.some(enemy => Math.hypot(Number(enemy.worldX ?? enemy.x) - px, Number(enemy.worldZ ?? enemy.y) - py) < 0.55)
+                : this.enemies.some(enemy => enemy.x === px && enemy.y === py);
+            if (caught) {
                 if (this.inkwaveMode) {
                     this.applyInkWaveDamage(28);
                     return true;
@@ -2459,7 +2526,20 @@ function rpgGame() {
                 bot_slot: index + 1,
             }));
             this.inkwaveTeams = {
-                pkg: ownTiles.map((tile, index) => ({ ...tile, slot: index + 1, isPlayer: index === 0, team: 'pkg' })),
+                pkg: ownTiles.map((tile, index) => ({
+                    ...tile,
+                    slot: index + 1,
+                    isPlayer: index === 0,
+                    team: 'pkg',
+                    worldX: Number(tile.x),
+                    worldZ: Number(tile.y),
+                    velocityX: 0,
+                    velocityZ: 0,
+                    facing: 0,
+                    objective: index === 0 ? 'player' : 'advance',
+                    state: index === 0 ? 'player' : 'advance',
+                    thinkCooldown: 0,
+                })),
                 rival: this.enemies.map(enemy => ({ slot: enemy.bot_slot, team: 'rival' })),
             };
             this.persistInkWaveSpawn(ownSpawn);
@@ -2495,6 +2575,14 @@ function rpgGame() {
                 _alertedUntil: Number(enemy?._alertedUntil || 0),
                 _nextMoveAt: Number(enemy?._nextMoveAt || 0),
                 _nextShotAt: Number(enemy?._nextShotAt || 0),
+                worldX: Number(enemy?.worldX ?? x),
+                worldZ: Number(enemy?.worldZ ?? y),
+                velocityX: Number(enemy?.velocityX || 0),
+                velocityZ: Number(enemy?.velocityZ || 0),
+                facing: Number(enemy?.facing || 0),
+                objective: enemy?.objective || 'patrol',
+                state: enemy?.state || 'patrol',
+                thinkCooldown: Number(enemy?.thinkCooldown || 0),
             };
         },
 
@@ -2640,13 +2728,15 @@ function rpgGame() {
             // Stable array order and per-unit cooldown make this bounded and reproducible.
             for (let index = 0; index < this.enemies.length; index++) {
                 const enemy = this.enemies[index];
-                const distance = Math.hypot(px - enemy.x, py - enemy.y);
+                const enemyX = Number(enemy.worldX ?? enemy.x);
+                const enemyZ = Number(enemy.worldZ ?? enemy.y);
+                const distance = Math.hypot(px - enemyX, py - enemyZ);
                 const range = enemy.intelligence_level === 'high' ? 6 : (enemy.intelligence_level === 'low' ? 4 : 5);
-                if (distance > range || now < enemy._nextShotAt || !this.inkwaveHasLineOfSight(enemy.x, enemy.y, px, py)) continue;
+                if (distance > range || now < enemy._nextShotAt || !this.inkwaveHasLineOfSight(enemyX, enemyZ, px, py)) continue;
                 const cooldown = enemy.speed_level === 'fast' ? 1500 : (enemy.speed_level === 'slow' ? 2600 : 2050);
                 enemy._nextShotAt = now + cooldown + (index * 90);
                 const scene = document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene;
-                scene?.fireInkWaveEnemyShot?.(enemy.x, enemy.y);
+                scene?.fireInkWaveEnemyShot?.(enemyX, enemyZ);
                 this.applyInkWaveDamage(enemy.intelligence_level === 'high' ? 18 : 14);
                 break;
             }
@@ -2874,7 +2964,7 @@ function rpgGame() {
             let nearest = null;
             for (const enemy of this.enemies) {
                 const id = Number(enemy.encounter_id);
-                const distance = Math.hypot(px - Number(enemy.x), py - Number(enemy.y));
+                const distance = Math.hypot(px - Number(enemy.worldX ?? enemy.x), py - Number(enemy.worldZ ?? enemy.y));
                 if (distance > this.inkwaveProximityDistance + 1) this.inkwaveProximityTriggered.delete(id);
                 if (distance <= this.inkwaveProximityDistance && !this.inkwaveProximityTriggered.has(id)
                     && (!nearest || distance < nearest.distance)) nearest = { enemy, distance };
@@ -2900,8 +2990,8 @@ function rpgGame() {
                     body: JSON.stringify({
                         target_id: enemy.encounter_id,
                         event_kind: eventKind,
-                        x: Math.round(Number(enemy.x)),
-                        y: Math.round(Number(enemy.y)),
+                        x: Math.round(Number(enemy.worldX ?? enemy.x)),
+                        y: Math.round(Number(enemy.worldZ ?? enemy.y)),
                         ...(eventKind === 'proximity' ? {
                             player_x: Math.round(Number(this.session.pos_x)),
                             player_y: Math.round(Number(this.session.pos_y)),
@@ -2992,6 +3082,14 @@ function rpgGame() {
                     _alerted: false,
                     _alertedUntil: 0,
                     _nextMoveAt: Date.now() + this.getEnemyMoveInterval(enemy),
+                    worldX: Number(respawnTarget.x),
+                    worldZ: Number(respawnTarget.y),
+                    velocityX: 0,
+                    velocityZ: 0,
+                    facing: 0,
+                    objective: this.inkwaveMode ? 'patrol' : enemy.objective,
+                    state: this.inkwaveMode ? 'patrol' : enemy.state,
+                    thinkCooldown: 0,
                 });
             }, 900);
         },

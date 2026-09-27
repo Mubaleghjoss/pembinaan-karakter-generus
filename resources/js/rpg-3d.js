@@ -1399,8 +1399,8 @@ class RpgThreeScene {
         });
 
         this.syncCollection(this.dynamicObjects.enemies, this.enemyGroup, enemies, (enemy, index) => `enemy-${enemy.id || index}-${enemy.avatar || 'enemy'}`, (enemy) => this.makeEnemyMarker(enemy), (object, enemy) => {
-            const pos = this.tileToWorld(Number(enemy.x), Number(enemy.y));
-            this.setDynamicTarget(object, pos, 620);
+            const pos = this.inkWaveActorWorldPosition(enemy);
+            this.setDynamicTarget(object, pos, this.inkwaveMode ? 280 : 620);
             object.visible = true;
         });
 
@@ -1423,8 +1423,8 @@ class RpgThreeScene {
         }
 
         this.syncCollection(this.dynamicObjects.inkwaveAllies, this.playerGroup, inkWaveAllies, (member) => `inkwave-ally-${member.slot}`, (member) => this.makeInkWaveAllyMarker(member), (object, member) => {
-            const pos = this.tileToWorld(Number(member.x), Number(member.y));
-            object.position.set(pos.x, 0, pos.z);
+            const pos = this.inkWaveActorWorldPosition(member);
+            this.setDynamicTarget(object, pos, 280);
             object.visible = true;
         });
 
@@ -1448,6 +1448,13 @@ class RpgThreeScene {
         this.updateBossExtras();
         this.updateDirectionHud();
         this.updateMinimap();
+    }
+
+    inkWaveActorWorldPosition(actor) {
+        if (this.inkwaveMode && Number.isFinite(Number(actor?.worldX)) && Number.isFinite(Number(actor?.worldZ))) {
+            return this.tileToWorld(Number(actor.worldX), Number(actor.worldZ));
+        }
+        return this.tileToWorld(Number(actor?.x || 0), Number(actor?.y || 0));
     }
 
     updateBossExtras() {
@@ -1996,7 +2003,7 @@ class RpgThreeScene {
         this.updateInkWaveAimRay();
         let best = null;
         (this.state.enemies || []).forEach((enemy) => {
-            const enemyWorld = this.tileToWorld(Number(enemy.x), Number(enemy.y));
+            const enemyWorld = this.inkWaveActorWorldPosition(enemy);
             const relX = enemyWorld.x - this.aimOrigin.x;
             const relZ = enemyWorld.z - this.aimOrigin.z;
             const along = (relX * this.aimDirection.x) + (relZ * this.aimDirection.z);
@@ -2069,7 +2076,7 @@ class RpgThreeScene {
         if (this.aimIndicator) {
             this.aimIndicator.visible = !!target;
             if (target) {
-                const pos = this.tileToWorld(Number(target.enemy.x), Number(target.enemy.y));
+                const pos = this.inkWaveActorWorldPosition(target.enemy);
                 this.aimIndicator.position.set(pos.x, 0.08, pos.z);
             }
         }
@@ -3622,7 +3629,7 @@ class RpgThreeScene {
                     const enemies = this.state.enemies || [];
                     for (let enemyIndex = 0; enemyIndex < enemies.length; enemyIndex += 1) {
                         const enemy = enemies[enemyIndex];
-                        const pos = this.tileToWorld(Number(enemy.x), Number(enemy.y));
+                        const pos = this.inkWaveActorWorldPosition(enemy);
                         const projection = stepLengthSq > 0
                             ? Math.max(0, Math.min(1, (((pos.x - previousX) * stepX) + ((pos.z - previousZ) * stepZ)) / stepLengthSq))
                             : 0;
