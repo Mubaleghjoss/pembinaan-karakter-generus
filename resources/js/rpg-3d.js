@@ -588,7 +588,7 @@ class RpgThreeScene {
     }
 
     performAction(action) {
-        if (this.isDialogOpen() && !['view2d', 'fullscreen', 'reset'].includes(action)) {
+        if ((this.isDialogOpen() || this.state.inkwaveCombat?.locked) && !['view2d', 'fullscreen', 'reset'].includes(action)) {
             return;
         }
 
@@ -1889,6 +1889,7 @@ class RpgThreeScene {
         const answerResult = this.state.answerResult || null;
         const key = JSON.stringify({
             id: npc.id,
+            challenge: npc.challenge_label || '',
             result: answerResult ? { correct: !!answerResult.correct, poin: Number(answerResult.poin || 0) } : null,
             submitting: !!this.state.submittingAnswer,
             secondsLeft: Number(this.state.inkwaveQuestionSecondsLeft || 0),
@@ -1923,6 +1924,7 @@ class RpgThreeScene {
                     <header>
                         <span>${avatar}</span>
                         <div>
+                            ${npc.challenge_label ? `<small>${escapeHtml(npc.challenge_label)}</small>` : ''}
                             <strong>${escapeHtml(npc.nama || 'NPC')}</strong>
                             <small>${Number(npc.poin || 0)} poin${npc.time_limit_seconds ? ` | ${Number(this.state.inkwaveQuestionSecondsLeft || 0)} detik` : ''}</small>
                         </div>
@@ -2216,7 +2218,7 @@ class RpgThreeScene {
     }
 
     updateContinuousControls(delta) {
-        if (this.readOnly || this.isDialogOpen()) {
+        if (this.readOnly || this.isDialogOpen() || this.state.inkwaveCombat?.locked) {
             this.playerVelocity.multiplyScalar(0);
             return;
         }
@@ -3476,7 +3478,7 @@ class RpgThreeScene {
     }
 
     updateInkWaveEnemyShots(delta) {
-        if (!this.inkwaveMode || !this.inkWaveEnemyShots.length) return;
+        if (!this.inkwaveMode || this.state.inkwaveCombat?.locked || !this.inkWaveEnemyShots.length) return;
         const now = performance.now();
         let write = 0;
         for (let index = 0; index < this.inkWaveEnemyShots.length; index++) {
@@ -3545,6 +3547,7 @@ class RpgThreeScene {
     }
 
     updatePlayerShots(delta) {
+        if (this.state.inkwaveCombat?.locked) return;
         const now = performance.now();
         if (this.playerShots?.length) {
             const survive = [];

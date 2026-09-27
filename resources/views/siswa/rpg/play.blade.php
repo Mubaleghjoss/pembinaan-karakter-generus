@@ -1039,6 +1039,7 @@
                     <span x-text="resolveNpcAvatar(currentNpc?.avatar_display || currentNpc?.avatar)"></span>
                 </div>
                 <div class="text-white">
+                    <p x-show="inkwaveMode" class="text-[11px] font-black uppercase tracking-wider" x-text="currentNpc?.challenge_label"></p>
                     <h3 class="font-bold text-lg" x-text="currentNpc?.nama"></h3>
                     <p class="text-white/70 text-sm"><span x-text="currentNpc?.poin"></span> poin</p>
                 </div>
@@ -1150,6 +1151,10 @@ function rpgGame() {
         inkwaveTerritory: @json($inkwaveTerritory ?? []),
         inkwaveQuestionSecondsLeft: 0,
         inkwaveQuestionTimer: null,
+        inkwaveEncounterPending: false,
+        inkwaveProximityTriggered: new Set(),
+        inkwaveProximityCompleted: new Set(),
+        inkwaveProximityDistance: 2.25,
         gridSize: {{ $rpgMap->grid_size }},
         session: @json($session),
         character: @json($character),
@@ -1574,6 +1579,7 @@ function rpgGame() {
                     respawnSeconds: this.inkwaveRespawnSeconds,
                     hit: Date.now() < this.inkwaveHitUntil,
                     locked: this.inkwavePaused || this.showNpcDialog || this.inkwaveRespawnOpen,
+                    challengeLabel: this.currentNpc?.challenge_label || 'Siap',
                 } : null,
                 inkwaveTeams: this.inkwaveMode ? this.inkwaveTeams : null,
                 boss: this.bossActive && this.boss ? {
@@ -1782,6 +1788,7 @@ function rpgGame() {
                 // Player is safe on NPC tile
                 if (this.isNpcTile(this.session.pos_x, this.session.pos_y)) return;
                 this.moveEnemies();
+                if (this.inkwaveMode) this.checkInkWaveProximity();
                 if (!this.checkEnemyCatch()) {
                     if (this.inkwaveMode) this.inkwaveEnemyFireTick();
                     this.tryAutoShoot();
@@ -2713,6 +2720,10 @@ function rpgGame() {
 
         shootInkWaveTarget(targetId) {
             if (!this.inkwaveMode || this.showGuideModal || this.inkwavePaused || this.inkwaveMatchCompleted) return;
+            if (targetId !== null && !this.inkwaveProximityCompleted.has(Number(targetId))) {
+                this.notifyPlayer('Dekati NPC dan selesaikan tantangan pendekatan sebelum menyerang.', 'warning');
+                return;
+            }
             if (this.ammo < this.inkwaveInkShotCost) {
                 this.ammo = Math.max(0, this.ammo);
                 this.inkwaveInkReloadState = this.isOnOwnInkTile() ? 'delay' : 'neutral';
@@ -2732,6 +2743,7 @@ function rpgGame() {
             }
 
             const defeatedEnemy = { ...this.enemies[targetIndex] };
+            this.inkwaveProximityCompleted.delete(Number(defeatedEnemy.encounter_id));
             this.flashShotAt(defeatedEnemy.x, defeatedEnemy.y);
             this.enemies.splice(targetIndex, 1);
             this.handleEnemyDefeated(defeatedEnemy);
@@ -2854,6 +2866,28 @@ function rpgGame() {
                 return;
             }
 
+            await this.requestInkWaveQuestion(enemy, 'defeat');
+        },
+
+        checkInkWaveProximity() {
+            if (!this.inkwaveMode || this.inkwavePaused || this.showNpcDialog || this.inkwaveEncounterPending || this.inkwaveMatchCompleted) return;
+            const px = Number(this.session.pos_x), py = Number(this.session.pos_y);
+            let nearest = null;
+            for (const enemy of this.enemies) {
+                const id = Number(enemy.encounter_id);
+                const distance = Math.hypot(px - Number(enemy.x), py - Number(enemy.y));
+                if (distance > this.inkwaveProximityDistance + 1) this.inkwaveProximityTriggered.delete(id);
+                if (distance <= this.inkwaveProximityDistance && !this.inkwaveProximityTriggered.has(id)
+                    && (!nearest || distance < nearest.distance)) nearest = { enemy, distance };
+            }
+            if (!nearest) return;
+            this.inkwaveProximityTriggered.add(Number(nearest.enemy.encounter_id));
+            this.requestInkWaveQuestion(nearest.enemy, 'proximity');
+        },
+
+        async requestInkWaveQuestion(enemy, eventKind) {
+            if (this.inkwaveEncounterPending || this.showNpcDialog || this.inkwaveMatchCompleted) return;
+            this.inkwaveEncounterPending = true;
             this.inkwavePaused = true;
             try {
                 const headers = {
@@ -2866,15 +2900,19 @@ function rpgGame() {
                     headers,
                     body: JSON.stringify({
                         target_id: enemy.encounter_id,
-                        x: enemy.x,
-                        y: enemy.y,
+                        event_kind: eventKind,
+                        x: Math.round(Number(enemy.x)),
+                        y: Math.round(Number(enemy.y)),
+                        ...(eventKind === 'proximity' ? {
+                            player_x: Math.round(Number(this.session.pos_x)),
+                            player_y: Math.round(Number(this.session.pos_y)),
+                        } : {}),
                     })
                 });
                 const encounter = await encounterResponse.json();
                 if (!encounterResponse.ok || !encounter.encounter_token) {
                     throw new Error(encounter.message || 'Encounter InkWave tidak diterima.');
                 }
-                // Only render coverage returned by the accepted server encounter.
                 this.inkwaveTerritory = encounter.territory || this.inkwaveTerritory;
                 const response = await fetch("{{ route('siswa.rpg.inkwave.question', $rpgMap) }}", {
                     method: 'POST',
@@ -2889,6 +2927,7 @@ function rpgGame() {
                     throw error;
                 }
                 const question = data.question;
+                const issuedKind = data.event_kind || eventKind;
                 this.currentNpc = {
                     id: question.id,
                     nama: question.nama,
@@ -2898,6 +2937,8 @@ function rpgGame() {
                     pilihan_jawaban: question.answers.map(answer => answer.text),
                     poin: question.poin,
                     time_limit_seconds: question.time_limit_seconds,
+                    event_kind: issuedKind,
+                    challenge_label: issuedKind === 'proximity' ? 'Tantangan pendekatan' : 'Tantangan kemenangan',
                 };
                 this.answerResult = null;
                 this.showNpcDialog = true;
@@ -2909,6 +2950,8 @@ function rpgGame() {
                     this.inkwavePaused = false;
                     this.notifyPlayer(error.message || 'Gagal mengambil pertanyaan.', 'error');
                 }
+            } finally {
+                this.inkwaveEncounterPending = false;
             }
         },
 
@@ -3162,7 +3205,10 @@ function rpgGame() {
             if (!this.inkwaveMode || !Number.isInteger(x) || !Number.isInteger(y)) return false;
             const dx = x - Number(this.session.pos_x);
             const dy = y - Number(this.session.pos_y);
-            if (dx === 0 && dy === 0) return true;
+            if (dx === 0 && dy === 0) {
+                this.checkInkWaveProximity();
+                return true;
+            }
             return this.movePlayer(dx, dy);
         },
 
@@ -3187,6 +3233,7 @@ function rpgGame() {
 
             this.session.pos_x = newX;
             this.session.pos_y = newY;
+            if (this.inkwaveMode) this.checkInkWaveProximity();
             this.playTone('walk');
             this.collectPickupAt(newX, newY);
             // Ambil drop darah/energi bila sedang fase bos.
@@ -3338,6 +3385,9 @@ function rpgGame() {
                         throw new Error(data.message || 'Jawaban tidak dapat diproses.');
                     }
                     this.answerResult = { correct: !!data.correct, poin: Number(data.points || 0) };
+                    if (data.event_kind === 'proximity' && Number(data.target_id) >= 0) {
+                        this.inkwaveProximityCompleted.add(Number(data.target_id));
+                    }
                     this.inkwaveSummary = data.summary || this.inkwaveSummary;
                     this.inkwaveCompletionReady = !!data.completed;
                     this.stopInkWaveQuestionTimer();

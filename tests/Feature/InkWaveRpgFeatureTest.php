@@ -92,6 +92,77 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertStatus(409);
     }
 
+    public function test_proximity_encounter_requires_a_close_player_position_and_issues_a_scoped_question(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $npc = $this->npc($map);
+
+        $this->actingAs($siswa, 'siswa')->get(route('siswa.rpg.inkwave.play', $map))->assertOk();
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.encounter', $map), [
+            'target_id' => 0,
+            'event_kind' => 'proximity',
+            'x' => 3,
+            'y' => 3,
+            'player_x' => 0,
+            'player_y' => 0,
+        ])->assertUnprocessable();
+
+        $encounter = $this->proximityEncounter($siswa, $map);
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map), [
+            'encounter_token' => $encounter->json('encounter_token'),
+        ])->assertOk()
+            ->assertJsonPath('event_kind', 'proximity')
+            ->assertJsonPath('question.id', $npc->id)
+            ->assertJsonMissingPath('question.jawaban_benar');
+    }
+
+    public function test_proximity_answer_is_once_then_a_defeat_question_can_still_be_issued(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $npc = $this->npc($map, ['jawaban_benar' => 1, 'poin' => 13]);
+
+        $token = $this->proximityEncounter($siswa, $map)->json('encounter_token');
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map), ['encounter_token' => $token])->assertOk();
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.answer', $map), [
+            'question_id' => $npc->id,
+            'answer_id' => 1,
+            'points' => 999999,
+        ])->assertOk()->assertJsonPath('event_kind', 'proximity')->assertJsonPath('points', 13);
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.answer', $map), [
+            'question_id' => $npc->id,
+            'answer_id' => 1,
+        ])->assertUnprocessable();
+
+        $defeat = $this->encounter($siswa, $map, 'defeat');
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map), [
+            'encounter_token' => $defeat->json('encounter_token'),
+        ])->assertOk()->assertJsonPath('event_kind', 'defeat');
+        $this->assertDatabaseCount('point_transactions', 1);
+    }
+
+    public function test_proximity_encounter_is_rate_limited_per_target_while_stationary(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $this->npc($map);
+
+        $token = $this->proximityEncounter($siswa, $map)->json('encounter_token');
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map), ['encounter_token' => $token])->assertOk();
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $map->activeNpcs()->first()->id, 'answer_id' => 3])->assertOk()->assertJsonPath('points', 0);
+
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.encounter', $map), [
+            'target_id' => 0,
+            'event_kind' => 'proximity',
+            'x' => 3,
+            'y' => 3,
+            'player_x' => 2,
+            'player_y' => 3,
+        ])->assertStatus(429);
+        $this->assertDatabaseCount('point_transactions', 0);
+    }
+
     public function test_expired_or_replayed_encounter_token_cannot_issue_a_duplicate_question(): void
     {
         $siswa = Siswa::factory()->create();
@@ -355,7 +426,10 @@ class InkWaveRpgFeatureTest extends TestCase
             ->get(route('siswa.rpg.inkwave.play', $map))
             ->assertOk()
             ->assertSee('syncInkWavePosition: ({ x, y })', false)
-            ->assertSee('shootInkWave: ({ targetId })', false);
+            ->assertSee('shootInkWave: ({ targetId })', false)
+            ->assertSee('checkInkWaveProximity()', false)
+            ->assertSee('Tantangan pendekatan', false)
+            ->assertSee('Tantangan kemenangan', false);
     }
 
     public function test_inkwave_view_exposes_mode_scoped_mutual_combat_and_respawn_state(): void
@@ -529,15 +603,30 @@ class InkWaveRpgFeatureTest extends TestCase
         );
     }
 
-    private function encounter(Siswa $siswa, RpgMap $map)
+    private function encounter(Siswa $siswa, RpgMap $map, string $eventKind = 'defeat')
     {
         $this->actingAs($siswa, 'siswa')->get(route('siswa.rpg.inkwave.play', $map))->assertOk();
         $this->travel(2)->seconds();
 
         return $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.encounter', $map), [
             'target_id' => 0,
+            'event_kind' => $eventKind,
             'x' => 3,
             'y' => 3,
+        ])->assertOk();
+    }
+
+    private function proximityEncounter(Siswa $siswa, RpgMap $map)
+    {
+        $this->actingAs($siswa, 'siswa')->get(route('siswa.rpg.inkwave.play', $map))->assertOk();
+
+        return $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.encounter', $map), [
+            'target_id' => 0,
+            'event_kind' => 'proximity',
+            'x' => 3,
+            'y' => 3,
+            'player_x' => 2,
+            'player_y' => 3,
         ])->assertOk();
     }
 

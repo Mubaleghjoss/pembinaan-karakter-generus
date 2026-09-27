@@ -271,9 +271,13 @@ class RpgGameController extends Controller
 
         $validated = $request->validate([
             'target_id' => ['required', 'integer', 'min:0'],
+            'event_kind' => ['sometimes', 'string', 'in:proximity,defeat'],
             'x' => ['required', 'integer', 'min:0', 'max:' . ($rpgMap->grid_size - 1)],
             'y' => ['required', 'integer', 'min:0', 'max:' . ($rpgMap->grid_size - 1)],
+            'player_x' => ['required_if:event_kind,proximity', 'integer', 'min:0', 'max:' . ($rpgMap->grid_size - 1)],
+            'player_y' => ['required_if:event_kind,proximity', 'integer', 'min:0', 'max:' . ($rpgMap->grid_size - 1)],
         ]);
+        $eventKind = $validated['event_kind'] ?? 'defeat';
         $siswa = Auth::guard('siswa')->user();
         if ($this->inkwaveMatch($siswa->id, $rpgMap)['finished']) {
             return $this->inkwaveFinishedResponse($siswa->id, $rpgMap);
@@ -284,6 +288,12 @@ class RpgGameController extends Controller
 
         if (! $active || ! $target || $this->isObstacleAt($rpgMap, $validated['x'], $validated['y'])) {
             return response()->json(['message' => 'Target InkWave tidak valid atau sesi telah berakhir.'], 422);
+        }
+        if ($eventKind === 'proximity' && hypot(
+            $validated['player_x'] - $validated['x'],
+            $validated['player_y'] - $validated['y']
+        ) > 2.25) {
+            return response()->json(['message' => 'Dekati NPC untuk membuka tantangan pendekatan.'], 422);
         }
 
         $pendingKey = $this->inkwavePendingKey($siswa->id, $rpgMap->id);
@@ -296,9 +306,12 @@ class RpgGameController extends Controller
             if (Cache::has($pendingKey)) {
                 return response()->json(['message' => 'Selesaikan pertanyaan yang sedang aktif.'], 409);
             }
-            $cooldownKey = "inkwave:encounter-cooldown:{$siswa->id}:{$rpgMap->id}:{$validated['target_id']}";
-            if (! Cache::add($cooldownKey, true, now()->addSecond())) {
-                return response()->json(['message' => 'Target baru saja dikalahkan.'], 429);
+            $cooldownKey = "inkwave:encounter-cooldown:{$siswa->id}:{$rpgMap->id}:{$eventKind}:{$validated['target_id']}";
+            $cooldownSeconds = $eventKind === 'proximity' ? 12 : 1;
+            if (! Cache::add($cooldownKey, true, now()->addSeconds($cooldownSeconds))) {
+                return response()->json(['message' => $eventKind === 'proximity'
+                    ? 'Tantangan pendekatan NPC ini baru saja dipicu.'
+                    : 'Target baru saja dikalahkan.'], 429);
             }
 
             $token = Str::random(64);
@@ -308,20 +321,23 @@ class RpgGameController extends Controller
                 'active_nonce' => $active['nonce'],
                 'target_id' => $validated['target_id'],
                 'target_avatar' => $target['avatar'],
+                'event_kind' => $eventKind,
                 'target_x' => $validated['x'],
                 'target_y' => $validated['y'],
             ], now()->addSeconds(20));
 
-            // Territory advances only after the encounter gate accepts the event.
-            $territory = app(InkWaveTerritoryService::class)->applyPulse(
-                $siswa->id,
-                $rpgMap,
-                $token,
-                $validated['x'],
-                $validated['y']
-            );
+            // Only a confirmed local defeat paints territory; approaching is educational only.
+            $territory = $eventKind === 'defeat'
+                ? app(InkWaveTerritoryService::class)->applyPulse(
+                    $siswa->id,
+                    $rpgMap,
+                    $token,
+                    $validated['x'],
+                    $validated['y']
+                )
+                : app(InkWaveTerritoryService::class)->snapshot($siswa->id, $rpgMap);
 
-            return response()->json(['encounter_token' => $token, 'territory' => $territory]);
+            return response()->json(['encounter_token' => $token, 'event_kind' => $eventKind, 'territory' => $territory]);
         } finally {
             $lock->release();
         }
@@ -388,7 +404,11 @@ class RpgGameController extends Controller
         }
 
         $pendingKey = $this->inkwavePendingKey($siswa->id, $rpgMap->id);
-        if (! Cache::add($pendingKey, ['question_id' => $npc->id], now()->addSeconds($settings['time_limit_seconds']))) {
+        if (! Cache::add($pendingKey, [
+            'question_id' => $npc->id,
+            'event_kind' => $encounter['event_kind'] ?? 'defeat',
+            'target_id' => (int) $encounter['target_id'],
+        ], now()->addSeconds($settings['time_limit_seconds']))) {
             return response()->json(['message' => 'Selesaikan pertanyaan yang sedang aktif.'], 409);
         }
 
@@ -396,6 +416,7 @@ class RpgGameController extends Controller
             Cache::forget($encounterKey);
 
             return response()->json([
+                'event_kind' => $encounter['event_kind'] ?? 'defeat',
                 'question' => [
                     'id' => $npc->id,
                     'nama' => $npc->nama,
@@ -476,6 +497,8 @@ class RpgGameController extends Controller
             return response()->json([
                 'correct' => $correct,
                 'points' => $points,
+                'event_kind' => $pending['event_kind'] ?? 'defeat',
+                'target_id' => (int) ($pending['target_id'] ?? -1),
                 'completed' => $settings['max_questions'] > 0 && $summary['defeated'] >= $settings['max_questions'],
                 'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap),
             ]);
