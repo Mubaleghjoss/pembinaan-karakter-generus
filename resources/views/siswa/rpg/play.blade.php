@@ -2575,12 +2575,28 @@ function rpgGame() {
 
             this.inkwavePaused = true;
             try {
+                const headers = {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                };
+                const encounterResponse = await fetch("{{ route('siswa.rpg.inkwave.encounter', $rpgMap) }}", {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        target_id: enemy.encounter_id,
+                        x: enemy.x,
+                        y: enemy.y,
+                    })
+                });
+                const encounter = await encounterResponse.json();
+                if (!encounterResponse.ok || !encounter.encounter_token) {
+                    throw new Error(encounter.message || 'Encounter InkWave tidak diterima.');
+                }
                 const response = await fetch("{{ route('siswa.rpg.inkwave.question', $rpgMap) }}", {
                     method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                        'Accept': 'application/json'
-                    }
+                    headers,
+                    body: JSON.stringify({ encounter_token: encounter.encounter_token })
                 });
                 const data = await response.json();
                 if (!response.ok || !data.question) {

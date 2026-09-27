@@ -68,14 +68,17 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_question_hides_answer_key_and_allows_only_one_pending_question_per_student_and_map(): void
+    public function test_question_requires_an_encounter_token_hides_answer_key_and_allows_only_one_pending_question_per_student_and_map(): void
     {
         $siswa = Siswa::factory()->create();
         $map = $this->map();
         $npc = $this->npc($map, ['jawaban_benar' => 2]);
 
-        $response = $this->actingAs($siswa, 'siswa')
+        $this->actingAs($siswa, 'siswa')
             ->postJson(route('siswa.rpg.inkwave.question', $map))
+            ->assertUnprocessable();
+
+        $response = $this->question($siswa, $map)
             ->assertOk()
             ->assertJsonPath('question.id', $npc->id)
             ->assertJsonMissingPath('question.jawaban_benar')
@@ -83,8 +86,29 @@ class InkWaveRpgFeatureTest extends TestCase
 
         $this->assertArrayNotHasKey('jawaban_benar', $response->json('question'));
         $this->actingAs($siswa, 'siswa')
-            ->postJson(route('siswa.rpg.inkwave.question', $map))
+            ->postJson(route('siswa.rpg.inkwave.encounter', $map), ['target_id' => 0, 'x' => 3, 'y' => 3])
             ->assertStatus(409);
+    }
+
+    public function test_expired_or_replayed_encounter_token_cannot_issue_a_duplicate_question(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $this->npc($map);
+
+        $token = $this->encounter($siswa, $map)->json('encounter_token');
+        $this->travel(21)->seconds();
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.question', $map), ['encounter_token' => $token])
+            ->assertUnprocessable();
+
+        $token = $this->encounter($siswa, $map)->json('encounter_token');
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.question', $map), ['encounter_token' => $token])
+            ->assertOk();
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.question', $map), ['encounter_token' => $token])
+            ->assertUnprocessable();
     }
 
     public function test_answer_requires_the_matching_pending_question_and_cannot_be_replayed(): void
@@ -97,7 +121,7 @@ class InkWaveRpgFeatureTest extends TestCase
             ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id, 'answer_id' => 1])
             ->assertUnprocessable();
 
-        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map))->assertOk();
+        $this->question($siswa, $map)->assertOk();
         $this->actingAs($siswa, 'siswa')
             ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id + 1, 'answer_id' => 1])
             ->assertUnprocessable();
@@ -130,7 +154,7 @@ class InkWaveRpgFeatureTest extends TestCase
         $map = $this->map();
         $npc = $this->npc($map, ['jawaban_benar' => 2, 'poin' => 23]);
 
-        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map))->assertOk();
+        $this->question($siswa, $map)->assertOk();
         $this->actingAs($siswa, 'siswa')
             ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id, 'answer_id' => 0])
             ->assertOk()
@@ -138,7 +162,7 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertJsonPath('points', 0);
         $this->assertDatabaseCount('point_transactions', 0);
 
-        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map))->assertOk();
+        $this->question($siswa, $map)->assertOk();
         $this->actingAs($siswa, 'siswa')
             ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id, 'answer_id' => 2])
             ->assertOk()
@@ -167,16 +191,14 @@ class InkWaveRpgFeatureTest extends TestCase
         $easy = $this->npc($map, ['difficulty' => 'easy', 'nama' => 'Soal Mudah']);
         $hard = $this->npc($map, ['difficulty' => 'hard', 'nama' => 'Soal Sulit']);
 
-        $this->actingAs($siswa, 'siswa')
-            ->postJson(route('siswa.rpg.inkwave.question', $map))
+        $this->question($siswa, $map)
             ->assertOk()
             ->assertJsonPath('question.id', $hard->id);
         $this->actingAs($siswa, 'siswa')
             ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $hard->id, 'answer_id' => 0])
             ->assertOk();
 
-        $this->actingAs($siswa, 'siswa')
-            ->postJson(route('siswa.rpg.inkwave.question', $map))
+        $this->question($siswa, $map)
             ->assertUnprocessable();
         $this->assertNotSame($easy->id, $hard->id);
     }
@@ -187,14 +209,13 @@ class InkWaveRpgFeatureTest extends TestCase
         $map = $this->map(['inkwave_max_questions' => 1]);
         $npc = $this->npc($map, ['poin' => 19]);
 
-        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map))->assertOk();
+        $this->question($siswa, $map)->assertOk();
         $this->actingAs($siswa, 'siswa')
             ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id, 'answer_id' => 0])
             ->assertOk()
             ->assertJsonPath('completed', true);
 
-        $this->actingAs($siswa, 'siswa')
-            ->postJson(route('siswa.rpg.inkwave.question', $map))
+        $this->question($siswa, $map)
             ->assertUnprocessable()
             ->assertJsonPath('completed', true)
             ->assertJsonPath('summary.defeated', 1)
@@ -218,8 +239,7 @@ class InkWaveRpgFeatureTest extends TestCase
         $map = $this->map(['inkwave_question_time_limit_seconds' => 5]);
         $npc = $this->npc($map);
 
-        $this->actingAs($siswa, 'siswa')
-            ->postJson(route('siswa.rpg.inkwave.question', $map))
+        $this->question($siswa, $map)
             ->assertOk()
             ->assertJsonPath('question.time_limit_seconds', 5);
 
@@ -237,13 +257,27 @@ class InkWaveRpgFeatureTest extends TestCase
         $this->npc($map);
 
         $this->actingAs($siswa, 'siswa')->get(route('siswa.rpg.inkwave.play', $map))->assertOk();
-        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map))->assertOk();
+        $this->question($siswa, $map)->assertOk();
         Cache::put("inkwave:summary:{$siswa->id}:{$map->id}", ['points' => 99], now()->addHour());
 
         $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.reset', $map))->assertOk();
 
         $this->assertNull(Cache::get("inkwave:pending:{$siswa->id}:{$map->id}"));
+        $this->assertNull(Cache::get("inkwave:active:{$siswa->id}:{$map->id}"));
         $this->assertNull(Cache::get("inkwave:summary:{$siswa->id}:{$map->id}"));
+    }
+
+    public function test_reset_invalidates_an_unconsumed_encounter_token(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $this->npc($map);
+        $token = $this->encounter($siswa, $map)->json('encounter_token');
+
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.reset', $map))->assertOk();
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.question', $map), ['encounter_token' => $token])
+            ->assertUnprocessable();
     }
 
     public function test_inkwave_play_locks_the_existing_3d_scene_to_low_graphics(): void
@@ -274,6 +308,28 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee('x-show="!inkwaveMode"', false);
     }
 
+    private function question(Siswa $siswa, RpgMap $map)
+    {
+        $encounter = $this->encounter($siswa, $map);
+
+        return $this->actingAs($siswa, 'siswa')->postJson(
+            route('siswa.rpg.inkwave.question', $map),
+            ['encounter_token' => $encounter->json('encounter_token')]
+        );
+    }
+
+    private function encounter(Siswa $siswa, RpgMap $map)
+    {
+        $this->actingAs($siswa, 'siswa')->get(route('siswa.rpg.inkwave.play', $map))->assertOk();
+        $this->travel(2)->seconds();
+
+        return $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.encounter', $map), [
+            'target_id' => 0,
+            'x' => 3,
+            'y' => 3,
+        ])->assertOk();
+    }
+
     private function map(array $attributes = []): RpgMap
     {
         return RpgMap::query()->create(array_merge([
@@ -281,6 +337,7 @@ class InkWaveRpgFeatureTest extends TestCase
             'grid_size' => 10,
             'background_theme' => 'grass',
             'is_active' => true,
+            'enemies' => [['x' => 3, 'y' => 3, 'avatar' => 'enemy_slime', 'speed_level' => 'normal', 'intelligence_level' => 'normal']],
         ], $attributes));
     }
 

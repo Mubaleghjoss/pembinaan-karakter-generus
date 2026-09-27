@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class RpgGameController extends Controller
 {
@@ -232,12 +233,17 @@ class RpgGameController extends Controller
             'pos_y' => $npc->pos_y,
             'is_active' => $npc->is_active,
         ]);
-        $enemies = RpgCatalog::normalizeEnemies($rpgMap->enemies);
+        $enemies = collect(RpgCatalog::normalizeEnemies($rpgMap->enemies))
+            ->values()
+            ->map(fn (array $enemy, int $index) => $enemy + ['encounter_id' => $index])
+            ->all();
         $obstacles = $rpgMap->obstacles ?? [];
         $boss = null;
         $bossDefeated = false;
         $previewMode = false;
         $inkwaveMode = true;
+        // This ephemeral nonce scopes encounter tokens to this authenticated InkWave visit.
+        Cache::put($this->inkwaveActiveKey($siswa->id, $rpgMap->id), ['nonce' => Str::random(40)], now()->addHours(4));
         $inkwaveSummary = $this->inkwaveSummaryPayload(
             Cache::get($this->inkwaveSummaryKey($siswa->id, $rpgMap->id), $this->emptyInkWaveSummary()),
             $siswa->id,
@@ -251,18 +257,92 @@ class RpgGameController extends Controller
     }
 
     /**
-     * Select a random character question only after a client reports an NPC defeat.
+     * Issue a short-lived token after the InkWave client reports a local enemy hit.
+     * This is an intentional gate, not full server-side combat simulation.
      */
-    public function inkwaveQuestion(RpgMap $rpgMap)
+    public function inkwaveEncounter(Request $request, RpgMap $rpgMap)
     {
         if (! $rpgMap->is_active) {
             return response()->json(['message' => 'Map tidak tersedia.'], 404);
         }
 
+        $validated = $request->validate([
+            'target_id' => ['required', 'integer', 'min:0'],
+            'x' => ['required', 'integer', 'min:0', 'max:' . ($rpgMap->grid_size - 1)],
+            'y' => ['required', 'integer', 'min:0', 'max:' . ($rpgMap->grid_size - 1)],
+        ]);
         $siswa = Auth::guard('siswa')->user();
-        $settings = $this->inkwaveQuestionSettings($rpgMap);
-        $summaryKey = $this->inkwaveSummaryKey($siswa->id, $rpgMap->id);
-        $summary = Cache::get($summaryKey, $this->emptyInkWaveSummary());
+        $active = Cache::get($this->inkwaveActiveKey($siswa->id, $rpgMap->id));
+        $enemies = RpgCatalog::normalizeEnemies($rpgMap->enemies);
+        $target = $enemies[$validated['target_id']] ?? null;
+
+        if (! $active || ! $target || $this->isObstacleAt($rpgMap, $validated['x'], $validated['y'])) {
+            return response()->json(['message' => 'Target InkWave tidak valid atau sesi telah berakhir.'], 422);
+        }
+
+        $pendingKey = $this->inkwavePendingKey($siswa->id, $rpgMap->id);
+        $lock = Cache::lock("inkwave:encounter-lock:{$siswa->id}:{$rpgMap->id}", 5);
+        if (! $lock->get()) {
+            return response()->json(['message' => 'Encounter sedang diproses.'], 409);
+        }
+
+        try {
+            if (Cache::has($pendingKey)) {
+                return response()->json(['message' => 'Selesaikan pertanyaan yang sedang aktif.'], 409);
+            }
+            $cooldownKey = "inkwave:encounter-cooldown:{$siswa->id}:{$rpgMap->id}:{$validated['target_id']}";
+            if (! Cache::add($cooldownKey, true, now()->addSecond())) {
+                return response()->json(['message' => 'Target baru saja dikalahkan.'], 429);
+            }
+
+            $token = Str::random(64);
+            Cache::put($this->inkwaveEncounterKey($token), [
+                'siswa_id' => $siswa->id,
+                'map_id' => $rpgMap->id,
+                'active_nonce' => $active['nonce'],
+                'target_id' => $validated['target_id'],
+                'target_avatar' => $target['avatar'],
+                'target_x' => $validated['x'],
+                'target_y' => $validated['y'],
+            ], now()->addSeconds(20));
+
+            return response()->json(['encounter_token' => $token]);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Select a random character question only after consuming a server-issued encounter token.
+     */
+    public function inkwaveQuestion(Request $request, RpgMap $rpgMap)
+    {
+        if (! $rpgMap->is_active) {
+            return response()->json(['message' => 'Map tidak tersedia.'], 404);
+        }
+
+        $validated = $request->validate(['encounter_token' => ['required', 'string', 'size:64']]);
+        $siswa = Auth::guard('siswa')->user();
+        $active = Cache::get($this->inkwaveActiveKey($siswa->id, $rpgMap->id));
+        $encounterKey = $this->inkwaveEncounterKey($validated['encounter_token']);
+        $consumeLock = Cache::lock("{$encounterKey}:consume", 5);
+
+        if (! $consumeLock->get()) {
+            return response()->json(['message' => 'Encounter sedang diproses.'], 409);
+        }
+
+        try {
+            $encounter = Cache::get($encounterKey);
+            if (! $active || ! $encounter
+                || (int) $encounter['siswa_id'] !== (int) $siswa->id
+                || (int) $encounter['map_id'] !== (int) $rpgMap->id
+                || ! hash_equals((string) $active['nonce'], (string) $encounter['active_nonce'])) {
+                return response()->json(['message' => 'Token encounter tidak valid atau kedaluwarsa.'], 422);
+            }
+
+            $settings = $this->inkwaveQuestionSettings($rpgMap);
+            $summaryKey = $this->inkwaveSummaryKey($siswa->id, $rpgMap->id);
+            $summary = Cache::get($summaryKey, $this->emptyInkWaveSummary());
 
         if ($settings['max_questions'] > 0 && $summary['defeated'] >= $settings['max_questions']) {
             return response()->json([
@@ -294,17 +374,23 @@ class RpgGameController extends Controller
             return response()->json(['message' => 'Selesaikan pertanyaan yang sedang aktif.'], 409);
         }
 
-        return response()->json([
-            'question' => [
-                'id' => $npc->id,
-                'nama' => $npc->nama,
-                'avatar' => RpgCatalog::resolveNpcAvatar($npc->avatar),
-                'pertanyaan' => $npc->pertanyaan,
-                'poin' => $npc->poin,
-                'time_limit_seconds' => $settings['time_limit_seconds'],
-                'answers' => collect($npc->pilihan_jawaban ?? [])->values()->map(fn ($text, $id) => ['id' => $id, 'text' => $text])->all(),
-            ],
-        ]);
+            // Consume before revealing the question so a replay cannot create another pending question.
+            Cache::forget($encounterKey);
+
+            return response()->json([
+                'question' => [
+                    'id' => $npc->id,
+                    'nama' => $npc->nama,
+                    'avatar' => RpgCatalog::resolveNpcAvatar($npc->avatar),
+                    'pertanyaan' => $npc->pertanyaan,
+                    'poin' => $npc->poin,
+                    'time_limit_seconds' => $settings['time_limit_seconds'],
+                    'answers' => collect($npc->pilihan_jawaban ?? [])->values()->map(fn ($text, $id) => ['id' => $id, 'text' => $text])->all(),
+                ],
+            ]);
+        } finally {
+            $consumeLock->release();
+        }
     }
 
     /**
@@ -374,6 +460,27 @@ class RpgGameController extends Controller
         } finally {
             $lock->release();
         }
+    }
+
+    private function inkwaveActiveKey(int $siswaId, int $mapId): string
+    {
+        return "inkwave:active:{$siswaId}:{$mapId}";
+    }
+
+    private function inkwaveEncounterKey(string $token): string
+    {
+        return "inkwave:encounter:{$token}";
+    }
+
+    private function isObstacleAt(RpgMap $rpgMap, int $x, int $y): bool
+    {
+        foreach ($rpgMap->obstacles ?? [] as $obstacle) {
+            if ((int) ($obstacle['x'] ?? -1) === $x && (int) ($obstacle['y'] ?? -1) === $y) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function inkwavePendingKey(int $siswaId, int $mapId): string
@@ -806,6 +913,7 @@ class RpgGameController extends Controller
 
         // InkWave progress is deliberately ephemeral, so reset it with the map session.
         Cache::forget($this->inkwavePendingKey($siswa->id, $rpgMap->id));
+        Cache::forget($this->inkwaveActiveKey($siswa->id, $rpgMap->id));
         Cache::forget($this->inkwaveSummaryKey($siswa->id, $rpgMap->id));
 
         return response()->json(['success' => true, 'message' => 'Game direset. Poin game dikembalikan. Selamat bermain lagi.']);
