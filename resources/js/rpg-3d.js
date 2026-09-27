@@ -17,6 +17,10 @@ const FPS_SAMPLE_MS = 900;
 const PLAYER_SNAP_DISTANCE = TILE_SIZE * 1.65;
 const SHOT_SPEED = TILE_SIZE * 14; // kecepatan peluru terbang (unit dunia / detik)
 const PLAYER_IDLE_LERP = 14;
+const INKWAVE_MAX_TERRITORY_PATCHES = 64;
+const INKWAVE_MAX_EFFECTS = 18;
+const INKWAVE_CAMERA_DISTANCE = TILE_SIZE * 2.35;
+const INKWAVE_CAMERA_HEIGHT = TILE_SIZE * 1.75;
 
 const DIRECTIONS = [
     { dx: 0, dy: 1, label: 'Utara' },
@@ -168,6 +172,8 @@ class RpgThreeScene {
         this.pools = {
             pickups: { shield: [], ammo: [] },
         };
+        this.inkWaveEffects = [];
+        this.inkWaveEffectPool = [];
 
         this.mount();
         this.bindControls();
@@ -351,6 +357,8 @@ class RpgThreeScene {
         this.pickupGroup = new THREE.Group();
         this.playerGroup = new THREE.Group();
         this.scene.add(this.npcGroup, this.enemyGroup, this.bossGroup, this.pickupGroup, this.playerGroup);
+        this.inkWaveEffectGroup = new THREE.Group();
+        this.scene.add(this.inkWaveEffectGroup);
 
         this.shieldAura = this.makeShieldAura();
         this.scene.add(this.shieldAura);
@@ -1109,16 +1117,16 @@ class RpgThreeScene {
         if (!this.inkwaveMode || !this.territoryGroup) return;
 
         const territory = this.state.territory || {};
-        const cells = Object.keys(territory.cells || {}).slice(0, 64);
+        const cells = Object.keys(territory.cells || {}).slice(0, INKWAVE_MAX_TERRITORY_PATCHES);
         const key = `${territory.version || 0}:${cells.join(',')}`;
         if (key === this.lastTerritoryKey) return;
         this.lastTerritoryKey = key;
         this.clearGroup(this.territoryGroup);
         if (!cells.length) return;
 
-        // One capped instanced decal keeps the Low profile independent of pulse count.
-        const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.82, TILE_SIZE * 0.82);
-        const material = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.36, depthWrite: false });
+        // One capped instanced decal keeps Low mode cheap: no texture atlas or per-cell objects.
+        const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.86, TILE_SIZE * 0.86);
+        const material = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.46, depthWrite: false });
         const decals = new THREE.InstancedMesh(geometry, material, cells.length);
         const center = (gridSize - 1) / 2;
         const matrix = new THREE.Matrix4();
@@ -1199,6 +1207,7 @@ class RpgThreeScene {
         const laneGeometry = new THREE.BoxGeometry(arenaSize, 0.025, 0.16);
         const sideLaneGeometry = new THREE.BoxGeometry(0.16, 0.025, arenaSize);
         const edge = ((gridSize - 1) * TILE_SIZE) / 2;
+        const center = (gridSize - 1) / 2;
 
         [[0, edge], [0, -edge]].forEach(([x, z]) => {
             const rail = new THREE.Mesh(railGeometry, railMaterial);
@@ -1223,6 +1232,33 @@ class RpgThreeScene {
             const beacon = new THREE.Mesh(beaconGeometry, beaconMaterial);
             beacon.position.set(x, 0.28, z);
             this.staticGroup.add(beacon);
+        });
+
+        // Static set dressing is deliberately small and flat-shaded for the Low profile.
+        const turfGeometry = new THREE.PlaneGeometry(TILE_SIZE * 1.7, TILE_SIZE * 0.72);
+        const turfMaterial = new THREE.MeshBasicMaterial({ color: 0x0ea5a8, transparent: true, opacity: 0.16, depthWrite: false });
+        const turf = new THREE.InstancedMesh(turfGeometry, turfMaterial, Math.min(gridSize, 12));
+        const matrix = new THREE.Matrix4();
+        for (let index = 0; index < Math.min(gridSize, 12); index += 1) {
+            matrix.makeRotationX(-Math.PI / 2);
+            matrix.setPosition((index - center) * TILE_SIZE, 0.045, ((index % 2 ? -1 : 1) * TILE_SIZE * 1.15));
+            turf.setMatrixAt(index, matrix);
+        }
+        turf.instanceMatrix.needsUpdate = true;
+        this.staticGroup.add(turf);
+
+        const coverMaterial = new THREE.MeshLambertMaterial({ color: mixHexColor(colors.wall, 0x0f172a, 0.38), emissive: accent, emissiveIntensity: 0.035 });
+        const coverGeometry = new THREE.BoxGeometry(TILE_SIZE * 0.7, TILE_SIZE * 0.42, TILE_SIZE * 0.46);
+        const rampGeometry = new THREE.ConeGeometry(TILE_SIZE * 0.5, TILE_SIZE * 0.42, 4);
+        const reserved = new Set((this.state.obstacles || []).map((item) => `${Number(item.x)}:${Number(item.y)}`));
+        const props = [[1, 1, 'ramp'], [gridSize - 2, gridSize - 2, 'ramp'], [1, gridSize - 2, 'cover'], [gridSize - 2, 1, 'cover']];
+        props.forEach(([x, y, kind]) => {
+            if (x < 0 || y < 0 || x >= gridSize || y >= gridSize || reserved.has(`${x}:${y}`)) return;
+            const prop = new THREE.Mesh(kind === 'ramp' ? rampGeometry : coverGeometry, coverMaterial);
+            const pos = this.tileToWorld(x, y);
+            prop.position.set(pos.x, kind === 'ramp' ? TILE_SIZE * 0.2 : TILE_SIZE * 0.21, pos.z);
+            prop.rotation.y = kind === 'ramp' ? Math.PI / 4 : ((x + y) % 2) * (Math.PI / 2);
+            this.staticGroup.add(prop);
         });
     }
 
@@ -1304,6 +1340,22 @@ class RpgThreeScene {
             this.setDynamicTarget(object, pos, 620);
             object.visible = true;
         });
+
+        const localPlayer = this.state.session || { pos_x: 0, pos_y: 0 };
+        if (this.inkwaveMode) {
+            const key = `inkwave-local-${this.state.character?.avatar_display || this.state.character?.avatar || 'player'}`;
+            let marker = this.dynamicObjects.localInkWavePlayer;
+            if (!marker || marker.userData.markerKey !== key) {
+                if (marker) this.playerGroup.remove(marker);
+                marker = this.makeInkWavePlayerMarker();
+                marker.userData.markerKey = key;
+                this.dynamicObjects.localInkWavePlayer = marker;
+                this.playerGroup.add(marker);
+            }
+            const pos = this.tileToWorld(Number(localPlayer.pos_x || 0), Number(localPlayer.pos_y || 0));
+            marker.position.set(pos.x, 0, pos.z);
+            marker.visible = true;
+        }
 
         this.syncCollection(this.dynamicObjects.players, this.playerGroup, onlinePlayers, (player, index) => `player-${player.siswa_id || player.id || index}-${player.avatar_display || player.avatar || 'player'}`, (player) => this.makeOtherPlayerMarker(player), (object, player) => {
             const pos = this.tileToWorld(Number(player.pos_x), Number(player.pos_y));
@@ -2019,15 +2071,30 @@ class RpgThreeScene {
             ? Math.sin(this.playerMotion.stride * 3.8) * 0.035
             : Math.sin(this.clock.elapsedTime * 1.8) * 0.008;
 
-        this.camera.position.set(this.playerVisual.x, CAMERA_HEIGHT + bob, this.playerVisual.z);
-
         const direction = this.directionVectorFromYaw();
         const lookAt = this.cameraLookTarget;
-        lookAt.set(
-            this.camera.position.x + direction.dx * TILE_SIZE,
-            CAMERA_HEIGHT * 0.92,
-            this.camera.position.z + direction.dz * TILE_SIZE,
-        );
+        if (this.inkwaveMode) {
+            // Elevated chase framing keeps turf, cover, and locked targets readable on Low DPR.
+            this.camera.position.set(
+                this.playerVisual.x - (direction.dx * INKWAVE_CAMERA_DISTANCE),
+                INKWAVE_CAMERA_HEIGHT + bob,
+                this.playerVisual.z - (direction.dz * INKWAVE_CAMERA_DISTANCE),
+            );
+            lookAt.set(
+                this.playerVisual.x + (direction.dx * TILE_SIZE * 1.4),
+                CAMERA_HEIGHT * 0.62,
+                this.playerVisual.z + (direction.dz * TILE_SIZE * 1.4),
+            );
+            this.playerViewModel.visible = false;
+        } else {
+            this.camera.position.set(this.playerVisual.x, CAMERA_HEIGHT + bob, this.playerVisual.z);
+            lookAt.set(
+                this.camera.position.x + direction.dx * TILE_SIZE,
+                CAMERA_HEIGHT * 0.92,
+                this.camera.position.z + direction.dz * TILE_SIZE,
+            );
+            this.playerViewModel.visible = true;
+        }
         this.camera.lookAt(lookAt);
 
         if (this.shieldAura) {
@@ -2425,6 +2492,27 @@ class RpgThreeScene {
             role: 'enemy',
             opacity: 0.98,
         });
+    }
+
+    makeInkWavePlayerMarker() {
+        const color = parseHexColor(this.state.character?.warna, 0x06b6d4);
+        const group = this.makeHumanoidMarker({
+            avatar: this.state.character?.avatar_display || this.state.character?.avatar || 'PKG',
+            label: 'PKG',
+            primary: color,
+            secondary: mixHexColor(color, 0xffffff, 0.5),
+            labelColor: color,
+            role: 'player',
+            opacity: 1,
+        });
+        const paintRing = new THREE.Mesh(
+            new THREE.RingGeometry(0.62, 0.82, 12),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.72, side: THREE.DoubleSide, depthWrite: false }),
+        );
+        paintRing.rotation.x = -Math.PI / 2;
+        paintRing.position.y = 0.06;
+        group.add(paintRing);
+        return group;
     }
 
     makeOtherPlayerMarker(player = {}) {
@@ -3219,6 +3307,27 @@ class RpgThreeScene {
         this.scene.add(impact);
         impact.userData.expiresAt = performance.now() + 220;
         this.impacts.push(impact);
+        if (this.inkwaveMode) this.spawnInkWavePaintPulse(x, z);
+    }
+
+    spawnInkWavePaintPulse(x, z) {
+        if (!this.inkWaveEffectGroup) return;
+        if (this.inkWaveEffects.length >= INKWAVE_MAX_EFFECTS) {
+            const oldest = this.inkWaveEffects.shift();
+            oldest.visible = false;
+            this.inkWaveEffectPool.push(oldest);
+        }
+        const pulse = this.inkWaveEffectPool.pop() || new THREE.Mesh(
+            new THREE.RingGeometry(0.18, 0.32, 12),
+            new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }),
+        );
+        pulse.position.set(x, 0.075, z);
+        pulse.rotation.x = -Math.PI / 2;
+        pulse.scale.setScalar(0.5);
+        pulse.visible = true;
+        pulse.userData.expiresAt = performance.now() + 360;
+        this.inkWaveEffectGroup.add(pulse);
+        this.inkWaveEffects.push(pulse);
     }
 
     updatePlayerShots(delta) {
@@ -3237,6 +3346,19 @@ class RpgThreeScene {
             }
             this.playerShots = survive;
         }
+
+        this.inkWaveEffects = this.inkWaveEffects.filter((pulse) => {
+            const remaining = Number(pulse.userData.expiresAt || 0) - now;
+            if (remaining > 0) {
+                const progress = clamp(remaining / 360, 0, 1);
+                pulse.material.opacity = progress * 0.8;
+                pulse.scale.setScalar(0.5 + ((1 - progress) * 4));
+                return true;
+            }
+            pulse.visible = false;
+            this.inkWaveEffectPool.push(pulse);
+            return false;
+        });
 
         this.impacts = this.impacts.filter((impact) => {
             if (now < Number(impact.userData.expiresAt || 0)) {
