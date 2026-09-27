@@ -2394,7 +2394,7 @@ html.dark [class~="dark:border-purple-700"] {
 }
 
 .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-crosshair {
-    top: 55%;
+    top: 50%;
 }
 
 .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-note {
@@ -2501,7 +2501,7 @@ html.dark [class~="dark:border-purple-700"] {
     }
 
     .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-crosshair {
-        top: 48%;
+        top: 50%;
     }
 
     .pkg-rpg-3d-ink-tank {

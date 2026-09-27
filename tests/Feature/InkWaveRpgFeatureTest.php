@@ -426,10 +426,24 @@ class InkWaveRpgFeatureTest extends TestCase
             ->get(route('siswa.rpg.inkwave.play', $map))
             ->assertOk()
             ->assertSee('syncInkWavePosition: ({ x, y })', false)
-            ->assertSee('shootInkWave: ({ targetId })', false)
+            ->assertSee('shootInkWave: (detail = {})', false)
             ->assertSee('checkInkWaveProximity()', false)
             ->assertSee('Tantangan pendekatan', false)
             ->assertSee('Tantangan kemenangan', false);
+    }
+
+    public function test_inkwave_assets_expose_ray_held_fire_and_collision_markers(): void
+    {
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+
+        $this->assertStringContainsString('this.aimOrigin = new THREE.Vector3()', $script);
+        $this->assertStringContainsString('this.camera.getWorldDirection(this.aimDirection)', $script);
+        $this->assertStringContainsString('this.inkWaveFireHeld = true', $script);
+        $this->assertStringContainsString('INKWAVE_SHOT_INTERVAL_MS', $script);
+        $this->assertStringContainsString('this.isObstacleWorldPoint(previousX + (stepX * ratio)', $script);
+        $this->assertStringContainsString('this.dispatchInkWaveShoot({ enemy: hitEnemy })', $script);
+        $this->assertStringContainsString("if (this.inkwaveMode) {\n                this.tryInkWaveHeldFire", $script);
+        $this->assertStringContainsString('this.dispatchShoot(direction.dx, direction.dy)', $script);
     }
 
     public function test_inkwave_view_exposes_mode_scoped_mutual_combat_and_respawn_state(): void

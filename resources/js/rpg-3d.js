@@ -22,7 +22,11 @@ const INKWAVE_MAX_EFFECTS = 18;
 const INKWAVE_CAMERA_DISTANCE = TILE_SIZE * 2.35;
 const INKWAVE_CAMERA_HEIGHT = TILE_SIZE * 1.75;
 const INKWAVE_POSITION_SYNC_MS = 180;
-const INKWAVE_AIM_COS = Math.cos(Math.PI / 7);
+const INKWAVE_AIM_ASSIST_RADIUS = TILE_SIZE * 0.42;
+const INKWAVE_ENEMY_HIT_RADIUS = TILE_SIZE * 0.38;
+const INKWAVE_SHOT_INTERVAL_MS = 180;
+const INKWAVE_SHOT_RANGE = TILE_SIZE * 7;
+const INKWAVE_PLAYER_SHOT_CAP = 12;
 const INKWAVE_ENEMY_SHOT_CAP = 10;
 
 const DIRECTIONS = [
@@ -182,6 +186,11 @@ class RpgThreeScene {
         this.inkWaveEffectPool = [];
         this.inkWaveEnemyShots = [];
         this.inkWaveEnemyShotPool = [];
+        // InkWave-only input/projectile state. Adventure shooting remains event driven.
+        this.inkWaveFireHeld = false;
+        this.inkWaveLastFireAt = -INKWAVE_SHOT_INTERVAL_MS;
+        this.aimOrigin = new THREE.Vector3();
+        this.aimDirection = new THREE.Vector3(0, 0, -1);
 
         this.mount();
         this.bindControls();
@@ -538,7 +547,12 @@ class RpgThreeScene {
             } else if (event.code === 'Space' || key === 'enter') {
                 event.preventDefault();
                 event.stopPropagation();
-                this.performAction('shoot');
+                if (this.inkwaveMode) {
+                    this.inkWaveFireHeld = true;
+                    this.tryInkWaveHeldFire(performance.now());
+                } else if (!event.repeat) {
+                    this.performAction('shoot');
+                }
             } else if (key === 'z') {
                 event.preventDefault();
                 event.stopPropagation();
@@ -572,6 +586,8 @@ class RpgThreeScene {
             } else if (key === 'd') {
                 event.stopPropagation();
                 this.controlState.strafeRight = false;
+            } else if (event.code === 'Space' || key === 'enter') {
+                this.inkWaveFireHeld = false;
             } else if (['q', 'arrowleft'].includes(key)) {
                 event.stopPropagation();
                 this.controlState.turnLeft = false;
@@ -643,24 +659,17 @@ class RpgThreeScene {
         }
 
         if (action === 'shoot') {
-            const inkWaveTarget = this.inkwaveMode ? this.findInkWaveAimTarget() : null;
-            const cameraAim = this.directionVectorFromYaw();
-            const direction = inkWaveTarget?.direction || (this.inkwaveMode
-                ? { dx: cameraAim.dx, dy: -cameraAim.dz }
-                : this.cardinalFromYaw());
-            const canFire = !!this.state.boss || (this.inkwaveMode
-                ? Number(this.state.inkwaveInk?.current || 0) >= Number(this.state.inkwaveInk?.shotCost || 1)
-                : Number(this.state.ammo || 0) > 0);
             if (this.inkwaveMode) {
-                this.dispatchInkWaveShoot(inkWaveTarget);
-            } else {
-                this.dispatchShoot(direction.dx, direction.dy);
+                this.tryInkWaveHeldFire(performance.now());
+                return;
             }
+            const direction = this.cardinalFromYaw();
+            const canFire = !!this.state.boss || Number(this.state.ammo || 0) > 0;
+            this.dispatchShoot(direction.dx, direction.dy);
             if (canFire) {
                 this.playSound('shot');
                 this.kickWeapon();
                 this.flashShot(direction.dx, direction.dy);
-                if (this.inkwaveMode) this.showInkWaveShotFeedback(inkWaveTarget);
             } else {
                 this.playSound('miss');
             }
@@ -732,7 +741,10 @@ class RpgThreeScene {
     }
 
     startButtonAction(action) {
-        if (action === 'forward') {
+        if (action === 'shoot' && this.inkwaveMode) {
+            this.inkWaveFireHeld = true;
+            this.tryInkWaveHeldFire(performance.now());
+        } else if (action === 'forward') {
             this.controlState.forward = true;
         } else if (action === 'back') {
             this.controlState.back = true;
@@ -750,7 +762,9 @@ class RpgThreeScene {
     }
 
     stopButtonAction(action) {
-        if (action === 'forward') {
+        if (action === 'shoot' && this.inkwaveMode) {
+            this.inkWaveFireHeld = false;
+        } else if (action === 'forward') {
             this.controlState.forward = false;
         } else if (action === 'back') {
             this.controlState.back = false;
@@ -787,7 +801,7 @@ class RpgThreeScene {
     }
 
     dispatchInkWaveShoot(target) {
-        const detail = target ? { targetId: Number(target.enemy.encounter_id) } : { targetId: null };
+        const detail = target ? { targetId: Number(target.enemy.encounter_id), projectileHit: true } : { targetId: null };
         if (!this.invokeControl('shootInkWave', detail)) {
             const direction = target?.direction || this.cardinalFromYaw();
             this.dispatchShoot(direction.dx, direction.dy);
@@ -830,7 +844,7 @@ class RpgThreeScene {
             }
 
             if (method === 'shootInkWave' && typeof data.shootInkWaveTarget === 'function') {
-                data.shootInkWaveTarget(detail.targetId);
+                data.shootInkWaveTarget(detail.targetId, detail);
                 return true;
             }
 
@@ -1962,38 +1976,68 @@ class RpgThreeScene {
         }
     }
 
+    updateInkWaveAimRay() {
+        if (!this.inkwaveMode || !this.camera) return;
+        this.camera.getWorldPosition(this.aimOrigin);
+        this.camera.getWorldDirection(this.aimDirection);
+        // Combat is planar; the center reticle and projectile consume this same ray.
+        this.aimDirection.y = 0;
+        if (this.aimDirection.lengthSq() < 0.001) this.aimDirection.set(0, 0, -1);
+        this.aimDirection.normalize();
+    }
+
     inkwaveAimDirection() {
-        return this.findInkWaveAimTarget()?.direction || this.cardinalFromYaw();
+        this.updateInkWaveAimRay();
+        return { dx: this.aimDirection.x, dy: -this.aimDirection.z };
     }
 
     findInkWaveAimTarget() {
         if (!this.inkwaveMode || !this.playerInitialized) return null;
-
-        const cameraDirection = this.directionVectorFromYaw();
+        this.updateInkWaveAimRay();
         let best = null;
         (this.state.enemies || []).forEach((enemy) => {
             const enemyWorld = this.tileToWorld(Number(enemy.x), Number(enemy.y));
-            const worldX = enemyWorld.x - this.playerVisual.x;
-            const worldZ = enemyWorld.z - this.playerVisual.z;
-            const worldDistance = Math.hypot(worldX, worldZ);
-            if (worldDistance < 0.01 || worldDistance > TILE_SIZE * 6) return;
-
-            const aimX = worldX / worldDistance;
-            const aimZ = worldZ / worldDistance;
-            const facing = (aimX * cameraDirection.dx) + (aimZ * cameraDirection.dz);
-            if (facing < INKWAVE_AIM_COS || !this.hasInkWaveLineOfSight(enemyWorld.x, enemyWorld.z, worldDistance)) return;
-
-            const score = (facing * 12) - (worldDistance / TILE_SIZE);
-            if (!best || score > best.score) {
-                best = {
-                    enemy,
-                    direction: { dx: aimX, dy: -aimZ },
-                    distance: Math.max(1, Math.round(worldDistance / TILE_SIZE)),
-                    score,
-                };
+            const relX = enemyWorld.x - this.aimOrigin.x;
+            const relZ = enemyWorld.z - this.aimOrigin.z;
+            const along = (relX * this.aimDirection.x) + (relZ * this.aimDirection.z);
+            if (along <= 0 || along > INKWAVE_SHOT_RANGE) return;
+            const offRay = Math.hypot(relX - (this.aimDirection.x * along), relZ - (this.aimDirection.z * along));
+            if (offRay > INKWAVE_AIM_ASSIST_RADIUS || !this.hasInkWaveLineOfSight(enemyWorld.x, enemyWorld.z, along)) return;
+            if (!best || offRay < best.offRay || (offRay === best.offRay && along < best.along)) {
+                best = { enemy, distance: Math.max(1, Math.round(along / TILE_SIZE)), offRay, along };
             }
         });
         return best;
+    }
+
+    tryInkWaveHeldFire(now) {
+        if (!this.inkwaveMode || !this.inkWaveFireHeld && now - this.inkWaveLastFireAt < INKWAVE_SHOT_INTERVAL_MS) return;
+        if (this.isDialogOpen() || this.state.inkwaveCombat?.locked || now - this.inkWaveLastFireAt < INKWAVE_SHOT_INTERVAL_MS) return;
+        if (Number(this.state.inkwaveInk?.current || 0) < Number(this.state.inkwaveInk?.shotCost || 1)) {
+            this.playSound('miss');
+            this.inkWaveFireHeld = false;
+            return;
+        }
+        this.updateInkWaveAimRay();
+        this.inkWaveLastFireAt = now;
+        // Consume ink at spawn; target/encounter data is sent only after projectile collision.
+        this.invokeControl('shootInkWave', { targetId: null, projectileOnly: true });
+        this.spawnInkWaveProjectile();
+        this.playSound('shot');
+        this.kickWeapon();
+    }
+
+    spawnInkWaveProjectile() {
+        const direction = this.aimDirection;
+        const rightX = -direction.z;
+        const originX = this.playerVisual.x + direction.x * 0.72 + rightX * 0.34;
+        const originZ = this.playerVisual.z + direction.z * 0.72 + direction.x * 0.34;
+        this.spawnShotVisual(direction.x, direction.z, {
+            collision: true,
+            originX,
+            originZ,
+            targetId: this.findInkWaveAimTarget()?.enemy?.encounter_id ?? null,
+        });
     }
 
     hasInkWaveLineOfSight(targetX, targetZ, distance) {
@@ -2020,6 +2064,7 @@ class RpgThreeScene {
             return;
         }
 
+        this.updateInkWaveAimRay();
         const target = this.findInkWaveAimTarget();
         if (this.aimIndicator) {
             this.aimIndicator.visible = !!target;
@@ -2032,14 +2077,6 @@ class RpgThreeScene {
         if (this.aimLabel) {
             this.aimLabel.textContent = target ? `Kunci ${target.distance} petak` : 'Bidik arena';
         }
-    }
-
-    showInkWaveShotFeedback(target) {
-        if (!target) {
-            return;
-        }
-        const pos = this.tileToWorld(Number(target.enemy.x), Number(target.enemy.y));
-        this.spawnImpactVisual(pos.x, pos.z);
     }
 
     findNearestUnansweredNpc() {
@@ -2505,6 +2542,7 @@ class RpgThreeScene {
             this.updateCamera(delta);
             this.animateMarkers(delta);
             this.updateInkWaveAimFeedback();
+            if (this.inkWaveFireHeld) this.tryInkWaveHeldFire(now);
             this.updatePlayerShots(delta);
             this.updateInkWaveEnemyShots(delta);
             this.renderer.render(this.scene, this.camera);
@@ -3410,7 +3448,7 @@ class RpgThreeScene {
     }
 
     // Tembakan visual dari MONCONG SENJATA searah (vx,vz) dunia. Dipakai manual & auto/boss.
-    spawnShotVisual(vxRaw, vzRaw) {
+    spawnShotVisual(vxRaw, vzRaw, options = null) {
         if (!this.playerShots) return;
         let vx = Number(vxRaw || 0);
         let vz = Number(vzRaw || 0);
@@ -3420,12 +3458,12 @@ class RpgThreeScene {
         // Arah "kanan" relatif untuk menggeser origin ke sisi senjata (kanan-bawah layar).
         const rx = -vz, rz = vx;
         const originBase = this.inkwaveMode ? this.playerVisual : this.camera.position;
-        const originX = originBase.x + vx * 0.72 + rx * 0.34;
-        const originZ = originBase.z + vz * 0.72 + rz * 0.34;
+        const originX = Number(options?.originX ?? (originBase.x + vx * 0.72 + rx * 0.34));
+        const originZ = Number(options?.originZ ?? (originBase.z + vz * 0.72 + rz * 0.34));
         const originY = CAMERA_HEIGHT * 0.72;
 
         // Batasi jumlah peluru aktif agar tak nge-lag saat beruntun.
-        if (this.playerShots.length >= 14) {
+        if (this.playerShots.length >= (this.inkwaveMode ? INKWAVE_PLAYER_SHOT_CAP : 14)) {
             const oldest = this.playerShots.shift();
             if (oldest) this.releaseShotMesh(oldest.mesh);
         }
@@ -3439,7 +3477,10 @@ class RpgThreeScene {
             x: originX, y: originY, z: originZ,
             vx: vx * SHOT_SPEED, vz: vz * SHOT_SPEED,
             born: performance.now(),
-            ttl: 650,
+            ttl: this.inkwaveMode ? 700 : 650,
+            collision: !!options?.collision,
+            targetId: options?.targetId ?? null,
+            travelled: 0,
         });
 
         if (this.muzzleFlash) {
@@ -3547,21 +3588,63 @@ class RpgThreeScene {
     }
 
     updatePlayerShots(delta) {
-        if (this.state.inkwaveCombat?.locked) return;
+        if (this.state.inkwaveCombat?.locked) {
+            this.inkWaveFireHeld = false;
+            return;
+        }
         const now = performance.now();
         if (this.playerShots?.length) {
-            const survive = [];
-            for (const shot of this.playerShots) {
-                shot.x += shot.vx * delta;
-                shot.z += shot.vz * delta;
+            let write = 0;
+            for (let index = 0; index < this.playerShots.length; index += 1) {
+                const shot = this.playerShots[index];
+                const stepX = shot.vx * delta;
+                const stepZ = shot.vz * delta;
+                const previousX = shot.x;
+                const previousZ = shot.z;
+                shot.x += stepX;
+                shot.z += stepZ;
+                const stepLengthSq = (stepX * stepX) + (stepZ * stepZ);
+                shot.travelled += Math.sqrt(stepLengthSq);
                 shot.mesh.position.set(shot.x, shot.y, shot.z);
-                if (now - shot.born < shot.ttl) {
-                    survive.push(shot);
+                let hitEnemy = null;
+                let collided = false;
+                if (shot.collision) {
+                    const obstacleSteps = Math.max(1, Math.ceil(Math.sqrt(stepLengthSq) / (TILE_SIZE * 0.35)));
+                    for (let sample = 1; sample <= obstacleSteps; sample += 1) {
+                        const ratio = sample / obstacleSteps;
+                        if (this.isObstacleWorldPoint(previousX + (stepX * ratio), previousZ + (stepZ * ratio))) {
+                            collided = true;
+                            break;
+                        }
+                    }
+                }
+                if (shot.collision && !collided) {
+                    const enemies = this.state.enemies || [];
+                    for (let enemyIndex = 0; enemyIndex < enemies.length; enemyIndex += 1) {
+                        const enemy = enemies[enemyIndex];
+                        const pos = this.tileToWorld(Number(enemy.x), Number(enemy.y));
+                        const projection = stepLengthSq > 0
+                            ? Math.max(0, Math.min(1, (((pos.x - previousX) * stepX) + ((pos.z - previousZ) * stepZ)) / stepLengthSq))
+                            : 0;
+                        const nearestX = previousX + (stepX * projection);
+                        const nearestZ = previousZ + (stepZ * projection);
+                        if (Math.hypot(pos.x - nearestX, pos.z - nearestZ) <= INKWAVE_ENEMY_HIT_RADIUS) {
+                            hitEnemy = enemy;
+                            collided = true;
+                            break;
+                        }
+                    }
+                }
+                const alive = !collided && shot.travelled < INKWAVE_SHOT_RANGE && now - shot.born < shot.ttl;
+                if (alive) {
+                    this.playerShots[write++] = shot;
                 } else {
                     this.releaseShotMesh(shot.mesh);
+                    if (collided) this.spawnImpactVisual(shot.x, shot.z);
+                    if (hitEnemy) this.dispatchInkWaveShoot({ enemy: hitEnemy });
                 }
             }
-            this.playerShots = survive;
+            this.playerShots.length = write;
         }
 
         this.inkWaveEffects = this.inkWaveEffects.filter((pulse) => {

@@ -1288,7 +1288,7 @@ function rpgGame() {
                 move: ({ dx, dy }) => this.movePlayer(Number(dx || 0), Number(dy || 0)),
                 syncInkWavePosition: ({ x, y }) => this.syncInkWavePosition(Number(x), Number(y)),
                 shoot: ({ dx, dy }) => this.shootDirection(Number(dx || 0), Number(dy || 0)),
-                shootInkWave: ({ targetId }) => this.shootInkWaveTarget(targetId),
+                shootInkWave: (detail = {}) => this.shootInkWaveTarget(detail.targetId ?? null, detail),
                 retryInkWave: () => this.retryInkWaveCombat(),
                 answer: ({ index }) => this.submitAnswer(Number(index || 0)),
                 closeNpc: () => this.closeDialog(),
@@ -2718,30 +2718,29 @@ function rpgGame() {
             return { x: 0, y: 0 };
         },
 
-        shootInkWaveTarget(targetId) {
-            if (!this.inkwaveMode || this.showGuideModal || this.inkwavePaused || this.inkwaveMatchCompleted) return;
-            if (targetId !== null && !this.inkwaveProximityCompleted.has(Number(targetId))) {
+        shootInkWaveTarget(targetId, shot = {}) {
+            if (!this.inkwaveMode || this.showGuideModal || this.showNpcDialog || this.inkwaveRespawnOpen || this.inkwavePaused || this.inkwaveMatchCompleted) return;
+
+            // Projectile spawn consumes the client ink tank; encounter flow starts only on a later collision callback.
+            if (shot.projectileOnly) {
+                if (this.ammo < this.inkwaveInkShotCost) {
+                    this.ammo = Math.max(0, this.ammo);
+                    this.inkwaveInkReloadState = this.isOnOwnInkTile() ? 'delay' : 'neutral';
+                    return;
+                }
+                this.ammo = Math.max(0, this.ammo - this.inkwaveInkShotCost);
+                this.inkwaveInkLastShotAt = Date.now();
+                this.inkwaveInkReloadProgress = 0;
+                return;
+            }
+            if (!shot.projectileHit || targetId === null) return;
+            if (!this.inkwaveProximityCompleted.has(Number(targetId))) {
                 this.notifyPlayer('Dekati NPC dan selesaikan tantangan pendekatan sebelum menyerang.', 'warning');
                 return;
             }
-            if (this.ammo < this.inkwaveInkShotCost) {
-                this.ammo = Math.max(0, this.ammo);
-                this.inkwaveInkReloadState = this.isOnOwnInkTile() ? 'delay' : 'neutral';
-                this.notifyPlayer(this.isOnOwnInkTile() ? 'Tinta habis. Tahan posisi untuk isi ulang.' : 'Tinta habis. Kembali ke wilayah PKG.', 'warning');
-                return;
-            }
 
-            this.ammo = Math.max(0, this.ammo - this.inkwaveInkShotCost);
-            this.inkwaveInkLastShotAt = Date.now();
-            this.inkwaveInkReloadProgress = 0;
-            const targetIndex = targetId === null
-                ? -1
-                : this.enemies.findIndex(enemy => Number(enemy.encounter_id) === Number(targetId));
-            if (targetIndex === -1) {
-                this.notifyPlayer('Tembakan meleset.', 'warning');
-                return;
-            }
-
+            const targetIndex = this.enemies.findIndex(enemy => Number(enemy.encounter_id) === Number(targetId));
+            if (targetIndex === -1) return;
             const defeatedEnemy = { ...this.enemies[targetIndex] };
             this.inkwaveProximityCompleted.delete(Number(defeatedEnemy.encounter_id));
             this.flashShotAt(defeatedEnemy.x, defeatedEnemy.y);
