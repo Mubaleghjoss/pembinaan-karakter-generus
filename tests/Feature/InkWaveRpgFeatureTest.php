@@ -570,6 +570,33 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee('Math.min(this.inkwaveInkMax', false);
     }
 
+    public function test_inkwave_phase_four_exposes_bounded_evasion_duration_cooldown_and_hit_reduction(): void
+    {
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+        $view = file_get_contents(resource_path('views/siswa/rpg/play.blade.php'));
+
+        $this->assertStringContainsString('INKWAVE_EVASION_DURATION_MS = 1500', $script);
+        $this->assertStringContainsString('INKWAVE_EVASION_COOLDOWN_MS = 6500', $script);
+        $this->assertStringContainsString('INKWAVE_EVASION_HIT_MULTIPLIER = 0.48', $script);
+        $this->assertStringContainsString('now + INKWAVE_EVASION_DURATION_MS', $script);
+        $this->assertStringContainsString('this.resetInkWaveEvasionState()', $script);
+        $this->assertStringContainsString('scene?.inkWaveEvasionHitMultiplier?.() ?? 1', $view);
+        $this->assertStringContainsString('* evasionHitMultiplier', $view);
+    }
+
+    public function test_inkwave_phase_four_controls_visuals_and_adventure_isolation_are_mode_scoped(): void
+    {
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+
+        $this->assertStringContainsString("event.code === 'ShiftLeft' || event.code === 'ShiftRight'", $script);
+        $this->assertStringContainsString('data-rpg-3d-action="evasion"', $script);
+        $this->assertStringContainsString("if (action === 'evasion' && this.inkwaveMode)", $script);
+        $this->assertStringContainsString('group.userData.evasionAura = evasionAura', $script);
+        $this->assertStringContainsString('this.inkwaveMode && now < this.inkWaveEvasionUntil', $script);
+        $this->assertStringContainsString("this.inkwaveMode ? 'W/S/A/D gerak", $script);
+        $this->assertStringContainsString("'W/S maju, A/D geser, Q/E putar, Space tembak.", $script);
+    }
+
     public function test_client_supplied_combat_points_are_ignored(): void
     {
         $siswa = Siswa::factory()->create();

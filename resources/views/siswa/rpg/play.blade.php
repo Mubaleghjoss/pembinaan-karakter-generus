@@ -2737,9 +2737,10 @@ function rpgGame() {
                 enemy._nextShotAt = now + cooldown + (index * 90);
                 const scene = document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene;
                 scene?.fireInkWaveEnemyShot?.(enemyX, enemyZ);
-                // Airborne players remain hittable; the small reduction makes the jump readable, not invulnerability.
+                // Jump and evasion reduce incoming damage but never make the player invulnerable.
                 const airborneFactor = scene?.isInkWaveAirborne?.() ? 0.72 : 1;
-                this.applyInkWaveDamage((enemy.intelligence_level === 'high' ? 18 : 14) * airborneFactor);
+                const evasionHitMultiplier = scene?.inkWaveEvasionHitMultiplier?.() ?? 1;
+                this.applyInkWaveDamage((enemy.intelligence_level === 'high' ? 18 : 14) * airborneFactor * evasionHitMultiplier);
                 break;
             }
         },
@@ -2765,6 +2766,7 @@ function rpgGame() {
 
         beginInkWaveRespawn() {
             if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.showNpcDialog) return;
+            document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene?.resetInkWaveEvasionState?.();
             this.inkwaveRespawnOpen = true;
             this.inkwavePaused = true;
             this.inkwaveRespawnSeconds = 3;

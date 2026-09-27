@@ -37,6 +37,10 @@ const INKWAVE_BOMB_COOLDOWN_MS = 4200;
 const INKWAVE_BOMB_RANGE = TILE_SIZE * 4.5;
 const INKWAVE_BOMB_RADIUS = TILE_SIZE * 1.15;
 const INKWAVE_BOMB_CAP = 2;
+const INKWAVE_EVASION_DURATION_MS = 1500;
+const INKWAVE_EVASION_COOLDOWN_MS = 6500;
+const INKWAVE_EVASION_SPEED_MULTIPLIER = 1.65;
+const INKWAVE_EVASION_HIT_MULTIPLIER = 0.48;
 
 const DIRECTIONS = [
     { dx: 0, dy: 1, label: 'Utara' },
@@ -209,6 +213,9 @@ class RpgThreeScene {
         this.inkWaveBombs = [];
         this.inkWaveBombPool = [];
         this.inkWaveLastBombAt = -INKWAVE_BOMB_COOLDOWN_MS;
+        // Phase 4 evasion is short, local, and intentionally reduces rather than prevents hits.
+        this.inkWaveEvasionUntil = 0;
+        this.inkWaveLastEvasionAt = -INKWAVE_EVASION_COOLDOWN_MS;
 
         this.mount();
         this.bindControls();
@@ -247,7 +254,7 @@ class RpgThreeScene {
                     <span>Tameng</span>
                     <strong data-rpg-3d-shield>OFF</strong>
                 </div>
-                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-team-stat"><span>Tim lokal</span><strong data-rpg-3d-teams>PKG 4 vs 4 Rival</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-combat-stat"><span>HP / Tameng</span><strong data-rpg-3d-combat>100 / 0</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div><div class="pkg-rpg-3d-stat"><span>Bom F</span><strong data-rpg-3d-bomb-status>Siap</strong></div>' : ''}
+                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-team-stat"><span>Tim lokal</span><strong data-rpg-3d-teams>PKG 4 vs 4 Rival</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-combat-stat"><span>HP / Tameng</span><strong data-rpg-3d-combat>100 / 0</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div><div class="pkg-rpg-3d-stat"><span>Bom F</span><strong data-rpg-3d-bomb-status>Siap</strong></div><div class="pkg-rpg-3d-stat"><span>Evasion Shift</span><strong data-rpg-3d-evasion-status>Siap</strong></div>' : ''}
             </div>
             ${this.inkwaveMode ? '<div class="pkg-rpg-3d-ink-tank" data-rpg-3d-ink-tank><div><span>Tangki tinta</span><strong data-rpg-3d-ink-value>100 / 100</strong></div><div class="pkg-rpg-3d-ink-track"><i data-rpg-3d-ink-fill></i></div><small data-rpg-3d-ink-status>Siap menembak</small></div>' : ''}
             <div class="pkg-rpg-3d-compass">
@@ -298,7 +305,7 @@ class RpgThreeScene {
                 <button type="button" data-rpg-3d-action="turn-left" title="Putar kamera kiri">Putar -</button>
                 <button type="button" data-rpg-3d-action="turn-right" title="Putar kamera kanan">Putar +</button>
                 <button type="button" data-rpg-3d-action="shoot" title="Tembak">Tembak</button>
-                ${this.inkwaveMode ? '<button type="button" data-rpg-3d-action="jump" title="Lompat (Space)">Lompat</button><button type="button" data-rpg-3d-action="bomb" title="Bom tinta (F)">Bom</button>' : ''}
+                ${this.inkwaveMode ? '<button type="button" data-rpg-3d-action="jump" title="Lompat (Space)">Lompat</button><button type="button" data-rpg-3d-action="bomb" title="Bom tinta (F)">Bom</button><button type="button" data-rpg-3d-action="evasion" title="Transformasi evasi (Shift)">Evasi</button>' : ''}
                 <button type="button" data-rpg-3d-action="fullscreen" title="Layar penuh">Layar</button>
                 ${this.viewLocked ? '' : '<button type="button" data-rpg-3d-action="view2d" title="Kembali ke tampilan 2D">2D</button>'}
             </div>
@@ -317,13 +324,13 @@ class RpgThreeScene {
                 </div>
                 <div class="pkg-rpg-3d-mobile-pad pkg-rpg-3d-mobile-pad--turn" aria-label="Aksi dan putar kamera">
                     <button type="button" data-rpg-3d-action="shoot" aria-label="Tembak"><span aria-hidden="true">Tembak</span></button>
-                    ${this.inkwaveMode ? '<button type="button" data-rpg-3d-action="jump" aria-label="Lompat"><span aria-hidden="true">Lompat</span></button><button type="button" data-rpg-3d-action="bomb" aria-label="Lempar bom tinta"><span aria-hidden="true">Bom</span></button>' : ''}
+                    ${this.inkwaveMode ? '<button type="button" data-rpg-3d-action="jump" aria-label="Lompat"><span aria-hidden="true">Lompat</span></button><button type="button" data-rpg-3d-action="bomb" aria-label="Lempar bom tinta"><span aria-hidden="true">Bom</span></button><button type="button" data-rpg-3d-action="evasion" aria-label="Transformasi evasi"><span aria-hidden="true">Evasi</span></button>' : ''}
                     <button type="button" data-rpg-3d-action="turn-left" aria-label="Putar kamera kiri"><span aria-hidden="true">&#8630;</span></button>
                     <button type="button" data-rpg-3d-action="turn-right" aria-label="Putar kamera kanan"><span aria-hidden="true">&#8631;</span></button>
                 </div>
             </div>
             ` : ''}
-            <div class="pkg-rpg-3d-note">${this.inkwaveMode ? 'W/S/A/D gerak, Q/E putar, Enter tembak, Space lompat, F bom.' : 'W/S maju, A/D geser, Q/E putar, Space tembak. Skill: Z Lari, X Ulti, C Rage.'}</div>
+            <div class="pkg-rpg-3d-note">${this.inkwaveMode ? 'W/S/A/D gerak, Q/E putar, Enter tembak, Space lompat, F bom, Shift evasi.' : 'W/S maju, A/D geser, Q/E putar, Space tembak. Skill: Z Lari, X Ulti, C Rage.'}</div>
         `;
 
         this.canvasHost = this.root.querySelector('[data-rpg-3d-canvas]');
@@ -337,6 +344,7 @@ class RpgThreeScene {
         this.hudMatchTimer = this.root.querySelector('[data-rpg-3d-match-timer]');
         this.hudEncounter = this.root.querySelector('[data-rpg-3d-encounter]');
         this.hudBombStatus = this.root.querySelector('[data-rpg-3d-bomb-status]');
+        this.hudEvasionStatus = this.root.querySelector('[data-rpg-3d-evasion-status]');
         this.hudInkTank = this.root.querySelector('[data-rpg-3d-ink-tank]');
         this.hudInkValue = this.root.querySelector('[data-rpg-3d-ink-value]');
         this.hudInkFill = this.root.querySelector('[data-rpg-3d-ink-fill]');
@@ -582,6 +590,12 @@ class RpgThreeScene {
                 event.preventDefault();
                 event.stopPropagation();
                 if (!event.repeat) this.performAction('bomb');
+            } else if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+                if (this.inkwaveMode) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (!event.repeat) this.performAction('evasion');
+                }
             } else if (key === 'z') {
                 event.preventDefault();
                 event.stopPropagation();
@@ -641,6 +655,7 @@ class RpgThreeScene {
             if (!this.canReset) {
                 return;
             }
+            this.resetInkWaveEvasionState(true);
             this.invokeControl('reset');
             return;
         }
@@ -682,6 +697,11 @@ class RpgThreeScene {
 
         if (action === 'bomb' && this.inkwaveMode) {
             this.tryInkWaveBomb(performance.now());
+            return;
+        }
+
+        if (action === 'evasion' && this.inkwaveMode) {
+            this.tryInkWaveEvasion(performance.now());
             return;
         }
 
@@ -1788,6 +1808,12 @@ class RpgThreeScene {
             const enoughInk = Number(this.state.inkwaveInk?.current || 0) >= INKWAVE_BOMB_COST;
             this.hudBombStatus.textContent = cooldown > 0 ? `${(cooldown / 1000).toFixed(1)}d` : (enoughInk ? 'Siap' : `${INKWAVE_BOMB_COST} tinta`);
         }
+        if (this.hudEvasionStatus) {
+            const now = performance.now();
+            const active = this.isInkWaveEvading(now);
+            const cooldown = Math.max(0, INKWAVE_EVASION_COOLDOWN_MS - (now - this.inkWaveLastEvasionAt));
+            this.hudEvasionStatus.textContent = active ? `${((this.inkWaveEvasionUntil - now) / 1000).toFixed(1)}d` : (cooldown > 0 ? `${(cooldown / 1000).toFixed(1)}d` : 'Siap');
+        }
         if (this.hudInkTank) {
             const ink = this.state.inkwaveInk || {};
             const current = Math.max(0, Number(ink.current || 0));
@@ -2026,6 +2052,39 @@ class RpgThreeScene {
                 this.targetLabel.textContent = `Target: NPC ${target.distance} langkah ke ${target.label}`;
             }
         }
+    }
+
+    tryInkWaveEvasion(now) {
+        if (!this.inkwaveMode || this.isDialogOpen() || this.state.inkwaveCombat?.locked || this.state.inkwaveMatch?.finished) return;
+        if (now - this.inkWaveLastEvasionAt < INKWAVE_EVASION_COOLDOWN_MS) return;
+        this.inkWaveLastEvasionAt = now;
+        this.inkWaveEvasionUntil = now + INKWAVE_EVASION_DURATION_MS;
+        this.root.classList.add('is-inkwave-evading');
+        this.showNotice('Transformasi evasi aktif - damage tetap dapat masuk.');
+    }
+
+    isInkWaveEvading(now = performance.now()) {
+        return this.inkwaveMode && now < this.inkWaveEvasionUntil;
+    }
+
+    inkWaveEvasionHitMultiplier() {
+        return this.isInkWaveEvading() ? INKWAVE_EVASION_HIT_MULTIPLIER : 1;
+    }
+
+    resetInkWaveEvasionState(resetCooldown = false) {
+        if (!this.inkwaveMode) return;
+        this.inkWaveEvasionUntil = 0;
+        if (resetCooldown) this.inkWaveLastEvasionAt = -INKWAVE_EVASION_COOLDOWN_MS;
+        this.root.classList.remove('is-inkwave-evading');
+    }
+
+    updateInkWaveEvasion(now) {
+        if (!this.inkwaveMode) return;
+        if (this.isDialogOpen() || this.state.inkwaveCombat?.locked || this.state.inkwaveMatch?.finished) {
+            this.resetInkWaveEvasionState();
+            return;
+        }
+        if (!this.isInkWaveEvading(now)) this.root.classList.remove('is-inkwave-evading');
     }
 
     queueInkWaveJump() {
@@ -2452,10 +2511,11 @@ class RpgThreeScene {
         if (forward !== 0 || strafe !== 0) {
             const sin = Math.sin(this.yaw);
             const cos = Math.cos(this.yaw);
-            targetVelocity.x = ((sin * forward) + (cos * strafe)) * MOVE_SPEED;
-            targetVelocity.z = ((-cos * forward) + (sin * strafe)) * MOVE_SPEED;
-            if (targetVelocity.length() > MOVE_SPEED) {
-                targetVelocity.setLength(MOVE_SPEED);
+            const speed = MOVE_SPEED * (this.isInkWaveEvading() ? INKWAVE_EVASION_SPEED_MULTIPLIER : 1);
+            targetVelocity.x = ((sin * forward) + (cos * strafe)) * speed;
+            targetVelocity.z = ((-cos * forward) + (sin * strafe)) * speed;
+            if (targetVelocity.length() > speed) {
+                targetVelocity.setLength(speed);
             }
         }
 
@@ -2667,6 +2727,15 @@ class RpgThreeScene {
             }
             const moving = this.advanceDynamicObject(object, moveLerp);
             this.animateHumanoidObject(object, delta, elapsed, moving, index + 20);
+            if (this.inkwaveMode && object === this.dynamicObjects.localInkWavePlayer) {
+                const evading = this.isInkWaveEvading();
+                object.position.y = this.verticalY + (evading ? Math.sin(elapsed * 12) * 0.05 : 0);
+                object.scale.set(evading ? 0.7 : 1, evading ? 0.42 : 1, evading ? 1.22 : 1);
+                if (object.userData.evasionAura) {
+                    object.userData.evasionAura.visible = evading;
+                    object.userData.evasionAura.rotation.z += delta * 5.5;
+                }
+            }
         });
         this.pickupGroup.children.forEach((object) => {
             object.rotation.y += delta * 2.2;
@@ -2713,6 +2782,7 @@ class RpgThreeScene {
         if (this.root.offsetWidth > 0 && this.root.offsetHeight > 0) {
             this.updateContinuousControls(delta);
             this.updateInkWaveVertical(delta, now);
+            this.updateInkWaveEvasion(now);
             this.updateCamera(delta);
             this.animateMarkers(delta);
             this.updateInkWaveAimFeedback();
@@ -2899,8 +2969,16 @@ class RpgThreeScene {
         const weapon = this.makeWeaponModel();
         weapon.position.set(0.34, 1.18, -0.42);
         weapon.rotation.set(-0.12, 0, 0);
-        group.add(paintRing, weapon);
+        const evasionAura = new THREE.Mesh(
+            new THREE.RingGeometry(0.82, 1.12, 12),
+            new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.68, side: THREE.DoubleSide, depthWrite: false }),
+        );
+        evasionAura.rotation.x = -Math.PI / 2;
+        evasionAura.position.y = 0.08;
+        evasionAura.visible = false;
+        group.add(paintRing, weapon, evasionAura);
         group.userData.weapon = weapon;
+        group.userData.evasionAura = evasionAura;
         return group;
     }
 
