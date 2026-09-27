@@ -1122,6 +1122,8 @@ function rpgGame() {
         inkwaveMatchCompleted: @json($inkwaveMatchCompleted ?? false),
         inkwaveCompletionReady: false,
         inkwaveSummary: @json($inkwaveSummary ?? []),
+        // Separate cosmetic coverage from questions and educational points.
+        inkwaveTerritory: @json($inkwaveTerritory ?? []),
         inkwaveQuestionSecondsLeft: 0,
         inkwaveQuestionTimer: null,
         gridSize: {{ $rpgMap->grid_size }},
@@ -1510,6 +1512,7 @@ function rpgGame() {
                     avatar: this.resolveEnemyAvatar(enemy.avatar),
                 })),
                 pickups: this.pickups,
+                territory: this.inkwaveTerritory,
                 onlinePlayers: (this.onlinePlayers || []).map(player => ({
                     ...player,
                     avatar_display: this.resolvePlayerAvatar(player.avatar_display || player.avatar),
@@ -2593,6 +2596,8 @@ function rpgGame() {
                 if (!encounterResponse.ok || !encounter.encounter_token) {
                     throw new Error(encounter.message || 'Encounter InkWave tidak diterima.');
                 }
+                // Only render coverage returned by the accepted server encounter.
+                this.inkwaveTerritory = encounter.territory || this.inkwaveTerritory;
                 const response = await fetch("{{ route('siswa.rpg.inkwave.question', $rpgMap) }}", {
                     method: 'POST',
                     headers,

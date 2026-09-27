@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\PointTransaction;
 use App\Models\RpgMap;
+use App\Models\RpgGameSession;
 use App\Models\RpgNpc;
 use App\Models\Siswa;
+use App\Services\InkWaveTerritoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Cache;
@@ -265,6 +267,42 @@ class InkWaveRpgFeatureTest extends TestCase
         $this->assertNull(Cache::get("inkwave:pending:{$siswa->id}:{$map->id}"));
         $this->assertNull(Cache::get("inkwave:active:{$siswa->id}:{$map->id}"));
         $this->assertNull(Cache::get("inkwave:summary:{$siswa->id}:{$map->id}"));
+    }
+
+    public function test_accepted_encounter_applies_isolated_idempotent_territory_without_points(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map();
+        $this->npc($map);
+
+        $response = $this->encounter($siswa, $map)
+            ->assertJsonPath('territory.version', 1)
+            ->assertJsonPath('territory.pkg_cells', 9)
+            ->assertJsonPath('territory.neutral_cells', 91);
+        $this->assertDatabaseCount('point_transactions', 0);
+        $this->assertSame(0, (int) RpgGameSession::query()->where('siswa_id', $siswa->id)->value('total_score'));
+
+        $territory = app(InkWaveTerritoryService::class);
+        $first = $territory->snapshot($siswa->id, $map);
+        $replayed = $territory->applyPulse($siswa->id, $map, $response->json('encounter_token'), 3, 3);
+        $this->assertSame($first['version'], $replayed['version']);
+        $this->assertSame($first['cells'], $replayed['cells']);
+    }
+
+    public function test_territory_is_bounded_and_reset_clears_only_inkwave_state(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map(['grid_size' => 30]);
+        $territory = app(InkWaveTerritoryService::class);
+        for ($i = 0; $i < 25; $i++) {
+            $territory->applyPulse($siswa->id, $map, "event-{$i}", ($i % 5) * 3, intdiv($i, 5) * 3);
+        }
+        $this->assertLessThanOrEqual(144, $territory->snapshot($siswa->id, $map)['pkg_cells']);
+
+        RpgGameSession::query()->create(['siswa_id' => $siswa->id, 'rpg_map_id' => $map->id, 'pos_x' => 0, 'pos_y' => 0, 'total_score' => 0, 'answered_npcs' => []]);
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.reset', $map))->assertOk();
+        $this->assertNull(Cache::get($territory->key($siswa->id, $map->id)));
+        $this->assertDatabaseHas('rpg_game_sessions', ['siswa_id' => $siswa->id, 'rpg_map_id' => $map->id, 'total_score' => 0]);
     }
 
     public function test_reset_invalidates_an_unconsumed_encounter_token(): void

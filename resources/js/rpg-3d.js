@@ -101,6 +101,7 @@ class RpgThreeScene {
         this.headingIndex = 0;
         this.state = {};
         this.lastMapKey = '';
+        this.lastTerritoryKey = '';
         this.dynamicObjects = {
             npcs: new Map(),
             enemies: new Map(),
@@ -205,6 +206,7 @@ class RpgThreeScene {
                     <span>Tameng</span>
                     <strong data-rpg-3d-shield>OFF</strong>
                 </div>
+                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>Area PKG</span><strong data-rpg-3d-territory>0% / netral</strong></div>' : ''}
             </div>
             <div class="pkg-rpg-3d-compass">
                 <div class="pkg-rpg-3d-compass-ring">
@@ -285,6 +287,7 @@ class RpgThreeScene {
         this.hudNpc = this.root.querySelector('[data-rpg-3d-npc]');
         this.hudAmmo = this.root.querySelector('[data-rpg-3d-ammo]');
         this.hudShield = this.root.querySelector('[data-rpg-3d-shield]');
+        this.hudTerritory = this.root.querySelector('[data-rpg-3d-territory]');
         this.hudEnergyWrap = this.root.querySelector('[data-rpg-3d-energy-wrap]');
         this.hudEnergyFill = this.root.querySelector('[data-rpg-3d-energy-fill]');
         this.hudEnergyText = this.root.querySelector('[data-rpg-3d-energy-text]');
@@ -337,7 +340,8 @@ class RpgThreeScene {
         this.scene.add(this.camera);
 
         this.staticGroup = new THREE.Group();
-        this.scene.add(this.staticGroup);
+        this.territoryGroup = new THREE.Group();
+        this.scene.add(this.staticGroup, this.territoryGroup);
 
         this.npcGroup = new THREE.Group();
         this.enemyGroup = new THREE.Group();
@@ -1086,6 +1090,7 @@ class RpgThreeScene {
             this.buildStaticScene(gridSize, theme);
         }
 
+        this.syncTerritory(gridSize);
         this.updateHud();
         this.updateDialog();
         this.updateCameraTarget();
@@ -1096,6 +1101,33 @@ class RpgThreeScene {
         if (!force) {
             this.playStateAudio(previousAmmo, previousShieldActive);
         }
+    }
+
+    syncTerritory(gridSize) {
+        if (!this.inkwaveMode || !this.territoryGroup) return;
+
+        const territory = this.state.territory || {};
+        const cells = Object.keys(territory.cells || {}).slice(0, 64);
+        const key = `${territory.version || 0}:${cells.join(',')}`;
+        if (key === this.lastTerritoryKey) return;
+        this.lastTerritoryKey = key;
+        this.clearGroup(this.territoryGroup);
+        if (!cells.length) return;
+
+        // One capped instanced decal keeps the Low profile independent of pulse count.
+        const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.82, TILE_SIZE * 0.82);
+        const material = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.36, depthWrite: false });
+        const decals = new THREE.InstancedMesh(geometry, material, cells.length);
+        const center = (gridSize - 1) / 2;
+        const matrix = new THREE.Matrix4();
+        cells.forEach((cell, index) => {
+            const [x, y] = cell.split(':').map(Number);
+            matrix.makeRotationX(-Math.PI / 2);
+            matrix.setPosition((x - center) * TILE_SIZE, 0.025, (center - y) * TILE_SIZE);
+            decals.setMatrixAt(index, matrix);
+        });
+        decals.instanceMatrix.needsUpdate = true;
+        this.territoryGroup.add(decals);
     }
 
     buildStaticScene(gridSize, themeName) {
@@ -1556,6 +1588,10 @@ class RpgThreeScene {
         const bossActive = !!this.state.boss;
         this.hudAmmo.textContent = bossActive ? '∞' : String(Number(this.state.ammo || 0));
         this.hudShield.textContent = this.state.shieldActive ? `${Number(this.state.shieldSecondsLeft || 0)}d` : 'OFF';
+        if (this.hudTerritory) {
+            const territory = this.state.territory || {};
+            this.hudTerritory.textContent = `${Number(territory.coverage_percent || 0)}% / ${Number(territory.neutral_cells || 0)} netral`;
+        }
         this.updatePlayerEquipment();
     }
 

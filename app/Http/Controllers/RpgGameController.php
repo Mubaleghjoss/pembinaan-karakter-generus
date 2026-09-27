@@ -9,6 +9,7 @@ use App\Models\RpgCharacter;
 use App\Models\ThemeSetting;
 use App\Support\RpgCatalog;
 use App\Services\GamificationService;
+use App\Services\InkWaveTerritoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -249,11 +250,12 @@ class RpgGameController extends Controller
             $siswa->id,
             $rpgMap->id
         );
+        $inkwaveTerritory = app(InkWaveTerritoryService::class)->snapshot($siswa->id, $rpgMap);
         $inkwaveSettings = $this->inkwaveQuestionSettings($rpgMap);
         $inkwaveMatchCompleted = $inkwaveSettings['max_questions'] > 0
             && $inkwaveSummary['defeated'] >= $inkwaveSettings['max_questions'];
 
-        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode', 'inkwaveMode', 'inkwaveSummary', 'inkwaveMatchCompleted'));
+        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode', 'inkwaveMode', 'inkwaveSummary', 'inkwaveTerritory', 'inkwaveMatchCompleted'));
     }
 
     /**
@@ -306,7 +308,16 @@ class RpgGameController extends Controller
                 'target_y' => $validated['y'],
             ], now()->addSeconds(20));
 
-            return response()->json(['encounter_token' => $token]);
+            // Territory advances only after the encounter gate accepts the event.
+            $territory = app(InkWaveTerritoryService::class)->applyPulse(
+                $siswa->id,
+                $rpgMap,
+                $token,
+                $validated['x'],
+                $validated['y']
+            );
+
+            return response()->json(['encounter_token' => $token, 'territory' => $territory]);
         } finally {
             $lock->release();
         }
@@ -915,6 +926,7 @@ class RpgGameController extends Controller
         Cache::forget($this->inkwavePendingKey($siswa->id, $rpgMap->id));
         Cache::forget($this->inkwaveActiveKey($siswa->id, $rpgMap->id));
         Cache::forget($this->inkwaveSummaryKey($siswa->id, $rpgMap->id));
+        app(InkWaveTerritoryService::class)->clear($siswa->id, $rpgMap->id);
 
         return response()->json(['success' => true, 'message' => 'Game direset. Poin game dikembalikan. Selamat bermain lagi.']);
     }
