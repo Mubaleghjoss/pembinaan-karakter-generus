@@ -1576,7 +1576,7 @@ class RpgThreeScene {
     }
 
     isDialogOpen() {
-        return !!((this.state.npcDialogOpen && this.state.currentNpc) || this.state.completionOpen);
+        return !!((this.state.npcDialogOpen && this.state.currentNpc) || this.state.completionOpen || this.state.inkwaveSummaryOpen);
     }
 
     updateDialog() {
@@ -1586,9 +1586,10 @@ class RpgThreeScene {
 
         const npc = this.state.currentNpc;
         const completionOpen = !!this.state.completionOpen;
+        const inkwaveSummaryOpen = !!this.state.inkwaveSummaryOpen;
         const open = !!(this.state.npcDialogOpen && npc);
 
-        if (!open && !completionOpen) {
+        if (!open && !completionOpen && !inkwaveSummaryOpen) {
             this.dialogHost.hidden = true;
             this.dialogHost.innerHTML = '';
             this.lastDialogKey = '';
@@ -1601,6 +1602,39 @@ class RpgThreeScene {
         this.controlState.strafeRight = false;
         this.controlState.turnLeft = false;
         this.controlState.turnRight = false;
+
+        if (inkwaveSummaryOpen) {
+            const summary = this.state.inkwaveSummary || {};
+            const key = JSON.stringify({ inkwaveSummary: true, summary });
+            if (key === this.lastDialogKey) {
+                this.dialogHost.hidden = false;
+                return;
+            }
+
+            this.lastDialogKey = key;
+            this.dialogHost.innerHTML = `
+                <div class="pkg-rpg-3d-dialog-backdrop">
+                    <section class="pkg-rpg-3d-dialog-card pkg-rpg-3d-completion-card" aria-label="Ringkasan InkWave">
+                        <div class="pkg-rpg-3d-completion-body">
+                            <h2>InkWave selesai</h2>
+                            <p>${escapeHtml(this.state.mapName || this.state.map?.nama || 'Arena')}</p>
+                            <div class="pkg-rpg-3d-score-box">
+                                <span>Skor permainan</span>
+                                <strong>${Number(summary.gameplay_score || 0)}</strong>
+                                <small>${Number(summary.defeated || 0)} NPC dikalahkan</small>
+                            </div>
+                            <p>${Number(summary.questions_answered || 0)} pertanyaan dijawab, ${Number(summary.correct || 0)} benar.</p>
+                            <p>Poin karakter diterima: ${Number(summary.points || 0)}.</p>
+                            <div class="pkg-rpg-3d-completion-actions">
+                                <button type="button" class="is-secondary" data-rpg-3d-map-list="${escapeHtml(this.state.mapListUrl || '')}">Peta lain</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            `;
+            this.dialogHost.hidden = false;
+            return;
+        }
 
         if (completionOpen) {
             const answered = Number(this.state.answeredCount ?? (this.state.session?.answered_npcs || []).length);
@@ -1654,6 +1688,7 @@ class RpgThreeScene {
             id: npc.id,
             result: answerResult ? { correct: !!answerResult.correct, poin: Number(answerResult.poin || 0) } : null,
             submitting: !!this.state.submittingAnswer,
+            secondsLeft: Number(this.state.inkwaveQuestionSecondsLeft || 0),
             choices,
         });
 
@@ -1665,7 +1700,7 @@ class RpgThreeScene {
         this.lastDialogKey = key;
         const avatar = escapeHtml(npc.avatar_display || npc.avatar || 'NPC');
         const choiceHtml = choices.map((choice, index) => `
-            <button type="button" class="pkg-rpg-3d-choice" data-rpg-3d-answer="${index}" ${this.state.submittingAnswer ? 'disabled' : ''}>
+            <button type="button" class="pkg-rpg-3d-choice" data-rpg-3d-answer="${index}" ${(this.state.submittingAnswer || (this.inkwaveMode && Number(this.state.inkwaveQuestionSecondsLeft || 0) <= 0)) ? 'disabled' : ''}>
                 <span>${String.fromCharCode(65 + index)}</span>
                 ${escapeHtml(choice)}
             </button>
@@ -1686,7 +1721,7 @@ class RpgThreeScene {
                         <span>${avatar}</span>
                         <div>
                             <strong>${escapeHtml(npc.nama || 'NPC')}</strong>
-                            <small>${Number(npc.poin || 0)} poin${npc.time_limit_seconds ? ` | ${Number(npc.time_limit_seconds)} detik` : ''}</small>
+                            <small>${Number(npc.poin || 0)} poin${npc.time_limit_seconds ? ` | ${Number(this.state.inkwaveQuestionSecondsLeft || 0)} detik` : ''}</small>
                         </div>
                     </header>
                     <div class="pkg-rpg-3d-dialog-body">

@@ -1119,7 +1119,11 @@ function rpgGame() {
         previewMode: @json($previewMode ?? false),
         inkwaveMode: @json($inkwaveMode ?? false),
         inkwavePaused: false,
-        inkwaveSummary: { defeated: 0, correct: 0, incorrect: 0, points: 0 },
+        inkwaveMatchCompleted: @json($inkwaveMatchCompleted ?? false),
+        inkwaveCompletionReady: false,
+        inkwaveSummary: @json($inkwaveSummary ?? []),
+        inkwaveQuestionSecondsLeft: 0,
+        inkwaveQuestionTimer: null,
         gridSize: {{ $rpgMap->grid_size }},
         session: @json($session),
         character: @json($character),
@@ -1313,6 +1317,7 @@ function rpgGame() {
             if (this.pollTimer) clearInterval(this.pollTimer);
             if (this.joystickTimer) clearInterval(this.joystickTimer);
             if (this.enemyTimer) clearInterval(this.enemyTimer);
+            if (this.inkwaveQuestionTimer) clearInterval(this.inkwaveQuestionTimer);
             if (this.shieldTimer) clearInterval(this.shieldTimer);
             if (this.bossTimer) clearInterval(this.bossTimer);
             if (this.bossRespawnTimer) clearTimeout(this.bossRespawnTimer);
@@ -1547,7 +1552,10 @@ function rpgGame() {
                 currentNpc: this.currentNpc,
                 answerResult: this.answerResult,
                 submittingAnswer: this.submittingAnswer,
+                inkwaveQuestionSecondsLeft: this.inkwaveQuestionSecondsLeft,
                 completionOpen: this.showCompletion,
+                inkwaveSummaryOpen: this.inkwaveMatchCompleted,
+                inkwaveSummary: this.inkwaveSummary,
                 mapName: @json($rpgMap->nama),
                 mapListUrl: @json(($previewMode ?? false) ? route('admin.rpg.index') : route('siswa.rpg.index')),
             };
@@ -1711,7 +1719,7 @@ function rpgGame() {
             if (!this.enemies || this.enemies.length === 0) return;
             const speed = 250;
             this.enemyTimer = setInterval(() => {
-                if (this.showNpcDialog || this.showCompletion || this.showGuideModal || this.inkwavePaused) return;
+                if (this.showNpcDialog || this.showCompletion || this.showGuideModal || this.inkwavePaused || this.inkwaveMatchCompleted) return;
                 // Player is safe on NPC tile
                 if (this.isNpcTile(this.session.pos_x, this.session.pos_y)) return;
                 this.moveEnemies();
@@ -2468,6 +2476,7 @@ function rpgGame() {
             }
 
             this.shieldTimer = setInterval(() => {
+                if (this.inkwaveMode && this.inkwavePaused) return;
                 this.shieldSecondsLeft = Math.max(0, this.shieldSecondsLeft - 1);
 
                 if (this.shieldSecondsLeft <= 0) {
@@ -2496,7 +2505,7 @@ function rpgGame() {
         },
 
         shootDirection(dx, dy) {
-            if (this.showGuideModal || this.inkwavePaused) return;
+            if (this.showGuideModal || this.inkwavePaused || this.inkwaveMatchCompleted) return;
 
             // Prioritas: kalau ada bos aktif, peluru tak terbatas untuk melawan bos.
             if (this.bossActive && this.boss) {
@@ -2574,7 +2583,12 @@ function rpgGame() {
                     }
                 });
                 const data = await response.json();
-                if (!response.ok || !data.question) throw new Error(data.message || 'Pertanyaan tidak tersedia.');
+                if (!response.ok || !data.question) {
+                    const error = new Error(data.message || 'Pertanyaan tidak tersedia.');
+                    error.completed = !!data.completed;
+                    error.summary = data.summary || null;
+                    throw error;
+                }
                 const question = data.question;
                 this.currentNpc = {
                     id: question.id,
@@ -2588,9 +2602,16 @@ function rpgGame() {
                 };
                 this.answerResult = null;
                 this.showNpcDialog = true;
+                this.startInkWaveQuestionTimer(question.time_limit_seconds);
             } catch (error) {
-                this.inkwavePaused = false;
-                this.notifyPlayer(error.message || 'Gagal mengambil pertanyaan.', 'error');
+                if (error.completed && error.summary) {
+                    this.inkwaveSummary = error.summary;
+                    this.inkwaveMatchCompleted = true;
+                    this.inkwavePaused = true;
+                } else {
+                    this.inkwavePaused = false;
+                    this.notifyPlayer(error.message || 'Gagal mengambil pertanyaan.', 'error');
+                }
             }
         },
 
@@ -2832,7 +2853,7 @@ function rpgGame() {
         },
 
         movePlayer(dx, dy) {
-            if (this.showNpcDialog || this.showGuideModal || this.inkwavePaused) return false;
+            if (this.showNpcDialog || this.showGuideModal || this.inkwavePaused || this.inkwaveMatchCompleted) return false;
             
             // Throttle: 100ms between moves
             const now = Date.now();
@@ -2983,7 +3004,7 @@ function rpgGame() {
 
         // ===== NPC INTERACTION =====
         async submitAnswer(idx) {
-            if (this.submittingAnswer || !this.currentNpc) return;
+            if (this.submittingAnswer || !this.currentNpc || (this.inkwaveMode && this.inkwaveQuestionSecondsLeft <= 0)) return;
             this.submittingAnswer = true;
 
             if (this.inkwaveMode) {
@@ -3001,6 +3022,8 @@ function rpgGame() {
                     if (!response.ok) throw new Error(data.message || 'Jawaban tidak dapat diproses.');
                     this.answerResult = { correct: !!data.correct, poin: Number(data.points || 0) };
                     this.inkwaveSummary = data.summary || this.inkwaveSummary;
+                    this.inkwaveCompletionReady = !!data.completed;
+                    this.stopInkWaveQuestionTimer();
                 } catch (error) {
                     this.notifyPlayer(error.message || 'Gagal memeriksa jawaban.', 'error');
                     this.closeDialog();
@@ -3088,9 +3111,28 @@ function rpgGame() {
             this.submittingAnswer = false;
         },
 
+        startInkWaveQuestionTimer(seconds) {
+            this.stopInkWaveQuestionTimer();
+            this.inkwaveQuestionSecondsLeft = Math.max(0, Number(seconds || 0));
+            this.inkwaveQuestionTimer = setInterval(() => {
+                this.inkwaveQuestionSecondsLeft = Math.max(0, this.inkwaveQuestionSecondsLeft - 1);
+                if (this.inkwaveQuestionSecondsLeft === 0) {
+                    this.stopInkWaveQuestionTimer();
+                }
+            }, 1000);
+        },
+
+        stopInkWaveQuestionTimer() {
+            if (this.inkwaveQuestionTimer) clearInterval(this.inkwaveQuestionTimer);
+            this.inkwaveQuestionTimer = null;
+        },
+
         closeDialog() {
+            this.stopInkWaveQuestionTimer();
             this.showNpcDialog = false;
-            this.inkwavePaused = false;
+            this.inkwavePaused = this.inkwaveCompletionReady;
+            this.inkwaveMatchCompleted = this.inkwaveCompletionReady;
+            this.inkwaveCompletionReady = false;
             this.currentNpc = null;
             this.answerResult = null;
             this.focusThreeScene();

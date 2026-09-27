@@ -238,8 +238,16 @@ class RpgGameController extends Controller
         $bossDefeated = false;
         $previewMode = false;
         $inkwaveMode = true;
+        $inkwaveSummary = $this->inkwaveSummaryPayload(
+            Cache::get($this->inkwaveSummaryKey($siswa->id, $rpgMap->id), $this->emptyInkWaveSummary()),
+            $siswa->id,
+            $rpgMap->id
+        );
+        $inkwaveSettings = $this->inkwaveQuestionSettings($rpgMap);
+        $inkwaveMatchCompleted = $inkwaveSettings['max_questions'] > 0
+            && $inkwaveSummary['defeated'] >= $inkwaveSettings['max_questions'];
 
-        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode', 'inkwaveMode'));
+        return view('siswa.rpg.play', compact('rpgMap', 'session', 'character', 'npcs', 'enemies', 'obstacles', 'boss', 'bossDefeated', 'previewMode', 'inkwaveMode', 'inkwaveSummary', 'inkwaveMatchCompleted'));
     }
 
     /**
@@ -257,7 +265,11 @@ class RpgGameController extends Controller
         $summary = Cache::get($summaryKey, $this->emptyInkWaveSummary());
 
         if ($settings['max_questions'] > 0 && $summary['defeated'] >= $settings['max_questions']) {
-            return response()->json(['message' => 'Batas pertanyaan InkWave untuk permainan ini sudah tercapai.'], 422);
+            return response()->json([
+                'message' => 'Batas pertanyaan InkWave untuk permainan ini sudah tercapai.',
+                'completed' => true,
+                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap->id),
+            ], 422);
         }
 
         $questions = $rpgMap->activeNpcs();
@@ -270,7 +282,11 @@ class RpgGameController extends Controller
         $npc = $settings['randomize'] ? $questions->inRandomOrder()->first() : $questions->orderBy('id')->first();
 
         if (! $npc) {
-            return response()->json(['message' => 'Map ini belum memiliki pertanyaan karakter aktif.'], 422);
+            return response()->json([
+                'message' => 'Tidak ada pertanyaan InkWave lain yang tersedia.',
+                'completed' => $summary['defeated'] > 0,
+                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap->id),
+            ], 422);
         }
 
         $pendingKey = $this->inkwavePendingKey($siswa->id, $rpgMap->id);
@@ -331,6 +347,13 @@ class RpgGameController extends Controller
                     "InkWave: {$npc->nama} - jawaban benar (+{$points} poin)",
                     $npc
                 );
+
+                // Keep the map score authoritative so its reset path also reverses InkWave awards.
+                $session = RpgGameSession::firstOrCreate(
+                    ['siswa_id' => $siswa->id, 'rpg_map_id' => $rpgMap->id],
+                    ['pos_x' => 0, 'pos_y' => 0, 'answered_npcs' => [], 'total_score' => 0]
+                );
+                $session->increment('total_score', $points);
             }
 
             $summaryKey = $this->inkwaveSummaryKey($siswa->id, $rpgMap->id);
@@ -340,11 +363,13 @@ class RpgGameController extends Controller
             $summary['points'] += $points;
             $summary['question_ids'] = array_values(array_unique(array_merge($summary['question_ids'] ?? [], [(int) $npc->id])));
             Cache::put($summaryKey, $summary, now()->addHours(4));
+            $settings = $this->inkwaveQuestionSettings($rpgMap);
 
             return response()->json([
                 'correct' => $correct,
                 'points' => $points,
-                'summary' => $summary,
+                'completed' => $settings['max_questions'] > 0 && $summary['defeated'] >= $settings['max_questions'],
+                'summary' => $this->inkwaveSummaryPayload($summary, $siswa->id, $rpgMap->id),
             ]);
         } finally {
             $lock->release();
@@ -364,6 +389,23 @@ class RpgGameController extends Controller
     private function emptyInkWaveSummary(): array
     {
         return ['defeated' => 0, 'correct' => 0, 'incorrect' => 0, 'points' => 0, 'question_ids' => []];
+    }
+
+    private function inkwaveSummaryPayload(array $summary, int $siswaId, int $mapId): array
+    {
+        $sessionScore = (int) RpgGameSession::query()
+            ->where('siswa_id', $siswaId)
+            ->where('rpg_map_id', $mapId)
+            ->value('total_score');
+
+        return [
+            'defeated' => (int) ($summary['defeated'] ?? 0),
+            'correct' => (int) ($summary['correct'] ?? 0),
+            'incorrect' => (int) ($summary['incorrect'] ?? 0),
+            'points' => (int) ($summary['points'] ?? 0),
+            'questions_answered' => (int) ($summary['correct'] ?? 0) + (int) ($summary['incorrect'] ?? 0),
+            'gameplay_score' => $sessionScore,
+        ];
     }
 
     private function inkwaveQuestionSettings(RpgMap $rpgMap): array

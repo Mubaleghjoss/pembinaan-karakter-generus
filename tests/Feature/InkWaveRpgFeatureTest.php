@@ -108,8 +108,15 @@ class InkWaveRpgFeatureTest extends TestCase
             ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id, 'answer_id' => 1])
             ->assertOk()
             ->assertJsonPath('correct', true)
-            ->assertJsonPath('points', 17);
+            ->assertJsonPath('points', 17)
+            ->assertJsonPath('summary.gameplay_score', 17)
+            ->assertJsonPath('summary.questions_answered', 1);
         $this->assertDatabaseCount('point_transactions', 1);
+        $this->assertDatabaseHas('rpg_game_sessions', [
+            'siswa_id' => $siswa->id,
+            'rpg_map_id' => $map->id,
+            'total_score' => 17,
+        ]);
 
         $this->actingAs($siswa, 'siswa')
             ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id, 'answer_id' => 1])
@@ -172,6 +179,37 @@ class InkWaveRpgFeatureTest extends TestCase
             ->postJson(route('siswa.rpg.inkwave.question', $map))
             ->assertUnprocessable();
         $this->assertNotSame($easy->id, $hard->id);
+    }
+
+    public function test_completed_inkwave_match_returns_an_authoritative_summary_after_reload(): void
+    {
+        $siswa = Siswa::factory()->create();
+        $map = $this->map(['inkwave_max_questions' => 1]);
+        $npc = $this->npc($map, ['poin' => 19]);
+
+        $this->actingAs($siswa, 'siswa')->postJson(route('siswa.rpg.inkwave.question', $map))->assertOk();
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.answer', $map), ['question_id' => $npc->id, 'answer_id' => 0])
+            ->assertOk()
+            ->assertJsonPath('completed', true);
+
+        $this->actingAs($siswa, 'siswa')
+            ->postJson(route('siswa.rpg.inkwave.question', $map))
+            ->assertUnprocessable()
+            ->assertJsonPath('completed', true)
+            ->assertJsonPath('summary.defeated', 1)
+            ->assertJsonPath('summary.questions_answered', 1)
+            ->assertJsonPath('summary.correct', 1)
+            ->assertJsonPath('summary.points', 19)
+            ->assertJsonPath('summary.gameplay_score', 19)
+            ->assertJsonMissingPath('summary.question_ids');
+
+        $this->actingAs($siswa, 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee('inkwaveQuestionSecondsLeft', false)
+            ->assertSee('inkwaveMatchCompleted: true', false)
+            ->assertSee('Ringkasan InkWave', false);
     }
 
     public function test_inkwave_rejects_an_answer_after_the_server_time_limit(): void
