@@ -2737,7 +2737,9 @@ function rpgGame() {
                 enemy._nextShotAt = now + cooldown + (index * 90);
                 const scene = document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene;
                 scene?.fireInkWaveEnemyShot?.(enemyX, enemyZ);
-                this.applyInkWaveDamage(enemy.intelligence_level === 'high' ? 18 : 14);
+                // Airborne players remain hittable; the small reduction makes the jump readable, not invulnerability.
+                const airborneFactor = scene?.isInkWaveAirborne?.() ? 0.72 : 1;
+                this.applyInkWaveDamage((enemy.intelligence_level === 'high' ? 18 : 14) * airborneFactor);
                 break;
             }
         },
@@ -2812,6 +2814,14 @@ function rpgGame() {
             if (!this.inkwaveMode || this.showGuideModal || this.showNpcDialog || this.inkwaveRespawnOpen || this.inkwavePaused || this.inkwaveMatchCompleted) return;
 
             // Projectile spawn consumes the client ink tank; encounter flow starts only on a later collision callback.
+            if (shot.bombProjectileOnly) {
+                const bombCost = 35;
+                if (this.ammo < bombCost) return;
+                this.ammo = Math.max(0, this.ammo - bombCost);
+                this.inkwaveInkLastShotAt = Date.now();
+                this.inkwaveInkReloadProgress = 0;
+                return;
+            }
             if (shot.projectileOnly) {
                 if (this.ammo < this.inkwaveInkShotCost) {
                     this.ammo = Math.max(0, this.ammo);

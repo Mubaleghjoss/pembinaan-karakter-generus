@@ -446,6 +446,31 @@ class InkWaveRpgFeatureTest extends TestCase
         $this->assertStringContainsString('this.dispatchShoot(direction.dx, direction.dy)', $script);
     }
 
+    public function test_inkwave_phase_three_exposes_bounded_jump_and_bomb_markers(): void
+    {
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+
+        $this->assertStringContainsString('this.verticalY = 0', $script);
+        $this->assertStringContainsString('INKWAVE_JUMP_MAX_Y', $script);
+        $this->assertStringContainsString('this.resetInkWaveVerticalState()', $script);
+        $this->assertStringContainsString('INKWAVE_BOMB_COST = 35', $script);
+        $this->assertStringContainsString('INKWAVE_BOMB_CAP = 2', $script);
+        $this->assertStringContainsString('this.hasInkWaveLineOfSightFrom(blastX, blastZ', $script);
+        $this->assertStringContainsString('if (target) this.dispatchInkWaveShoot({ enemy: target.enemy })', $script);
+        $this->assertStringContainsString('Serialize to one authoritative encounter', $script);
+    }
+
+    public function test_adventure_controls_are_isolated_from_phase_three_actions(): void
+    {
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+
+        $this->assertStringContainsString("if (action === 'jump' && this.inkwaveMode)", $script);
+        $this->assertStringContainsString("if (action === 'bomb' && this.inkwaveMode)", $script);
+        $this->assertStringContainsString("this.inkwaveMode ? 'W/S/A/D gerak", $script);
+        $this->assertStringContainsString("if (!this.inkwaveMode) return;", $script);
+        $this->assertStringContainsString('this.dispatchShoot(direction.dx, direction.dy)', $script);
+    }
+
     public function test_inkwave_view_exposes_mode_scoped_mutual_combat_and_respawn_state(): void
     {
         $map = $this->map();
