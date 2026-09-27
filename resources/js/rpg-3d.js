@@ -221,6 +221,7 @@ class RpgThreeScene {
                 </div>
                 ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-combat-stat"><span>HP / Tameng</span><strong data-rpg-3d-combat>100 / 0</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div>' : ''}
             </div>
+            ${this.inkwaveMode ? '<div class="pkg-rpg-3d-ink-tank" data-rpg-3d-ink-tank><div><span>Tangki tinta</span><strong data-rpg-3d-ink-value>100 / 100</strong></div><div class="pkg-rpg-3d-ink-track"><i data-rpg-3d-ink-fill></i></div><small data-rpg-3d-ink-status>Siap menembak</small></div>' : ''}
             <div class="pkg-rpg-3d-compass">
                 <div class="pkg-rpg-3d-compass-ring">
                     <span>U</span>
@@ -304,6 +305,10 @@ class RpgThreeScene {
         this.hudTerritory = this.root.querySelector('[data-rpg-3d-territory]');
         this.hudMatchTimer = this.root.querySelector('[data-rpg-3d-match-timer]');
         this.hudEncounter = this.root.querySelector('[data-rpg-3d-encounter]');
+        this.hudInkTank = this.root.querySelector('[data-rpg-3d-ink-tank]');
+        this.hudInkValue = this.root.querySelector('[data-rpg-3d-ink-value]');
+        this.hudInkFill = this.root.querySelector('[data-rpg-3d-ink-fill]');
+        this.hudInkStatus = this.root.querySelector('[data-rpg-3d-ink-status]');
         this.hudEnergyWrap = this.root.querySelector('[data-rpg-3d-energy-wrap]');
         this.hudEnergyFill = this.root.querySelector('[data-rpg-3d-energy-fill]');
         this.hudEnergyText = this.root.querySelector('[data-rpg-3d-energy-text]');
@@ -641,7 +646,9 @@ class RpgThreeScene {
             const direction = inkWaveTarget?.direction || (this.inkwaveMode
                 ? { dx: cameraAim.dx, dy: -cameraAim.dz }
                 : this.cardinalFromYaw());
-            const canFire = !!this.state.boss || Number(this.state.ammo || 0) > 0;
+            const canFire = !!this.state.boss || (this.inkwaveMode
+                ? Number(this.state.inkwaveInk?.current || 0) >= Number(this.state.inkwaveInk?.shotCost || 1)
+                : Number(this.state.ammo || 0) > 0);
             if (this.inkwaveMode) {
                 this.dispatchInkWaveShoot(inkWaveTarget);
             } else {
@@ -1701,6 +1708,25 @@ class RpgThreeScene {
         if (this.hudEncounter) {
             this.hudEncounter.textContent = this.state.inkwaveMatch?.finished ? 'Selesai' : (this.state.inkwaveCombat?.respawnOpen ? 'Respawn' : (this.state.npcDialogOpen ? 'Pertanyaan' : 'Siap'));
         }
+        if (this.hudInkTank) {
+            const ink = this.state.inkwaveInk || {};
+            const current = Math.max(0, Number(ink.current || 0));
+            const max = Math.max(1, Number(ink.max || 100));
+            const percent = Math.round(Math.min(1, current / max) * 100);
+            const statuses = {
+                reloading: 'Isi ulang di wilayah PKG',
+                delay: 'Menstabilkan tangki...',
+                moving: 'Perlambat gerak untuk isi ulang',
+                neutral: current < Number(ink.shotCost || 1) ? 'Kosong - cari wilayah PKG' : 'Netral - tidak mengisi ulang',
+                paused: 'Isi ulang dijeda',
+                full: 'Tangki penuh',
+            };
+            this.hudInkValue.textContent = `${Math.floor(current)} / ${Math.floor(max)}`;
+            this.hudInkFill.style.width = `${percent}%`;
+            this.hudInkStatus.textContent = statuses[ink.reloadState] || 'Siap menembak';
+            this.hudInkTank.classList.toggle('is-low', !!ink.low);
+            this.hudInkTank.classList.toggle('is-reloading', ink.reloadState === 'reloading' || ink.reloadState === 'delay');
+        }
         this.updatePlayerEquipment();
     }
 
@@ -1712,8 +1738,8 @@ class RpgThreeScene {
         const weapon = this.playerViewModel.userData.weapon;
         const shield = this.playerViewModel.userData.shield;
         if (weapon) {
-            // Saat lawan bos, senjata selalu tampil (peluru tak terbatas).
-            weapon.visible = !!this.state.boss || Number(this.state.ammo || 0) > 0;
+            // InkWave keeps the weapon visible while empty so refill feedback stays clear.
+            weapon.visible = this.inkwaveMode || !!this.state.boss || Number(this.state.ammo || 0) > 0;
         }
         if (shield) {
             shield.visible = !!this.state.shieldActive;

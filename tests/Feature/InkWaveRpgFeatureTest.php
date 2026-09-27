@@ -379,7 +379,23 @@ class InkWaveRpgFeatureTest extends TestCase
             ->get(route('siswa.rpg.play', $map))
             ->assertOk()
             ->assertViewHas('inkwaveMode', false)
-            ->assertSee('if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.inkwavePaused) return;', false);
+            ->assertSee('if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.inkwavePaused) return;', false)
+            ->assertSee('ammo: 0,', false);
+    }
+
+    public function test_inkwave_exposes_a_bounded_ink_tank_and_own_territory_reload_markers(): void
+    {
+        $map = $this->map();
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee('inkwaveInkMax: 100', false)
+            ->assertSee('inkwaveInkShotCost: 12', false)
+            ->assertSee('startInkWaveInkTank()', false)
+            ->assertSee('this.inkwaveTerritory?.cells?.[`${x}:${y}`]', false)
+            ->assertSee("this.inkwaveInkReloadState = 'neutral'", false)
+            ->assertSee('Math.min(this.inkwaveInkMax', false);
     }
 
     public function test_client_supplied_combat_points_are_ignored(): void

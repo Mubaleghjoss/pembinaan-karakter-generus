@@ -2389,6 +2389,73 @@ html.dark [class~="dark:border-purple-700"] {
     background: rgba(2, 23, 32, 0.72);
 }
 
+.pkg-rpg-3d-ink-tank {
+    position: absolute;
+    z-index: 4;
+    top: 7.1rem;
+    left: 0.75rem;
+    width: min(15rem, calc(100% - 1.5rem));
+    padding: 0.55rem 0.65rem;
+    border: 1px solid rgba(103, 232, 249, 0.36);
+    border-radius: 0.8rem;
+    color: #cffafe;
+    background: rgba(2, 23, 32, 0.84);
+    box-shadow: 0 0.75rem 2rem rgba(2, 23, 32, 0.2);
+    pointer-events: none;
+}
+
+.pkg-rpg-3d-ink-tank > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pkg-rpg-3d-ink-track {
+    height: 0.48rem;
+    margin-top: 0.35rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.28);
+}
+
+.pkg-rpg-3d-ink-track i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #0891b2, #67e8f9);
+    transition: width 0.1s linear;
+}
+
+.pkg-rpg-3d-ink-tank small {
+    display: block;
+    margin-top: 0.3rem;
+    color: #a5f3fc;
+    font-size: 0.65rem;
+    font-weight: 800;
+}
+
+.pkg-rpg-3d-ink-tank.is-low {
+    border-color: rgba(251, 191, 36, 0.8);
+}
+
+.pkg-rpg-3d-ink-tank.is-low .pkg-rpg-3d-ink-track i {
+    background: linear-gradient(90deg, #dc2626, #fbbf24);
+}
+
+.pkg-rpg-3d-ink-tank.is-reloading .pkg-rpg-3d-ink-track i {
+    animation: pkg-ink-reload-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pkg-ink-reload-pulse {
+    to { filter: brightness(1.45); }
+}
+
 .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"].is-inkwave-hit::after {
     content: "";
     position: absolute;
@@ -2423,6 +2490,12 @@ html.dark [class~="dark:border-purple-700"] {
 
     .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-crosshair {
         top: 48%;
+    }
+
+    .pkg-rpg-3d-ink-tank {
+        top: 5.8rem;
+        left: 0.5rem;
+        width: min(12rem, calc(100% - 5rem));
     }
 
     .pkg-rpg-3d-scene[data-rpg-3d-inkwave="true"] .pkg-rpg-3d-stat span {

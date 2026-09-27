@@ -1124,13 +1124,21 @@ function rpgGame() {
         inkwaveSummary: @json($inkwaveSummary ?? []),
         inkwaveMatch: @json($inkwaveMatch ?? []),
         inkwaveMatchTimer: null,
-        // Client-only combat vitality; questions and points remain server-authoritative.
+        inkwaveInkTimer: null,
+        // Client-only combat vitality and ink tank; questions and points remain server-authoritative.
         inkwaveHealth: 100,
         inkwaveMaxHealth: 100,
         inkwaveShield: 0,
         inkwaveMaxShield: 100,
         inkwaveRespawnOpen: false,
         inkwaveHitUntil: 0,
+        inkwaveInkMax: 100,
+        inkwaveInkShotCost: 12,
+        inkwaveInkRechargeDelayMs: 700,
+        inkwaveInkRechargePerSecond: 24,
+        inkwaveInkReloadState: 'neutral',
+        inkwaveInkReloadProgress: 0,
+        inkwaveInkLastShotAt: 0,
         inkwaveSpawn: { x: Number(@json($session['pos_x'] ?? $session->pos_x ?? 0)), y: Number(@json($session['pos_y'] ?? $session->pos_y ?? 0)) },
         // Separate cosmetic coverage from questions and educational points.
         inkwaveTerritory: @json($inkwaveTerritory ?? []),
@@ -1206,7 +1214,7 @@ function rpgGame() {
         shieldActive: false,
         shieldSecondsLeft: 0,
         shieldTimer: null,
-        ammo: 0,
+        ammo: @json(($inkwaveMode ?? false) ? 100 : 0),
         pickups: { shield: [], ammo: [] },
         pickupRespawnTimers: [],
         shotFlash: null,
@@ -1296,7 +1304,10 @@ function rpgGame() {
             window.addEventListener('resize', this.resizeHandler);
             window.addEventListener('orientationchange', this.resizeHandler);
 
-            if (this.inkwaveMode) this.startInkWaveMatchTimer();
+            if (this.inkwaveMode) {
+                this.startInkWaveMatchTimer();
+                this.startInkWaveInkTank();
+            }
             this.enemies = (this.enemies || []).map(enemy => this.normalizeEnemy(enemy));
             this.enemyInitial = JSON.parse(JSON.stringify(this.enemies));
             this.generatePickups();
@@ -1335,6 +1346,7 @@ function rpgGame() {
             if (this.enemyTimer) clearInterval(this.enemyTimer);
             if (this.inkwaveQuestionTimer) clearInterval(this.inkwaveQuestionTimer);
             if (this.inkwaveMatchTimer) clearInterval(this.inkwaveMatchTimer);
+            if (this.inkwaveInkTimer) clearInterval(this.inkwaveInkTimer);
             if (this.shieldTimer) clearInterval(this.shieldTimer);
             if (this.bossTimer) clearInterval(this.bossTimer);
             if (this.bossRespawnTimer) clearTimeout(this.bossRespawnTimer);
@@ -1536,6 +1548,14 @@ function rpgGame() {
                 shieldActive: this.shieldActive,
                 shieldSecondsLeft: this.shieldSecondsLeft,
                 ammo: this.ammo,
+                inkwaveInk: this.inkwaveMode ? {
+                    current: this.ammo,
+                    max: this.inkwaveInkMax,
+                    shotCost: this.inkwaveInkShotCost,
+                    reloadState: this.inkwaveInkReloadState,
+                    reloadProgress: this.inkwaveInkReloadProgress,
+                    low: this.ammo <= this.inkwaveInkShotCost * 2,
+                } : null,
                 inkwaveCombat: this.inkwaveMode ? {
                     health: this.inkwaveHealth,
                     maxHealth: this.inkwaveMaxHealth,
@@ -2455,9 +2475,11 @@ function rpgGame() {
             const ammoIndex = (this.pickups.ammo || []).findIndex(item => item.x === x && item.y === y);
             if (ammoIndex !== -1) {
                 const pickup = { ...this.pickups.ammo.splice(ammoIndex, 1)[0] };
-                this.ammo += this.ammoPerPickup;
+                this.ammo = this.inkwaveMode
+                    ? Math.min(this.inkwaveInkMax, this.ammo + (this.ammoPerPickup * this.inkwaveInkShotCost))
+                    : this.ammo + this.ammoPerPickup;
                 this.playTone('pickup');
-                this.notifyPlayer(`Kamu mendapat ${this.ammoPerPickup} peluru.`, 'success');
+                this.notifyPlayer(this.inkwaveMode ? 'Tangki tinta bertambah.' : `Kamu mendapat ${this.ammoPerPickup} peluru.`, 'success');
                 this.tryAutoShoot();
                 this.schedulePickupRespawn('ammo', pickup);
             }
@@ -2595,6 +2617,9 @@ function rpgGame() {
             this.session.pos_x = spawn.x;
             this.session.pos_y = spawn.y;
             this.inkwaveHealth = this.inkwaveMaxHealth;
+            this.ammo = this.inkwaveInkMax;
+            this.inkwaveInkReloadState = 'full';
+            this.inkwaveInkReloadProgress = 1;
             this.inkwaveShield = 0;
             this.clearShieldState();
             this.inkwaveRespawnOpen = false;
@@ -2616,12 +2641,16 @@ function rpgGame() {
 
         shootInkWaveTarget(targetId) {
             if (!this.inkwaveMode || this.showGuideModal || this.inkwavePaused || this.inkwaveMatchCompleted) return;
-            if (this.ammo <= 0) {
-                this.notifyPlayer('Amunisi habis.', 'warning');
+            if (this.ammo < this.inkwaveInkShotCost) {
+                this.ammo = Math.max(0, this.ammo);
+                this.inkwaveInkReloadState = this.isOnOwnInkTile() ? 'delay' : 'neutral';
+                this.notifyPlayer(this.isOnOwnInkTile() ? 'Tinta habis. Tahan posisi untuk isi ulang.' : 'Tinta habis. Kembali ke wilayah PKG.', 'warning');
                 return;
             }
 
-            this.ammo--;
+            this.ammo = Math.max(0, this.ammo - this.inkwaveInkShotCost);
+            this.inkwaveInkLastShotAt = Date.now();
+            this.inkwaveInkReloadProgress = 0;
             const targetIndex = targetId === null
                 ? -1
                 : this.enemies.findIndex(enemy => Number(enemy.encounter_id) === Number(targetId));
@@ -2682,8 +2711,55 @@ function rpgGame() {
             this.actionMode = 'move';
         },
 
+        isOnOwnInkTile() {
+            const x = Math.round(Number(this.session.pos_x || 0));
+            const y = Math.round(Number(this.session.pos_y || 0));
+            return this.inkwaveTerritory?.cells?.[`${x}:${y}`] === 'pkg';
+        },
+
+        startInkWaveInkTank() {
+            if (!this.inkwaveMode) return;
+            if (this.inkwaveInkTimer) clearInterval(this.inkwaveInkTimer);
+            let lastTickAt = Date.now();
+            this.inkwaveInkTimer = setInterval(() => {
+                const now = Date.now();
+                const elapsed = Math.min(0.25, (now - lastTickAt) / 1000);
+                lastTickAt = now;
+                if (this.inkwavePaused || this.inkwaveMatchCompleted || this.showNpcDialog || this.ammo >= this.inkwaveInkMax) {
+                    this.inkwaveInkReloadState = this.ammo >= this.inkwaveInkMax ? 'full' : 'paused';
+                    this.inkwaveInkReloadProgress = this.ammo >= this.inkwaveInkMax ? 1 : 0;
+                    return;
+                }
+
+                const scene = document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene;
+                const movingSlowly = !scene?.playerMotion?.moving || scene.playerVelocity.lengthSq() <= 4.7;
+                if (!this.isOnOwnInkTile()) {
+                    this.inkwaveInkReloadState = 'neutral';
+                    this.inkwaveInkReloadProgress = 0;
+                    return;
+                }
+                if (!movingSlowly) {
+                    this.inkwaveInkReloadState = 'moving';
+                    this.inkwaveInkReloadProgress = 0;
+                    return;
+                }
+
+                const delayElapsed = now - this.inkwaveInkLastShotAt;
+                if (delayElapsed < this.inkwaveInkRechargeDelayMs) {
+                    this.inkwaveInkReloadState = 'delay';
+                    this.inkwaveInkReloadProgress = delayElapsed / this.inkwaveInkRechargeDelayMs;
+                    return;
+                }
+
+                this.inkwaveInkReloadState = 'reloading';
+                this.inkwaveInkReloadProgress = Math.min(1, this.ammo / this.inkwaveInkMax);
+                this.ammo = Math.min(this.inkwaveInkMax, this.ammo + (this.inkwaveInkRechargePerSecond * elapsed));
+            }, 100);
+        },
+
         tryAutoShoot() {
-            if (this.ammo <= 0 || this.showNpcDialog || this.showCompletion || this.showGuideModal) return false;
+            // InkWave shots always pass through the tank cost and manual aim path.
+            if (this.inkwaveMode || this.ammo <= 0 || this.showNpcDialog || this.showCompletion || this.showGuideModal) return false;
 
             const target = this.findAutoShootTarget(3);
             if (!target) return false;
