@@ -196,8 +196,20 @@ class FaceAttendanceController extends Controller
         }
     }
 
-    private function authenticatedSubject(Request $request): Siswa|User|null
+    protected function authenticatedSubject(Request $request): Siswa|User|null
     {
+        // Native mobile requests authenticate through Sanctum. Keep the
+        // session-guard fallback for the existing web enrollment page.
+        $tokenSubject = $request->user();
+
+        if ($tokenSubject instanceof Siswa) {
+            return $tokenSubject;
+        }
+
+        if ($tokenSubject instanceof User && $tokenSubject->hasAnyRole(User::attendanceRoleNames())) {
+            return $tokenSubject;
+        }
+
         $siswa = Auth::guard('siswa')->user();
 
         if ($siswa instanceof Siswa) {

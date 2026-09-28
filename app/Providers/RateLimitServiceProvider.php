@@ -57,6 +57,32 @@ class RateLimitServiceProvider extends ServiceProvider
                 });
         });
 
+        // Native face scan is public and must be bounded per IP.
+        RateLimiter::for('face-scan', function (Request $request) {
+            return Limit::perMinute(10)
+                ->by($request->ip())
+                ->response(function (Request $request, array $headers) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Terlalu banyak percobaan scan wajah. Silakan coba lagi nanti.',
+                        'code' => 'RATE_LIMIT_EXCEEDED',
+                    ], 429, $headers);
+                });
+        });
+
+        // Native face enrollment is authenticated and more restrictive.
+        RateLimiter::for('face-enroll', function (Request $request) {
+            return Limit::perMinute(3)
+                ->by($request->user()?->getAuthIdentifier() ?: $request->ip())
+                ->response(function (Request $request, array $headers) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Terlalu banyak percobaan pendaftaran wajah. Silakan coba lagi nanti.',
+                        'code' => 'RATE_LIMIT_EXCEEDED',
+                    ], 429, $headers);
+                });
+        });
+
         // QR generate endpoint rate limiting
         RateLimiter::for('qr-generate', function (Request $request) {
             $limit = config('qrcode.rate_limit.generate_per_minute', 10);
