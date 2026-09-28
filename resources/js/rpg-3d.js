@@ -18,6 +18,7 @@ const PLAYER_SNAP_DISTANCE = TILE_SIZE * 1.65;
 const SHOT_SPEED = TILE_SIZE * 14; // kecepatan peluru terbang (unit dunia / detik)
 const PLAYER_IDLE_LERP = 14;
 const INKWAVE_MAX_TERRITORY_PATCHES = 64;
+const INKWAVE_TEAM_COLORS = Object.freeze({ pkg: 0x22d3ee, rival: 0xf59e0b, neutral: 0x64748b });
 const INKWAVE_MAX_EFFECTS = 18;
 const INKWAVE_CAMERA_DISTANCE = TILE_SIZE * 2.35;
 const INKWAVE_CAMERA_HEIGHT = TILE_SIZE * 1.75;
@@ -240,23 +241,23 @@ class RpgThreeScene {
                 <button type="button" data-rpg-3d-ui-close title="Sembunyikan panel">X</button>
             </div>
             <div class="pkg-rpg-3d-hud">
-                <div class="pkg-rpg-3d-stat pkg-rpg-3d-avatar-stat">
+                <div class="pkg-rpg-3d-stat pkg-rpg-3d-avatar-stat pkg-rpg-3d-adventure-stat">
                     <span>Karakter</span>
                     <strong data-rpg-3d-player-avatar>?</strong>
                 </div>
-                <div class="pkg-rpg-3d-stat">
+                <div class="pkg-rpg-3d-stat pkg-rpg-3d-adventure-stat">
                     <span>NPC</span>
                     <strong data-rpg-3d-npc>0/0</strong>
                 </div>
-                <div class="pkg-rpg-3d-stat">
+                <div class="pkg-rpg-3d-stat pkg-rpg-3d-adventure-stat">
                     <span>Peluru</span>
                     <strong data-rpg-3d-ammo>0</strong>
                 </div>
-                <div class="pkg-rpg-3d-stat">
+                <div class="pkg-rpg-3d-stat pkg-rpg-3d-adventure-stat">
                     <span>Tameng</span>
                     <strong data-rpg-3d-shield>OFF</strong>
                 </div>
-                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-team-stat"><span>Tim lokal</span><strong data-rpg-3d-teams>PKG 4 vs 4 Rival</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-combat-stat"><span>HP / Tameng</span><strong data-rpg-3d-combat>100 / 0</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>PKG / Netral</span><strong data-rpg-3d-territory>0% / 0</strong></div><div class="pkg-rpg-3d-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat"><span>Encounter</span><strong data-rpg-3d-encounter>Siap</strong></div><div class="pkg-rpg-3d-stat"><span>Bom F</span><strong data-rpg-3d-bomb-status>Siap</strong></div><div class="pkg-rpg-3d-stat"><span>Evasion Shift</span><strong data-rpg-3d-evasion-status>Siap</strong></div>' : ''}
+                ${this.inkwaveMode ? '<div class="pkg-rpg-3d-stat pkg-rpg-3d-team-stat"><span>Roster</span><strong data-rpg-3d-teams>PKG 4 vs 4 Rival</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-territory-stat"><span>Wilayah PKG / Rival</span><strong data-rpg-3d-territory>0% / 0%</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-timer-stat"><span>Waktu</span><strong data-rpg-3d-match-timer>--:--</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-combat-stat"><span>HP / Tameng</span><strong data-rpg-3d-combat>100 / 0</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-status-stat"><span>Target</span><strong data-rpg-3d-encounter>Siap</strong></div><div class="pkg-rpg-3d-stat pkg-rpg-3d-ability-stat"><span>Bom / Evasi</span><strong><i data-rpg-3d-bomb-status>Siap</i> / <i data-rpg-3d-evasion-status>Siap</i></strong></div>' : ''}
             </div>
             ${this.inkwaveMode ? '<div class="pkg-rpg-3d-ink-tank" data-rpg-3d-ink-tank><div><span>Tangki tinta</span><strong data-rpg-3d-ink-value>100 / 100</strong></div><div class="pkg-rpg-3d-ink-track"><i data-rpg-3d-ink-fill></i></div><small data-rpg-3d-ink-status>Siap menembak</small></div>' : ''}
             <div class="pkg-rpg-3d-compass">
@@ -1241,27 +1242,40 @@ class RpgThreeScene {
         if (!this.inkwaveMode || !this.territoryGroup) return;
 
         const territory = this.state.territory || {};
-        const cells = Object.keys(territory.cells || {}).slice(0, INKWAVE_MAX_TERRITORY_PATCHES);
-        const key = `${territory.version || 0}:${cells.join(',')}`;
+        const serverCells = territory.cells || {};
+        const cells = [];
+        // Sample a fixed-size visual field. Spawn rows supply readable team ownership until the server paints them.
+        for (let y = 0; y < gridSize && cells.length < INKWAVE_MAX_TERRITORY_PATCHES; y += 1) {
+            for (let x = 0; x < gridSize && cells.length < INKWAVE_MAX_TERRITORY_PATCHES; x += 1) {
+                const id = `${x}:${y}`;
+                const team = serverCells[id] === 'pkg' || serverCells[id] === 'rival'
+                    ? serverCells[id]
+                    : (y < 2 ? 'pkg' : (y >= gridSize - 2 ? 'rival' : 'neutral'));
+                cells.push({ id, x, y, team });
+            }
+        }
+        const key = `${territory.version || 0}:${cells.map(cell => `${cell.id}:${cell.team}`).join(',')}`;
         if (key === this.lastTerritoryKey) return;
         this.lastTerritoryKey = key;
         this.clearGroup(this.territoryGroup);
-        if (!cells.length) return;
 
-        // One capped instanced decal keeps Low mode cheap: no texture atlas or per-cell objects.
-        const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.86, TILE_SIZE * 0.86);
-        const material = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.46, depthWrite: false });
-        const decals = new THREE.InstancedMesh(geometry, material, cells.length);
+        // Three bounded instanced pools provide two-team and neutral coverage without ink textures.
+        const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.88, TILE_SIZE * 0.88);
         const center = (gridSize - 1) / 2;
-        const matrix = new THREE.Matrix4();
-        cells.forEach((cell, index) => {
-            const [x, y] = cell.split(':').map(Number);
-            matrix.makeRotationX(-Math.PI / 2);
-            matrix.setPosition((x - center) * TILE_SIZE, 0.025, (center - y) * TILE_SIZE);
-            decals.setMatrixAt(index, matrix);
+        Object.entries(INKWAVE_TEAM_COLORS).forEach(([team, color]) => {
+            const teamCells = cells.filter(cell => cell.team === team);
+            if (!teamCells.length) return;
+            const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: team === 'neutral' ? 0.14 : 0.5, depthWrite: false });
+            const decals = new THREE.InstancedMesh(geometry, material, teamCells.length);
+            const matrix = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
+            teamCells.forEach((cell, index) => {
+                matrix.setPosition((cell.x - center) * TILE_SIZE, 0.025, (center - cell.y) * TILE_SIZE);
+                decals.setMatrixAt(index, matrix);
+            });
+            decals.instanceMatrix.needsUpdate = true;
+            decals.userData.inkwaveTeam = team;
+            this.territoryGroup.add(decals);
         });
-        decals.instanceMatrix.needsUpdate = true;
-        this.territoryGroup.add(decals);
     }
 
     buildStaticScene(gridSize, themeName) {
@@ -1271,9 +1285,10 @@ class RpgThreeScene {
         this.applyThemeEnvironment(colors, gridSize);
 
         const center = (gridSize - 1) / 2;
-        const floorGlow = this.inkwaveMode ? 0.14 : 0.08;
-        const floorMaterialA = new THREE.MeshLambertMaterial({ color: colors.floor, emissive: colors.floor, emissiveIntensity: floorGlow });
-        const floorMaterialB = new THREE.MeshLambertMaterial({ color: colors.floorAlt, emissive: colors.floorAlt, emissiveIntensity: floorGlow });
+        const floorGlow = this.inkwaveMode ? 0.1 : 0.08;
+        const arenaFloor = this.inkwaveMode ? mixHexColor(colors.floor, 0x243341, 0.62) : colors.floor;
+        const floorMaterialA = new THREE.MeshLambertMaterial({ color: arenaFloor, emissive: arenaFloor, emissiveIntensity: floorGlow, flatShading: true });
+        const floorMaterialB = new THREE.MeshLambertMaterial({ color: this.inkwaveMode ? arenaFloor : colors.floorAlt, emissive: this.inkwaveMode ? arenaFloor : colors.floorAlt, emissiveIntensity: floorGlow, flatShading: true });
         const floorGeometry = new THREE.BoxGeometry(TILE_SIZE, 0.08, TILE_SIZE);
 
         for (let y = 0; y < gridSize; y += 1) {
@@ -1312,11 +1327,12 @@ class RpgThreeScene {
             addWall(gridSize, i, 0.75);
         }
 
-        const grid = new THREE.GridHelper(gridSize * TILE_SIZE, gridSize, colors.grid || 0xffffff, darkenHexColor(colors.grid || 0xffffff, 0.5));
-        grid.position.y = 0.03;
-        this.staticGroup.add(grid);
         if (this.inkwaveMode) {
             this.addInkWaveArenaAccents(gridSize, colors);
+        } else {
+            const grid = new THREE.GridHelper(gridSize * TILE_SIZE, gridSize, colors.grid || 0xffffff, darkenHexColor(colors.grid || 0xffffff, 0.5));
+            grid.position.y = 0.03;
+            this.staticGroup.add(grid);
         }
         this.updateMinimap();
     }
@@ -1384,6 +1400,40 @@ class RpgThreeScene {
             prop.rotation.y = kind === 'ramp' ? Math.PI / 4 : ((x + y) % 2) * (Math.PI / 2);
             this.staticGroup.add(prop);
         });
+
+        const teamMaterials = {
+            pkg: new THREE.MeshBasicMaterial({ color: INKWAVE_TEAM_COLORS.pkg, transparent: true, opacity: 0.72 }),
+            rival: new THREE.MeshBasicMaterial({ color: INKWAVE_TEAM_COLORS.rival, transparent: true, opacity: 0.72 }),
+        };
+        const padGeometry = new THREE.CylinderGeometry(TILE_SIZE * 1.35, TILE_SIZE * 1.35, 0.09, 20);
+        const ringGeometry = new THREE.TorusGeometry(TILE_SIZE * 1.45, 0.09, 5, 24);
+        const gatePostGeometry = new THREE.BoxGeometry(0.18, TILE_SIZE * 1.15, 0.18);
+        const gateBarGeometry = new THREE.BoxGeometry(TILE_SIZE * 2.2, 0.18, 0.18);
+        const arrowGeometry = new THREE.ConeGeometry(TILE_SIZE * 0.28, TILE_SIZE * 0.75, 3);
+        [['pkg', 1, 0], ['rival', gridSize - 2, Math.PI]].forEach(([team, y, rotation]) => {
+            const pos = this.tileToWorld(center, y);
+            const pad = new THREE.Mesh(padGeometry, teamMaterials[team]);
+            pad.position.set(pos.x, 0.035, pos.z);
+            const ring = new THREE.Mesh(ringGeometry, teamMaterials[team]);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.set(pos.x, 0.1, pos.z);
+            const arrow = new THREE.Mesh(arrowGeometry, teamMaterials[team]);
+            arrow.rotation.set(Math.PI / 2, rotation, 0);
+            arrow.position.set(pos.x, 0.13, pos.z + (team === 'pkg' ? -TILE_SIZE * 0.25 : TILE_SIZE * 0.25));
+            this.staticGroup.add(pad, ring, arrow);
+            [-TILE_SIZE, TILE_SIZE].forEach(offset => {
+                const post = new THREE.Mesh(gatePostGeometry, teamMaterials[team]);
+                post.position.set(pos.x + offset, TILE_SIZE * 0.58, pos.z);
+                this.staticGroup.add(post);
+            });
+            const bar = new THREE.Mesh(gateBarGeometry, teamMaterials[team]);
+            bar.position.set(pos.x, TILE_SIZE * 1.1, pos.z);
+            this.staticGroup.add(bar);
+        });
+
+        const frontLine = new THREE.Mesh(new THREE.BoxGeometry(arenaSize, 0.028, 0.22), new THREE.MeshBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.58 }));
+        frontLine.position.set(0, 0.065, 0);
+        this.staticGroup.add(frontLine);
     }
 
     applyThemeEnvironment(colors, gridSize) {
@@ -1799,7 +1849,11 @@ class RpgThreeScene {
         }
         if (this.hudTerritory) {
             const territory = this.state.territory || {};
-            this.hudTerritory.textContent = `${Number(territory.coverage_percent || 0)}% / ${Number(territory.neutral_cells || 0)}`;
+            const total = Math.max(1, Number(territory.total_cells || 0) || (Number(this.state.map?.grid_size || 10) ** 2));
+            const pkgPercent = Number(territory.coverage_percent || 0);
+            const rivalCells = Number(territory.rival_cells || 0);
+            const rivalPercent = Math.round((rivalCells / total) * 100);
+            this.hudTerritory.textContent = `${pkgPercent}% / ${rivalPercent}%`;
         }
         if (this.hudMatchTimer) {
             const match = this.state.inkwaveMatch || {};
@@ -3469,8 +3523,8 @@ class RpgThreeScene {
         this.impactPool = [];
         this.impacts = [];
         this.prebuilt.shotGeometry = new THREE.SphereGeometry(0.12, 10, 8);
-        this.prebuilt.shotMaterial = new THREE.MeshBasicMaterial({ color: 0xfde047 });
-        this.prebuilt.tracerMaterial = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.64, depthWrite: false });
+        this.prebuilt.shotMaterial = new THREE.MeshBasicMaterial({ color: this.inkwaveMode ? INKWAVE_TEAM_COLORS.pkg : 0xfde047 });
+        this.prebuilt.tracerMaterial = new THREE.MeshBasicMaterial({ color: this.inkwaveMode ? 0x67e8f9 : 0xfbbf24, transparent: true, opacity: 0.72, depthWrite: false });
         // Primitif kecil, dipakai ulang untuk kilatan moncong tanpa tekstur atau partikel.
         this.muzzleFlash = new THREE.Group();
         const flashMaterial = new THREE.MeshBasicMaterial({ color: 0xfff3c4, transparent: true, opacity: 0, depthWrite: false });
@@ -3770,7 +3824,7 @@ class RpgThreeScene {
         const length = Math.hypot(dx, dz) || 1;
         let mesh = this.inkWaveEnemyShotPool.pop();
         if (!mesh) {
-            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfb7185 }));
+            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: INKWAVE_TEAM_COLORS.rival }));
             this.inkWaveEffectGroup.add(mesh);
         }
         mesh.visible = true;
@@ -3852,7 +3906,7 @@ class RpgThreeScene {
         const length = Math.hypot(dx, dz) || 1;
         let mesh = this.inkWaveAllyShotPool.pop();
         if (!mesh) {
-            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 6, 4), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 6, 4), new THREE.MeshBasicMaterial({ color: INKWAVE_TEAM_COLORS.pkg }));
             this.inkWaveEffectGroup.add(mesh);
         }
         mesh.visible = true;

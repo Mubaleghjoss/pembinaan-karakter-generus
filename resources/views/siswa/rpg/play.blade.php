@@ -724,6 +724,9 @@
                         :data-rpg-3d-view-locked="inkwaveMode ? 'true' : null"
                         :data-rpg-3d-graphics="inkwaveMode ? 'low' : null"
                         :data-rpg-3d-inkwave="inkwaveMode ? 'true' : null"
+                        :data-rpg-3d-visual-profile="inkwaveMode ? 'inkwave-low-poly-v2' : 'adventure-original'"
+                        :data-rpg-3d-team-palette="inkwaveMode ? 'pkg-cyan:rival-amber:neutral-slate' : null"
+                        :data-rpg-3d-territory-cap="inkwaveMode ? '64' : null"
                         class="pkg-rpg-3d-scene mt-4"
                     ></div>
 

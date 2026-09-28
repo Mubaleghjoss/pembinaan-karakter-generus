@@ -406,6 +406,29 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee(':data-rpg-3d-inkwave="inkwaveMode ? \'true\' : null"', false);
     }
 
+    public function test_inkwave_visual_profile_exposes_two_team_bounded_low_poly_markers(): void
+    {
+        $map = $this->map();
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee("'inkwave-low-poly-v2'", false)
+            ->assertSee("'pkg-cyan:rival-amber:neutral-slate'", false)
+            ->assertSee("'64'", false);
+
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+        $this->assertStringContainsString('const INKWAVE_MAX_TERRITORY_PATCHES = 64', $script);
+        $this->assertStringContainsString('pkg: 0x22d3ee, rival: 0xf59e0b, neutral: 0x64748b', $script);
+        $this->assertStringContainsString("decals.userData.inkwaveTeam = team", $script);
+        $this->assertStringContainsString('this.addInkWaveArenaAccents(gridSize, colors);', $script);
+        $this->assertStringContainsString('addInkWaveArenaAccents(gridSize, colors) {', $script);
+        $this->assertStringContainsString('} else {', $script);
+        $this->assertStringContainsString('const grid = new THREE.GridHelper', $script);
+        $this->assertStringNotContainsString('TextureLoader', $script);
+        $this->assertStringNotContainsString('https://', $script);
+    }
+
     public function test_adventure_route_remains_the_non_inkwave_mode(): void
     {
         $map = $this->map();
