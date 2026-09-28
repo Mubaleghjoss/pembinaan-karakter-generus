@@ -1118,7 +1118,7 @@
 </div>
 
 <script>
-function rpgGame() {
+window.rpgGame = function rpgGame() {
     return {
         previewMode: {{ \Illuminate\Support\Js::from($previewMode ?? false) }},
         inkwaveMode: {{ \Illuminate\Support\Js::from($inkwaveMode ?? false) }},
@@ -3773,6 +3773,16 @@ function rpgGame() {
                 // Silent fail for polling
             }
         }
+    }
+};
+
+if (typeof window !== 'undefined') {
+    if (typeof window.rpgGame === 'function') {
+        if (document.documentElement) {
+            document.documentElement.setAttribute('data-rpg-factory', 'ready');
+        }
+    } else {
+        console.warn('rpgGame is not defined on window');
     }
 }
 </script>

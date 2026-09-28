@@ -464,6 +464,25 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee('\\u003C', false);
     }
 
+    public function test_rpg_play_registers_explicit_window_factory_and_root_x_data_contract(): void
+    {
+        $map = $this->map();
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.play', $map))
+            ->assertOk()
+            ->assertSee('x-data="rpgGame()"', false)
+            ->assertSee('window.rpgGame = function rpgGame()', false)
+            ->assertSee('data-rpg-factory', false);
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.inkwave.play', $map))
+            ->assertOk()
+            ->assertSee('x-data="rpgGame()"', false)
+            ->assertSee('window.rpgGame = function rpgGame()', false)
+            ->assertSee('data-rpg-factory', false);
+    }
+
     public function test_inkwave_view_exposes_a_mode_scoped_quantized_position_bridge(): void
     {
         $map = $this->map();
