@@ -441,6 +441,29 @@ class InkWaveRpgFeatureTest extends TestCase
             ->assertSee('x-show="!inkwaveMode"', false);
     }
 
+    public function test_rpg_play_serializes_dangerous_server_data_without_ending_the_script(): void
+    {
+        $payload = '</script><script>window.rpgSerializationPwned=true</script>';
+        $map = $this->map([
+            'nama' => $payload,
+            'background_theme' => $payload,
+            'enemies' => [[
+                'x' => 3,
+                'y' => 3,
+                'avatar' => $payload,
+                'speed_level' => 'normal',
+                'intelligence_level' => 'normal',
+            ]],
+        ]);
+        $this->npc($map, ['nama' => $payload]);
+
+        $this->actingAs(Siswa::factory()->create(), 'siswa')
+            ->get(route('siswa.rpg.play', $map))
+            ->assertOk()
+            ->assertDontSee($payload, false)
+            ->assertSee('\\u003C', false);
+    }
+
     public function test_inkwave_view_exposes_a_mode_scoped_quantized_position_bridge(): void
     {
         $map = $this->map();

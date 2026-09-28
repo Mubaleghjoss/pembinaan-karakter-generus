@@ -1120,13 +1120,13 @@
 <script>
 function rpgGame() {
     return {
-        previewMode: @json($previewMode ?? false),
-        inkwaveMode: @json($inkwaveMode ?? false),
+        previewMode: {{ \Illuminate\Support\Js::from($previewMode ?? false) }},
+        inkwaveMode: {{ \Illuminate\Support\Js::from($inkwaveMode ?? false) }},
         inkwavePaused: false,
-        inkwaveMatchCompleted: @json($inkwaveMatchCompleted ?? false),
+        inkwaveMatchCompleted: {{ \Illuminate\Support\Js::from($inkwaveMatchCompleted ?? false) }},
         inkwaveCompletionReady: false,
-        inkwaveSummary: @json($inkwaveSummary ?? []),
-        inkwaveMatch: @json($inkwaveMatch ?? []),
+        inkwaveSummary: {{ \Illuminate\Support\Js::from($inkwaveSummary ?? []) }},
+        inkwaveMatch: {{ \Illuminate\Support\Js::from($inkwaveMatch ?? []) }},
         inkwaveMatchTimer: null,
         inkwaveInkTimer: null,
         // Client-only combat vitality and ink tank; questions and points remain server-authoritative.
@@ -1155,20 +1155,20 @@ function rpgGame() {
         inkwaveInkReloadState: 'neutral',
         inkwaveInkReloadProgress: 0,
         inkwaveInkLastShotAt: 0,
-        inkwaveSpawn: { x: Number(@json($session['pos_x'] ?? $session->pos_x ?? 0)), y: Number(@json($session['pos_y'] ?? $session->pos_y ?? 0)) },
+        inkwaveSpawn: { x: Number({{ \Illuminate\Support\Js::from($session['pos_x'] ?? $session->pos_x ?? 0) }}), y: Number({{ \Illuminate\Support\Js::from($session['pos_y'] ?? $session->pos_y ?? 0) }}) },
         // Separate cosmetic coverage from questions and educational points.
-        inkwaveTerritory: @json($inkwaveTerritory ?? []),
+        inkwaveTerritory: {{ \Illuminate\Support\Js::from($inkwaveTerritory ?? []) }},
         inkwaveQuestionSecondsLeft: 0,
         inkwaveQuestionTimer: null,
         inkwaveEncounterPending: false,
         inkwaveProximityTriggered: new Set(),
         inkwaveProximityCompleted: new Set(),
         inkwaveProximityDistance: 2.25,
-        gridSize: {{ $rpgMap->grid_size }},
-        session: @json($session),
-        character: @json($character),
-        npcs: @json($npcs),
-        obstacles: @json($obstacles),
+        gridSize: {{ \Illuminate\Support\Js::from($rpgMap->grid_size) }},
+        session: {{ \Illuminate\Support\Js::from($session) }},
+        character: {{ \Illuminate\Support\Js::from($character) }},
+        npcs: {{ \Illuminate\Support\Js::from($npcs) }},
+        obstacles: {{ \Illuminate\Support\Js::from($obstacles) }},
         onlinePlayers: [],
         activePlayersCount: 1,
         activeGuestsCount: 0,
@@ -1177,26 +1177,26 @@ function rpgGame() {
         actionMode: 'move',
         // InkWave locks the existing 3D arena to its low graphics profile.
         viewMode: '3d',
-        difficulty: '{{ $rpgMap->difficulty ?? "easy" }}',
-        npcAvatarLookup: @json(\App\Support\RpgCatalog::npcAvatarLookup()),
-        enemyAvatarLookup: @json(\App\Support\RpgCatalog::enemyAvatarLookup()),
-        pickupIcons: @json(\App\Support\RpgCatalog::pickupIcons()),
-        shieldDurationSeconds: {{ (int) ($rpgMap->shield_duration_seconds ?? 8) }},
-        ammoPerPickup: {{ (int) ($rpgMap->ammo_per_pickup ?? 3) }},
-        shieldPickupCount: {{ (int) ($rpgMap->shield_pickups_count ?? 1) }},
-        ammoPickupCount: {{ (int) ($rpgMap->ammo_pickups_count ?? 2) }},
+        difficulty: {{ \Illuminate\Support\Js::from($rpgMap->difficulty ?? 'easy') }},
+        npcAvatarLookup: {{ \Illuminate\Support\Js::from(\App\Support\RpgCatalog::npcAvatarLookup()) }},
+        enemyAvatarLookup: {{ \Illuminate\Support\Js::from(\App\Support\RpgCatalog::enemyAvatarLookup()) }},
+        pickupIcons: {{ \Illuminate\Support\Js::from(\App\Support\RpgCatalog::pickupIcons()) }},
+        shieldDurationSeconds: {{ \Illuminate\Support\Js::from((int) ($rpgMap->shield_duration_seconds ?? 8)) }},
+        ammoPerPickup: {{ \Illuminate\Support\Js::from((int) ($rpgMap->ammo_per_pickup ?? 3)) }},
+        shieldPickupCount: {{ \Illuminate\Support\Js::from((int) ($rpgMap->shield_pickups_count ?? 1)) }},
+        ammoPickupCount: {{ \Illuminate\Support\Js::from((int) ($rpgMap->ammo_pickups_count ?? 2)) }},
         pickupRespawnSeconds: 8,
         
         // Enemies
-        enemies: JSON.parse(JSON.stringify(@json($enemies))),
-        enemyInitial: @json($enemies),
+        enemies: JSON.parse(JSON.stringify({{ \Illuminate\Support\Js::from($enemies) }})),
+        enemyInitial: {{ \Illuminate\Support\Js::from($enemies) }},
         enemyTimer: null,
         caughtFlash: false,
         catchCount: 0,
 
         // Boss (mode Petualangan)
-        boss: @json($boss),
-        bossDefeated: @json($bossDefeated ?? false),
+        boss: {{ \Illuminate\Support\Js::from($boss) }},
+        bossDefeated: {{ \Illuminate\Support\Js::from($bossDefeated ?? false) }},
         bossHp: 0,
         bossMaxHp: 0,
         bossX: 0,
@@ -1234,7 +1234,7 @@ function rpgGame() {
         shieldActive: false,
         shieldSecondsLeft: 0,
         shieldTimer: null,
-        ammo: @json(($inkwaveMode ?? false) ? 100 : 0),
+        ammo: {{ \Illuminate\Support\Js::from(($inkwaveMode ?? false) ? 100 : 0) }},
         pickups: { shield: [], ammo: [] },
         pickupRespawnTimers: [],
         shotFlash: null,
@@ -1545,7 +1545,7 @@ function rpgGame() {
             return {
                 map: {
                     grid_size: this.gridSize,
-                    background_theme: '{{ $rpgMap->background_theme }}',
+                    background_theme: {{ \Illuminate\Support\Js::from($rpgMap->background_theme) }},
                     difficulty: this.difficulty,
                 },
                 session: this.session,
@@ -1632,8 +1632,8 @@ function rpgGame() {
                 completionOpen: this.showCompletion,
                 inkwaveSummaryOpen: this.inkwaveMatchCompleted,
                 inkwaveSummary: this.inkwaveSummary,
-                mapName: @json($rpgMap->nama),
-                mapListUrl: @json(($previewMode ?? false) ? route('admin.rpg.index') : route('siswa.rpg.index')),
+                mapName: {{ \Illuminate\Support\Js::from($rpgMap->nama) }},
+                mapListUrl: {{ \Illuminate\Support\Js::from(($previewMode ?? false) ? route('admin.rpg.index') : route('siswa.rpg.index')) }},
             };
         },
 
@@ -1660,7 +1660,7 @@ function rpgGame() {
         },
 
         guideStorageKey() {
-            return 'pkg-rpg-siswa-guide-map-{{ $rpgMap->id }}';
+            return 'pkg-rpg-siswa-guide-map-' + {{ \Illuminate\Support\Js::from($rpgMap->id) }};
         },
 
         syncViewportMode() {
@@ -1981,7 +1981,7 @@ function rpgGame() {
                 this.catchCount++;
 
                 if (!this.previewMode) {
-                    fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
+                    fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.move', $rpgMap)) }}, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
                         body: JSON.stringify({ pos_x: 0, pos_y: 0 })
@@ -2416,7 +2416,7 @@ function rpgGame() {
                     this.bossDefeated = true;
                     this.notifyPlayer('Mode coba: bos dikalahkan (poin tidak dihitung).', 'success');
                 } else {
-                    fetch("{{ route('siswa.rpg.boss-defeat', $rpgMap) }}", {
+                    fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.boss-defeat', $rpgMap)) }}, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2623,7 +2623,7 @@ function rpgGame() {
 
         persistInkWaveSpawn(spawn) {
             if (this.previewMode) return;
-            fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
+            fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.move', $rpgMap)) }}, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
                 body: JSON.stringify({ pos_x: spawn.x, pos_y: spawn.y })
@@ -3085,7 +3085,7 @@ function rpgGame() {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 };
-                const encounterResponse = await fetch("{{ route('siswa.rpg.inkwave.encounter', $rpgMap) }}", {
+                const encounterResponse = await fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.inkwave.encounter', $rpgMap)) }}, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify({
@@ -3104,7 +3104,7 @@ function rpgGame() {
                     throw new Error(encounter.message || 'Encounter InkWave tidak diterima.');
                 }
                 this.inkwaveTerritory = encounter.territory || this.inkwaveTerritory;
-                const response = await fetch("{{ route('siswa.rpg.inkwave.question', $rpgMap) }}", {
+                const response = await fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.inkwave.question', $rpgMap)) }}, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify({ encounter_token: encounter.encounter_token })
@@ -3372,7 +3372,7 @@ function rpgGame() {
                 return;
             }
             try {
-                const res = await fetch("{{ route('siswa.rpg.reset', $rpgMap) }}", {
+                const res = await fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.reset', $rpgMap)) }}, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
                 });
@@ -3476,7 +3476,7 @@ function rpgGame() {
                 this._moveSyncTimer = setTimeout(() => {
                     const payload = this._pendingMove;
                     if (!payload) return;
-                    fetch("{{ route('siswa.rpg.move', $rpgMap) }}", {
+                    fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.move', $rpgMap)) }}, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -3572,7 +3572,7 @@ function rpgGame() {
 
             if (this.inkwaveMode) {
                 try {
-                    const response = await fetch("{{ route('siswa.rpg.inkwave.answer', $rpgMap) }}", {
+                    const response = await fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.inkwave.answer', $rpgMap)) }}, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -3642,7 +3642,7 @@ function rpgGame() {
                 this.submittingAnswer = false;
                 return;
             }
-            fetch("{{ route('siswa.rpg.answer', $rpgMap) }}", {
+            fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.answer', $rpgMap)) }}, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3751,7 +3751,7 @@ function rpgGame() {
         async pollState() {
             try {
                 if (this.inkwaveMode) {
-                    const res = await fetch("{{ route('siswa.rpg.inkwave.state', $rpgMap) }}", { headers: { 'Accept': 'application/json' } });
+                    const res = await fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.inkwave.state', $rpgMap)) }}, { headers: { 'Accept': 'application/json' } });
                     const data = await res.json();
                     if (data.match) {
                         this.inkwaveMatch = data.match;
@@ -3759,7 +3759,7 @@ function rpgGame() {
                     }
                     return;
                 }
-                const res = await fetch("{{ route('siswa.rpg.state', $rpgMap) }}", {
+                const res = await fetch({{ \Illuminate\Support\Js::from(route('siswa.rpg.state', $rpgMap)) }}, {
                     headers: { 'Accept': 'application/json' }
                 });
                 const data = await res.json();
