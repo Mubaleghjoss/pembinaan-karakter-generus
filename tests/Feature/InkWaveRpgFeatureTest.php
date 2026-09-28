@@ -511,7 +511,7 @@ class InkWaveRpgFeatureTest extends TestCase
             ->get(route('siswa.rpg.inkwave.play', $map))
             ->assertOk()
             ->assertSee('updateInkWaveActors(0.25)', false)
-            ->assertSee("this.steerInkWaveActor(actor, player, delta, now, 'pkg'", false)
+            ->assertSee("this.steerInkWaveActor(actor, target || player, delta, now, 'pkg'", false)
             ->assertSee("actor.objective = distance > 4.5 ? 'advance'", false)
             ->assertSee('worldX: Number(tile.x)', false)
             ->assertSee('thinkCooldown: 0', false)
@@ -580,8 +580,9 @@ class InkWaveRpgFeatureTest extends TestCase
         $this->assertStringContainsString('INKWAVE_EVASION_HIT_MULTIPLIER = 0.48', $script);
         $this->assertStringContainsString('now + INKWAVE_EVASION_DURATION_MS', $script);
         $this->assertStringContainsString('this.resetInkWaveEvasionState()', $script);
-        $this->assertStringContainsString('scene?.inkWaveEvasionHitMultiplier?.() ?? 1', $view);
-        $this->assertStringContainsString('* evasionHitMultiplier', $view);
+        $this->assertStringContainsString('this.inkWaveEvasionHitMultiplier()', $script);
+        $this->assertStringContainsString('shot.damage * airborneFactor * this.inkWaveEvasionHitMultiplier()', $script);
+        $this->assertStringNotContainsString('this.applyInkWaveDamage((enemy.intelligence_level', $view);
     }
 
     public function test_inkwave_phase_four_controls_visuals_and_adventure_isolation_are_mode_scoped(): void
@@ -595,6 +596,61 @@ class InkWaveRpgFeatureTest extends TestCase
         $this->assertStringContainsString('this.inkwaveMode && now < this.inkWaveEvasionUntil', $script);
         $this->assertStringContainsString("this.inkwaveMode ? 'W/S/A/D gerak", $script);
         $this->assertStringContainsString("'W/S maju, A/D geser, Q/E putar, Space tembak.", $script);
+    }
+
+    public function test_inkwave_rival_projectiles_use_swept_collision_and_only_damage_on_a_real_hit(): void
+    {
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+        $view = file_get_contents(resource_path('views/siswa/rpg/play.blade.php'));
+
+        $fireStart = strpos($view, '        inkwaveEnemyFireTick() {');
+        $fireEnd = strpos($view, '        applyInkWaveDamage(', $fireStart);
+        $fire = substr($view, $fireStart, $fireEnd - $fireStart);
+        $this->assertStringContainsString('fireInkWaveEnemyShot', $fire);
+        $this->assertStringNotContainsString('applyInkWaveDamage', $fire);
+        $this->assertStringContainsString('const samples = Math.max(1, Math.ceil', $script);
+        $this->assertStringContainsString('this.isObstacleWorldPoint(previousX + (stepX * ratio)', $script);
+        $this->assertStringContainsString('if (hitPlayer)', $script);
+        $this->assertStringContainsString('now < shot.ttl', $script);
+    }
+
+    public function test_inkwave_respawn_protection_contact_cooldown_and_hostile_clear_are_bounded(): void
+    {
+        $view = file_get_contents(resource_path('views/siswa/rpg/play.blade.php'));
+        $script = file_get_contents(resource_path('js/rpg-3d.js'));
+
+        $this->assertStringContainsString('inkwaveSpawnProtectionMs: 2500', $view);
+        $this->assertStringContainsString("source === 'contact' ? 900 : 360", $view);
+        $this->assertStringContainsString('now < this.inkwaveSpawnProtectionUntil', $view);
+        $this->assertStringContainsString('clearInkWaveHostileShots', $view);
+        $this->assertStringContainsString('this.inkWaveEnemyShots.length = 0', $script);
+        $this->assertStringContainsString('enemy._nextShotAt = this.inkwaveSpawnProtectionUntil', $view);
+    }
+
+    public function test_inkwave_allies_acquire_shoot_with_los_and_defeat_without_education_rewards(): void
+    {
+        $view = file_get_contents(resource_path('views/siswa/rpg/play.blade.php'));
+        $allyCombat = substr($view, strpos($view, 'nearestInkWaveRival(actor'), 6500);
+
+        $this->assertStringContainsString('this.inkwaveHasLineOfSight', $allyCombat);
+        $this->assertStringContainsString('this.inkwaveAllyFire(actor, target, now)', $allyCombat);
+        $this->assertStringContainsString('inkwaveAllyProjectileCap: 12', $view);
+        $this->assertStringContainsString('this.inkwaveSegmentBlocked', $allyCombat);
+        $this->assertStringContainsString('this.scheduleEnemyRespawn(defeated)', $allyCombat);
+        $this->assertStringNotContainsString('handleEnemyDefeated(defeated)', $allyCombat);
+        $this->assertStringNotContainsString('requestInkWaveQuestion', $allyCombat);
+    }
+
+    public function test_inkwave_spawn_zones_are_opposite_disjoint_and_use_continuous_actor_avoidance(): void
+    {
+        $view = file_get_contents(resource_path('views/siswa/rpg/play.blade.php'));
+
+        $this->assertStringContainsString('tile.y < zoneDepth', $view);
+        $this->assertStringContainsString('tile.y >= this.gridSize - zoneDepth', $view);
+        $this->assertStringContainsString('minimumCrossDistance', $view);
+        $this->assertStringContainsString('Math.hypot(Number(actor.worldX ?? actor.x)', $view);
+        $this->assertStringContainsString('findInkWaveSafeSpawn()', $view);
+        $this->assertStringContainsString('findInkWaveRivalSpawnTile()', $view);
     }
 
     public function test_client_supplied_combat_points_are_ignored(): void

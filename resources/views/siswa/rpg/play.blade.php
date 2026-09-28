@@ -1135,10 +1135,16 @@ function rpgGame() {
         inkwaveRespawnSeconds: 0,
         inkwaveRespawnTimer: null,
         inkwaveHitUntil: 0,
-        // Local 4v4 presentation only: one student plus three PKG bots versus four rival bots.
+        inkwaveDamageCooldownUntil: 0,
+        inkwaveSpawnProtectionUntil: 0,
+        inkwaveSpawnProtectionMs: 2500,
+        // Local 4v4 combat: one student plus three independent PKG bots versus four rivals.
         inkwaveTeamSize: 4,
         inkwaveTeams: { pkg: [], rival: [] },
+        inkwaveOwnSpawnTiles: [],
         inkwaveEnemySpawnTiles: [],
+        inkwaveAllyProjectiles: [],
+        inkwaveAllyProjectileCap: 12,
         inkwaveInkMax: 100,
         inkwaveInkShotCost: 12,
         inkwaveInkRechargeDelayMs: 700,
@@ -1290,6 +1296,7 @@ function rpgGame() {
                 shoot: ({ dx, dy }) => this.shootDirection(Number(dx || 0), Number(dy || 0)),
                 shootInkWave: (detail = {}) => this.shootInkWaveTarget(detail.targetId ?? null, detail),
                 retryInkWave: () => this.retryInkWaveCombat(),
+                enemyDamage: ({ amount }) => this.applyInkWaveDamage(Number(amount || 0), 'projectile'),
                 answer: ({ index }) => this.submitAnswer(Number(index || 0)),
                 closeNpc: () => this.closeDialog(),
                 view2d: () => {
@@ -1578,7 +1585,8 @@ function rpgGame() {
                     respawnOpen: this.inkwaveRespawnOpen,
                     respawnSeconds: this.inkwaveRespawnSeconds,
                     hit: Date.now() < this.inkwaveHitUntil,
-                    locked: this.inkwavePaused || this.showNpcDialog || this.inkwaveRespawnOpen,
+                    spawnProtected: Date.now() < this.inkwaveSpawnProtectionUntil,
+                    locked: this.inkwavePaused || this.showNpcDialog || this.inkwaveRespawnOpen || this.inkwaveMatchCompleted,
                     challengeLabel: this.currentNpc?.challenge_label || 'Siap',
                 } : null,
                 inkwaveTeams: this.inkwaveMode ? this.inkwaveTeams : null,
@@ -1827,8 +1835,65 @@ function rpgGame() {
                 this.steerInkWaveActor(actor, player, delta, now, 'rival', index);
             });
             (this.inkwaveTeams.pkg || []).filter(actor => !actor.isPlayer).slice(0, this.inkwaveTeamSize - 1).forEach((actor, index) => {
-                this.steerInkWaveActor(actor, player, delta, now, 'pkg', index);
+                const target = this.nearestInkWaveRival(actor, 6.5);
+                this.steerInkWaveActor(actor, target || player, delta, now, 'pkg', index);
+                if (target) this.inkwaveAllyFire(actor, target, now);
             });
+            this.stepInkWaveAllyProjectiles(delta);
+        },
+
+        nearestInkWaveRival(actor, range) {
+            return (this.enemies || []).map(enemy => ({
+                enemy,
+                distance: Math.hypot(Number(enemy.worldX ?? enemy.x) - Number(actor.worldX), Number(enemy.worldZ ?? enemy.y) - Number(actor.worldZ)),
+            })).filter(item => item.distance <= range && this.inkwaveHasLineOfSight(actor.worldX, actor.worldZ, item.enemy.worldX ?? item.enemy.x, item.enemy.worldZ ?? item.enemy.y))
+                .sort((a, b) => a.distance - b.distance)[0]?.enemy || null;
+        },
+
+        inkwaveAllyFire(ally, target, now) {
+            if (now < Number(ally._nextShotAt || 0) || this.inkwavePaused || this.showNpcDialog || this.inkwaveMatchCompleted) return;
+            const dx = Number(target.worldX ?? target.x) - Number(ally.worldX);
+            const dz = Number(target.worldZ ?? target.y) - Number(ally.worldZ);
+            const length = Math.hypot(dx, dz) || 1;
+            ally._nextShotAt = now + 1150 + (Number(ally.slot || 0) * 90);
+            if (this.inkwaveAllyProjectiles.length >= this.inkwaveAllyProjectileCap) this.inkwaveAllyProjectiles.shift();
+            this.inkwaveAllyProjectiles.push({ x: Number(ally.worldX), y: Number(ally.worldZ), dx: dx / length, dy: dz / length, ttl: 1.15, targetSlot: Number(target.bot_slot || 0) });
+            document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene?.fireInkWaveAllyShot?.(ally.worldX, ally.worldZ, target.worldX ?? target.x, target.worldZ ?? target.y);
+        },
+
+        stepInkWaveAllyProjectiles(delta) {
+            const alive = [];
+            for (const shot of this.inkwaveAllyProjectiles) {
+                const previousX = shot.x, previousY = shot.y;
+                shot.x += shot.dx * 5.2 * delta;
+                shot.y += shot.dy * 5.2 * delta;
+                shot.ttl -= delta;
+                if (this.inkwaveSegmentBlocked(previousX, previousY, shot.x, shot.y)) continue;
+                const index = this.enemies.findIndex(enemy => {
+                    const ex = Number(enemy.worldX ?? enemy.x), ey = Number(enemy.worldZ ?? enemy.y);
+                    const vx = shot.x - previousX, vy = shot.y - previousY;
+                    const lengthSq = (vx * vx) + (vy * vy);
+                    const t = lengthSq ? Math.max(0, Math.min(1, (((ex - previousX) * vx) + ((ey - previousY) * vy)) / lengthSq)) : 0;
+                    return Math.hypot(ex - (previousX + vx * t), ey - (previousY + vy * t)) <= 0.42;
+                });
+                if (index !== -1) {
+                    const defeated = { ...this.enemies[index] };
+                    this.enemies.splice(index, 1);
+                    this.scheduleEnemyRespawn(defeated);
+                    continue; // Ally defeats are local combat only: no encounter, question, or points.
+                }
+                if (shot.ttl > 0) alive.push(shot);
+            }
+            this.inkwaveAllyProjectiles = alive.slice(-this.inkwaveAllyProjectileCap);
+        },
+
+        inkwaveSegmentBlocked(fromX, fromY, toX, toY) {
+            const steps = Math.max(1, Math.ceil(Math.hypot(toX - fromX, toY - fromY) / 0.25));
+            for (let step = 1; step <= steps; step++) {
+                const ratio = step / steps;
+                if (this.isObstacle(Math.round(fromX + ((toX - fromX) * ratio)), Math.round(fromY + ((toY - fromY) * ratio)))) return true;
+            }
+            return false;
         },
 
         steerInkWaveActor(actor, player, delta, now, team, index) {
@@ -1891,7 +1956,7 @@ function rpgGame() {
                 : this.enemies.some(enemy => enemy.x === px && enemy.y === py);
             if (caught) {
                 if (this.inkwaveMode) {
-                    this.applyInkWaveDamage(28);
+                    this.applyInkWaveDamage(28, 'contact');
                     return true;
                 }
                 if (this.shieldActive) {
@@ -2510,13 +2575,21 @@ function rpgGame() {
             }
             const byOwnEnd = [...walkable].sort((a, b) => a.y - b.y || a.x - b.x);
             const byRivalEnd = [...walkable].sort((a, b) => b.y - a.y || a.x - b.x);
-            const ownTiles = byOwnEnd.slice(0, this.inkwaveTeamSize);
-            const rivalTiles = byRivalEnd.filter(tile => !ownTiles.some(own => own.x === tile.x && own.y === tile.y)).slice(0, this.inkwaveTeamSize);
-            const ownSpawn = ownTiles[0] || { x: 0, y: 0 };
+            const zoneDepth = Math.max(1, Math.ceil(this.gridSize * 0.25));
+            const ownZone = byOwnEnd.filter(tile => tile.y < zoneDepth);
+            const rivalZone = byRivalEnd.filter(tile => tile.y >= this.gridSize - zoneDepth);
+            const ownTiles = (ownZone.length >= this.inkwaveTeamSize ? ownZone : byOwnEnd).slice(0, this.inkwaveTeamSize);
+            const minimumCrossDistance = Math.max(3, Math.floor(this.gridSize * 0.5));
+            const oppositeCandidates = rivalZone.filter(tile => ownTiles.every(own => Math.hypot(tile.x - own.x, tile.y - own.y) >= minimumCrossDistance));
+            const rivalTiles = (oppositeCandidates.length >= this.inkwaveTeamSize ? oppositeCandidates : rivalZone)
+                .filter(tile => !ownTiles.some(own => own.x === tile.x && own.y === tile.y)).slice(0, this.inkwaveTeamSize);
+            const ownSpawn = ownTiles[0] || byOwnEnd[0] || { x: 0, y: 0 };
+            this.inkwaveOwnSpawnTiles = ownTiles.length ? ownTiles : [ownSpawn];
             this.inkwaveSpawn = ownSpawn;
             this.session.pos_x = ownSpawn.x;
             this.session.pos_y = ownSpawn.y;
-            this.inkwaveEnemySpawnTiles = rivalTiles.length ? rivalTiles : [ownSpawn];
+            // Same-side fallback is only possible when no opposite walkable zone exists.
+            this.inkwaveEnemySpawnTiles = rivalTiles.length ? rivalTiles : byRivalEnd.filter(tile => !this.inkwaveOwnSpawnTiles.some(own => own.x === tile.x && own.y === tile.y)).slice(0, this.inkwaveTeamSize);
 
             const sources = (this.enemies || []).length ? this.enemies : [{ avatar: 'enemy_slime' }];
             this.enemies = Array.from({ length: this.inkwaveTeamSize }, (_, index) => this.normalizeEnemy({
@@ -2736,17 +2809,20 @@ function rpgGame() {
                 const cooldown = enemy.speed_level === 'fast' ? 1500 : (enemy.speed_level === 'slow' ? 2600 : 2050);
                 enemy._nextShotAt = now + cooldown + (index * 90);
                 const scene = document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene;
-                scene?.fireInkWaveEnemyShot?.(enemyX, enemyZ);
-                // Jump and evasion reduce incoming damage but never make the player invulnerable.
-                const airborneFactor = scene?.isInkWaveAirborne?.() ? 0.72 : 1;
-                const evasionHitMultiplier = scene?.inkWaveEvasionHitMultiplier?.() ?? 1;
-                this.applyInkWaveDamage((enemy.intelligence_level === 'high' ? 18 : 14) * airborneFactor * evasionHitMultiplier);
+                scene?.fireInkWaveEnemyShot?.(enemyX, enemyZ, {
+                    damage: enemy.intelligence_level === 'high' ? 18 : 14,
+                    speed: 5.4,
+                    ttlMs: 1400,
+                });
                 break;
             }
         },
 
-        applyInkWaveDamage(amount) {
-            if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.inkwavePaused || this.showNpcDialog) return;
+        applyInkWaveDamage(amount, source = 'projectile') {
+            const now = Date.now();
+            if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.inkwavePaused || this.showNpcDialog || this.inkwaveMatchCompleted) return;
+            if (now < this.inkwaveSpawnProtectionUntil || now < this.inkwaveDamageCooldownUntil) return;
+            this.inkwaveDamageCooldownUntil = now + (source === 'contact' ? 900 : 360);
             let damage = Math.max(0, Number(amount || 0));
             if (this.shieldActive && this.inkwaveShield > 0) {
                 const absorbed = Math.min(this.inkwaveShield, damage);
@@ -2766,7 +2842,10 @@ function rpgGame() {
 
         beginInkWaveRespawn() {
             if (!this.inkwaveMode || this.inkwaveRespawnOpen || this.showNpcDialog) return;
-            document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene?.resetInkWaveEvasionState?.();
+            const scene = document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene;
+            scene?.resetInkWaveEvasionState?.();
+            scene?.clearInkWaveHostileShots?.();
+            this.inkwaveAllyProjectiles = [];
             this.inkwaveRespawnOpen = true;
             this.inkwavePaused = true;
             this.inkwaveRespawnSeconds = 3;
@@ -2795,6 +2874,10 @@ function rpgGame() {
             this.clearShieldState();
             this.inkwaveRespawnOpen = false;
             this.inkwaveRespawnSeconds = 0;
+            this.inkwaveSpawnProtectionUntil = Date.now() + this.inkwaveSpawnProtectionMs;
+            this.inkwaveDamageCooldownUntil = this.inkwaveSpawnProtectionUntil;
+            this.enemies.forEach((enemy, index) => { enemy._nextShotAt = this.inkwaveSpawnProtectionUntil + (index * 120); });
+            document.getElementById('siswa-rpg-3d-scene')?.__pkgRpgThreeScene?.clearInkWaveHostileShots?.();
             this.inkwavePaused = false;
             // Death only resets transient combat state; educational progress and territory stay intact.
             this.focusThreeScene();
@@ -2802,14 +2885,17 @@ function rpgGame() {
         },
 
         findInkWaveSafeSpawn() {
-            const preferred = this.inkwaveSpawn || { x: 0, y: 0 };
-            if (!this.isObstacle(preferred.x, preferred.y)) return preferred;
-            for (let y = 0; y < this.gridSize; y++) {
-                for (let x = 0; x < this.gridSize; x++) {
-                    if (!this.isObstacle(x, y) && !this.enemies.some(enemy => enemy.x === x && enemy.y === y)) return { x, y };
-                }
-            }
-            return { x: 0, y: 0 };
+            const allies = (this.inkwaveTeams.pkg || []).filter(actor => !actor.isPlayer);
+            const candidates = [...(this.inkwaveOwnSpawnTiles || []), this.inkwaveSpawn].filter(Boolean)
+                .filter(tile => !this.isObstacle(tile.x, tile.y));
+            const score = tile => {
+                const rivalDistances = this.enemies.map(enemy => Math.hypot(Number(enemy.worldX ?? enemy.x) - tile.x, Number(enemy.worldZ ?? enemy.y) - tile.y));
+                const nearestRival = rivalDistances.length ? Math.min(...rivalDistances) : this.gridSize;
+                const lineOfSightPenalty = this.enemies.some(enemy => this.inkwaveHasLineOfSight(Number(enemy.worldX ?? enemy.x), Number(enemy.worldZ ?? enemy.y), tile.x, tile.y)) ? 4 : 0;
+                const occupiedPenalty = [...this.enemies, ...allies].some(actor => Math.hypot(Number(actor.worldX ?? actor.x) - tile.x, Number(actor.worldZ ?? actor.y) - tile.y) < 1.1) ? 20 : 0;
+                return nearestRival - lineOfSightPenalty - occupiedPenalty;
+            };
+            return candidates.sort((a, b) => score(b) - score(a))[0] || { x: 0, y: 0 };
         },
 
         shootInkWaveTarget(targetId, shot = {}) {
@@ -3107,11 +3193,15 @@ function rpgGame() {
         },
 
         findInkWaveRivalSpawnTile() {
-            return this.inkwaveEnemySpawnTiles.find(tile =>
-                !this.enemies.some(enemy => enemy.x === tile.x && enemy.y === tile.y)
-                && !(this.session.pos_x === tile.x && this.session.pos_y === tile.y)
-            ) || this.inkwaveEnemySpawnTiles[0] || null;
-        },
+            const actors = [...this.enemies, ...(this.inkwaveTeams.pkg || []), { worldX: this.session.pos_x, worldZ: this.session.pos_y }];
+            const candidates = (this.inkwaveEnemySpawnTiles || []).filter(tile => !this.isObstacle(tile.x, tile.y));
+            const safe = candidates.filter(tile => actors.every(actor => Math.hypot(Number(actor.worldX ?? actor.x) - tile.x, Number(actor.worldZ ?? actor.y) - tile.y) >= 1.5));
+            const pool = safe.length ? safe : candidates;
+            return pool.sort((a, b) => {
+                const distance = tile => Math.hypot(Number(this.session.pos_x) - tile.x, Number(this.session.pos_y) - tile.y);
+                return distance(b) - distance(a);
+            })[0] || null;
+        }
 
         findEnemyRespawnTile() {
             const candidates = [];

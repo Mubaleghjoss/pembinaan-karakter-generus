@@ -199,6 +199,8 @@ class RpgThreeScene {
         this.inkWaveEffectPool = [];
         this.inkWaveEnemyShots = [];
         this.inkWaveEnemyShotPool = [];
+        this.inkWaveAllyShots = [];
+        this.inkWaveAllyShotPool = [];
         // InkWave-only input/projectile state. Adventure shooting remains event driven.
         this.inkWaveFireHeld = false;
         this.inkWaveLastFireAt = -INKWAVE_SHOT_INTERVAL_MS;
@@ -1503,7 +1505,11 @@ class RpgThreeScene {
         const player = this.state.session || { pos_x: 0, pos_y: 0 };
         const playerPos = this.tileToWorld(Number(player.pos_x || 0), Number(player.pos_y || 0));
         this.shieldAura.position.set(playerPos.x, CAMERA_HEIGHT * 0.55, playerPos.z);
-        this.shieldAura.visible = !!this.state.shieldActive;
+        this.shieldAura.visible = !!this.state.shieldActive || !!this.state.inkwaveCombat?.spawnProtected;
+        if (this.shieldAura.material) {
+            this.shieldAura.material.color.setHex(this.state.inkwaveCombat?.spawnProtected ? 0x67e8f9 : 0x60a5fa);
+            this.shieldAura.material.opacity = this.state.inkwaveCombat?.spawnProtected ? 0.72 : 0.45;
+        }
         this.updateBoss();
         this.updateBossExtras();
         this.updateDirectionHud();
@@ -2790,6 +2796,7 @@ class RpgThreeScene {
             this.updatePlayerShots(delta);
             this.updateInkWaveBombs(delta);
             this.updateInkWaveEnemyShots(delta);
+            this.updateInkWaveAllyShots(delta);
             this.renderer.render(this.scene, this.camera);
             this.updateAdaptiveQuality();
         }
@@ -3750,8 +3757,8 @@ class RpgThreeScene {
         }
     }
 
-    fireInkWaveEnemyShot(fromX, fromY) {
-        if (!this.inkwaveMode || this.isDialogOpen()) return;
+    fireInkWaveEnemyShot(fromX, fromY, options = {}) {
+        if (!this.inkwaveMode || this.isDialogOpen() || this.state.inkwaveCombat?.locked) return;
         if (this.inkWaveEnemyShots.length >= INKWAVE_ENEMY_SHOT_CAP) {
             const oldest = this.inkWaveEnemyShots.shift();
             oldest.mesh.visible = false;
@@ -3768,25 +3775,102 @@ class RpgThreeScene {
         }
         mesh.visible = true;
         mesh.position.set(from.x, CAMERA_HEIGHT * 0.72, from.z);
-        this.inkWaveEnemyShots.push({ mesh, vx: (dx / length) * SHOT_SPEED * 0.58, vz: (dz / length) * SHOT_SPEED * 0.58, ttl: performance.now() + 700 });
+        const speed = Math.max(1, Number(options.speed || 5.4));
+        this.inkWaveEnemyShots.push({
+            mesh,
+            vx: (dx / length) * speed,
+            vz: (dz / length) * speed,
+            damage: Math.max(0, Number(options.damage || 14)),
+            ttl: performance.now() + Math.max(200, Number(options.ttlMs || 1400)),
+        });
+    }
+
+    clearInkWaveHostileShots() {
+        if (!this.inkwaveMode) return;
+        this.inkWaveEnemyShots.forEach((shot) => {
+            shot.mesh.visible = false;
+            this.inkWaveEnemyShotPool.push(shot.mesh);
+        });
+        this.inkWaveEnemyShots.length = 0;
+    }
+
+    dispatchInkWaveEnemyDamage(amount) {
+        this.invokeControl('enemyDamage', { amount: Math.max(0, Number(amount || 0)) });
+        this.lastStateSyncAt = 0;
     }
 
     updateInkWaveEnemyShots(delta) {
-        if (!this.inkwaveMode || this.state.inkwaveCombat?.locked || !this.inkWaveEnemyShots.length) return;
+        if (!this.inkwaveMode || !this.inkWaveEnemyShots.length) return;
+        if (this.state.inkwaveCombat?.locked) {
+            this.clearInkWaveHostileShots();
+            return;
+        }
         const now = performance.now();
         let write = 0;
         for (let index = 0; index < this.inkWaveEnemyShots.length; index++) {
             const shot = this.inkWaveEnemyShots[index];
-            shot.mesh.position.x += shot.vx * delta;
-            shot.mesh.position.z += shot.vz * delta;
-            if (now < shot.ttl) {
+            const previousX = shot.mesh.position.x;
+            const previousZ = shot.mesh.position.z;
+            const stepX = shot.vx * delta;
+            const stepZ = shot.vz * delta;
+            shot.mesh.position.x += stepX;
+            shot.mesh.position.z += stepZ;
+            const lengthSq = (stepX * stepX) + (stepZ * stepZ);
+            const samples = Math.max(1, Math.ceil(Math.sqrt(lengthSq) / (TILE_SIZE * 0.25)));
+            let blocked = false;
+            for (let sample = 1; sample <= samples; sample += 1) {
+                const ratio = sample / samples;
+                if (this.isObstacleWorldPoint(previousX + (stepX * ratio), previousZ + (stepZ * ratio))) { blocked = true; break; }
+            }
+            const projection = lengthSq > 0 ? Math.max(0, Math.min(1, (((this.playerVisual.x - previousX) * stepX) + ((this.playerVisual.z - previousZ) * stepZ)) / lengthSq)) : 0;
+            const hitPlayer = !blocked && Math.hypot(this.playerVisual.x - (previousX + stepX * projection), this.playerVisual.z - (previousZ + stepZ * projection)) <= PLAYER_RADIUS * 0.9;
+            if (!blocked && !hitPlayer && now < shot.ttl) {
                 this.inkWaveEnemyShots[write++] = shot;
             } else {
                 shot.mesh.visible = false;
                 this.inkWaveEnemyShotPool.push(shot.mesh);
+                if (blocked || hitPlayer) this.spawnImpactVisual(shot.mesh.position.x, shot.mesh.position.z);
+                if (hitPlayer) {
+                    const airborneFactor = this.isInkWaveAirborne() ? 0.72 : 1;
+                    this.dispatchInkWaveEnemyDamage(shot.damage * airborneFactor * this.inkWaveEvasionHitMultiplier());
+                }
             }
         }
         this.inkWaveEnemyShots.length = write;
+    }
+
+    fireInkWaveAllyShot(fromX, fromY, toX, toY) {
+        if (!this.inkwaveMode || this.state.inkwaveCombat?.locked) return;
+        if (this.inkWaveAllyShots.length >= 12) {
+            const oldest = this.inkWaveAllyShots.shift();
+            oldest.mesh.visible = false;
+            this.inkWaveAllyShotPool.push(oldest.mesh);
+        }
+        const from = this.tileToWorld(Number(fromX), Number(fromY));
+        const to = this.tileToWorld(Number(toX), Number(toY));
+        const dx = to.x - from.x, dz = to.z - from.z;
+        const length = Math.hypot(dx, dz) || 1;
+        let mesh = this.inkWaveAllyShotPool.pop();
+        if (!mesh) {
+            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 6, 4), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+            this.inkWaveEffectGroup.add(mesh);
+        }
+        mesh.visible = true;
+        mesh.position.set(from.x, CAMERA_HEIGHT * 0.68, from.z);
+        this.inkWaveAllyShots.push({ mesh, vx: (dx / length) * 5.2, vz: (dz / length) * 5.2, ttl: performance.now() + 1150 });
+    }
+
+    updateInkWaveAllyShots(delta) {
+        if (!this.inkwaveMode || !this.inkWaveAllyShots.length) return;
+        const now = performance.now();
+        let write = 0;
+        this.inkWaveAllyShots.forEach((shot) => {
+            shot.mesh.position.x += shot.vx * delta;
+            shot.mesh.position.z += shot.vz * delta;
+            if (now < shot.ttl && !this.isObstacleWorldPoint(shot.mesh.position.x, shot.mesh.position.z)) this.inkWaveAllyShots[write++] = shot;
+            else { shot.mesh.visible = false; this.inkWaveAllyShotPool.push(shot.mesh); }
+        });
+        this.inkWaveAllyShots.length = write;
     }
 
     // Tembakan menuju sebuah petak (dipakai auto-shoot / tembak bos dari Alpine).
