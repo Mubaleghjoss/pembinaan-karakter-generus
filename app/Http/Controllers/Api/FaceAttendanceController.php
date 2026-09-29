@@ -33,6 +33,14 @@ class FaceAttendanceController extends WebFaceAttendanceController
                 'status' => $profile?->status,
                 'enrolled_at' => $profile?->created_at?->toIso8601String(),
                 'last_used_at' => $profile?->last_used_at?->toIso8601String(),
+                // Safe read-only values for mobile pre-check UX. The server
+                // remains the final authority in FaceAttendanceController::scan.
+                'location' => [
+                    'center_lat' => (float) $this->faceAttendanceService->config()['center_lat'],
+                    'center_lng' => (float) $this->faceAttendanceService->config()['center_lng'],
+                    'radius_meters' => (float) $this->faceAttendanceService->config()['radius_meters'],
+                    'max_accuracy_meters' => (float) $this->faceAttendanceService->config()['max_accuracy_meters'],
+                ],
             ],
         ]);
     }
