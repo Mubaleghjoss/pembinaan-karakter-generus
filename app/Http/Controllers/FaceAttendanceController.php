@@ -167,7 +167,8 @@ class FaceAttendanceController extends Controller
             $match = $this->faceAttendanceService->findBestProfileMatch(
                 $validated['descriptor'],
                 $eligibleTypes,
-                $authenticatedSubject
+                $authenticatedSubject,
+                $request->is('api/*')
             );
 
             if (! $match || ! $match['accepted']) {

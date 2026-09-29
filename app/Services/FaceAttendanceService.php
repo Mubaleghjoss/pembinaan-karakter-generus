@@ -151,7 +151,12 @@ class FaceAttendanceService
         return $best;
     }
 
-    public function findBestProfileMatch(array $descriptor, array $subjectTypes, ?object $onlySubject = null): ?array
+    public function findBestProfileMatch(
+        array $descriptor,
+        array $subjectTypes,
+        ?object $onlySubject = null,
+        bool $requireMobileFaceNetContract = false
+    ): ?array
     {
         $this->validateDescriptor($descriptor);
 
@@ -163,7 +168,7 @@ class FaceAttendanceService
             ->active()
             ->whereIn('subject_type', $subjectTypes)
             ->orderBy('id')
-            ->chunk(100, function ($profiles) use ($descriptor, $threshold, $onlySubject, &$best) {
+            ->chunk(100, function ($profiles) use ($descriptor, $threshold, $onlySubject, $requireMobileFaceNetContract, &$best) {
                 foreach ($profiles as $profile) {
                     try {
                         $storedDescriptor = $profile->descriptor();
@@ -172,7 +177,7 @@ class FaceAttendanceService
                         continue;
                     }
 
-                    if (! $profile->usesFaceModelContract() || count($storedDescriptor) !== count($descriptor)) {
+                    if (($requireMobileFaceNetContract && ! $profile->usesFaceModelContract()) || count($storedDescriptor) !== count($descriptor)) {
                         continue;
                     }
 
