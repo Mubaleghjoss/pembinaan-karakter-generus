@@ -76,7 +76,9 @@ class FaceAttendanceService
             'photo_path' => $photoPath,
             'status' => FaceProfile::STATUS_ACTIVE,
             'enrolled_by_user_id' => $enrolledByUserId,
-            'metadata' => $metadata ?: null,
+            'metadata' => array_merge($metadata, [
+                'face_model' => FaceProfile::faceModelContract(),
+            ]),
         ]);
         $profile->setDescriptor($descriptor);
         $profile->save();
@@ -149,7 +151,7 @@ class FaceAttendanceService
         return $best;
     }
 
-    public function findBestProfileMatch(array $descriptor, array $subjectTypes): ?array
+    public function findBestProfileMatch(array $descriptor, array $subjectTypes, ?object $onlySubject = null): ?array
     {
         $this->validateDescriptor($descriptor);
 
@@ -161,7 +163,7 @@ class FaceAttendanceService
             ->active()
             ->whereIn('subject_type', $subjectTypes)
             ->orderBy('id')
-            ->chunk(100, function ($profiles) use ($descriptor, $threshold, &$best) {
+            ->chunk(100, function ($profiles) use ($descriptor, $threshold, $onlySubject, &$best) {
                 foreach ($profiles as $profile) {
                     try {
                         $storedDescriptor = $profile->descriptor();
@@ -170,11 +172,15 @@ class FaceAttendanceService
                         continue;
                     }
 
-                    if (count($storedDescriptor) !== count($descriptor)) {
+                    if (! $profile->usesFaceModelContract() || count($storedDescriptor) !== count($descriptor)) {
                         continue;
                     }
 
                     $subject = $profile->subject();
+
+                    if ($onlySubject !== null && (! $subject || (string) $subject->getMorphClass() !== (string) $onlySubject->getMorphClass() || (int) $subject->getKey() !== (int) $onlySubject->getKey())) {
+                        continue;
+                    }
 
                     if (! $this->subjectCanAttend($subject)) {
                         continue;

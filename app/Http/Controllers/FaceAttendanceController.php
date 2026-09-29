@@ -112,6 +112,19 @@ class FaceAttendanceController extends Controller
 
     public function scan(Request $request): JsonResponse
     {
+        // Native API scans are scoped to the authenticated account. The submitted
+        // descriptor must never be allowed to identify another account.
+        $authenticatedSubject = $request->is('api/*')
+            ? $this->authenticatedSubject($request)
+            : null;
+
+        if ($request->is('api/*') && ! $authenticatedSubject) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun tidak dikenali. Silakan login ulang.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'descriptor' => ['required', 'array', 'min:32', 'max:4096'],
             'descriptor.*' => ['required', 'numeric'],
@@ -151,7 +164,11 @@ class FaceAttendanceController extends Controller
             }
 
             $location = $this->faceAttendanceService->validateLocation($validated['location']);
-            $match = $this->faceAttendanceService->findBestProfileMatch($validated['descriptor'], $eligibleTypes);
+            $match = $this->faceAttendanceService->findBestProfileMatch(
+                $validated['descriptor'],
+                $eligibleTypes,
+                $authenticatedSubject
+            );
 
             if (! $match || ! $match['accepted']) {
                 return $this->faceNotMatchedResponse($eligibleTypes, $match);

@@ -19,14 +19,9 @@ class FaceAttendanceApiTest extends TestCase
             ->assertUnauthorized();
     }
 
-    public function test_face_scan_api_is_public_but_validates_native_payload(): void
+    public function test_face_scan_api_requires_sanctum(): void
     {
         $this->postJson('/api/v1/presensi-wajah/scan', [])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors([
-                'descriptor',
-                'proof_image',
-                'location',
-            ]);
+            ->assertUnauthorized();
     }
 }

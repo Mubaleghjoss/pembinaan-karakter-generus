@@ -46,10 +46,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/presensi/scan-qr', [PresensiController::class, 'scanQr'])
         ->middleware(['throttle:qr-scan']);
 
-    // Face attendance scan is public: the server identifies the subject from
-    // the enrolled descriptor, then applies schedule and location rules.
+    // Face scan is authenticated and scoped again to the token subject in the
+    // controller; a descriptor must never identify another account.
     Route::post('/presensi-wajah/scan', [FaceAttendanceController::class, 'scan'])
-        ->middleware(['throttle:face-scan']);
+        ->middleware(['auth:sanctum', 'throttle:face-scan']);
 
     // Public read-only Class endpoints to avoid 401 for listing/detail/statistics
     Route::get('/kelas', [KelasController::class, 'index']);
@@ -71,7 +71,7 @@ Route::prefix('v1')->group(function () {
 
 // Protected routes
 Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
-    // Native face profile management. Scan itself remains public above.
+    // Native face profile management; scan is also authenticated above.
     Route::get('/presensi-wajah/profile', [FaceAttendanceController::class, 'profile']);
     Route::post('/presensi-wajah/enroll', [FaceAttendanceController::class, 'enroll'])
         ->middleware(['throttle:face-enroll']);

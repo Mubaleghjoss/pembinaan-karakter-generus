@@ -63,6 +63,29 @@ class FaceProfile extends Model
         return is_array($decoded) ? array_map('floatval', $decoded) : [];
     }
 
+    public function usesFaceModelContract(): bool
+    {
+        $model = data_get($this->metadata, 'face_model');
+
+        return is_array($model)
+            && data_get($model, 'name') === 'MobileFaceNet'
+            && data_get($model, 'version') === 'qualcomm-mobilefacenet-v0.62.2'
+            && data_get($model, 'input') === '112x112-rgb'
+            && (int) data_get($model, 'dimensions') === 128
+            && data_get($model, 'normalization') === 'l2';
+    }
+
+    public static function faceModelContract(): array
+    {
+        return [
+            'name' => 'MobileFaceNet',
+            'version' => 'qualcomm-mobilefacenet-v0.62.2',
+            'input' => '112x112-rgb',
+            'dimensions' => 128,
+            'normalization' => 'l2',
+        ];
+    }
+
     public static function subjectTypeFor(object $subject): ?string
     {
         return match (true) {
