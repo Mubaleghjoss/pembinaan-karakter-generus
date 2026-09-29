@@ -177,7 +177,7 @@ class TeacherPlanningFeatureTest extends TestCase
             'public_name' => 'Ahmad',
         ]);
         $period = TeacherSchedulePeriod::create([
-            'month' => now()->startOfMonth()->toDateString(),
+            'month' => now()->addMonth()->startOfMonth()->toDateString(),
             'status' => 'published',
             'created_by' => $admin->id,
             'published_by' => $admin->id,
@@ -185,7 +185,7 @@ class TeacherPlanningFeatureTest extends TestCase
         ]);
         $session = TeacherScheduleSession::create([
             'period_id' => $period->id,
-            'session_date' => now()->addDays(5)->toDateString(),
+            'session_date' => now()->addMonth()->startOfMonth()->addDays(5)->toDateString(),
             'rombel' => 'smp',
             'start_time' => '20:00',
             'end_time' => '21:30',
@@ -200,7 +200,7 @@ class TeacherPlanningFeatureTest extends TestCase
         ] as $sessionData) {
             $additionalSession = TeacherScheduleSession::create([
                 'period_id' => $period->id,
-                'session_date' => now()->addDays(5)->toDateString(),
+                'session_date' => now()->addMonth()->startOfMonth()->addDays(5)->toDateString(),
                 'rombel' => $sessionData['rombel'],
                 'start_time' => '20:00',
                 'end_time' => '21:30',
@@ -229,8 +229,8 @@ class TeacherPlanningFeatureTest extends TestCase
         ]);
 
         $response = $this->getJson(route('public.calendar.events', [
-            'start' => now()->startOfMonth()->toDateString(),
-            'end' => now()->endOfMonth()->toDateString(),
+            'start' => now()->addMonth()->startOfMonth()->toDateString(),
+            'end' => now()->addMonth()->endOfMonth()->toDateString(),
         ]))->assertOk();
         $event = collect($response->json())->firstWhere('type', 'teacher_schedule');
 
@@ -394,7 +394,7 @@ class TeacherPlanningFeatureTest extends TestCase
         ]);
         $session = TeacherScheduleSession::create([
             'period_id' => $period->id,
-            'session_date' => now()->addDays(5)->toDateString(),
+            'session_date' => now()->startOfMonth()->addDays(5)->toDateString(),
             'rombel' => 'smp',
             'start_time' => '20:00',
             'end_time' => '21:30',
@@ -433,7 +433,7 @@ class TeacherPlanningFeatureTest extends TestCase
         $session = TeacherScheduleSession::create([
             'period_id' => $period->id,
             'template_id' => $template->id,
-            'session_date' => now()->addDays(5)->toDateString(),
+            'session_date' => now()->startOfMonth()->addDays(5)->toDateString(),
             'rombel' => 'smp',
             'start_time' => '20:00',
             'end_time' => '21:30',
