@@ -34,6 +34,17 @@ class FaceAttendanceService
             ->first();
     }
 
+    /**
+     * Profile compatible with the native Android MobileFaceNet contract.
+     * Web Human.js profiles must never make the Android client appear ready.
+     */
+    public function mobileProfileFor(object $subject): ?FaceProfile
+    {
+        $profile = $this->activeProfileFor($subject);
+
+        return $profile && $profile->usesFaceModelContract() ? $profile : null;
+    }
+
     public function enrollmentEnabledFor(object $subject): bool
     {
         $config = $this->config();

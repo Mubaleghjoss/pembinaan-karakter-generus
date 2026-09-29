@@ -22,15 +22,20 @@ class FaceAttendanceController extends WebFaceAttendanceController
             abort_unless($subject->hasAnyRole(User::attendanceRoleNames()), 403, 'Akun tidak memiliki akses presensi wajah.');
         }
 
-        $profile = $this->faceAttendanceService->activeProfileFor($subject);
+        $activeProfile = $this->faceAttendanceService->activeProfileFor($subject);
+        $profile = $this->faceAttendanceService->mobileProfileFor($subject);
 
         return response()->json([
             'success' => true,
             'data' => [
+                // Only the authenticated account's active MobileFaceNet profile
+                // unlocks native Android attendance. A web/legacy profile must
+                // explicitly require Android enrollment instead of looking ready.
                 'configured' => $profile !== null,
                 'subject_type' => FaceProfile::subjectTypeFor($subject),
                 'profile_id' => $profile?->id,
-                'status' => $profile?->status,
+                'status' => $profile?->status ?? ($activeProfile ? 'needs_mobile_enrollment' : 'not_enrolled'),
+                'legacy_profile' => $activeProfile !== null && $profile === null,
                 'enrolled_at' => $profile?->created_at?->toIso8601String(),
                 'last_used_at' => $profile?->last_used_at?->toIso8601String(),
                 // Safe read-only values for mobile pre-check UX. The server
