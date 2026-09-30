@@ -175,11 +175,23 @@ class MobileChatController extends Controller
 
         foreach ($devices as $device) {
             try {
+                $preview = trim(preg_replace('/\s+/', ' ', $chat->message) ?? '');
+                if (mb_strlen($preview) > 120) {
+                    $preview = mb_substr($preview, 0, 117).'...';
+                }
+
                 $sent = $this->fcm->send(
                     $device->token,
-                    $senderName,
-                    $chat->message,
-                    ['route' => '/chat', 'chat_id' => (string) $chat->id],
+                    'Pesan baru dari '.$senderName,
+                    $preview !== ''
+                        ? $preview.'. Ketuk untuk membuka chat.'
+                        : 'Anda menerima pesan baru. Ketuk untuk membuka chat.',
+                    [
+                        'type' => 'chat',
+                        'route' => '/chat',
+                        'chat_id' => (string) $chat->id,
+                        'notification_id' => 'chat-'.$chat->id,
+                    ],
                 );
                 if (! $sent) {
                     $device->forceFill(['revoked_at' => now()])->save();
