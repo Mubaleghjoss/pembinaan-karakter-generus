@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\KarakterLuhurController;
 use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\KelasSekolahController;
 use App\Http\Controllers\Api\MateriController;
+use App\Http\Controllers\Api\MobileChatController;
+use App\Http\Controllers\Api\MobileDeviceTokenController;
 use App\Http\Controllers\Api\MobileServerFeaturesController;
 use App\Http\Controllers\Api\MobileWebBridgeController;
 use App\Http\Controllers\Api\OrtuMonitoringController;
@@ -191,6 +193,17 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/game/arcade/kata', [GameController::class, 'arcadeKata']);
     Route::post('/game/arcade/skor', [GameController::class, 'simpanSkorArcade']);
     Route::get('/game/arcade/leaderboard', [GameController::class, 'arcadeLeaderboard']);
+
+    // FCM device token.
+    Route::post('/mobile/device-token', [MobileDeviceTokenController::class, 'store']);
+    Route::delete('/mobile/device-token', [MobileDeviceTokenController::class, 'destroy']);
+
+    Route::middleware('abilities:mobile-chat')->group(function () {
+        Route::get('/mobile/chat/contacts', [MobileChatController::class, 'contacts']);
+        Route::get('/mobile/chat/messages', [MobileChatController::class, 'messages']);
+        Route::post('/mobile/chat/messages/read', [MobileChatController::class, 'markRead']);
+        Route::post('/mobile/chat/messages', [MobileChatController::class, 'send']);
+    });
 
     // Dashboard mobile untuk 10 fitur server tambahan. Semua angka/item dibaca
     // dari database Laravel, bukan data statis di aplikasi.

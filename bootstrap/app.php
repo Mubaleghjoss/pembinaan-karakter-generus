@@ -45,7 +45,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.only' => \App\Http\Middleware\EnsureAdminUser::class,
             'guru.profile' => \App\Http\Middleware\EnsureTeacherPortalAccess::class,
             'guru.password' => \App\Http\Middleware\EnsureTeacherPasswordChanged::class,
-        ]);
+                        'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+                    ]);
 
         // Apply sanitize middleware to all API routes
         $middleware->api(append: [
@@ -120,7 +121,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'error' => 'Forbidden',
-                    'message' => 'Akses ditolak',
+                    'message' => $request->is('api/v1/mobile/chat/*')
+                        ? 'Invalid ability provided.'
+                        : 'Akses ditolak',
                     'code' => 'FORBIDDEN',
                 ], 403);
             }
