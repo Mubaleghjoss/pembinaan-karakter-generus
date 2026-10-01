@@ -26,6 +26,12 @@ class FcmService
             throw new RuntimeException('Konfigurasi FCM server belum lengkap.');
         }
 
+        $caBundle = (string) config('fcm.ca_bundle');
+        if ($caBundle !== '' && is_readable($caBundle)) {
+            putenv('CURL_CA_BUNDLE='.$caBundle);
+            putenv('SSL_CERT_FILE='.$caBundle);
+        }
+
         $credentials = new ServiceAccountCredentials(
             [self::SCOPE],
             $credentialsPath,

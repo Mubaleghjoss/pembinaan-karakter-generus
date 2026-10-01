@@ -19,6 +19,8 @@ use Throwable;
 
 class TaskPwaNotificationService
 {
+    public function __construct(private readonly MobileFcmNotificationService $mobileFcm) {}
+
     public function pendingStudentTaskCount(Siswa $siswa, CarbonInterface|string|null $date = null): int
     {
         if (! $siswa->canSubmitAsAlumni()) {
@@ -118,13 +120,24 @@ class TaskPwaNotificationService
                 $studentName = trim((string) $siswa->nama) ?: 'Siswa';
                 $taskName = $checklist->karakter?->nama ?? 'Tugas PKG';
 
+                $body = "Silakan verifikasi tugas anak Generus {$studentName}: {$taskName}.";
                 Notification::sendNow($recipient, new TaskBadgeWebPushNotification(
                     "Hai, {$pamongName}",
-                    "Silakan verifikasi tugas anak Generus {$studentName}: {$taskName}.",
+                    $body,
                     '/tugas-pkg/verifikasi?tab=verification',
                     'pkg-verification',
                     $count,
                 ));
+                $this->mobileFcm->sendToOwner(
+                    $recipient,
+                    'task',
+                    '/tugas',
+                    'Tugas PKG menunggu verifikasi',
+                    $body.' Ketuk untuk membuka tugas.',
+                    $checklist->id,
+                    $deliveryKey,
+                    ['student_id' => (string) $siswa->id],
+                );
                 $this->markDeliverySent($recipient, $deliveryKey);
                 $sent++;
             } catch (Throwable $exception) {

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\KelasSekolahController;
 use App\Http\Controllers\Api\MateriController;
 use App\Http\Controllers\Api\MobileChatController;
 use App\Http\Controllers\Api\MobileDeviceTokenController;
+use App\Http\Controllers\Api\MobileNotificationTestController;
 use App\Http\Controllers\Api\MobileServerFeaturesController;
 use App\Http\Controllers\Api\MobileWebBridgeController;
 use App\Http\Controllers\Api\OrtuMonitoringController;
@@ -197,6 +198,9 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     // FCM device token.
     Route::post('/mobile/device-token', [MobileDeviceTokenController::class, 'store']);
     Route::delete('/mobile/device-token', [MobileDeviceTokenController::class, 'destroy']);
+
+    // Local-only FCM smoke test; controller rejects APP_DEBUG=false.
+    Route::post('/mobile/notification-test', [MobileNotificationTestController::class, 'send']);
 
     Route::middleware('abilities:mobile-chat')->group(function () {
         Route::get('/mobile/chat/contacts', [MobileChatController::class, 'contacts']);
