@@ -67,7 +67,7 @@ class FcmService
 
         $status = $response->status();
         $errorCode = (string) data_get($response->json(), 'error.details.0.errorCode', '');
-        if ($status === 404 || in_array($errorCode, ['UNREGISTERED', 'INVALID_ARGUMENT'], true)) {
+        if ($status === 404 || $errorCode === 'UNREGISTERED') {
             return false;
         }
 

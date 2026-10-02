@@ -17,7 +17,7 @@ class MobileNotificationTestController extends Controller
 
     public function send(Request $request): JsonResponse
     {
-        if (! (bool) config('app.debug')) {
+        if (! (bool) config('app.debug') || ! in_array(config('app.env'), ['local', 'testing'], true)) {
             throw new AccessDeniedHttpException('Endpoint pengujian lokal dinonaktifkan.');
         }
 

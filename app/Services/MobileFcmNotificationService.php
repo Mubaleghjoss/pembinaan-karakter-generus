@@ -55,12 +55,12 @@ class MobileFcmNotificationService
             throw new \InvalidArgumentException('Route FCM tidak sesuai dengan tipe notifikasi.');
         }
 
-        $data = array_merge([
+        $data = array_merge($extra, [
             'type' => $type,
             'route' => $route,
             'entity_id' => (string) $entityId,
             'notification_id' => $notificationId,
-        ], $extra);
+        ]);
 
         $sent = 0;
         $ownerTypes = array_values(array_unique([

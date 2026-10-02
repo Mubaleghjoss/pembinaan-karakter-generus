@@ -196,11 +196,14 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/game/arcade/leaderboard', [GameController::class, 'arcadeLeaderboard']);
 
     // FCM device token.
-    Route::post('/mobile/device-token', [MobileDeviceTokenController::class, 'store']);
-    Route::delete('/mobile/device-token', [MobileDeviceTokenController::class, 'destroy']);
+    Route::post('/mobile/device-token', [MobileDeviceTokenController::class, 'store'])
+        ->middleware('throttle:api');
+    Route::delete('/mobile/device-token', [MobileDeviceTokenController::class, 'destroy'])
+        ->middleware('throttle:api');
 
-    // Local-only FCM smoke test; controller rejects APP_DEBUG=false.
-    Route::post('/mobile/notification-test', [MobileNotificationTestController::class, 'send']);
+    // Local-only FCM smoke test; controller rejects non-local environments.
+    Route::post('/mobile/notification-test', [MobileNotificationTestController::class, 'send'])
+        ->middleware('throttle:api');
 
     Route::middleware('abilities:mobile-chat')->group(function () {
         Route::get('/mobile/chat/contacts', [MobileChatController::class, 'contacts']);
