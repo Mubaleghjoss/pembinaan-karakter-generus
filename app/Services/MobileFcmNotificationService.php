@@ -155,14 +155,17 @@ class MobileFcmNotificationService
             'device_id' => $device->getKey(),
         ]);
 
-        if ($delivery->sent_at !== null || $delivery->claimed_at !== null) {
+        if ($delivery->sent_at !== null) {
             return false;
         }
 
+        $claimExpiredAt = now()->subMinutes(5);
         $claimed = MobileNotificationDelivery::query()
             ->whereKey($delivery->getKey())
-            ->whereNull('claimed_at')
             ->whereNull('sent_at')
+            ->where(function ($query) use ($claimExpiredAt): void {
+                $query->whereNull('claimed_at')->orWhere('claimed_at', '<=', $claimExpiredAt);
+            })
             ->update(['claimed_at' => now(), 'updated_at' => now()]);
 
         if ($claimed !== 1) {

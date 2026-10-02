@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Exceptions\MissingAbilityException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 // Set timezone to Indonesia (Asia/Jakarta) - UTC+7
@@ -146,6 +147,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
 
                 return response()->json($responseData, $e->getHttpStatus());
+            }
+
+            // Preserve HTTP status for controller aborts not covered above.
+            if ($e instanceof HttpExceptionInterface) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getStatusCode() === 403 ? 'Forbidden' : 'HTTP error',
+                    'message' => $e->getMessage(),
+                    'code' => $e->getStatusCode() === 403 ? 'FORBIDDEN' : 'HTTP_ERROR',
+                ], $e->getStatusCode(), $e->getHeaders());
             }
 
             // Handle generic exceptions (production mode)

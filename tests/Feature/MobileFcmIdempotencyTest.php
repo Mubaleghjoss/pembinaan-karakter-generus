@@ -34,6 +34,30 @@ class MobileFcmIdempotencyTest extends TestCase
         $service->sendToOwner($siswa, 'attendance', '/presensi', 'Presensi', 'Hadir', 77, 'attendance-77-v1');
     }
 
+    public function test_stale_claim_can_be_retried(): void
+    {
+        config()->set('fcm.enabled', true);
+        $siswa = Siswa::factory()->create(['status' => 'active', 'is_active' => true]);
+        $device = MobileDeviceToken::create([
+            'owner_type' => $siswa->getMorphClass(),
+            'owner_id' => $siswa->id,
+            'token_hash' => hash('sha256', 'stale-token'),
+            'token' => 'stale-token',
+            'platform' => 'android',
+        ]);
+        \App\Models\MobileNotificationDelivery::create([
+            'notification_id' => 'attendance-79-v1',
+            'device_id' => $device->id,
+            'claimed_at' => now()->subMinutes(10),
+        ]);
+
+        $fcm = Mockery::mock(FcmService::class);
+        $fcm->shouldReceive('send')->once()->andReturnTrue();
+        $service = new MobileFcmNotificationService($fcm);
+
+        $service->sendToOwner($siswa, 'attendance', '/presensi', 'Presensi', 'Hadir', 79, 'attendance-79-v1');
+    }
+
     public function test_failed_provider_attempt_can_be_retried(): void
     {
         config()->set('fcm.enabled', true);

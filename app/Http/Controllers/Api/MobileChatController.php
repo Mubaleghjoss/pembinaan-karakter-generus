@@ -215,6 +215,7 @@ class MobileChatController extends Controller
 
     private function assertSiswaMayChatWithPamong(Siswa $siswa, int $userId): void
     {
+        abort_if($siswa->isGraduated(), 403, 'Akun alumni tidak dapat menggunakan chat mobile.');
         abort_unless($siswa->isActive(), 403, 'Akun siswa tidak dapat menggunakan chat mobile.');
 
         if (! PamongSiswa::query()

@@ -40,6 +40,22 @@ class MobileChatFeatureTest extends TestCase
         ]);
     }
 
+    public function test_graduated_student_cannot_create_mobile_chat(): void
+    {
+        $siswa = Siswa::factory()->create(['status' => 'graduated', 'is_active' => true]);
+        $pamong = $this->pamong();
+        PamongSiswa::create(['pamong_id' => $pamong->id, 'siswa_id' => $siswa->id]);
+        $token = $siswa->createToken('test', ['siswa', 'mobile-chat'])->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/v1/mobile/chat/messages', [
+            'type' => 'pamong',
+            'target_id' => $pamong->id,
+            'message' => 'Tidak boleh',
+        ])->assertForbidden();
+
+        $this->assertDatabaseCount('chats', 0);
+    }
+
     public function test_blank_message_is_rejected_without_creating_chat(): void
     {
         [$siswa, $pamong] = $this->assignedPair();
