@@ -148,6 +148,8 @@ class ScheduleReminderController extends Controller
             $body,
             $schedule->id,
             'calendar-'.$schedule->id.'-'.$schedule->updated_at?->timestamp,
+            [],
+            $schedule->target_audience,
         );
     }
 

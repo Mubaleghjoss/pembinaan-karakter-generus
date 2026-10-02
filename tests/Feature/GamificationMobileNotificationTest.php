@@ -43,6 +43,36 @@ class GamificationMobileNotificationTest extends TestCase
         ]);
     }
 
+    /**
+     * @dataProvider inactiveStudentProvider
+     */
+    public function test_positive_point_transaction_does_not_notify_inactive_students(array $attributes): void
+    {
+        $siswa = Siswa::factory()->create($attributes);
+        $mobileFcm = Mockery::mock(MobileFcmNotificationService::class);
+        $mobileFcm->shouldNotReceive('sendToOwner');
+        $this->app->instance(MobileFcmNotificationService::class, $mobileFcm);
+
+        $transaction = PointTransaction::create([
+            'siswa_id' => $siswa->id,
+            'type' => 'earned',
+            'source' => 'attendance',
+            'points' => 10,
+            'description' => 'Poin untuk siswa tidak aktif',
+        ]);
+
+        $this->assertDatabaseHas('point_transactions', ['id' => $transaction->id, 'points' => 10]);
+        $mobileFcm->shouldNotHaveReceived('sendToOwner');
+    }
+
+    public static function inactiveStudentProvider(): array
+    {
+        return [
+            'inactive status' => [['status' => 'inactive', 'is_active' => true]],
+            'inactive flag' => [['status' => 'active', 'is_active' => false]],
+        ];
+    }
+
     public function test_negative_point_transaction_does_not_notify(): void
     {
         $siswa = Siswa::factory()->create(['status' => 'active', 'is_active' => true]);

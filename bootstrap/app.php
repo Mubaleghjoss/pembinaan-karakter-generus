@@ -158,9 +158,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'success' => false,
-                    'error' => $isServerError ? 'HTTP error' : 'Forbidden',
+                    'error' => $e->getStatusCode() === 403 ? 'Forbidden' : 'HTTP error',
                     'message' => $message,
-                    'code' => $isServerError ? 'HTTP_ERROR' : 'FORBIDDEN',
+                    'code' => $e->getStatusCode() === 403 ? 'FORBIDDEN' : 'HTTP_ERROR',
                 ], $e->getStatusCode(), $e->getHeaders());
             }
 

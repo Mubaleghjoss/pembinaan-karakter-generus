@@ -15,6 +15,29 @@ class MobileFcmNotificationServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_calendar_broadcast_filters_by_target_audience(): void
+    {
+        config(['fcm.enabled' => true]);
+        $student = Siswa::factory()->create(['status' => 'active', 'is_active' => true]);
+        $user = User::factory()->create(['status' => 'active', 'role_id' => 2]);
+        foreach ([$student, $user] as $owner) {
+            MobileDeviceToken::create([
+                'owner_type' => $owner::class,
+                'owner_id' => $owner->id,
+                'token_hash' => hash('sha256', 'audience-'.$owner->id.'-'.$owner::class),
+                'token' => 'audience-'.$owner->id,
+                'platform' => 'android',
+            ]);
+        }
+        $fcm = Mockery::mock(FcmService::class);
+        $fcm->shouldReceive('send')->once()->with('audience-'.$student->id, Mockery::type('string'), Mockery::type('string'), Mockery::type('array'))->andReturnTrue();
+        $service = new MobileFcmNotificationService($fcm);
+
+        $this->assertSame(1, $service->sendToActiveMobileUsers(
+            'calendar', '/kalender', 'Agenda', 'Isi', 50, 'calendar-50-1', [], 'siswa'
+        ));
+    }
+
     public function test_calendar_broadcast_targets_only_active_mobile_owners(): void
     {
         config(['fcm.enabled' => true]);

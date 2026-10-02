@@ -77,6 +77,12 @@ class MobileChatController extends Controller
         }
 
         $query = Chat::query();
+        $limit = min(max($request->integer('limit', 50), 1), 200);
+        $beforeId = $request->integer('before_id');
+        if ($beforeId > 0) {
+            $query->where('id', '<', $beforeId);
+        }
+
         if ($actor instanceof Siswa && $type === 'pamong') {
             $this->assertSiswaMayChatWithPamong($actor, $targetId);
             $query->where(function ($q) use ($actor, $targetId) {
@@ -96,12 +102,20 @@ class MobileChatController extends Controller
         }
 
         $messages = $query->with(['senderSiswa', 'senderUser'])
-            ->latest('created_at')
-            ->limit(200)
+            ->latest('id')
+            ->limit($limit)
             ->get()
-            ->sortBy('created_at')
+            ->sortBy('id')
             ->values();
-        return response()->json(['data' => $messages->map(fn (Chat $message) => $this->formatMessage($message, $actor))->values()]);
+
+        return response()->json([
+            'data' => $messages->map(fn (Chat $message) => $this->formatMessage($message, $actor))->values(),
+            'meta' => [
+                'limit' => $limit,
+                'has_more' => $messages->count() === $limit,
+                'next_before_id' => $messages->isNotEmpty() ? $messages->first()->id : null,
+            ],
+        ]);
     }
 
     public function markRead(Request $request): JsonResponse

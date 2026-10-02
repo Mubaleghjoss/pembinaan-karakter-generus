@@ -12,6 +12,10 @@ class QuranReadingEntryCreatedObserver implements ShouldHandleEventsAfterCommit
 {
     public function created(QuranReadingEntry $entry): void
     {
+        if ($entry->status !== QuranReadingEntry::STATUS_PENDING) {
+            return;
+        }
+
         $siswa = $entry->siswa()->with(['pamongAssignments.pamong'])->first();
         if (! $siswa || ! $siswa->is_active || $siswa->status !== 'active') {
             return;

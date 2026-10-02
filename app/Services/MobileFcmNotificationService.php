@@ -49,6 +49,7 @@ class MobileFcmNotificationService
         int|string $entityId,
         string $notificationId,
         array $extra = [],
+        string $audience = 'all',
     ): int {
         if (! config('fcm.enabled') || ! in_array($type, self::TYPES, true)) {
             return 0;
@@ -65,9 +66,16 @@ class MobileFcmNotificationService
         ]);
         $sent = 0;
 
+        $ownerTypes = match ($audience) {
+            'siswa' => [Siswa::class],
+            'pamong' => [User::class],
+            'all' => [Siswa::class, User::class],
+            default => throw new \InvalidArgumentException('Audience FCM tidak valid.'),
+        };
+
         MobileDeviceToken::query()
             ->whereNull('revoked_at')
-            ->whereHasMorph('owner', [Siswa::class, User::class], function ($query, string $ownerType): void {
+            ->whereHasMorph('owner', $ownerTypes, function ($query, string $ownerType): void {
                 if ($ownerType === Siswa::class) {
                     $query->where('status', 'active')->where('is_active', true);
                 } else {

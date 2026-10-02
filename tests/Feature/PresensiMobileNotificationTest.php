@@ -15,7 +15,6 @@ class PresensiMobileNotificationTest extends TestCase
 
     public function test_new_student_attendance_sends_one_typed_notification(): void
     {
-        config(['fcm.enabled' => true]);
         $siswa = Siswa::factory()->create(['status' => 'active', 'is_active' => true]);
         $mobileFcm = Mockery::mock(MobileFcmNotificationService::class);
         $mobileFcm->shouldReceive('sendToOwner')
@@ -38,12 +37,11 @@ class PresensiMobileNotificationTest extends TestCase
             'jam_keluar' => null,
         ]);
 
-        $this->assertSame($siswa->id, $presensi->siswa_id);
+        $this->assertDatabaseHas('presensi', ['id' => $presensi->id, 'siswa_id' => $siswa->id]);
     }
 
     public function test_attendance_checkout_update_does_not_send_another_notification(): void
     {
-        config(['fcm.enabled' => true]);
         $siswa = Siswa::factory()->create(['status' => 'active', 'is_active' => true]);
         $presensi = Presensi::withoutEvents(fn () => Presensi::factory()->create([
             'siswa_id' => $siswa->id,
