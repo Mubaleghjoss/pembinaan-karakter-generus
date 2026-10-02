@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MobileDeviceToken;
+use App\Models\MobileNotificationDelivery;
 use App\Models\Siswa;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -73,13 +74,11 @@ class MobileFcmNotificationService
                     $query->where('status', 'active');
                 }
             })
-            ->chunkById(100, function ($devices) use ($title, $body, $data, $type, &$sent): void {
+            ->chunkById(100, function ($devices) use ($title, $body, $data, $type, $notificationId, &$sent): void {
                 foreach ($devices as $device) {
                     try {
-                        if ($this->fcm->send($device->token, $title, $body, $data)) {
+                        if ($this->deliverOnce($device, $notificationId, $title, $body, $data)) {
                             $sent++;
-                        } else {
-                            $device->forceFill(['revoked_at' => now()])->save();
                         }
                     } catch (Throwable $exception) {
                         Log::warning('Mobile FCM broadcast failed.', [
@@ -132,10 +131,8 @@ class MobileFcmNotificationService
 
         foreach ($devices as $device) {
             try {
-                if ($this->fcm->send($device->token, $title, $body, $data)) {
+                if ($this->deliverOnce($device, $notificationId, $title, $body, $data)) {
                     $sent++;
-                } else {
-                    $device->forceFill(['revoked_at' => now()])->save();
                 }
             } catch (Throwable $exception) {
                 Log::warning('Mobile FCM delivery failed.', [
@@ -149,5 +146,43 @@ class MobileFcmNotificationService
         }
 
         return $sent;
+    }
+
+    private function deliverOnce(MobileDeviceToken $device, string $notificationId, string $title, string $body, array $data): bool
+    {
+        $delivery = MobileNotificationDelivery::firstOrCreate([
+            'notification_id' => $notificationId,
+            'device_id' => $device->getKey(),
+        ]);
+
+        if ($delivery->sent_at !== null || $delivery->claimed_at !== null) {
+            return false;
+        }
+
+        $claimed = MobileNotificationDelivery::query()
+            ->whereKey($delivery->getKey())
+            ->whereNull('claimed_at')
+            ->whereNull('sent_at')
+            ->update(['claimed_at' => now(), 'updated_at' => now()]);
+
+        if ($claimed !== 1) {
+            return false;
+        }
+
+        try {
+            $delivered = $this->fcm->send($device->token, $title, $body, $data);
+        } catch (Throwable $exception) {
+            $delivery->forceFill(['claimed_at' => null])->save();
+            throw $exception;
+        }
+
+        if (! $delivered) {
+            $device->forceFill(['revoked_at' => now()])->save();
+            $delivery->delete();
+            return false;
+        }
+
+        $delivery->forceFill(['sent_at' => now()])->save();
+        return true;
     }
 }

@@ -4,10 +4,11 @@ namespace App\Observers;
 
 use App\Models\QuranReadingEntry;
 use App\Services\MobileFcmNotificationService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class QuranReadingEntryCreatedObserver
+class QuranReadingEntryCreatedObserver implements ShouldHandleEventsAfterCommit
 {
     public function created(QuranReadingEntry $entry): void
     {

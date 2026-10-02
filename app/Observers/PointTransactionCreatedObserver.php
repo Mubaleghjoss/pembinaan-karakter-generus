@@ -4,10 +4,11 @@ namespace App\Observers;
 
 use App\Models\PointTransaction;
 use App\Services\MobileFcmNotificationService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class PointTransactionCreatedObserver
+class PointTransactionCreatedObserver implements ShouldHandleEventsAfterCommit
 {
     public function created(PointTransaction $transaction): void
     {

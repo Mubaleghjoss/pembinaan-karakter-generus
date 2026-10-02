@@ -4,10 +4,11 @@ namespace App\Observers;
 
 use App\Models\Presensi;
 use App\Services\MobileFcmNotificationService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class PresensiCreatedObserver
+class PresensiCreatedObserver implements ShouldHandleEventsAfterCommit
 {
     public function created(Presensi $presensi): void
     {
