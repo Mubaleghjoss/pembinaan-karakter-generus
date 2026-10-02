@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\MobileDeviceToken;
+use App\Models\Siswa;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -37,6 +39,60 @@ class MobileFcmNotificationService
     ];
 
     public function __construct(private readonly FcmService $fcm) {}
+
+    public function sendToActiveMobileUsers(
+        string $type,
+        string $route,
+        string $title,
+        string $body,
+        int|string $entityId,
+        string $notificationId,
+        array $extra = [],
+    ): int {
+        if (! config('fcm.enabled') || ! in_array($type, self::TYPES, true)) {
+            return 0;
+        }
+        if (! in_array($route, self::ROUTES[$type] ?? [], true)) {
+            throw new \InvalidArgumentException('Route FCM tidak sesuai dengan tipe notifikasi.');
+        }
+
+        $data = array_merge($extra, [
+            'type' => $type,
+            'route' => $route,
+            'entity_id' => (string) $entityId,
+            'notification_id' => $notificationId,
+        ]);
+        $sent = 0;
+
+        MobileDeviceToken::query()
+            ->whereNull('revoked_at')
+            ->whereHasMorph('owner', [Siswa::class, User::class], function ($query, string $ownerType): void {
+                if ($ownerType === Siswa::class) {
+                    $query->where('status', 'active')->where('is_active', true);
+                } else {
+                    $query->where('status', 'active');
+                }
+            })
+            ->chunkById(100, function ($devices) use ($title, $body, $data, $type, &$sent): void {
+                foreach ($devices as $device) {
+                    try {
+                        if ($this->fcm->send($device->token, $title, $body, $data)) {
+                            $sent++;
+                        } else {
+                            $device->forceFill(['revoked_at' => now()])->save();
+                        }
+                    } catch (Throwable $exception) {
+                        Log::warning('Mobile FCM broadcast failed.', [
+                            'device_id' => $device->id,
+                            'type' => $type,
+                            'exception' => $exception::class,
+                        ]);
+                    }
+                }
+            });
+
+        return $sent;
+    }
 
     public function sendToOwner(
         Model $owner,
