@@ -48,6 +48,7 @@ class MobileChatController extends Controller
 
         if ($actor instanceof User) {
             $students = Siswa::query()
+                ->where('is_active', true)
                 ->whereIn('id', $actor->getAssignedSiswaIds() ?: [0])
                 ->orderBy('nama')
                 ->get()
@@ -216,7 +217,12 @@ class MobileChatController extends Controller
     {
         abort_unless($siswa->isActive(), 403, 'Akun siswa tidak dapat menggunakan chat mobile.');
 
-        if (! PamongSiswa::query()->active()->where('siswa_id', $siswa->id)->where('pamong_id', $userId)->exists()) {
+        if (! PamongSiswa::query()
+            ->active()
+            ->where('siswa_id', $siswa->id)
+            ->where('pamong_id', $userId)
+            ->whereHas('pamong', fn ($query) => $query->where('status', 'active'))
+            ->exists()) {
             throw new AccessDeniedHttpException('Kontak bukan pamong siswa ini.');
         }
     }
