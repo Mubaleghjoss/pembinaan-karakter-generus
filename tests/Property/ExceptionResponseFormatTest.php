@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 /**
@@ -72,6 +73,10 @@ class ExceptionResponseFormatTest extends TestCase
 
             Route::get('/server-error', function () {
                 throw new \RuntimeException('Internal error');
+            });
+
+            Route::get('/http-server-error', function () {
+                throw new HttpException(503, 'Sensitive upstream failure details');
             });
         });
     }
@@ -245,6 +250,22 @@ class ExceptionResponseFormatTest extends TestCase
      * Property: For any generic exception in production mode, the response must
      * return 500 without exposing stack traces.
      */
+    public function test_http_5xx_exception_does_not_expose_message_in_production(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $response = $this->getJson('api/test-exceptions/http-server-error');
+
+        $response->assertStatus(503);
+        $json = $response->json();
+
+        $this->assertSame('HTTP error', $json['error']);
+        $this->assertSame('HTTP_ERROR', $json['code']);
+        $this->assertSame('Terjadi kesalahan pada server', $json['message']);
+        $this->assertStringNotContainsString('Sensitive upstream failure details', json_encode($json));
+        $this->assertArrayNotHasKey('trace', $json);
+    }
+
     public function test_server_error_does_not_expose_stack_trace_in_production(): void
     {
         // Simulate production environment by mocking the environment check

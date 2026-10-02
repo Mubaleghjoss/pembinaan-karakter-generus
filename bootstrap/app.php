@@ -151,11 +151,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Preserve HTTP status for controller aborts not covered above.
             if ($e instanceof HttpExceptionInterface) {
+                $isServerError = $e->getStatusCode() >= 500;
+                $message = $isServerError && app()->environment('production')
+                    ? 'Terjadi kesalahan pada server'
+                    : $e->getMessage();
+
                 return response()->json([
                     'success' => false,
-                    'error' => $e->getStatusCode() === 403 ? 'Forbidden' : 'HTTP error',
-                    'message' => $e->getMessage(),
-                    'code' => $e->getStatusCode() === 403 ? 'FORBIDDEN' : 'HTTP_ERROR',
+                    'error' => $isServerError ? 'HTTP error' : 'Forbidden',
+                    'message' => $message,
+                    'code' => $isServerError ? 'HTTP_ERROR' : 'FORBIDDEN',
                 ], $e->getStatusCode(), $e->getHeaders());
             }
 
