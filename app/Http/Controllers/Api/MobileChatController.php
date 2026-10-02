@@ -27,10 +27,12 @@ class MobileChatController extends Controller
 
         if ($actor instanceof Siswa) {
             $pamongIds = PamongSiswa::query()
+                ->active()
                 ->where('siswa_id', $actor->id)
                 ->pluck('pamong_id');
 
             $contacts = User::query()
+                ->where('status', 'active')
                 ->whereIn('id', $pamongIds)
                 ->orderBy('username')
                 ->get()
@@ -92,7 +94,12 @@ class MobileChatController extends Controller
             return response()->json(['message' => 'Arah chat tidak sesuai akun.'], 403);
         }
 
-        $messages = $query->with(['senderSiswa', 'senderUser'])->orderBy('created_at')->limit(200)->get();
+        $messages = $query->with(['senderSiswa', 'senderUser'])
+            ->latest('created_at')
+            ->limit(200)
+            ->get()
+            ->sortBy('created_at')
+            ->values();
         return response()->json(['data' => $messages->map(fn (Chat $message) => $this->formatMessage($message, $actor))->values()]);
     }
 
@@ -154,7 +161,7 @@ class MobileChatController extends Controller
         }
 
         $recipientType = $actor instanceof Siswa ? User::class : Siswa::class;
-        $recipientId = $actor instanceof Siswa ? $targetId : $targetId;
+        $recipientId = $targetId;
         $this->notifyRecipient($recipientType, $recipientId, $chat, $actor);
 
         return response()->json(['data' => $this->formatMessage($chat->load(['senderSiswa', 'senderUser']), $actor)], 201);
@@ -207,14 +214,20 @@ class MobileChatController extends Controller
 
     private function assertSiswaMayChatWithPamong(Siswa $siswa, int $userId): void
     {
-        if (! PamongSiswa::query()->where('siswa_id', $siswa->id)->where('pamong_id', $userId)->exists()) {
+        abort_unless($siswa->isActive(), 403, 'Akun siswa tidak dapat menggunakan chat mobile.');
+
+        if (! PamongSiswa::query()->active()->where('siswa_id', $siswa->id)->where('pamong_id', $userId)->exists()) {
             throw new AccessDeniedHttpException('Kontak bukan pamong siswa ini.');
         }
     }
 
     private function assertPamongMayChatWithSiswa(User $user, int $siswaId): void
     {
-        abort_unless(Siswa::query()->whereKey($siswaId)->whereIn('id', $user->getAssignedSiswaIds() ?: [0])->exists(), 403, 'Siswa bukan binaan akun ini.');
+        abort_unless(Siswa::query()
+            ->whereKey($siswaId)
+            ->where('is_active', true)
+            ->whereIn('id', $user->getAssignedSiswaIds() ?: [0])
+            ->exists(), 403, 'Siswa bukan binaan akun ini.');
     }
 
     private function assertMobileChatAbility(Request $request): void

@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\BusinessException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -8,6 +9,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Exceptions\MissingAbilityException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -116,14 +118,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 401);
             }
 
-            // Handle AccessDeniedHttpException
-            if ($e instanceof AccessDeniedHttpException) {
+            // Handle authorization failures, including Sanctum abilities.
+            if ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) {
+                $previous = $e->getPrevious();
+                $missingAbility = $e instanceof MissingAbilityException
+                    || $previous instanceof MissingAbilityException;
+
                 return response()->json([
                     'success' => false,
                     'error' => 'Forbidden',
-                    'message' => $request->is('api/v1/mobile/chat/*')
-                        ? 'Invalid ability provided.'
-                        : 'Akses ditolak',
+                    'message' => $missingAbility ? 'Invalid ability provided.' : 'Akses ditolak',
                     'code' => 'FORBIDDEN',
                 ], 403);
             }

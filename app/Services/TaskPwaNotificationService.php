@@ -79,7 +79,10 @@ class TaskPwaNotificationService
 
         $recipients = User::query()
             ->where('status', 'active')
-            ->whereHas('pushSubscriptions')
+            ->where(function ($query) {
+                $query->whereHas('pushSubscriptions')
+                    ->orWhereHas('mobileDeviceTokens', fn ($tokens) => $tokens->whereNull('revoked_at'));
+            })
             ->with(['role', 'pamongPermission'])
             ->get()
             ->filter(function (User $user) use ($siswa) {

@@ -10,6 +10,9 @@ class FcmService
 {
     private const SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
 
+    /** @var array<string, array{token: string, expires_at: int}> */
+    private static array $accessTokenCache = [];
+
     /**
      * Send one notification through FCM HTTP v1.
      * Returns false for an invalid/unregistered token so the caller can revoke it.
@@ -26,23 +29,17 @@ class FcmService
             throw new RuntimeException('Konfigurasi FCM server belum lengkap.');
         }
 
+        $accessToken = $this->accessToken($credentialsPath);
+        $http = Http::withToken($accessToken)->acceptJson();
         $caBundle = (string) config('fcm.ca_bundle');
         if ($caBundle !== '' && is_readable($caBundle)) {
-            putenv('CURL_CA_BUNDLE='.$caBundle);
-            putenv('SSL_CERT_FILE='.$caBundle);
+            $http = $http->withOptions([
+                'curl' => [CURLOPT_CAINFO => $caBundle],
+                'verify' => $caBundle,
+            ]);
         }
 
-        $credentials = new ServiceAccountCredentials(
-            [self::SCOPE],
-            $credentialsPath,
-        );
-        $auth = $credentials->fetchAuthToken();
-        $accessToken = $auth['access_token'] ?? null;
-        if (! is_string($accessToken) || $accessToken === '') {
-            throw new RuntimeException('Token akses FCM tidak dapat dibuat.');
-        }
-
-        $response = Http::withToken($accessToken)
+        $response = $http
             ->acceptJson()
             ->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
                 'message' => [
@@ -72,5 +69,29 @@ class FcmService
         }
 
         throw new RuntimeException("FCM mengembalikan HTTP {$status}.");
+    }
+
+    private function accessToken(string $credentialsPath): string
+    {
+        $cacheKey = hash('sha256', $credentialsPath);
+        $cached = self::$accessTokenCache[$cacheKey] ?? null;
+        if ($cached && $cached['expires_at'] > time() + 60) {
+            return $cached['token'];
+        }
+
+        $credentials = new ServiceAccountCredentials([self::SCOPE], $credentialsPath);
+        $auth = $credentials->fetchAuthToken();
+        $token = $auth['access_token'] ?? null;
+        $expiresIn = (int) ($auth['expires_in'] ?? 3600);
+        if (! is_string($token) || $token === '') {
+            throw new RuntimeException('Token akses FCM tidak dapat dibuat.');
+        }
+
+        self::$accessTokenCache[$cacheKey] = [
+            'token' => $token,
+            'expires_at' => time() + max(60, $expiresIn),
+        ];
+
+        return $token;
     }
 }
