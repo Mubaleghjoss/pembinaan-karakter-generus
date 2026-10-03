@@ -1,0 +1,97 @@
+<?php
+
+namespace App\Services;
+
+use Google\Auth\Credentials\ServiceAccountCredentials;
+use Illuminate\Support\Facades\Http;
+use RuntimeException;
+
+class FcmService
+{
+    private const SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+
+    /** @var array<string, array{token: string, expires_at: int}> */
+    private static array $accessTokenCache = [];
+
+    /**
+     * Send one notification through FCM HTTP v1.
+     * Returns false for an invalid/unregistered token so the caller can revoke it.
+     */
+    public function send(string $token, string $title, string $body, array $data = []): bool
+    {
+        if (! config('fcm.enabled')) {
+            return false;
+        }
+
+        $projectId = (string) config('fcm.project_id');
+        $credentialsPath = (string) config('fcm.credentials');
+        if ($projectId === '' || $credentialsPath === '' || ! is_readable($credentialsPath)) {
+            throw new RuntimeException('Konfigurasi FCM server belum lengkap.');
+        }
+
+        $accessToken = $this->accessToken($credentialsPath);
+        $http = Http::withToken($accessToken)->acceptJson();
+        $caBundle = (string) config('fcm.ca_bundle');
+        if ($caBundle !== '' && is_readable($caBundle)) {
+            $http = $http->withOptions([
+                'curl' => [CURLOPT_CAINFO => $caBundle],
+                'verify' => $caBundle,
+            ]);
+        }
+
+        $response = $http
+            ->acceptJson()
+            ->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
+                'message' => [
+                    'token' => $token,
+                    'notification' => [
+                        'title' => $title,
+                        'body' => $body,
+                    ],
+                    'data' => collect($data)->map(fn ($value) => (string) $value)->all(),
+                    'android' => [
+                        'priority' => 'high',
+                        'notification' => [
+                            'channel_id' => 'pkg_aktivitas',
+                        ],
+                    ],
+                ],
+            ]);
+
+        if ($response->successful()) {
+            return true;
+        }
+
+        $status = $response->status();
+        $errorCode = (string) data_get($response->json(), 'error.details.0.errorCode', '');
+        if ($status === 404 || $errorCode === 'UNREGISTERED') {
+            return false;
+        }
+
+        throw new RuntimeException("FCM mengembalikan HTTP {$status}.");
+    }
+
+    private function accessToken(string $credentialsPath): string
+    {
+        $cacheKey = hash('sha256', $credentialsPath);
+        $cached = self::$accessTokenCache[$cacheKey] ?? null;
+        if ($cached && $cached['expires_at'] > time() + 60) {
+            return $cached['token'];
+        }
+
+        $credentials = new ServiceAccountCredentials([self::SCOPE], $credentialsPath);
+        $auth = $credentials->fetchAuthToken();
+        $token = $auth['access_token'] ?? null;
+        $expiresIn = (int) ($auth['expires_in'] ?? 3600);
+        if (! is_string($token) || $token === '') {
+            throw new RuntimeException('Token akses FCM tidak dapat dibuat.');
+        }
+
+        self::$accessTokenCache[$cacheKey] = [
+            'token' => $token,
+            'expires_at' => time() + max(60, $expiresIn),
+        ];
+
+        return $token;
+    }
+}

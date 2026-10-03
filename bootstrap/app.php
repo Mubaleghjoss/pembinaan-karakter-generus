@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\BusinessException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -8,7 +9,9 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Exceptions\MissingAbilityException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 // Set timezone to Indonesia (Asia/Jakarta) - UTC+7
@@ -45,7 +48,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.only' => \App\Http\Middleware\EnsureAdminUser::class,
             'guru.profile' => \App\Http\Middleware\EnsureTeacherPortalAccess::class,
             'guru.password' => \App\Http\Middleware\EnsureTeacherPasswordChanged::class,
-        ]);
+                        'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+                    ]);
 
         // Apply sanitize middleware to all API routes
         $middleware->api(append: [
@@ -115,12 +119,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 401);
             }
 
-            // Handle AccessDeniedHttpException
-            if ($e instanceof AccessDeniedHttpException) {
+            // Handle authorization failures, including Sanctum abilities.
+            if ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) {
+                $previous = $e->getPrevious();
+                $missingAbility = $e instanceof MissingAbilityException
+                    || $previous instanceof MissingAbilityException;
+
                 return response()->json([
                     'success' => false,
                     'error' => 'Forbidden',
-                    'message' => 'Akses ditolak',
+                    'message' => $missingAbility ? 'Invalid ability provided.' : 'Akses ditolak',
                     'code' => 'FORBIDDEN',
                 ], 403);
             }
@@ -139,6 +147,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
 
                 return response()->json($responseData, $e->getHttpStatus());
+            }
+
+            // Preserve HTTP status for controller aborts not covered above.
+            if ($e instanceof HttpExceptionInterface) {
+                $isServerError = $e->getStatusCode() >= 500;
+                $message = $isServerError && app()->environment('production')
+                    ? 'Terjadi kesalahan pada server'
+                    : $e->getMessage();
+
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getStatusCode() === 403 ? 'Forbidden' : 'HTTP error',
+                    'message' => $message,
+                    'code' => $e->getStatusCode() === 403 ? 'FORBIDDEN' : 'HTTP_ERROR',
+                ], $e->getStatusCode(), $e->getHeaders());
             }
 
             // Handle generic exceptions (production mode)

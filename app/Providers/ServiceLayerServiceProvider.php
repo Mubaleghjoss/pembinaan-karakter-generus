@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Presensi;
+use App\Models\PointTransaction;
+use App\Models\QuranReadingEntry;
+use App\Observers\PointTransactionCreatedObserver;
+use App\Observers\PresensiCreatedObserver;
+use App\Observers\QuranReadingEntryCreatedObserver;
 use App\Services\Contracts\PamongPresensiServiceInterface;
 use App\Services\Contracts\PamongQrServiceInterface;
 use App\Services\Contracts\PresensiServiceInterface;
@@ -63,6 +69,8 @@ class ServiceLayerServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Presensi::observe(PresensiCreatedObserver::class);
+        QuranReadingEntry::observe(QuranReadingEntryCreatedObserver::class);
+        PointTransaction::observe(PointTransactionCreatedObserver::class);
     }
 }

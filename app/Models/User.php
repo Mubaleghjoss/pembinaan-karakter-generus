@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
@@ -176,6 +177,11 @@ class User extends Authenticatable
     public function assignedStudents(): HasMany
     {
         return $this->hasMany(PamongSiswa::class, 'pamong_id')->whereNull('ended_at');
+    }
+
+    public function mobileDeviceTokens(): MorphMany
+    {
+        return $this->morphMany(MobileDeviceToken::class, 'owner');
     }
 
     public function studentAssignmentHistory(): HasMany

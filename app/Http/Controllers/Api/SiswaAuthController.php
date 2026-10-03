@@ -144,7 +144,7 @@ class SiswaAuthController extends Controller
         }
 
         $token = $siswa
-            ->createToken($role.'-mobile', [$role], Carbon::now()->addDays(7))
+            ->createToken($role.'-mobile', $role === 'siswa' ? [$role, 'mobile-chat'] : [$role], Carbon::now()->addDays(7))
             ->plainTextToken;
 
         return response()->json([

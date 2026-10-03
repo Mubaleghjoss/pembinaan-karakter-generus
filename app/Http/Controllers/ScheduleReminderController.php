@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceSchedule;
 use App\Models\ScheduleReminder;
+use App\Services\MobileFcmNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Illuminate\View\View;
 
 class ScheduleReminderController extends Controller
 {
-    public function __construct()
+    public function __construct(private readonly MobileFcmNotificationService $mobileFcm)
     {
         $this->middleware('auth');
     }
@@ -82,8 +83,10 @@ class ScheduleReminderController extends Controller
         $validated['is_recurring'] = $request->boolean('is_recurring');
         $validated['is_active'] = $request->boolean('is_active', true);
 
-        DB::transaction(function () use ($request, $validated) {
-            ScheduleReminder::create(collect($validated)->except([
+        $scheduleReminder = null;
+
+        DB::transaction(function () use ($request, $validated, &$scheduleReminder) {
+            $scheduleReminder = ScheduleReminder::create(collect($validated)->except([
                 'create_attendance_schedule',
                 'attendance_name',
                 'attendance_description',
@@ -121,10 +124,33 @@ class ScheduleReminderController extends Controller
             ]);
         });
 
+        if ($scheduleReminder?->is_active) {
+            $this->notifyCalendarUsers($scheduleReminder, 'Agenda baru');
+        }
+
         return redirect()->route('schedule-reminder.index')
             ->with('success', $request->boolean('create_attendance_schedule')
                 ? 'Jadwal pengingat dan jadwal presensi berhasil dibuat!'
                 : 'Jadwal pengingat berhasil dibuat!');
+    }
+
+    private function notifyCalendarUsers(ScheduleReminder $schedule, string $title): void
+    {
+        $date = $schedule->start_date?->format('d/m/Y') ?? '-';
+        $time = $schedule->start_time?->format('H:i') ?? null;
+        $when = $time ? "{$date} pukul {$time}" : $date;
+        $body = "{$schedule->title} dijadwalkan pada {$when}. Ketuk untuk melihat kalender.";
+
+        $this->mobileFcm->sendToActiveMobileUsers(
+            'calendar',
+            '/kalender',
+            $title,
+            $body,
+            $schedule->id,
+            'calendar-'.$schedule->id.'-'.$schedule->updated_at?->timestamp,
+            [],
+            $schedule->target_audience,
+        );
     }
 
     /**
