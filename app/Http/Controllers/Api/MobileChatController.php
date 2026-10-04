@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
-use App\Models\MobileDeviceToken;
 use App\Models\PamongSiswa;
-use App\Services\FcmService;
+use App\Services\MobileFcmNotificationService;
 use Illuminate\Support\Facades\Log;
 use App\Models\Siswa;
 use App\Models\User;
@@ -16,7 +15,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class MobileChatController extends Controller
 {
-    public function __construct(private readonly FcmService $fcm)
+    public function __construct(private readonly MobileFcmNotificationService $mobileFcm)
     {
     }
 
@@ -184,46 +183,39 @@ class MobileChatController extends Controller
 
     private function notifyRecipient(string $ownerType, int $ownerId, Chat $chat, object $sender): void
     {
-        if (! config('fcm.enabled')) {
+        $owner = $ownerType === Siswa::class
+            ? Siswa::find($ownerId)
+            : User::find($ownerId);
+
+        if ($owner === null) {
             return;
         }
 
         $senderName = $sender instanceof Siswa ? $sender->nama : ($sender->name ?: $sender->username);
-        $devices = MobileDeviceToken::query()
-            ->where('owner_type', $ownerType)
-            ->where('owner_id', $ownerId)
-            ->whereNull('revoked_at')
-            ->get();
+        $preview = trim(preg_replace('/\\s+/', ' ', $chat->message) ?? '');
+        if (mb_strlen($preview) > 120) {
+            $preview = mb_substr($preview, 0, 117).'...';
+        }
 
-        foreach ($devices as $device) {
-            try {
-                $preview = trim(preg_replace('/\s+/', ' ', $chat->message) ?? '');
-                if (mb_strlen($preview) > 120) {
-                    $preview = mb_substr($preview, 0, 117).'...';
-                }
-
-                $sent = $this->fcm->send(
-                    $device->token,
-                    'Pesan baru dari '.$senderName,
-                    $preview !== ''
-                        ? $preview.'. Ketuk untuk membuka chat.'
-                        : 'Anda menerima pesan baru. Ketuk untuk membuka chat.',
-                    [
-                        'type' => 'chat',
-                        'route' => '/chat',
-                        'chat_id' => (string) $chat->id,
-                        'notification_id' => 'chat-'.$chat->id,
-                    ],
-                );
-                if (! $sent) {
-                    $device->forceFill(['revoked_at' => now()])->save();
-                }
-            } catch (\Throwable $e) {
-                Log::warning('FCM delivery failed.', [
-                    'device_id' => $device->id,
-                    'exception' => $e::class,
-                ]);
-            }
+        try {
+            $this->mobileFcm->sendToOwner(
+                $owner,
+                'chat',
+                '/chat',
+                'Pesan baru dari '.$senderName,
+                $preview !== ''
+                    ? $preview.'. Ketuk untuk membuka chat.'
+                    : 'Anda menerima pesan baru. Ketuk untuk membuka chat.',
+                $chat->id,
+                'chat-'.$chat->id,
+                ['chat_id' => (string) $chat->id],
+            );
+        } catch (\Throwable $e) {
+            Log::warning('FCM delivery failed.', [
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerId,
+                'exception' => $e::class,
+            ]);
         }
     }
 

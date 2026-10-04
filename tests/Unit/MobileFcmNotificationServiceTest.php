@@ -27,6 +27,7 @@ class MobileFcmNotificationServiceTest extends TestCase
                 'token_hash' => hash('sha256', 'audience-'.$owner->id.'-'.$owner::class),
                 'token' => 'audience-'.$owner->id,
                 'platform' => 'android',
+                'actor_role' => $owner instanceof Siswa ? 'siswa' : null,
             ]);
         }
         $fcm = Mockery::mock(FcmService::class);
