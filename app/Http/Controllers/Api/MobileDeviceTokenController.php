@@ -19,12 +19,24 @@ class MobileDeviceTokenController extends Controller
         ]);
 
         $owner = $request->user();
+        $token = $owner->currentAccessToken();
+        $actorRole = $token?->can('ortu') ? 'ortu' : ($token?->can('siswa') ? 'siswa' : null);
+
+        if ($actorRole === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token tidak memiliki konteks peran mobile.',
+                'code' => 'MISSING_ACTOR_ROLE',
+            ], 403);
+        }
+
         $hash = hash('sha256', $data['token']);
         $device = MobileDeviceToken::query()->updateOrCreate(
             ['token_hash' => $hash],
             [
                 'owner_type' => $owner::class,
                 'owner_id' => $owner->getKey(),
+                'actor_role' => $actorRole,
                 'token' => $data['token'],
                 'platform' => $data['platform'],
                 'app_version' => $data['app_version'] ?? null,

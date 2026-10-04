@@ -66,8 +66,13 @@ class MobileFcmNotificationService
         ]);
         $sent = 0;
 
+        $actorRole = match ($audience) {
+            'siswa' => 'siswa',
+            'ortu' => 'ortu',
+            default => null,
+        };
         $ownerTypes = match ($audience) {
-            'siswa' => [Siswa::class],
+            'siswa', 'ortu' => [Siswa::class],
             'pamong' => [User::class],
             'all' => [Siswa::class, User::class],
             default => throw new \InvalidArgumentException('Audience FCM tidak valid.'),
@@ -75,6 +80,7 @@ class MobileFcmNotificationService
 
         MobileDeviceToken::query()
             ->whereNull('revoked_at')
+            ->when($actorRole !== null, fn ($query) => $query->where('actor_role', $actorRole))
             ->whereHasMorph('owner', $ownerTypes, function ($query, string $ownerType): void {
                 if ($ownerType === Siswa::class) {
                     $query->where('status', 'active')->where('is_active', true);
@@ -110,12 +116,16 @@ class MobileFcmNotificationService
         int|string $entityId,
         string $notificationId,
         array $extra = [],
+        ?string $actorRole = null,
     ): int {
         if (! config('fcm.enabled') || ! in_array($type, self::TYPES, true)) {
             return 0;
         }
         if (! in_array($route, self::ROUTES[$type] ?? [], true)) {
             throw new \InvalidArgumentException('Route FCM tidak sesuai dengan tipe notifikasi.');
+        }
+        if ($actorRole !== null && ! in_array($actorRole, ['siswa', 'ortu'], true)) {
+            throw new \InvalidArgumentException('Actor role FCM tidak valid.');
         }
 
         $data = array_merge($extra, [
@@ -135,6 +145,7 @@ class MobileFcmNotificationService
             ->whereIn('owner_type', $ownerTypes)
             ->where('owner_id', $owner->getKey())
             ->whereNull('revoked_at')
+            ->when($actorRole !== null, fn ($query) => $query->where('actor_role', $actorRole))
             ->get();
 
         foreach ($devices as $device) {
