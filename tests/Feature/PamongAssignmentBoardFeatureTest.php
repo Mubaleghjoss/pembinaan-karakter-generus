@@ -37,6 +37,23 @@ class PamongAssignmentBoardFeatureTest extends TestCase
             ->assertDontSee($alumni->nama);
     }
 
+    public function test_admin_can_export_only_the_selected_pamong_assignments(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN, 'Administrator');
+        $pamong = $this->user(User::ROLE_TEACHER, 'Pamong Export');
+        $assigned = $this->student('Generus Export');
+        $other = $this->student('Generus Lain');
+        PamongSiswa::query()->create(['pamong_id' => $pamong->id, 'siswa_id' => $assigned->id]);
+        PamongSiswa::query()->create(['pamong_id' => $this->user(User::ROLE_TEACHER, 'Pamong Lain')->id, 'siswa_id' => $other->id]);
+
+        $response = $this->actingAs($admin)->get(route('pamong.assign.export', $pamong));
+
+        $response->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->assertHeader('content-disposition');
+        $this->assertStringNotContainsString('Generus Lain', $response->streamedContent());
+    }
+
     public function test_batch_update_moves_only_the_source_assignment_and_preserves_other_pamong(): void
     {
         $admin = $this->user(User::ROLE_ADMIN, 'Administrator');
