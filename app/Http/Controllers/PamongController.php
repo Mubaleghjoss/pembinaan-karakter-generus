@@ -8,6 +8,7 @@ use App\Models\PamongSiswa;
 use App\Models\Role;
 use App\Models\Siswa;
 use App\Models\User;
+use App\Exports\AllPamongAssignmentExport;
 use App\Exports\PamongAssignmentExport;
 use App\Services\PamongAssignmentBoardService;
 use App\Services\PamongAssignmentVersionConflict;
@@ -259,6 +260,20 @@ class PamongController extends Controller
             'totalAssigned' => $students->filter(fn (Siswa $student) => $student->pamongAssignments->isNotEmpty())->count(),
             'totalUnassigned' => $students->filter(fn (Siswa $student) => $student->pamongAssignments->isEmpty())->count(),
         ]);
+    }
+
+    public function exportAllAssignments(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $pamongs = User::query()
+            ->where('status', 'active')
+            ->whereHas('role', fn ($query) => $query->where('name', User::ROLE_TEACHER))
+            ->with(['assignedStudents.siswa.kelas'])
+            ->orderBy('name')
+            ->orderBy('username')
+            ->get();
+
+        return (new AllPamongAssignmentExport($pamongs))
+            ->download('binaan-seluruh-pamong.xlsx');
     }
 
     public function exportAssignments(User $pamong): \Symfony\Component\HttpFoundation\StreamedResponse

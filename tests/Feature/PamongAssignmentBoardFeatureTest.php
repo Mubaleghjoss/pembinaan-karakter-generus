@@ -54,6 +54,40 @@ class PamongAssignmentBoardFeatureTest extends TestCase
         $this->assertStringNotContainsString('Generus Lain', $response->streamedContent());
     }
 
+    public function test_admin_can_export_all_pamong_assignments_including_empty_pamong(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN, 'Administrator');
+        $pamongA = $this->user(User::ROLE_TEACHER, 'Pamong Semua A');
+        $pamongB = $this->user(User::ROLE_TEACHER, 'Pamong Tanpa Binaan');
+        $student = $this->student('Generus Semua');
+        PamongSiswa::query()->create(['pamong_id' => $pamongA->id, 'siswa_id' => $student->id]);
+
+        $response = $this->actingAs($admin)->get(route('pamong.assign.export-all'));
+
+        $response->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $archive = new \ZipArchive();
+        $this->assertSame(true, $archive->open($this->writeTempFile($response->streamedContent())));
+        $sheet = $archive->getFromName('xl/worksheets/sheet1.xml');
+        $sharedStrings = $archive->getFromName('xl/sharedStrings.xml') ?: '';
+        $archive->close();
+        unlink($this->tempExportPath);
+        $workbookXml = $sheet.$sharedStrings;
+        $this->assertStringContainsString('Nama Pamong', $workbookXml);
+        $this->assertStringContainsString('Pamong Semua', $workbookXml);
+        $this->assertStringContainsString('Generus Semua', $workbookXml);
+        $this->assertStringContainsString('Pamong Tanpa Binaan', $workbookXml);
+    }
+
+    private string $tempExportPath;
+
+    private function writeTempFile(string $contents): string
+    {
+        $this->tempExportPath = tempnam(sys_get_temp_dir(), 'pamong-export-');
+        file_put_contents($this->tempExportPath, $contents);
+        return $this->tempExportPath;
+    }
+
     public function test_batch_update_moves_only_the_source_assignment_and_preserves_other_pamong(): void
     {
         $admin = $this->user(User::ROLE_ADMIN, 'Administrator');

@@ -24,7 +24,8 @@
         <div class="pkg-page-actions">
             <a href="{{ route('kelas.index') }}" class="btn-secondary">Kembali ke Binaan Pamong</a>
             <a href="{{ route('pamong.show', $pamong) }}" class="btn-secondary">Profil Pamong</a>
-            <a href="{{ route('pamong.assign.export', $pamong) }}" class="btn-primary">Unduh Excel</a>
+            <a href="{{ route('pamong.assign.export-all') }}" class="btn-primary">Unduh Semua Excel</a>
+            <a href="{{ route('pamong.assign.export', $pamong) }}" class="btn-secondary">Unduh Excel Pamong</a>
         </div>
     </header>
 
