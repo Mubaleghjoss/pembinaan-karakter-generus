@@ -928,6 +928,7 @@ Route::middleware('auth')->group(function () {
         ->name('pamong.assignments.board');
     Route::get('/pamong/{pamong}', [PamongController::class, 'show'])->name('pamong.show');
     Route::get('/pamong/{pamong}/assign', [PamongController::class, 'assignForm'])->middleware('admin.only')->name('pamong.assign.form');
+    Route::get('/pamong/{pamong}/assign/export', [PamongController::class, 'exportAssignments'])->middleware('admin.only')->name('pamong.assign.export');
     Route::post('/pamong/{pamong}/assign', [PamongController::class, 'assignStudents'])->middleware('admin.only')->name('pamong.assign');
     Route::get('/pamong/{pamong}/permissions', [PamongController::class, 'permissionForm'])
         ->middleware('admin.only')
