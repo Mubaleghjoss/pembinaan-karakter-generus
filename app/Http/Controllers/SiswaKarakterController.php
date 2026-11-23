@@ -7,7 +7,6 @@ use App\Models\SiswaKarakterChecklist;
 use App\Services\GamificationService;
 use App\Services\TaskProofAudioService;
 use App\Services\TaskProofImageService;
-use App\Services\TaskPwaNotificationService;
 use App\Support\InvalidKarakterChecklistCleaner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -261,8 +260,6 @@ class SiswaKarakterController extends Controller
                 'voice_note_duration_seconds' => $voiceDuration,
             ]);
 
-            app(TaskPwaNotificationService::class)->notifyPamongAboutSubmission($checklist);
-            
             $dateLabel = $forDate === now()->toDateString() ? 'hari ini' : \Carbon\Carbon::parse($forDate)->translatedFormat('d M Y');
             $photoBonus = ($karakter->allows_photo_proof && !empty($proofData['path']))
                 ? (int) ($karakter->photo_proof_bonus_points ?? 0)

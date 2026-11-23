@@ -122,7 +122,8 @@ class PwaPushNotificationFeatureTest extends TestCase
         $this->assertTrue($pamong->fresh()->isAdmin());
         $this->assertTrue($pamong->pushSubscriptions()->exists());
         $this->assertTrue(User::query()->whereHas('pushSubscriptions')->whereKey($pamong->id)->exists());
-        $this->assertSame(1, $service->notifyPamongAboutSubmission($checklist));
+        // Checklist::create() dispatches the after-commit observer; the
+        // explicit call is therefore the idempotent duplicate attempt.
         $this->assertSame(0, $service->notifyPamongAboutSubmission($checklist));
 
         Notification::assertSentToTimes($pamong, TaskBadgeWebPushNotification::class, 1);

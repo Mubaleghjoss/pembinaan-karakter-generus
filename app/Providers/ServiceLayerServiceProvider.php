@@ -2,12 +2,17 @@
 
 namespace App\Providers;
 
+use App\Models\Karakter;
 use App\Models\Presensi;
 use App\Models\PointTransaction;
 use App\Models\QuranReadingEntry;
+use App\Models\SiswaKarakterChecklist;
+use App\Observers\KarakterCreatedObserver;
 use App\Observers\PointTransactionCreatedObserver;
 use App\Observers\PresensiCreatedObserver;
 use App\Observers\QuranReadingEntryCreatedObserver;
+use App\Observers\SiswaKarakterChecklistCreatedObserver;
+use App\Observers\SiswaKarakterChecklistUpdatedObserver;
 use App\Services\Contracts\PamongPresensiServiceInterface;
 use App\Services\Contracts\PamongQrServiceInterface;
 use App\Services\Contracts\PresensiServiceInterface;
@@ -69,6 +74,9 @@ class ServiceLayerServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Karakter::observe(KarakterCreatedObserver::class);
+        SiswaKarakterChecklist::observe(SiswaKarakterChecklistCreatedObserver::class);
+        SiswaKarakterChecklist::observe(SiswaKarakterChecklistUpdatedObserver::class);
         Presensi::observe(PresensiCreatedObserver::class);
         QuranReadingEntry::observe(QuranReadingEntryCreatedObserver::class);
         PointTransaction::observe(PointTransactionCreatedObserver::class);

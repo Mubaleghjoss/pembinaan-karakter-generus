@@ -10,6 +10,7 @@ class MobileDeviceToken extends Model
     protected $fillable = [
         'owner_type',
         'owner_id',
+        'actor_role',
         'token_hash',
         'token',
         'platform',
